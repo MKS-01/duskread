@@ -1,0 +1,76 @@
+import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
+plugins {
+    alias(libs.plugins.kotlinMultiplatform)
+    alias(libs.plugins.androidMultiplatformLibrary)
+    alias(libs.plugins.composeMultiplatform)
+    alias(libs.plugins.composeCompiler)
+}
+
+kotlin {
+    // Since AGP 9 the Android side of a KMP module is configured here rather
+    // than with the `com.android.library` plugin.
+    androidLibrary {
+        namespace = "dev.mks.algoatlas"
+        compileSdk = libs.versions.android.compileSdk.get().toInt()
+        minSdk = libs.versions.android.minSdk.get().toInt()
+
+        compilerOptions { jvmTarget.set(JvmTarget.JVM_17) }
+    }
+
+    jvm("desktop") {
+        compilerOptions { jvmTarget.set(JvmTarget.JVM_17) }
+    }
+
+    listOf(iosX64(), iosArm64(), iosSimulatorArm64()).forEach { target ->
+        target.binaries.framework {
+            baseName = "ComposeApp"
+            isStatic = true
+        }
+    }
+
+    @OptIn(ExperimentalWasmDsl::class)
+    wasmJs {
+        browser()
+        binaries.executable()
+    }
+
+    sourceSets {
+        commonMain.dependencies {
+            implementation(compose.runtime)
+            implementation(compose.foundation)
+            implementation(compose.material3)
+            implementation(compose.materialIconsExtended)
+            implementation(compose.ui)
+            implementation(libs.androidx.lifecycle.runtimeCompose)
+        }
+
+        androidMain.dependencies {
+            // Supplies BackHandler for the single-pane navigation.
+            implementation(libs.androidx.activity.compose)
+        }
+
+        val desktopMain by getting
+        desktopMain.dependencies {
+            implementation(compose.desktop.currentOs)
+        }
+
+        commonTest.dependencies {
+            implementation(kotlin("test"))
+        }
+    }
+}
+
+compose.desktop {
+    application {
+        mainClass = "dev.mks.algoatlas.MainKt"
+
+        nativeDistributions {
+            targetFormats(TargetFormat.Dmg)
+            packageName = "AlgoAtlas"
+            packageVersion = "1.0.0"
+        }
+    }
+}
