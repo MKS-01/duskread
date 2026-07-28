@@ -41,29 +41,43 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import dev.mks.algoatlas.content.AllTopics
 import dev.mks.algoatlas.content.topicById
+import dev.mks.algoatlas.data.rememberUserPrefs
 import dev.mks.algoatlas.model.Lang
 import dev.mks.algoatlas.ui.PlatformBackHandler
 import dev.mks.algoatlas.ui.TopicListPane
 import dev.mks.algoatlas.ui.TopicScreen
 import dev.mks.algoatlas.ui.home.HomeScreen
+import dev.mks.algoatlas.ui.onboarding.Onboarding
 import dev.mks.algoatlas.ui.theme.AlgoAtlasTheme
+import dev.mks.algoatlas.ui.theme.Layout
+import dev.mks.algoatlas.ui.theme.Motion
 
 /** Below this width there is no room for two panes, so we navigate instead. */
-private val TwoPaneBreakpoint = 720.dp
-
 @Composable
 fun App() {
     var dark by remember { mutableStateOf<Boolean?>(null) }
     val systemDark = isSystemInDarkTheme()
     val isDark = dark ?: systemDark
 
+    val prefs = rememberUserPrefs()
+
     AlgoAtlasTheme(dark = isDark) {
         Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+            if (!prefs.introSeen) {
+                Onboarding(
+                    onDone = { name ->
+                        prefs.updateName(name)
+                        prefs.markIntroSeen()
+                    },
+                )
+                return@Surface
+            }
+
             var selectedId by remember { mutableStateOf<String?>(null) }
             var lang by remember { mutableStateOf(Lang.KOTLIN) }
 
             BoxWithConstraints(Modifier.fillMaxSize()) {
-                if (maxWidth >= TwoPaneBreakpoint) {
+                if (maxWidth >= Layout.TwoPaneBreakpoint) {
                     TwoPaneLayout(
                         selectedId = selectedId ?: AllTopics.first().id,
                         onSelect = { selectedId = it },
@@ -75,6 +89,7 @@ fun App() {
                 } else {
                     PhoneLayout(
                         selectedId = selectedId,
+                        greeting = prefs.name?.let { "Hello, $it" },
                         onSelect = { selectedId = it },
                         onBack = { selectedId = null },
                         lang = lang,
@@ -91,6 +106,7 @@ fun App() {
 @Composable
 private fun PhoneLayout(
     selectedId: String?,
+    greeting: String?,
     onSelect: (String) -> Unit,
     onBack: () -> Unit,
     lang: Lang,
@@ -105,11 +121,11 @@ private fun PhoneLayout(
         targetState = topic?.id,
         transitionSpec = {
             if (targetState != null) {
-                slideInHorizontally(tween(260)) { it / 3 } + fadeIn(tween(200)) togetherWith
-                    fadeOut(tween(140))
+                slideInHorizontally(tween(Motion.PushIn)) { it / 3 } + fadeIn(tween(Motion.PopIn)) togetherWith
+                    fadeOut(tween(Motion.PushOut))
             } else {
-                fadeIn(tween(200)) togetherWith
-                    slideOutHorizontally(tween(240)) { it / 3 } + fadeOut(tween(160))
+                fadeIn(tween(Motion.PopIn)) togetherWith
+                    slideOutHorizontally(tween(Motion.PopOut)) { it / 3 } + fadeOut(tween(Motion.PopFade))
             }
         },
         modifier = Modifier.fillMaxSize(),
@@ -120,6 +136,7 @@ private fun PhoneLayout(
         if (current == null) {
             HomeScreen(
                 onOpenTopic = onSelect,
+                greeting = greeting,
                 isDark = isDark,
                 onToggleTheme = onToggleTheme,
             )
@@ -171,7 +188,7 @@ private fun TwoPaneLayout(
     var query by remember { mutableStateOf("") }
 
     Row(Modifier.fillMaxSize().statusBarsPadding()) {
-        Column(Modifier.widthIn(max = 320.dp).fillMaxSize()) {
+        Column(Modifier.widthIn(max = Layout.ListPaneWidth).fillMaxSize()) {
             Row(
                 Modifier.fillMaxWidth().padding(start = 18.dp, top = 14.dp, end = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -213,7 +230,7 @@ private fun TwoPaneLayout(
                 lang = lang,
                 onLangChange = onLangChange,
                 onOpenTopic = onSelect,
-                modifier = Modifier.widthIn(max = 860.dp),
+                modifier = Modifier.widthIn(max = Layout.ReadingMaxWidth),
             )
         }
     }

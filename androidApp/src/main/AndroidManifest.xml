@@ -20,7 +20,7 @@
         android:allowBackup="true"
         android:label="Algo Atlas"
         android:supportsRtl="true"
-        android:theme="@style/Theme.AlgoAtlas">
+        android:theme="@style/Theme.AlgoAtlas.Splash">
 
         <activity
             android:name="dev.mks.algoatlas.android.MainActivity"

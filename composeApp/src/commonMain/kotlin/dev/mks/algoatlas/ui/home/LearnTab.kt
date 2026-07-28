@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.sp
 import dev.mks.algoatlas.content.AllTopics
 import dev.mks.algoatlas.content.Chapters
 import dev.mks.algoatlas.ui.theme.SectionLabel
+import dev.mks.algoatlas.ui.theme.Space
 
 /**
  * The curriculum, chapter by chapter.
@@ -40,6 +41,7 @@ import dev.mks.algoatlas.ui.theme.SectionLabel
 @Composable
 fun LearnTab(
     onOpenTopic: (String) -> Unit,
+    greeting: String?,
     isDark: Boolean,
     onToggleTheme: () -> Unit,
     contentPadding: PaddingValues,
@@ -48,11 +50,20 @@ fun LearnTab(
     LazyColumn(
         modifier = modifier.fillMaxWidth(),
         contentPadding = contentPadding,
-        verticalArrangement = Arrangement.spacedBy(9.dp),
+        verticalArrangement = Arrangement.spacedBy(Space.CardGap),
     ) {
         item("head") {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
+                    // The greeting only appears if a name was given — no
+                    // "Hello, there" fallback, which reads worse than nothing.
+                    greeting?.let {
+                        Text(
+                            text = it,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
                     Text(
                         text = "Algo Atlas",
                         style = MaterialTheme.typography.headlineMedium,

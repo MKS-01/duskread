@@ -38,6 +38,7 @@ import dev.mks.algoatlas.ui.PlatformBackHandler
 @Composable
 fun HomeScreen(
     onOpenTopic: (String) -> Unit,
+    greeting: String?,
     isDark: Boolean,
     onToggleTheme: () -> Unit,
     modifier: Modifier = Modifier,
@@ -70,6 +71,7 @@ fun HomeScreen(
         ) { current ->
             when (current) {
                 HomeTab.LEARN -> LearnTab(
+                    greeting = greeting,
                     onOpenTopic = onOpenTopic,
                     isDark = isDark,
                     onToggleTheme = onToggleTheme,

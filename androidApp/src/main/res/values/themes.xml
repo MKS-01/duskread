@@ -1,10 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!--
+        The launch theme. Android shows this from the moment the process starts,
+        so it costs nothing — unlike a splash drawn in Compose, which can only
+        appear once there is a first frame, and so would add to startup rather
+        than cover it.
+
+        There is no animation duration and no artificial delay: the window is
+        dismissed as soon as the app has something to draw.
+    -->
+    <style name="Theme.AlgoAtlas.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/splash_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_atlas_mark</item>
+        <item name="postSplashScreenTheme">@style/Theme.AlgoAtlas</item>
+    </style>
+
     <!-- Compose draws everything; this only needs to avoid a flash of the
          wrong colour before the first frame. -->
     <style name="Theme.AlgoAtlas" parent="android:Theme.Material.NoActionBar">
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
-        <item name="android:windowBackground">@android:color/background_dark</item>
+        <item name="android:windowBackground">@color/splash_background</item>
     </style>
 </resources>
