@@ -18,6 +18,10 @@ kotlin {
         minSdk = libs.versions.android.minSdk.get().toInt()
 
         compilerOptions { jvmTarget.set(JvmTarget.JVM_17) }
+
+        // Only for the Custom Tab transition animations, which have to be
+        // platform anim resources rather than Compose animations.
+        androidResources { enable = true }
     }
 
     jvm("desktop") {
@@ -50,6 +54,8 @@ kotlin {
         androidMain.dependencies {
             // Supplies BackHandler for the single-pane navigation.
             implementation(libs.androidx.activity.compose)
+            // Chrome Custom Tabs, for opening reference links in-app.
+            implementation(libs.androidx.browser)
         }
 
         val desktopMain by getting

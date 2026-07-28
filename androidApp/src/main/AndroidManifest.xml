@@ -1,6 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!--
+        Package visibility (Android 11+) for the Custom Tabs host. Launching a
+        link works without this, but anything that inspects browsers — warmup,
+        sessions, "is a Custom Tab available" — needs to see them.
+    -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
+        <intent>
+            <action android:name="android.support.customtabs.action.CustomTabsService" />
+        </intent>
+    </queries>
+
     <application
         android:allowBackup="true"
         android:label="Algo Atlas"
