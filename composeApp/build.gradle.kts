@@ -49,6 +49,7 @@ kotlin {
             implementation(compose.materialIconsExtended)
             implementation(compose.ui)
             implementation(libs.androidx.lifecycle.runtimeCompose)
+            implementation(libs.haze)
         }
 
         androidMain.dependencies {

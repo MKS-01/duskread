@@ -76,6 +76,12 @@ aggregate task would be `:composeApp:allTests`. Do not invent test commands.
 - Imports are always explicit; no wildcards, even for long Compose blocks.
 - Comments hard-wrap around 80–90 chars; content prose strings do not wrap.
 
+## Icons
+
+Use `ui/theme/AtlasIcons.kt`, not `Icons.Filled.*` — the set is stroked to match
+the type weight, and mixing in a filled Material glyph is immediately visible.
+Add new ones there as vector paths.
+
 ## Colour
 
 Three sources, and mixing them up is the usual mistake:

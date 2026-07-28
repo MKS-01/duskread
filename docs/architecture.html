@@ -349,16 +349,17 @@ strip — not a third destination.</p>
 
     <rect class="card dim" x="24" y="366" width="212" height="40" rx="10"/>
 
-    <rect class="bar" x="58" y="414" width="144" height="34" rx="17"/>
-    <rect class="pill" x="64" y="420" width="62" height="22" rx="11"/>
-    <text class="t sm" x="78" y="435">Learn</text>
-    <text class="sub sm" x="140" y="435">⚡</text>
-    <line class="rule" x1="158" y1="424" x2="158" y2="438"/>
-    <text class="sub sm" x="172" y="435">⌕</text>
+    <rect class="bar" x="82" y="414" width="96" height="34" rx="17"/>
+    <circle class="pill" cx="99" cy="431" r="13"/>
+    <text class="t sm" x="94" y="435">◲</text>
+    <text class="sub sm" x="121" y="435">◎</text>
+    <line class="rule" x1="140" y1="423" x2="140" y2="439"/>
+    <text class="sub sm" x="155" y="435">⌕</text>
   </g>
 </svg>
 <figcaption><strong>Learn</strong> — chapters in curriculum order. No top app bar; the
-title scrolls away with the content.</figcaption>
+title scrolls away with the content. The bar is icons only and blurs what passes
+beneath it.</figcaption>
 </figure>
 
 <figure class="wire">
@@ -447,16 +448,51 @@ interactive element above the fold.</figcaption>
     <rect class="card dim" x="24" y="284" width="212" height="60" rx="10"/>
     <rect class="card dim" x="24" y="354" width="212" height="48" rx="10"/>
 
-    <rect class="bar" x="58" y="414" width="144" height="34" rx="17"/>
-    <text class="sub sm" x="76" y="435">▤</text>
-    <rect class="pill" x="96" y="420" width="52" height="22" rx="11"/>
-    <text class="t sm" x="108" y="435">⚡</text>
-    <line class="rule" x1="158" y1="424" x2="158" y2="438"/>
-    <text class="sub sm" x="172" y="435">⌕</text>
+    <rect class="bar" x="82" y="414" width="96" height="34" rx="17"/>
+    <text class="sub sm" x="94" y="435">◲</text>
+    <circle class="pill" cx="126" cy="431" r="13"/>
+    <text class="t sm" x="121" y="435">◎</text>
+    <line class="rule" x1="140" y1="423" x2="140" y2="439"/>
+    <text class="sub sm" x="155" y="435">⌕</text>
   </g>
 </svg>
 <figcaption><strong>Practice</strong> — every question across all topics, fed
 automatically by <code>AllQuestions</code>. A new topic appears here with no wiring.</figcaption>
+</figure>
+
+
+<figure class="wire">
+<svg viewBox="0 0 260 470" role="img" aria-label="Search screen wireframe: algorithm carousel in the middle, floating search field at the bottom">
+  <g class="w">
+    <rect class="screen" x="8" y="8" width="244" height="454" rx="22"/>
+
+    <g class="cells">
+      <rect class="cell active" x="70" y="196" width="16" height="20" rx="3"/>
+      <rect class="cell active" x="90" y="188" width="16" height="28" rx="3"/>
+      <rect class="cell active" x="110" y="176" width="16" height="40" rx="3"/>
+      <rect class="cell active" x="130" y="166" width="16" height="50" rx="3"/>
+      <rect class="cell active" x="150" y="154" width="16" height="62" rx="3"/>
+      <rect class="cell active" x="170" y="142" width="16" height="74" rx="3"/>
+    </g>
+    <text class="t" x="130" y="242" text-anchor="middle">Sorting</text>
+    <text class="sub" x="130" y="258" text-anchor="middle">Getting things into order</text>
+
+    <g>
+      <rect class="pill" x="106" y="276" width="16" height="5" rx="2.5"/>
+      <circle class="ghost" cx="130" cy="278.5" r="2.5"/>
+      <circle class="ghost" cx="140" cy="278.5" r="2.5"/>
+      <circle class="ghost" cx="150" cy="278.5" r="2.5"/>
+    </g>
+
+    <rect class="card" x="22" y="410" width="216" height="34" rx="17"/>
+    <text class="sub sm" x="38" y="431">⌕</text>
+    <text class="sub" x="56" y="431">Topics, problems, ideas</text>
+    <text class="sub sm" x="218" y="431">✕</text>
+  </g>
+</svg>
+<figcaption><strong>Search</strong> — a screen, not a sheet. The empty state runs a
+carousel of algorithm families drawn moving; tapping one searches it. The field
+floats at the bottom and the keyboard pushes it up.</figcaption>
 </figure>
 
 <figure class="wire wide">
@@ -548,6 +584,40 @@ release and compile time grows with paragraphs.</p>
 four implementations — one heavyweight (JCEF, ~100 MB) and one impossible (Wasm cannot
 iframe most origins). The platform's in-app browser keeps the browser's cookies,
 password manager and share sheet.</p>
+
+<h2>Chrome: one bar, one search screen</h2>
+<p>Home carries a single floating pill at the bottom holding both tabs and search.
+It is <strong>icons only</strong> — with two destinations there is nothing to
+disambiguate, and the labels were spending width on the one axis a phone cannot
+spare. The active tab is a filled disc behind the icon.</p>
+
+<p>The pill <strong>blurs what scrolls beneath it</strong> rather than sitting on an
+opaque slab. That needs <code>haze</code>: no Compose API does backdrop blur across all
+four targets, since <code>Modifier.blur</code> blurs a composable's own content rather
+than what is behind it. The scrim gradient that used to fade content under the bar is
+gone — hiding that content would defeat the effect.</p>
+
+<p>Search is a <strong>screen</strong>, not a sheet. The field floats at the bottom
+where the thumb already is, with no separate back button beside it: an unenclosed icon
+next to an enclosed field reads as two unrelated controls, so the cross inside the pill
+clears the query, or closes the screen when it is empty.</p>
+
+<p>Its empty state is a slow carousel of algorithm families, each <strong>drawn
+running</strong> — bars settling into order, a search range halving, a graph lighting up
+in rings. Tapping one searches it, so the animation is the suggestion rather than
+decoration around it. Each illustration is a pure function of one looping
+<code>0..1</code> value: the frame-generator idea again, continuous instead of stepped.</p>
+
+<p>A query with no matches never dead-ends — it offers the web and Wikipedia first,
+through the same Custom Tab as references, then topics we do have.</p>
+
+<h2>Icons</h2>
+<p><code>ui/theme/AtlasIcons.kt</code> holds the icon set as vector paths rather than
+pulling from Material. They are <strong>stroked</strong> at a consistent weight where
+Material's are filled, which sits better against the thin type and hairline borders used
+everywhere else — and they can mean something specific: the Learn icon is the stepped
+motif from the launcher mark, so the app's one visual idea appears in three places
+instead of none.</p>
 
 <h2>Design tokens</h2>
 <p><code>ui/theme/Tokens.kt</code> holds the values that carry a decision rather than a

@@ -1,10 +1,12 @@
 package dev.mks.algoatlas.ui.home
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
@@ -27,7 +29,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeSource
 import dev.mks.algoatlas.ui.PlatformBackHandler
+import dev.mks.algoatlas.ui.theme.Motion
 
 /**
  * Home: two tabs and a floating bar, with search growing out of the bar.
@@ -46,6 +51,7 @@ fun HomeScreen(
     var tab by remember { mutableStateOf(HomeTab.LEARN) }
     var searching by remember { mutableStateOf(false) }
     var query by remember { mutableStateOf("") }
+    val hazeState = remember { HazeState() }
 
     fun closeSearch() {
         searching = false
@@ -66,7 +72,7 @@ fun HomeScreen(
                 (slideInHorizontally(tween(240)) { it / 6 * offset } + fadeIn(tween(180))) togetherWith
                     (slideOutHorizontally(tween(200)) { -it / 6 * offset } + fadeOut(tween(140)))
             },
-            modifier = Modifier.fillMaxSize().statusBarsPadding(),
+            modifier = Modifier.fillMaxSize().hazeSource(hazeState).statusBarsPadding(),
             label = "tab",
         ) { current ->
             when (current) {
@@ -86,33 +92,31 @@ fun HomeScreen(
         }
 
         if (!searching) {
-            // Content fades out under the bar instead of running into it.
-            Box(
-                Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .height(110.dp)
-                    .background(
-                        Brush.verticalGradient(
-                            0f to Color.Transparent,
-                            1f to MaterialTheme.colorScheme.background,
-                        ),
-                    ),
-            )
-
+            // There is no scrim gradient under the bar any more. The bar blurs
+            // whatever passes beneath it, so fading that content to the
+            // background colour would defeat the effect.
             FloatingBar(
                 selected = tab,
                 onSelect = { tab = it },
                 onSearch = { searching = true },
+                hazeState = hazeState,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .navigationBarsPadding()
                     .padding(bottom = 14.dp),
             )
         }
+    }
 
-        SearchSheet(
-            visible = searching,
+    // Search is a screen, not a sheet over the list: it owns the whole display
+    // while it is open, so results get the room to be read rather than being
+    // squeezed into a strip above the keyboard.
+    AnimatedVisibility(
+        visible = searching,
+        enter = fadeIn(tween(Motion.Fade)) + slideInVertically(tween(Motion.PushIn)) { it / 8 },
+        exit = fadeOut(tween(Motion.PushOut)),
+    ) {
+        SearchScreen(
             query = query,
             onQueryChange = { query = it },
             onSelect = { id ->

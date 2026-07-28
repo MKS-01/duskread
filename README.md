@@ -115,7 +115,7 @@ changes when bookmarks and progress arrive, since persistence brings suspending
 calls and state that outlives composition; until then, adding architecture would
 only add indirection.
 
-### Platform differences are two functions
+### Platform differences are three functions
 
 Each platform source set implements exactly two `expect` declarations:
 
@@ -123,6 +123,7 @@ Each platform source set implements exactly two `expect` declarations:
 |---|---|---|---|---|
 | `rememberUrlOpener` | Custom Tabs | `SFSafariViewController` | system browser | new tab |
 | `PlatformBackHandler` | `BackHandler` | not wired yet | no system back | not wired yet |
+| `rememberKeyValueStore` | `SharedPreferences` | `NSUserDefaults` | properties file | `localStorage` |
 
 Android is the only target where back means anything today; the declaration
 lives in common code anyway so the navigation logic does not fork per platform.
@@ -159,6 +160,11 @@ is one file in `content/`, optionally a frame generator in `viz/`, and a line in
 ./gradlew ktlintCheck    # lint all modules and source sets
 ./gradlew ktlintFormat   # auto-fix
 ```
+
+Four dependencies, and each earns its place: `activity-compose` for the back
+handler, `androidx.browser` for Custom Tabs, `core-splashscreen` for the launch
+window, and `haze` for the backdrop blur behind the floating bar — no Compose
+API blurs what sits *behind* a composable across all four targets.
 
 Several ktlint rules are switched off in `.editorconfig` where they fought
 deliberate layout — scene definitions group related arguments on one line, and

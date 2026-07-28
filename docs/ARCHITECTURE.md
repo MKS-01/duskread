@@ -16,13 +16,13 @@ machinery:
 androidApp/          Activity → enableEdgeToEdge() → App()
 composeApp/
   commonMain/        everything: content, logic, UI
-  androidMain/       2 actuals + transition animations
-  iosMain/           2 actuals + UIViewController
-  desktopMain/       2 actuals + window entry point
-  wasmJsMain/        2 actuals + browser entry point
+  androidMain/       3 actuals + transition animations
+  iosMain/           3 actuals + UIViewController
+  desktopMain/       3 actuals + window entry point
+  wasmJsMain/        3 actuals + browser entry point
 ```
 
-Each platform module is an entry point and two `actual` implementations.
+Each platform module is an entry point and three `actual` implementations.
 Nothing else forks per platform, which is the whole reason for choosing Compose
 Multiplatform.
 
@@ -160,7 +160,7 @@ plans bundled Markdown with YAML front matter at that point, keeping the same
 
 ## The platform layer
 
-Two `expect` declarations, and nothing else:
+Three `expect` declarations, and nothing else:
 
 | | Android | iOS | Desktop | Web |
 |---|---|---|---|---|
@@ -193,6 +193,48 @@ collision), `INFO` in scope, `IDLE` untouched. A reader learns them once on
 binary search and they still hold on Dijkstra. Mapping them onto Material roles
 would let a redesign of the surface palette silently change what a colour means.
 
+## Chrome: one bar, one search screen
+
+Home carries a single floating pill at the bottom holding both tabs and search.
+It is **icons only** — with two destinations there is nothing to disambiguate,
+and the labels were spending width on the one axis a phone cannot spare. The
+active tab is a filled disc behind the icon.
+
+The pill **blurs what scrolls beneath it** rather than sitting on an opaque
+slab, via [`haze`](https://github.com/chrisbanes/haze). That is the project's
+only dependency added for appearance, and it is here because no Compose API
+does backdrop blur across all four targets — `Modifier.blur` blurs a
+composable's own content, not what is behind it. The scrim gradient that used
+to fade content under the bar is gone: hiding that content would defeat the
+effect.
+
+Search is a **screen**, not a sheet over the list. The field floats at the
+bottom, where the thumb already is, and the keyboard pushes it up rather than
+covering it. There is no separate back button beside it — an unenclosed icon
+next to an enclosed field reads as two unrelated controls, so the cross inside
+the pill clears the query, or closes the screen when the query is empty.
+
+Its empty state is a slow carousel of algorithm families, each **drawn
+running**: bars settling into order, a search range halving, a graph lighting
+up in rings. Tapping one searches it, so the animation is the suggestion rather
+than decoration around it. Each illustration is a pure function of one looping
+`0..1` value — the frame-generator idea again, continuous instead of stepped.
+
+A query with no matches never dead-ends: it offers the web and Wikipedia first
+(through the same Custom Tab as references), then topics we do have.
+
+## Icons
+
+`ui/theme/AtlasIcons.kt` holds the icon set as vector paths rather than pulling
+from Material. Two reasons: they are **stroked** at a consistent weight where
+Material's are filled, which sits better against the thin type and hairline
+borders used everywhere else; and they can mean something specific — the Learn
+icon is the stepped motif from the launcher mark, so the app's one visual idea
+appears in three places instead of none.
+
+Practice is a target rather than a lightning bolt: its questions are aimed at
+one specific insight, which is not what "fast" says.
+
 ## Known gaps
 
 - **Session state is still not saved.** The name and the intro flag now persist,
@@ -201,6 +243,12 @@ would let a redesign of the surface palette silently change what a colour means.
   store to fix it now exists; the call sites have not been changed.
 - **No tests.** `commonTest` is wired but empty. The frame generators are pure
   functions and are the obvious place to start.
+- **Search results list top-down**, away from the field at the bottom, so the
+  best match sits furthest from where you are typing. Bottom-anchoring them is
+  what would make the bottom-mounted field strictly better rather than a
+  trade-off.
+- **The carousel centres in the full column height**, so it drifts low without
+  the keyboard and shifts when the keyboard opens.
 - **No CI.** Nothing checks the targets that are not built locally.
 
 ## Decision record
@@ -214,6 +262,9 @@ would let a redesign of the surface palette silently change what a colour means.
 | Custom Tabs over embedded WebView | Sites refuse framing; four implementations otherwise | Offline article capture |
 | Semantic viz palette outside Material | Colour meanings must survive a redesign | — |
 | Hand-rolled syntax highlighter | No `shiki` equivalent in Kotlin | A real Kotlin grammar library appears |
+| Backdrop blur via `haze` | No Compose API blurs what is *behind* a composable on all four targets | A first-party backdrop API lands |
+| Hand-drawn icon set | Stroked weight matches the type; the Learn icon carries the app's mark | — |
+| Search as a screen, field at the bottom | Consistent with having no top chrome anywhere; thumb reach | The two-pane layout, where a mouse changes the argument |
 
 ## Where it goes next
 

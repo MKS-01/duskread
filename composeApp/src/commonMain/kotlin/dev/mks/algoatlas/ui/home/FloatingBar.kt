@@ -1,7 +1,7 @@
 package dev.mks.algoatlas.ui.home
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -9,34 +9,30 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.outlined.Bolt
-import androidx.compose.material.icons.outlined.MenuBook
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.HazeStyle
+import dev.chrisbanes.haze.HazeTint
+import dev.chrisbanes.haze.hazeEffect
+import dev.mks.algoatlas.ui.theme.AtlasIcons
+import dev.mks.algoatlas.ui.theme.Motion
 
 enum class HomeTab(val label: String, val icon: ImageVector) {
-    LEARN("Learn", Icons.Outlined.MenuBook),
-    PRACTICE("Practice", Icons.Outlined.Bolt),
+    LEARN("Learn", AtlasIcons.Steps),
+    PRACTICE("Practice", AtlasIcons.Target),
 }
 
 /**
@@ -44,102 +40,123 @@ enum class HomeTab(val label: String, val icon: ImageVector) {
  *
  * It sits within thumb reach, which is the whole argument for moving
  * navigation and search down here from a top app bar.
+ *
+ * Icons carry it alone — with two destinations and a search button there is
+ * nothing to disambiguate, and the labels were costing width on the one axis a
+ * phone cannot spare. The active tab is marked by a filled disc instead.
+ *
+ * The bar blurs whatever scrolls beneath it rather than sitting on an opaque
+ * slab, so the list stays visible as it passes underneath. Labels remain in
+ * [HomeTab] for the accessibility contentDescription.
  */
 @Composable
 fun FloatingBar(
     selected: HomeTab,
     onSelect: (HomeTab) -> Unit,
     onSearch: () -> Unit,
+    hazeState: HazeState,
     modifier: Modifier = Modifier,
 ) {
-    Surface(
-        modifier = modifier.height(58.dp),
-        shape = CircleShape,
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        shadowElevation = 12.dp,
-        border = androidx.compose.foundation.BorderStroke(
-            1.dp,
-            MaterialTheme.colorScheme.outlineVariant,
-        ),
-    ) {
-        Row(
-            Modifier.padding(horizontal = 6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            HomeTab.entries.forEach { tab ->
-                TabPill(tab, tab == selected) { onSelect(tab) }
-            }
+    val scheme = MaterialTheme.colorScheme
 
-            Box(
-                Modifier
-                    .padding(start = 2.dp)
-                    .size(1.dp, 24.dp)
-                    .background(MaterialTheme.colorScheme.outlineVariant),
+    Row(
+        modifier = modifier
+            .height(56.dp)
+            .clip(CircleShape)
+            .hazeEffect(
+                state = hazeState,
+                style = HazeStyle(
+                    backgroundColor = scheme.background,
+                    tints = listOf(HazeTint(scheme.surface.copy(alpha = 0.62f))),
+                    blurRadius = 28.dp,
+                    // A little grain stops large flat areas from banding.
+                    noiseFactor = 0.04f,
+                ),
             )
+            // A brighter top edge is what actually sells glass: real glass
+            // catches light where it curves away from you.
+            .border(
+                width = 1.dp,
+                brush = Brush.verticalGradient(
+                    0f to scheme.onSurface.copy(alpha = 0.22f),
+                    0.5f to scheme.onSurface.copy(alpha = 0.07f),
+                    1f to scheme.onSurface.copy(alpha = 0.04f),
+                ),
+                shape = CircleShape,
+            )
+            .padding(horizontal = 7.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        HomeTab.entries.forEach { tab ->
+            TabButton(tab, tab == selected) { onSelect(tab) }
+        }
 
-            Box(
-                Modifier
-                    .padding(start = 2.dp)
-                    .size(44.dp)
-                    .clip(CircleShape)
-                    .clickable(onClick = onSearch),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    Icons.Filled.Search,
-                    contentDescription = "Search",
-                    modifier = Modifier.size(21.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+        Box(
+            Modifier
+                .padding(horizontal = 5.dp)
+                .size(1.dp, 22.dp)
+                .background(scheme.onSurface.copy(alpha = 0.12f)),
+        )
+
+        Box(
+            Modifier
+                .size(42.dp)
+                .clip(CircleShape)
+                .clickable(onClick = onSearch),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                AtlasIcons.Search,
+                contentDescription = "Search",
+                modifier = Modifier.size(20.dp),
+                tint = scheme.onSurfaceVariant,
+            )
         }
     }
 }
 
 @Composable
-private fun TabPill(tab: HomeTab, active: Boolean, onClick: () -> Unit) {
-    // The label slides in only for the active tab, so the bar stays compact.
-    val labelWidth by animateDpAsState(
-        if (active) (tab.label.length * 8).dp + 6.dp else 0.dp,
-        tween(260),
-        label = "labelWidth",
-    )
-    val background by animateColorAsState(
-        if (active) MaterialTheme.colorScheme.primaryContainer
-        else MaterialTheme.colorScheme.surfaceContainerHigh,
-        tween(220),
-        label = "pillBg",
+private fun TabButton(tab: HomeTab, active: Boolean, onClick: () -> Unit) {
+    val discAlpha by animateFloatAsState(
+        if (active) 1f else 0f,
+        tween(Motion.Chip),
+        label = "disc",
     )
     val content by animateColorAsState(
-        if (active) MaterialTheme.colorScheme.onPrimaryContainer
-        else MaterialTheme.colorScheme.onSurfaceVariant,
-        tween(220),
-        label = "pillFg",
+        if (active) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+        tween(Motion.Chip),
+        label = "tabFg",
     )
 
-    Row(
+    Box(
         Modifier
-            .height(44.dp)
+            .size(42.dp)
             .clip(CircleShape)
-            .background(background)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 13.dp),
-        verticalAlignment = Alignment.CenterVertically,
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
     ) {
-        Icon(tab.icon, contentDescription = tab.label, Modifier.size(19.dp), tint = content)
-
-        if (labelWidth > 0.dp) {
-            Spacer(Modifier.width(6.dp))
-            Box(Modifier.width(labelWidth - 6.dp)) {
-                Text(
-                    text = tab.label,
-                    color = content,
-                    fontSize = 13.5.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                )
-            }
-        }
+        Box(
+            Modifier
+                .matchParentSize()
+                .padding(2.dp)
+                .clip(CircleShape)
+                .background(
+                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = discAlpha * 0.9f),
+                ),
+        )
+        Icon(tab.icon, contentDescription = tab.label, Modifier.size(20.dp), tint = content)
     }
+}
+
+/** Kept for the search field, which wants the same treatment on its own page. */
+@Composable
+fun glassStyle(): HazeStyle {
+    val scheme = MaterialTheme.colorScheme
+    return HazeStyle(
+        backgroundColor = scheme.background,
+        tints = listOf(HazeTint(scheme.surface.copy(alpha = 0.62f))),
+        blurRadius = 28.dp,
+        noiseFactor = 0.04f,
+    )
 }
