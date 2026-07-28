@@ -213,6 +213,6 @@ function merge(a, buf, lo, mid, hi) {
         ),
     ),
 
-    related = listOf("binary-search", "arrays", "linked-lists"),
+    related = listOf("binary-search", "coin-change", "arrays", "linked-lists"),
     references = Refs.basecs(),
 )

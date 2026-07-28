@@ -15,7 +15,7 @@ val Chapters: List<Chapter> = listOf(
         id = "foundations",
         title = "Foundations",
         blurb = "How data is actually laid out, and what that costs you.",
-        topics = listOf(Arrays, LinkedLists, HashTables),
+        topics = listOf(Arrays, LinkedLists, StacksQueues, HashTables),
     ),
     Chapter(
         id = "searching",
@@ -33,7 +33,13 @@ val Chapters: List<Chapter> = listOf(
         id = "graphs",
         title = "Graphs",
         blurb = "Traversal, connectivity, and shortest paths.",
-        topics = listOf(Bfs),
+        topics = listOf(Bfs, Dfs),
+    ),
+    Chapter(
+        id = "dynamic-programming",
+        title = "Dynamic Programming",
+        blurb = "Solving a problem once, then never solving it again.",
+        topics = listOf(CoinChange),
     ),
 )
 

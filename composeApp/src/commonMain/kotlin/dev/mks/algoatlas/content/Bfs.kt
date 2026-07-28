@@ -238,6 +238,6 @@ function levelOrder(graph, source) {
         ),
     ),
 
-    related = listOf("hash-tables", "linked-lists"),
+    related = listOf("dfs", "stacks-queues", "hash-tables", "linked-lists"),
     references = Refs.basecs(),
 )

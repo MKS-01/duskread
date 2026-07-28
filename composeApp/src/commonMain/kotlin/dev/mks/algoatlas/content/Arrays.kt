@@ -175,7 +175,7 @@ function removeEvens(nums) {
         ),
     ),
 
-    related = listOf("linked-lists", "binary-search", "hash-tables"),
+    related = listOf("linked-lists", "stacks-queues", "binary-search", "hash-tables"),
 
     references = Refs.basecs(),
 )
