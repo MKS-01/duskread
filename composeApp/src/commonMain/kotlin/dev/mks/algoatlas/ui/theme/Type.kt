@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.sp
  * Tuned for reading long-form notes on a phone: slightly larger body text and
  * looser line height than the Material defaults.
  */
+@Suppress("ktlint:standard:function-naming")
 fun AlgoTypography(): Typography {
     val base = Typography()
     return base.copy(

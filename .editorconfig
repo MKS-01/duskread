@@ -1,0 +1,49 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{kt,kts}]
+indent_style = space
+indent_size = 4
+ij_kotlin_allow_trailing_comma = true
+ij_kotlin_allow_trailing_comma_on_call_site = true
+
+# Matches kotlin.code.style=official as the IDE applies it. The stricter
+# `ktlint_official` style rewraps expressions and blank lines in ways that
+# would churn every file for no benefit.
+ktlint_code_style = intellij_idea
+
+# Content prose and code samples are single unwrapped strings, often hundreds
+# of characters. Comments are hand-wrapped to ~85 by eye.
+max_line_length = off
+
+# Private file-level constants are PascalCase here by convention
+# (`private const val MotionMs = 320`), which this rule would rewrite to
+# SCREAMING_SNAKE_CASE.
+ktlint_standard_property-naming = disabled
+
+# Composables are PascalCase functions.
+ktlint_function_naming_ignore_when_annotated_with = Composable
+
+# Layout in this repo is hand-tuned to make the code readable — scene
+# definitions group related arguments on one line, and short if/else
+# expressions stay expressions. Lint is here to catch mistakes, not to
+# relitigate deliberate formatting.
+ktlint_standard_argument-list-wrapping = disabled
+ktlint_standard_multiline-if-else = disabled
+ktlint_standard_blank-line-between-when-conditions = disabled
+
+# Files are named for the concern they hold, not for their single declaration
+# (`References.kt` holds `Refs`). One concern per file is the convention here.
+ktlint_standard_filename = disabled
+
+[*.{xml,json,yml,yaml}]
+indent_style = space
+indent_size = 4
+
+[*.md]
+trim_trailing_whitespace = false

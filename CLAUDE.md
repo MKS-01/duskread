@@ -1,0 +1,105 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+Algo Atlas — a Compose Multiplatform study app: DSA topics with steppable
+animated visualisations, code in Kotlin/Go/JavaScript, and interview questions.
+Read mostly on an Android phone.
+
+**This is a personal learning and exploration project.** Trying an unfamiliar
+API, library or tool is in scope and does not need justifying. What does not
+relax: content accuracy (see `/add-topic` — verify origins, never guess dates)
+and the rule that no topic ships without a visualisation.
+
+Architecture and content authoring are already documented — read `README.md`
+for how the app is put together, and the `/add-topic` skill for writing a
+topic. Do not restate them here. `docs/ROADMAP.md` holds planned work.
+
+## Build and verify
+
+```bash
+./gradlew :androidApp:installDebug        # the normal loop, ~5s warm
+./gradlew :composeApp:compileKotlinDesktop # fast sanity check that common code compiles
+```
+
+**Do not build iOS or Wasm unless asked** — a cold Kotlin/Native build is over
+ten minutes.
+
+Gradle task names differ from a normal Android project because `composeApp`
+uses the AGP 9 `androidLibrary` KMP DSL, not `com.android.library`:
+
+- `:composeApp:compileAndroidMain` — **not** `compileDebugKotlinAndroid`, which
+  does not exist and will fail with "task not found"
+- `:androidApp:compileDebugSources`, `:composeApp:compileKotlinDesktop`,
+  `:composeApp:compileKotlinWasmJs`, `:composeApp:compileKotlinIosSimulatorArm64`
+
+Compiling proves nothing about layout. For any UI change, check it on a device:
+
+```bash
+adb shell am force-stop dev.mks.algoatlas
+adb shell am start -n dev.mks.algoatlas/dev.mks.algoatlas.android.MainActivity
+adb exec-out screencap -p > /tmp/check.png
+```
+
+Emulators available via `~/Library/Android/sdk/emulator/emulator -list-avds`.
+
+## Lint
+
+```bash
+./gradlew ktlintCheck    # all modules and source sets
+./gradlew ktlintFormat   # auto-fix
+```
+
+Several rules are switched off in `.editorconfig` because they fight
+deliberate layout — argument-list wrapping (scene definitions group related
+arguments per line), multiline if/else bracing, blank lines between
+when-conditions, filename-matches-declaration, and property naming. **Do not
+re-enable them to "fix" a violation**; if lint objects to hand-tuned
+formatting, the rule is wrong, not the code. Two PascalCase factories carry
+`@Suppress("ktlint:standard:function-naming")` for the same reason.
+
+## No tests
+
+There are none. `commonTest` declares `kotlin("test")` but has no sources; the
+aggregate task would be `:composeApp:allTests`. Do not invent test commands.
+
+## Conventions that differ from Kotlin defaults
+
+- **KDoc says why, not what.** Every file and public type carries a prose
+  comment explaining why the thing exists or why it is designed that way, never
+  a restatement of the signature. Inline `//` comments justify a choice or flag
+  a hazard. Match this density — it is the house style, not decoration.
+- **British spelling in prose and comments** (visualisation, colour, amortised,
+  normalised); identifiers stay American (`color`, `VizPalette`).
+- **Private file-level constants are PascalCase**, not `SCREAMING_SNAKE_CASE`:
+  `private const val MotionMs = 320`, `private val TwoPaneBreakpoint = 720.dp`.
+- Imports are always explicit; no wildcards, even for long Compose blocks.
+- Comments hard-wrap around 80–90 chars; content prose strings do not wrap.
+
+## Colour
+
+Three sources, and mixing them up is the usual mistake:
+
+- `MaterialTheme.colorScheme` — chrome, surfaces, text
+- `LocalVizPalette.current` — whenever a colour *means* something (algorithm
+  state via `Tone`, level/difficulty chips, pitfall bullets)
+- `LocalCodePalette.current` — syntax highlighting
+
+Tone meanings are fixed project-wide and must not be repurposed; `/add-topic`
+lists them.
+
+## The Android skills in `.claude/skills/`
+
+All of android/skills is installed for browsing and learning. **They are
+written for native Android apps; this is Compose Multiplatform.** Anything
+Android-only they suggest — Navigation3, Compose MediaQuery, Wear/XR/CameraX
+APIs, Android instrumentation tests — can only live in `androidMain` or
+`androidApp`, never `commonMain`. Most of them do not apply to this repo at
+all. `edge-to-edge`, `adaptive` and `testing-setup` are the ones that do.
+
+State is plain `remember { mutableStateOf(...) }` hoisted into `App.kt` — no
+ViewModel, no DI, no navigation library. Keep it that way unless asked.
+
+## Commits
+
+Sentence-case imperative subject, no `feat:`/`fix:` prefixes or scopes.

@@ -43,7 +43,7 @@ data class Question(
     val askedAt: String? = null,
 ) {
     val url: String?
-        get() = id?.let { "https://leetcode.com/problems/${slug}/" }
+        get() = id?.let { "https://leetcode.com/problems/$slug/" }
 
     private val slug: String
         get() = title.lowercase()

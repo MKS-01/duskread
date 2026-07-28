@@ -25,6 +25,5 @@ object Refs {
     )
 
     /** Every topic gets the two series links, plus any topic-specific pieces. */
-    fun basecs(vararg specific: Reference): List<Reference> =
-        specific.toList() + listOf(BasecsHome, BasecsIndex)
+    fun basecs(vararg specific: Reference): List<Reference> = specific.toList() + listOf(BasecsHome, BasecsIndex)
 }
