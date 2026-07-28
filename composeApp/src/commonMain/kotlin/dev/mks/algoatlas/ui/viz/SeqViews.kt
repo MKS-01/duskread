@@ -41,9 +41,9 @@ import dev.mks.algoatlas.model.SeqFrame
 import dev.mks.algoatlas.model.Tone
 import dev.mks.algoatlas.ui.theme.LocalVizPalette
 import dev.mks.algoatlas.ui.theme.Mono
+import dev.mks.algoatlas.ui.theme.Motion
 
 private val Gap = 6.dp
-private const val MotionMs = 320
 
 /**
  * Boxed values in a row.
@@ -88,10 +88,10 @@ fun CellsView(frame: SeqFrame, modifier: Modifier = Modifier) {
                 // The span outline sits behind the cells and resizes with the range.
                 Box(Modifier.fillMaxWidth()) {
                     frame.span?.let { span ->
-                        val x by animateDpAsState(stride * span.from, tween(MotionMs), label = "spanX")
+                        val x by animateDpAsState(stride * span.from, tween(Motion.Tone), label = "spanX")
                         val w by animateDpAsState(
                             cell + stride * (span.to - span.from),
-                            tween(MotionMs),
+                            tween(Motion.Tone),
                             label = "spanW",
                         )
                         Box(
@@ -152,8 +152,8 @@ fun CellsView(frame: SeqFrame, modifier: Modifier = Modifier) {
 @Composable
 private fun Cell(value: String, tone: Tone, size: Dp) {
     val palette = LocalVizPalette.current
-    val bg by animateColorAsState(palette.bg(tone), tween(MotionMs), label = "cellBg")
-    val fg by animateColorAsState(palette.fg(tone), tween(MotionMs), label = "cellFg")
+    val bg by animateColorAsState(palette.bg(tone), tween(Motion.Tone), label = "cellBg")
+    val fg by animateColorAsState(palette.fg(tone), tween(Motion.Tone), label = "cellFg")
 
     Box(
         Modifier
@@ -183,7 +183,7 @@ private fun PointerMarker(
     color: Color,
     pointsDown: Boolean,
 ) {
-    val x by animateDpAsState(stride * index, tween(MotionMs), label = "ptr-$label")
+    val x by animateDpAsState(stride * index, tween(Motion.Tone), label = "ptr-$label")
 
     Column(
         Modifier.offset(x = x).width(cell),
@@ -270,10 +270,10 @@ fun BarsView(frame: SeqFrame, modifier: Modifier = Modifier) {
             ) {
                 values.forEachIndexed { index, value ->
                     val tone = frame.marks[index] ?: Tone.IDLE
-                    val bg by animateColorAsState(palette.bg(tone), tween(MotionMs), label = "barBg")
+                    val bg by animateColorAsState(palette.bg(tone), tween(Motion.Tone), label = "barBg")
                     val fraction by animateFloatAsState(
                         value.toFloat() / max,
-                        tween(MotionMs),
+                        tween(Motion.Tone),
                         label = "barH",
                     )
 

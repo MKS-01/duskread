@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.sp
 import dev.mks.algoatlas.model.Topic
 import dev.mks.algoatlas.ui.theme.LocalVizPalette
 import dev.mks.algoatlas.ui.theme.Mono
+import dev.mks.algoatlas.ui.theme.Radius
 
 /**
  * One topic as a tappable card.
@@ -49,9 +50,9 @@ fun TopicCard(topic: Topic, onClick: () -> Unit, modifier: Modifier = Modifier) 
         modifier
             .fillMaxWidth()
             .height(IntrinsicSize.Min)
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(Radius.Card))
             .background(MaterialTheme.colorScheme.surface)
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(16.dp))
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(Radius.Card))
             .clickable(onClick = onClick),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -62,7 +63,7 @@ fun TopicCard(topic: Topic, onClick: () -> Unit, modifier: Modifier = Modifier) 
                 .padding(vertical = 12.dp, horizontal = 10.dp)
                 .width(3.dp)
                 .fillMaxHeight()
-                .clip(RoundedCornerShape(2.dp))
+                .clip(RoundedCornerShape(Radius.Marker))
                 .background(levelColor),
         )
 

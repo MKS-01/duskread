@@ -31,8 +31,8 @@ import dev.mks.algoatlas.model.Tone
 import dev.mks.algoatlas.model.edgeKey
 import dev.mks.algoatlas.ui.theme.LocalVizPalette
 import dev.mks.algoatlas.ui.theme.Mono
+import dev.mks.algoatlas.ui.theme.Motion
 
-private const val MotionMs = 320
 private val NodeSize = 38.dp
 
 /**
@@ -59,7 +59,7 @@ fun GraphView(scene: Scene.Graph, frame: GraphFrame, modifier: Modifier = Modifi
                 ?: frame.edges[edgeKey(edge.to, edge.from)]
                 ?: Tone.IDLE
             val target = if (tone == Tone.IDLE) idleEdge else palette.bg(tone)
-            animateColorAsState(target, tween(MotionMs), label = "edge").value to (tone != Tone.IDLE)
+            animateColorAsState(target, tween(Motion.Tone), label = "edge").value to (tone != Tone.IDLE)
         }
 
         Box(Modifier.fillMaxWidth().height(height)) {
@@ -90,8 +90,8 @@ fun GraphView(scene: Scene.Graph, frame: GraphFrame, modifier: Modifier = Modifi
 
             scene.nodes.forEach { node ->
                 val tone = frame.nodes[node.id] ?: Tone.IDLE
-                val bg by animateColorAsState(palette.bg(tone), tween(MotionMs), label = "nodeBg")
-                val fg by animateColorAsState(palette.fg(tone), tween(MotionMs), label = "nodeFg")
+                val bg by animateColorAsState(palette.bg(tone), tween(Motion.Tone), label = "nodeBg")
+                val fg by animateColorAsState(palette.fg(tone), tween(Motion.Tone), label = "nodeFg")
 
                 val xDp = inset + (width - inset * 2) * node.x - NodeSize / 2
                 val yDp = inset + (height - inset * 2) * node.y - NodeSize / 2

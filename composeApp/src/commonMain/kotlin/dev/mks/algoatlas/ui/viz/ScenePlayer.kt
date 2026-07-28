@@ -44,6 +44,7 @@ import dev.mks.algoatlas.model.MatrixFrame
 import dev.mks.algoatlas.model.Scene
 import dev.mks.algoatlas.model.SeqFrame
 import dev.mks.algoatlas.ui.theme.Mono
+import dev.mks.algoatlas.ui.theme.Motion
 import kotlinx.coroutines.delay
 
 /**
@@ -69,7 +70,7 @@ fun ScenePlayer(scene: Scene, modifier: Modifier = Modifier) {
             playing = false
             return@LaunchedEffect
         }
-        delay((950f / speed).toLong())
+        delay((Motion.FrameDwell / speed).toLong())
         index++
     }
 

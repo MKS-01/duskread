@@ -30,8 +30,7 @@ import dev.mks.algoatlas.model.MatrixFrame
 import dev.mks.algoatlas.model.Tone
 import dev.mks.algoatlas.ui.theme.LocalVizPalette
 import dev.mks.algoatlas.ui.theme.Mono
-
-private const val MotionMs = 320
+import dev.mks.algoatlas.ui.theme.Motion
 
 /**
  * A grid with optional row and column headers — the natural shape for a DP
@@ -96,12 +95,12 @@ fun MatrixView(frame: MatrixFrame, modifier: Modifier = Modifier) {
                             val tone = frame.marks["$r,$c"] ?: Tone.IDLE
                             val bg by animateColorAsState(
                                 palette.bg(tone),
-                                tween(MotionMs),
+                                tween(Motion.Tone),
                                 label = "mcellBg",
                             )
                             val fg by animateColorAsState(
                                 palette.fg(tone),
-                                tween(MotionMs),
+                                tween(Motion.Tone),
                                 label = "mcellFg",
                             )
                             val value = row.getOrNull(c)

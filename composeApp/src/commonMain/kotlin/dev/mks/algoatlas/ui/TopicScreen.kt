@@ -41,8 +41,10 @@ import dev.mks.algoatlas.model.Reference
 import dev.mks.algoatlas.model.Topic
 import dev.mks.algoatlas.ui.code.CodeBlock
 import dev.mks.algoatlas.ui.code.markup
+import dev.mks.algoatlas.ui.theme.Layout
 import dev.mks.algoatlas.ui.theme.LocalVizPalette
 import dev.mks.algoatlas.ui.theme.Mono
+import dev.mks.algoatlas.ui.theme.Radius
 import dev.mks.algoatlas.ui.theme.SectionLabel
 import dev.mks.algoatlas.ui.viz.ScenePlayer
 
@@ -61,7 +63,12 @@ fun TopicScreen(
     LazyColumn(
         state = listState,
         modifier = modifier.fillMaxWidth(),
-        contentPadding = PaddingValues(start = 18.dp, end = 18.dp, top = 8.dp, bottom = 72.dp),
+        contentPadding = PaddingValues(
+            start = Layout.ReadingGutter,
+            end = Layout.ReadingGutter,
+            top = 8.dp,
+            bottom = Layout.BarClearance,
+        ),
         verticalArrangement = Arrangement.spacedBy(22.dp),
     ) {
         item("head") { TopicHeader(topic) }
@@ -219,8 +226,8 @@ private fun ReferenceCard(reference: Reference) {
     Row(
         Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(10.dp))
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(10.dp))
+            .clip(RoundedCornerShape(Radius.Inline))
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(Radius.Inline))
             .clickable { open(reference.url) }
             .padding(horizontal = 13.dp, vertical = 11.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -255,7 +262,7 @@ private fun OriginCard(text: String) {
     Row(
         Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(Radius.Panel))
             .background(MaterialTheme.colorScheme.surfaceContainer)
             .padding(14.dp),
     ) {
@@ -418,8 +425,8 @@ private fun QuestionCard(question: Question) {
     Column(
         Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(Radius.Panel))
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(Radius.Panel))
             .padding(14.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
