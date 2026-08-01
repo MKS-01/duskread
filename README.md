@@ -18,6 +18,24 @@ curriculum is roughly forty, ordered basic to advanced.
 ./gradlew :composeApp:wasmJsBrowserDevelopmentRun   # Web
 ```
 
+iOS has no Gradle one-liner because Compose Multiplatform only produces a
+framework for that target — it needs an Xcode host app to embed it in. That
+host lives in `iosApp/`, generated from `iosApp/project.yml` with
+[XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`)
+rather than committed, so it never drifts and never needs manual pbxproj
+merges:
+
+```bash
+cd iosApp && xcodegen generate && cd ..
+open iosApp/iosApp.xcodeproj   # then Run in Xcode, or:
+xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp \
+  -destination 'platform=iOS Simulator,name=iPhone 17' build
+```
+
+The Xcode build has a pre-build script that runs
+`:composeApp:embedAndSignAppleFrameworkForXcode`, so Gradle still owns the
+actual Kotlin/Native compile — Xcode just triggers it and links the result.
+
 Requires JDK 17+. The Android SDK is needed only for the Android target, and
 Xcode only for iOS — a cold Kotlin/Native build takes upwards of ten minutes,
 so `:composeApp:compileKotlinDesktop` is the quick way to check that common
@@ -36,6 +54,8 @@ composeApp/          the shared application — nearly everything lives here
   src/desktopMain/   two expect/actual implementations, plus the window entry point
   src/wasmJsMain/    two expect/actual implementations, plus the browser entry point
 androidApp/          a thin Android host: one Activity that calls App()
+iosApp/              a thin iOS host: SwiftUI wrapping MainViewController();
+                     iosApp.xcodeproj is generated, not committed
 docs/ROADMAP.md      where this goes after the DSA core
 .claude/skills/      add-topic, plus the android/skills reference set
 ```
