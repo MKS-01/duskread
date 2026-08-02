@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -56,25 +55,18 @@ fun TopicCard(
             .height(IntrinsicSize.Min)
             .clip(RoundedCornerShape(Radius.Card))
             .background(MaterialTheme.colorScheme.surface)
+            // A soft level-coloured wash across the whole card reads at a
+            // glance without needing a hard-edged ribbon to carry it — low
+            // enough alpha that it never competes with the text sitting on it.
+            .background(levelColor.copy(alpha = 0.07f))
             .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(Radius.Card))
             .clickable(onClick = onClick),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // Level stripe — a spine down the full left edge, so it lines up with
-        // the title rather than floating beside the middle of the card.
-        Box(
-            Modifier
-                .padding(vertical = 10.dp, horizontal = 10.dp)
-                .width(3.dp)
-                .fillMaxHeight()
-                .clip(RoundedCornerShape(Radius.Marker))
-                .background(levelColor),
-        )
-
         Column(
             Modifier
                 .weight(1f)
-                .padding(top = 8.dp, bottom = 8.dp, end = 8.dp),
+                .padding(start = 14.dp, top = 8.dp, bottom = 8.dp, end = 8.dp),
         ) {
             Text(
                 text = topic.title,
