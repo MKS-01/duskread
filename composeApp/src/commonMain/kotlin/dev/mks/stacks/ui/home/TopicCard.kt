@@ -17,8 +17,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -33,6 +31,7 @@ import dev.mks.stacks.model.Topic
 import dev.mks.stacks.ui.theme.LocalVizPalette
 import dev.mks.stacks.ui.theme.Mono
 import dev.mks.stacks.ui.theme.Radius
+import dev.mks.stacks.ui.theme.StacksIcons
 
 /**
  * One topic as a tappable card.
@@ -41,9 +40,11 @@ import dev.mks.stacks.ui.theme.Radius
  * questions, and whether there is an animation to watch. Enough to choose what
  * to read next without opening anything.
  *
- * [showQuestions] adds up to two of the topic's question titles beneath the
- * meta row — Library wants that preview so browsing and practice read as one
- * list; the two-pane list rail does not have the width to spare for it.
+ * [showQuestions] adds one of the topic's question titles beneath the meta
+ * row — Library wants that preview so browsing and practice read as one
+ * list; the two-pane list rail does not have the width to spare for it. Kept
+ * to one line rather than two now that the card itself is compact, since the
+ * curriculum keeps growing and a shorter card means less scrolling per topic.
  */
 @Composable
 fun TopicCard(
@@ -79,24 +80,24 @@ fun TopicCard(
         Column(
             Modifier
                 .weight(1f)
-                .padding(top = 14.dp, bottom = 13.dp, end = 8.dp),
+                .padding(top = 10.dp, bottom = 10.dp, end = 8.dp),
         ) {
             Text(
                 text = topic.title,
                 style = MaterialTheme.typography.titleSmall,
-                fontSize = 15.5.sp,
+                fontSize = 15.sp,
                 color = MaterialTheme.colorScheme.onSurface,
             )
-            Spacer(Modifier.height(3.dp))
+            Spacer(Modifier.height(2.dp))
             Text(
                 text = topic.tagline,
-                fontSize = 12.5.sp,
-                lineHeight = 17.sp,
-                maxLines = 2,
+                fontSize = 12.sp,
+                lineHeight = 15.sp,
+                maxLines = 1,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
-            Spacer(Modifier.height(9.dp))
+            Spacer(Modifier.height(7.dp))
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -107,9 +108,9 @@ fun TopicCard(
             }
 
             if (showQuestions && topic.questions.isNotEmpty()) {
-                Spacer(Modifier.height(8.dp))
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    topic.questions.take(2).forEach { question ->
+                Spacer(Modifier.height(6.dp))
+                Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    topic.questions.take(1).forEach { question ->
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Box(
                                 Modifier
@@ -120,17 +121,17 @@ fun TopicCard(
                             Spacer(Modifier.width(6.dp))
                             Text(
                                 text = question.title,
-                                fontSize = 11.5.sp,
+                                fontSize = 11.sp,
                                 maxLines = 1,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
-                    val remaining = topic.questions.size - 2
+                    val remaining = topic.questions.size - 1
                     if (remaining > 0) {
                         Text(
                             text = "+$remaining more",
-                            fontSize = 11.sp,
+                            fontSize = 10.5.sp,
                             fontFamily = Mono,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                         )
@@ -140,9 +141,9 @@ fun TopicCard(
         }
 
         Icon(
-            Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            StacksIcons.Chevron,
             contentDescription = null,
-            modifier = Modifier.padding(end = 10.dp).size(20.dp),
+            modifier = Modifier.padding(end = 10.dp).size(16.dp),
             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
         )
     }

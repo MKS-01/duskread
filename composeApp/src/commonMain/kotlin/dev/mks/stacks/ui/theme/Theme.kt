@@ -64,22 +64,29 @@ data class VizPalette(
     }
 }
 
+// Good/active/bad/warn were originally full-saturation traffic-light hues,
+// which read as louder than everything else in the app — every other colour
+// here is a muted, blue-leaning tone (info *is* the primary blue). These keep
+// the same hue family per tone (still green/amber/red/purple, so the meaning
+// carries over instantly) but pulled down in saturation to sit in the same
+// register as the rest of the palette, the same move the background/surface
+// colours already make relative to pure black.
 private val LightViz = VizPalette(
     idle = Color(0xFFE8ECF2), onIdle = Color(0xFF37404E),
-    active = Color(0xFFF5A524), onActive = Color(0xFF3D2A00),
-    good = Color(0xFF17945F), onGood = Color(0xFFFFFFFF),
-    bad = Color(0xFFD94A4A), onBad = Color(0xFFFFFFFF),
+    active = Color(0xFFC98A3C), onActive = Color(0xFF3D2A00),
+    good = Color(0xFF3B8F68), onGood = Color(0xFFFFFFFF),
+    bad = Color(0xFFC2685F), onBad = Color(0xFFFFFFFF),
     info = Color(0xFF3057E3), onInfo = Color(0xFFFFFFFF),
-    warn = Color(0xFF9046D8), onWarn = Color(0xFFFFFFFF),
+    warn = Color(0xFF7C63BE), onWarn = Color(0xFFFFFFFF),
 )
 
 private val DarkViz = VizPalette(
     idle = Color(0xFF232B36), onIdle = Color(0xFFB6C0CD),
-    active = Color(0xFFF0A92C), onActive = Color(0xFF241800),
-    good = Color(0xFF2FBD7E), onGood = Color(0xFF04170E),
-    bad = Color(0xFFF0645F), onBad = Color(0xFF240605),
+    active = Color(0xFFD4A15C), onActive = Color(0xFF241800),
+    good = Color(0xFF5CAB8A), onGood = Color(0xFF04170E),
+    bad = Color(0xFFCC7A72), onBad = Color(0xFF240605),
     info = Color(0xFF6F92FF), onInfo = Color(0xFF060C1F),
-    warn = Color(0xFFB478EE), onWarn = Color(0xFF14051F),
+    warn = Color(0xFF9C8AD9), onWarn = Color(0xFF14051F),
 )
 
 val LocalVizPalette = staticCompositionLocalOf { DarkViz }

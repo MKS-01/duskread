@@ -129,6 +129,22 @@ object StacksIcons {
         }
     }
 
+    /** A right chevron, for a row that opens something — same weight as [Back], not Material's filled arrow. */
+    val Chevron: ImageVector by lazy {
+        icon("Chevron") {
+            path(
+                stroke = IconStroke.Colour,
+                strokeLineWidth = IconStroke.Width,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round,
+            ) {
+                moveTo(9f, 5f)
+                lineTo(16f, 12f)
+                lineTo(9f, 19f)
+            }
+        }
+    }
+
     /** Back. Same weight as the rest, which Material's arrow is not. */
     val Back: ImageVector by lazy {
         icon("Back") {
