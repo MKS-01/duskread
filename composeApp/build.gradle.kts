@@ -7,7 +7,6 @@ plugins {
     alias(libs.plugins.androidMultiplatformLibrary)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
-    alias(libs.plugins.kotlinSerialization)
 }
 
 kotlin {
@@ -54,17 +53,6 @@ kotlin {
             // The Pomodoro clock's shared state is a StateFlow, read the same
             // way whether a coroutine or a foreground service is driving it.
             implementation(libs.kotlinx.coroutines.core)
-            // The dashboard's Trending card: fetches and parses the AI/LLM
-            // feed. Ktor picks up whichever engine each platform source set
-            // below declares; no expect/actual needed to create the client.
-            implementation(libs.ktor.client.core)
-            implementation(libs.ktor.client.content.negotiation)
-            implementation(libs.ktor.serialization.kotlinx.json)
-            implementation(libs.kotlinx.serialization.json)
-            // Loads the Trending card's thumbnails; ships its own Ktor-backed
-            // network fetcher so it reuses the same multiplatform story.
-            implementation(libs.coil.compose)
-            implementation(libs.coil.network.ktor)
         }
 
         androidMain.dependencies {
@@ -79,12 +67,6 @@ kotlin {
             // MediaSessionCompat + NotificationCompat.MediaStyle, for proper
             // lock-screen/notification/Bluetooth controls on Reader playback.
             implementation(libs.androidx.media)
-            // Ktor's engine for the Trending fetch.
-            implementation(libs.ktor.client.okhttp)
-        }
-
-        iosMain.dependencies {
-            implementation(libs.ktor.client.darwin)
         }
 
         val desktopMain by getting
@@ -94,11 +76,6 @@ kotlin {
             // non-Android platform with a real (if manual) way to point at
             // a synced folder.
             implementation(libs.sqlite.jdbc)
-            implementation(libs.ktor.client.okhttp)
-        }
-
-        wasmJsMain.dependencies {
-            implementation(libs.ktor.client.js)
         }
 
         commonTest.dependencies {

@@ -133,15 +133,12 @@ navigation library. State is `remember { mutableStateOf(...) }` hoisted into
 nullable topic id plus `AnimatedContent`, with a 720dp breakpoint that switches
 between a two-pane layout and a single-pane stack.
 
-This is not minimalism for its own sake. The content itself has no network, no
-database and no mutable domain state — the entire topic set is compile-time
-constants, and a ViewModel over it would be a box with nothing in it. The
-Trending card is the one place with real async work (a network fetch, a
-cache), and it still just holds its own `remember { mutableStateOf(...) }`
-rather than reaching for one — one `LaunchedEffect` doesn't earn a layer. That
-calculus changes when bookmarks and progress arrive, since persistence brings
-suspending calls and state that outlives composition across the whole app;
-until then, adding architecture would only add indirection.
+This is not minimalism for its own sake. There is no network, no database and
+no mutable domain state — the entire topic set is compile-time constants. A
+ViewModel here would be a box with nothing in it. That calculus changes when
+bookmarks and progress arrive, since persistence brings suspending calls and
+state that outlives composition; until then, adding architecture would only
+add indirection.
 
 ### Platform differences are three functions
 
@@ -189,15 +186,10 @@ is one file in `content/`, optionally a frame generator in `viz/`, and a line in
 ./gradlew ktlintFormat   # auto-fix
 ```
 
-Each dependency earns its place: `activity-compose` for the back handler,
-`androidx.browser` for Custom Tabs, `core-splashscreen` for the launch window,
-and `haze` for the backdrop blur behind the floating bar — no Compose API
-blurs what sits *behind* a composable across all four targets. The dashboard's
-Trending card is the one exception to "no network required": it needed an
-HTTP client and an image loader multiplatform Compose doesn't ship, so it
-pulls in Ktor (per-platform engine: OkHttp, Darwin, or the JS engine) and
-Coil 3, both chosen because they already support all four targets rather than
-needing an `expect`/`actual` client of our own.
+Four dependencies, and each earns its place: `activity-compose` for the back
+handler, `androidx.browser` for Custom Tabs, `core-splashscreen` for the launch
+window, and `haze` for the backdrop blur behind the floating bar — no Compose
+API blurs what sits *behind* a composable across all four targets.
 
 Several ktlint rules are switched off in `.editorconfig` where they fought
 deliberate layout — scene definitions group related arguments on one line, and

@@ -1,5 +1,6 @@
 package dev.mks.stacks.ui.home
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -20,7 +22,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.LightMode
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -34,15 +35,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil3.compose.AsyncImage
 import dev.mks.stacks.content.AllTopics
 import dev.mks.stacks.content.Chapters
-import dev.mks.stacks.data.rememberKeyValueStore
 import dev.mks.stacks.model.Topic
 import dev.mks.stacks.pomodoro.PickableMinutes
 import dev.mks.stacks.pomodoro.clockLabel
@@ -51,8 +55,6 @@ import dev.mks.stacks.reader.ReadItem
 import dev.mks.stacks.reader.ReadSort
 import dev.mks.stacks.reader.ReaderSource
 import dev.mks.stacks.reader.rememberReadRepository
-import dev.mks.stacks.trending.TrendingItem
-import dev.mks.stacks.trending.loadTrendingTech
 import dev.mks.stacks.ui.reader.formatDuration
 import dev.mks.stacks.ui.rememberUrlOpener
 import dev.mks.stacks.ui.theme.LocalVizPalette
@@ -63,6 +65,7 @@ import dev.mks.stacks.ui.theme.StacksIcons
 import dev.mks.stacks.ui.theme.Stroke
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
+import androidx.compose.ui.graphics.drawscope.Stroke as DrawStroke
 
 /**
  * Home: a dashboard rather than another list — the curriculum browser moved
@@ -127,8 +130,8 @@ fun DashboardTab(
             }
         }
 
-        item("trending") {
-            TrendingCard(modifier = Modifier.padding(top = 6.dp))
+        item("library-pick") {
+            LibraryPickCard(modifier = Modifier.padding(top = 6.dp))
         }
 
         item("algo-of-day") {
@@ -360,27 +363,37 @@ private fun ReadbackOfDayCard(onOpen: () -> Unit, modifier: Modifier = Modifier)
 }
 
 /**
- * The single top tech article right now — the one card on the dashboard
- * backed by a network call rather than bundled content, since "trending" is a
- * claim about right now that a compiled topic can't make. One item, not a
- * row of them: this is a pointer to go read something elsewhere, not a feed
- * to browse inside the app.
+ * A random pick from the reader's own library rather than anything from the
+ * network — every other card on the dashboard is either bundled content or
+ * local state, and a "trending" claim sourced from an outside API was the odd
+ * one out. Renders nothing until the library has at least one read, so it
+ * never duplicates the "Connect your library" prompt [ReadbackOfDayCard]
+ * already shows.
  */
 @Composable
-private fun TrendingCard(modifier: Modifier = Modifier) {
-    var item by remember { mutableStateOf<TrendingItem?>(null) }
-    var failed by remember { mutableStateOf(false) }
+private fun LibraryPickCard(modifier: Modifier = Modifier) {
+    val repository = rememberReadRepository()
+    val source by repository.source.collectAsState()
     val open = rememberUrlOpener()
-    val store = rememberKeyValueStore()
+    // Candidates are loaded once per source change; shuffling re-picks from
+    // this in memory rather than re-querying, since it is a local library and
+    // the whole point of the button is an instant re-roll.
+    var candidates by remember { mutableStateOf<List<ReadItem>>(emptyList()) }
+    var item by remember { mutableStateOf<ReadItem?>(null) }
 
-    LaunchedEffect(Unit) {
-        item = try {
-            loadTrendingTech(store)
-        } catch (e: Exception) {
-            failed = true
-            null
+    LaunchedEffect(source) {
+        candidates = if (source == ReaderSource.READY) {
+            // Only reads with a real source link — the card's whole point is
+            // "Read original", so one without a link is a dead end.
+            repository.listReads(query = "", sort = ReadSort.NEWEST)
+                .filter { it.sourceUrl.isNotBlank() }
+        } else {
+            emptyList()
         }
+        item = candidates.randomOrNull()
     }
+
+    val found = item ?: return
 
     Column(
         modifier
@@ -388,72 +401,252 @@ private fun TrendingCard(modifier: Modifier = Modifier) {
             .clip(RoundedCornerShape(Radius.Card))
             .background(MaterialTheme.colorScheme.surface)
             .border(Stroke.Hairline, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(Radius.Card))
-            .let { base -> item?.let { found -> base.clickable { open(found.url) } } ?: base }
+            .clickable { open(found.sourceUrl) }
             .padding(16.dp),
     ) {
-        Text(
-            text = "TRENDING IN TECH",
-            style = SectionLabel,
-            color = MaterialTheme.colorScheme.primary,
-        )
-        Spacer(Modifier.height(10.dp))
-
-        val found = item
-        when {
-            found == null && !failed -> Box(
-                Modifier.fillMaxWidth().height(80.dp),
-                contentAlignment = Alignment.CenterStart,
-            ) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(20.dp),
-                    strokeWidth = 2.dp,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-            }
-
-            failed || found == null -> Text(
-                text = "Couldn't load what's trending right now.",
-                fontSize = 12.5.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = "FROM YOUR LIBRARY",
+                style = SectionLabel,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.weight(1f),
             )
-
-            else -> {
-                found.imageUrl?.let { url ->
-                    AsyncImage(
-                        model = url,
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(140.dp)
-                            .clip(RoundedCornerShape(Radius.Panel)),
-                    )
-                    Spacer(Modifier.height(10.dp))
-                }
-                Text(
-                    text = found.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                found.description?.let {
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        text = it,
-                        fontSize = 12.5.sp,
-                        lineHeight = 18.sp,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+            if (candidates.size > 1) {
+                Box(
+                    Modifier
+                        .size(26.dp)
+                        .clip(CircleShape)
+                        .clickable {
+                            item = candidates.filterNot { it.id == found.id }.random()
+                        },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = StacksIcons.Shuffle,
+                        contentDescription = "Show a different pick",
+                        modifier = Modifier.size(15.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    text = found.meta,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
             }
         }
+        Spacer(Modifier.height(10.dp))
+        // No cover image comes from the library, unlike a web article — an
+        // icon for what the read is actually about stands in, matched by
+        // keyword against the title and excerpt rather than picked at random.
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(90.dp)
+                .clip(RoundedCornerShape(Radius.Panel))
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+            contentAlignment = Alignment.Center,
+        ) {
+            LibraryPickArt(
+                category = categorize("${found.title} ${found.summary ?: found.excerpt}"),
+                modifier = Modifier.size(46.dp),
+            )
+        }
+        Spacer(Modifier.height(10.dp))
+        Text(
+            text = found.title,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        (found.summary ?: found.excerpt).let {
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = it,
+                fontSize = 12.5.sp,
+                lineHeight = 18.sp,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = "Read original",
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.primary,
+        )
+    }
+}
+
+/** What a read is actually about, matched by keyword rather than guessed at random. */
+private enum class LibraryCategory { ANDROID, AI, HACKING, MOBILE, GADGET, TECH }
+
+private fun categorize(text: String): LibraryCategory {
+    val lower = text.lowercase()
+    fun matches(vararg words: String) = words.any { it in lower }
+    return when {
+        matches("android", "jetpack", "google play", "kotlin multiplatform") -> LibraryCategory.ANDROID
+        matches("llm", "large language model", "gpt", "chatgpt", "claude", "machine learning", "neural network", "artificial intelligence") ->
+            LibraryCategory.AI
+        matches("hack", "exploit", "vulnerab", "breach", "malware", "cve", "penetration test") -> LibraryCategory.HACKING
+        matches("iphone", "smartphone", "ios ", "mobile app", "app store") -> LibraryCategory.MOBILE
+        matches("gadget", "wearable", "smartwatch", "hardware review", "unboxing") -> LibraryCategory.GADGET
+        else -> LibraryCategory.TECH
+    }
+}
+
+/**
+ * A stand-in for the cover image a library read doesn't have: a small stroked
+ * glyph for the category [categorize] matched, in the same hand-drawn style
+ * as [StacksIcons] rather than a stock illustration.
+ */
+@Composable
+private fun LibraryPickArt(category: LibraryCategory, modifier: Modifier = Modifier) {
+    val color = MaterialTheme.colorScheme.primary
+    Canvas(modifier) {
+        when (category) {
+            LibraryCategory.ANDROID -> drawAndroidGlyph(color)
+            LibraryCategory.AI -> drawAiGlyph(color)
+            LibraryCategory.HACKING -> drawHackingGlyph(color)
+            LibraryCategory.MOBILE -> drawMobileGlyph(color)
+            LibraryCategory.GADGET -> drawGadgetGlyph(color)
+            LibraryCategory.TECH -> drawTechGlyph(color)
+        }
+    }
+}
+
+private val GlyphStrokeWidth = 2.4.dp
+
+/** A rounded head, two antennae and two eyes — the bugdroid, reduced to its simplest reading. */
+private fun DrawScope.drawAndroidGlyph(color: Color) {
+    val stroke = GlyphStrokeWidth.toPx()
+    val headTop = size.height * 0.32f
+    val headBottom = size.height * 0.88f
+    val headLeft = size.width * 0.16f
+    val headRight = size.width * 0.84f
+    val sideTop = headTop + (headBottom - headTop) * 0.375f
+
+    drawArc(
+        color = color,
+        startAngle = 180f,
+        sweepAngle = 180f,
+        useCenter = false,
+        topLeft = Offset(headLeft, headTop),
+        size = Size(headRight - headLeft, (headBottom - headTop) * 0.75f),
+        style = DrawStroke(stroke, cap = StrokeCap.Round),
+    )
+    drawLine(color, Offset(headLeft, sideTop), Offset(headLeft, headBottom), stroke, cap = StrokeCap.Round)
+    drawLine(color, Offset(headRight, sideTop), Offset(headRight, headBottom), stroke, cap = StrokeCap.Round)
+    drawLine(color, Offset(headLeft, headBottom), Offset(headRight, headBottom), stroke, cap = StrokeCap.Round)
+    drawLine(color, Offset(size.width * 0.32f, headTop), Offset(size.width * 0.22f, size.height * 0.1f), stroke, cap = StrokeCap.Round)
+    drawLine(color, Offset(size.width * 0.68f, headTop), Offset(size.width * 0.78f, size.height * 0.1f), stroke, cap = StrokeCap.Round)
+    val eyeY = headTop + (headBottom - headTop) * 0.3f
+    drawCircle(color, radius = 2.dp.toPx(), center = Offset(size.width * 0.38f, eyeY))
+    drawCircle(color, radius = 2.dp.toPx(), center = Offset(size.width * 0.62f, eyeY))
+}
+
+/** Three outer nodes and a centre one, all connected — the smallest thing that reads as "network". */
+private fun DrawScope.drawAiGlyph(color: Color) {
+    val stroke = GlyphStrokeWidth.toPx()
+    val center = Offset(size.width / 2f, size.height / 2f)
+    val radius = minOf(size.width, size.height) * 0.38f
+    val outer = listOf(-90f, 30f, 150f).map { degrees ->
+        val radians = degrees * (kotlin.math.PI / 180.0)
+        Offset(
+            center.x + radius * kotlin.math.cos(radians).toFloat(),
+            center.y + radius * kotlin.math.sin(radians).toFloat(),
+        )
+    }
+    outer.forEach { point -> drawLine(color, center, point, stroke, cap = StrokeCap.Round) }
+    outer.forEach { point -> drawCircle(color, radius = 4.dp.toPx(), center = point) }
+    drawCircle(color, radius = 4.dp.toPx(), center = center)
+}
+
+/** A shackle over a body — a padlock, the plainest way to say "security". */
+private fun DrawScope.drawHackingGlyph(color: Color) {
+    val stroke = GlyphStrokeWidth.toPx()
+    val bodyTop = size.height * 0.48f
+    val bodyLeft = size.width * 0.2f
+    val bodyRight = size.width * 0.8f
+    val bodyBottom = size.height * 0.85f
+
+    drawArc(
+        color = color,
+        startAngle = 180f,
+        sweepAngle = 180f,
+        useCenter = false,
+        topLeft = Offset(size.width * 0.3f, size.height * 0.12f),
+        size = Size(size.width * 0.4f, size.height * 0.5f),
+        style = DrawStroke(stroke, cap = StrokeCap.Round),
+    )
+    drawRoundRect(
+        color = color,
+        topLeft = Offset(bodyLeft, bodyTop),
+        size = Size(bodyRight - bodyLeft, bodyBottom - bodyTop),
+        cornerRadius = CornerRadius(3.dp.toPx()),
+        style = DrawStroke(stroke),
+    )
+    drawCircle(color, radius = 2.6.dp.toPx(), center = Offset(size.width / 2f, (bodyTop + bodyBottom) / 2f))
+}
+
+/** A tall rounded rectangle with a home-indicator line — a phone, not a tablet or a watch. */
+private fun DrawScope.drawMobileGlyph(color: Color) {
+    val stroke = GlyphStrokeWidth.toPx()
+    drawRoundRect(
+        color = color,
+        topLeft = Offset(size.width * 0.3f, size.height * 0.08f),
+        size = Size(size.width * 0.4f, size.height * 0.84f),
+        cornerRadius = CornerRadius(6.dp.toPx()),
+        style = DrawStroke(stroke),
+    )
+    drawLine(
+        color = color,
+        start = Offset(size.width * 0.44f, size.height * 0.84f),
+        end = Offset(size.width * 0.56f, size.height * 0.84f),
+        strokeWidth = stroke,
+        cap = StrokeCap.Round,
+    )
+}
+
+/** A watch face and strap — the shorthand for a wearable, the most common gadget in a reading list. */
+private fun DrawScope.drawGadgetGlyph(color: Color) {
+    val stroke = GlyphStrokeWidth.toPx()
+    val center = Offset(size.width / 2f, size.height / 2f)
+    val radius = minOf(size.width, size.height) * 0.28f
+    drawRoundRect(
+        color = color,
+        topLeft = Offset(center.x - size.width * 0.12f, size.height * 0.04f),
+        size = Size(size.width * 0.24f, size.height * 0.2f),
+        cornerRadius = CornerRadius(3.dp.toPx()),
+        style = DrawStroke(stroke),
+    )
+    drawRoundRect(
+        color = color,
+        topLeft = Offset(center.x - size.width * 0.12f, size.height * 0.76f),
+        size = Size(size.width * 0.24f, size.height * 0.2f),
+        cornerRadius = CornerRadius(3.dp.toPx()),
+        style = DrawStroke(stroke),
+    )
+    drawCircle(color, radius = radius, center = center, style = DrawStroke(stroke))
+}
+
+/** A chip body with pins on either side — the fallback when nothing more specific matched. */
+private fun DrawScope.drawTechGlyph(color: Color) {
+    val stroke = GlyphStrokeWidth.toPx()
+    val left = size.width * 0.28f
+    val right = size.width * 0.72f
+    val top = size.height * 0.28f
+    val bottom = size.height * 0.72f
+    drawRoundRect(
+        color = color,
+        topLeft = Offset(left, top),
+        size = Size(right - left, bottom - top),
+        cornerRadius = CornerRadius(3.dp.toPx()),
+        style = DrawStroke(stroke),
+    )
+    val pinPositions = listOf(0.35f, 0.5f, 0.65f)
+    pinPositions.forEach { fraction ->
+        val y = top + (bottom - top) * fraction
+        drawLine(color, Offset(left - size.width * 0.12f, y), Offset(left, y), stroke, cap = StrokeCap.Round)
+        drawLine(color, Offset(right, y), Offset(right + size.width * 0.12f, y), stroke, cap = StrokeCap.Round)
+        val x = left + (right - left) * fraction
+        drawLine(color, Offset(x, top - size.height * 0.12f), Offset(x, top), stroke, cap = StrokeCap.Round)
+        drawLine(color, Offset(x, bottom), Offset(x, bottom + size.height * 0.12f), stroke, cap = StrokeCap.Round)
     }
 }

@@ -9,9 +9,6 @@
     <!-- For the Reader's playback foreground service (API 34+). -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
 
-    <!-- For the dashboard's Trending card, the only network call in the app. -->
-    <uses-permission android:name="android.permission.INTERNET" />
-
     <!--
         Package visibility (Android 11+) for the Custom Tabs host. Launching a
         link works without this, but anything that inspects browsers — warmup,

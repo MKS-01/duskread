@@ -193,6 +193,32 @@ object StacksIcons {
         }
     }
 
+    /** Re-roll a random pick — two crossing paths, each ending in an arrow. */
+    val Shuffle: ImageVector by lazy {
+        icon("Shuffle") {
+            path(
+                stroke = IconStroke.Colour,
+                strokeLineWidth = IconStroke.Width,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round,
+            ) {
+                moveTo(5f, 7f)
+                lineTo(19f, 17f)
+                moveTo(19f, 17f)
+                lineTo(15.5f, 17f)
+                moveTo(19f, 17f)
+                lineTo(19f, 13.5f)
+
+                moveTo(5f, 17f)
+                lineTo(19f, 7f)
+                moveTo(19f, 7f)
+                lineTo(15.5f, 7f)
+                moveTo(19f, 7f)
+                lineTo(19f, 10.5f)
+            }
+        }
+    }
+
     /** Reader: a small waveform — bars of varying height, like a played-back recording. */
     val Waveform: ImageVector by lazy {
         icon("Waveform") {
