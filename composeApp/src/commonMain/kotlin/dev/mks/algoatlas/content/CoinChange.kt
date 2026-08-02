@@ -15,6 +15,13 @@ val CoinChange = Topic(
     level = Level.ADVANCED,
     scene = { coinChangeScene() },
 
+    quickSummary = listOf(
+        "Greedy fails here: with coins 1, 3, 4 and a target of 6, greedy takes three coins where two suffice.",
+        "DP applies when a problem has **optimal substructure** and **overlapping subproblems** — cache each subproblem's answer once.",
+        "The table gives a count, not the coins themselves — recovering the actual coins needs a backwards walk or a parent array.",
+    ),
+    readMore = Refs.BasecsHome,
+
     intuition = listOf(
         "Making change with the fewest coins feels like it should be easy, because you already do it. Take the largest coin that fits, repeat. That is the greedy strategy, and with British or American currency it happens to be correct — which is exactly why the failure is so instructive when it comes.",
         "Take coins of **1, 3 and 4**, and try to make **6**. Greedy grabs the 4, then needs 2 more and can only manage 1 + 1: three coins. But **3 + 3** is two coins. Greedy did not make an arithmetic error; it made a *structural* one. Taking the biggest coin looked best locally and closed off the better answer, and no amount of care at each step recovers it. Whether greedy works on a coin system is a property of that system, not of the algorithm.",

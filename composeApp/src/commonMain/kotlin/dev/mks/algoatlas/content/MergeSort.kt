@@ -15,6 +15,13 @@ val MergeSort = Topic(
     level = Level.INTERMEDIATE,
     scene = { mergeSortScene() },
 
+    quickSummary = listOf(
+        "Split until trivial, then merge sorted runs back together — O(n log n) in every case, no adversarial input.",
+        "Needs O(n) scratch space for arrays; on a linked list it needs almost none, since splitting and merging are free.",
+        "Stable by construction if merge ties break toward the left run — the default choice behind Java's and Go's stable sorts.",
+    ),
+    readMore = Refs.BasecsHome,
+
     intuition = listOf(
         "Merging two already-sorted lists is easy: look at the front of each, take the smaller, repeat. That costs one pass. Merge sort is what you get when you take that observation seriously — if merging is cheap, make everything sorted by splitting until the pieces are trivially sorted (one element), then merge your way back up.",
         "The cost falls out of the shape of the recursion. Halving takes log n levels to reach single elements, and every level touches all n elements exactly once during its merges. n work per level times log n levels is O(n log n), and unlike quicksort that bound holds no matter what the input looks like.",

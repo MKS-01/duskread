@@ -15,6 +15,14 @@ val Dfs = Topic(
     level = Level.INTERMEDIATE,
     scene = { dfsScene() },
 
+    quickSummary = listOf(
+        "Same traversal as BFS with a stack instead of a queue — commit to a path, back up only when it runs out.",
+        "Recursion *is* the stack — that's why the recursive version is only a few lines long.",
+        "Finishing a branch before moving on is what powers cycle detection, topological sort and connected components.",
+        "Finds *a* path, never reliably the shortest one — that's still BFS's job.",
+    ),
+    readMore = Refs.BasecsHome,
+
     intuition = listOf(
         "Breadth-first search explores cautiously, finishing everything one step away before looking two steps away. Depth-first search does the opposite: it picks a direction and *commits*, following it as far as it goes, and only when that path is exhausted does it retreat to the last junction and try the next option. It is the strategy of someone walking a maze with one hand on the wall.",
         "The only structural difference from BFS is the container holding the frontier. BFS uses a queue, so the oldest discovery comes back first. DFS uses a **stack**, so the newest one does. Swap those two and the traversal order changes completely with no other edit — which is the clearest illustration of why data structures matter that this curriculum has.",

@@ -15,6 +15,14 @@ val StacksQueues = Topic(
     level = Level.BASIC,
     scene = { stackQueueScene() },
 
+    quickSummary = listOf(
+        "Same storage underneath — the only difference is which end you're allowed to touch.",
+        "**Stack = LIFO** (push/pop): the natural shape of anything nested. **Queue = FIFO** (enqueue/dequeue): the shape of anything fair.",
+        "Both are O(1) at every operation, on the right underlying structure — no searching, no shifting.",
+        "DFS and BFS are the same code with a stack swapped for a queue.",
+    ),
+    readMore = Refs.BasecsHome,
+
     intuition = listOf(
         "Arrays and linked lists answer *where* things live. Stacks and queues answer a different question: **which one do you get next?** Neither adds any storage capability the underlying structure did not already have. All they do is refuse to let you reach the middle — and that restriction is the entire value.",
         "A **stack** hands back the most recent thing you gave it. Last in, first out. That sounds like an arbitrary rule until you notice it is exactly how nested work behaves: the innermost thing you started is the first thing that must finish. Function calls, bracket matching, undo history, backtracking out of a wrong turn — all of them are naturally last-in-first-out, which is why a stack keeps appearing whenever a problem nests.",

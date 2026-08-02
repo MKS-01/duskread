@@ -1,10 +1,12 @@
 package dev.mks.algoatlas
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
@@ -16,6 +18,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -48,6 +51,8 @@ import dev.mks.algoatlas.ui.TopicListPane
 import dev.mks.algoatlas.ui.TopicScreen
 import dev.mks.algoatlas.ui.home.HomeScreen
 import dev.mks.algoatlas.ui.onboarding.Onboarding
+import dev.mks.algoatlas.ui.pomodoro.FocusScreen
+import dev.mks.algoatlas.ui.pomodoro.PomodoroChip
 import dev.mks.algoatlas.ui.theme.AlgoAtlasTheme
 import dev.mks.algoatlas.ui.theme.Layout
 import dev.mks.algoatlas.ui.theme.Motion
@@ -75,28 +80,54 @@ fun App() {
 
             var selectedId by remember { mutableStateOf<String?>(null) }
             var lang by remember { mutableStateOf(Lang.KOTLIN) }
+            var focusMode by remember { mutableStateOf(false) }
 
-            BoxWithConstraints(Modifier.fillMaxSize()) {
-                if (maxWidth >= Layout.TwoPaneBreakpoint) {
-                    TwoPaneLayout(
-                        selectedId = selectedId ?: AllTopics.first().id,
-                        onSelect = { selectedId = it },
-                        lang = lang,
-                        onLangChange = { lang = it },
-                        isDark = isDark,
-                        onToggleTheme = { dark = !isDark },
-                    )
-                } else {
-                    PhoneLayout(
-                        selectedId = selectedId,
-                        greeting = prefs.name?.let { "Hello, $it" },
-                        onSelect = { selectedId = it },
-                        onBack = { selectedId = null },
-                        lang = lang,
-                        onLangChange = { lang = it },
-                        isDark = isDark,
-                        onToggleTheme = { dark = !isDark },
-                    )
+            Box(Modifier.fillMaxSize()) {
+                BoxWithConstraints(Modifier.fillMaxSize()) {
+                    if (maxWidth >= Layout.TwoPaneBreakpoint) {
+                        TwoPaneLayout(
+                            selectedId = selectedId ?: AllTopics.first().id,
+                            onSelect = { selectedId = it },
+                            lang = lang,
+                            onLangChange = { lang = it },
+                            isDark = isDark,
+                            onToggleTheme = { dark = !isDark },
+                        )
+                    } else {
+                        PhoneLayout(
+                            selectedId = selectedId,
+                            greeting = prefs.name?.let { "Hello, $it" },
+                            onSelect = { selectedId = it },
+                            onBack = { selectedId = null },
+                            lang = lang,
+                            onLangChange = { lang = it },
+                            isDark = isDark,
+                            onToggleTheme = { dark = !isDark },
+                        )
+                    }
+                }
+
+                // Floats above both layouts, in the bottom corner alongside the
+                // floating bar rather than the top — the top corner is already
+                // the per-tab theme toggle, and a running session should stay
+                // reachable no matter where in the app you are.
+                PomodoroChip(
+                    onOpen = { focusMode = true },
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .navigationBarsPadding()
+                        .padding(bottom = 14.dp, end = 16.dp),
+                )
+
+                // The big-timer mode: a full-screen destination for whenever
+                // the point is to actually stare at the clock, not glance at a
+                // corner. Closing it never stops the session underneath.
+                AnimatedVisibility(
+                    visible = focusMode,
+                    enter = fadeIn(tween(Motion.PushIn)) + slideInVertically(tween(Motion.PushIn)) { it / 8 },
+                    exit = fadeOut(tween(Motion.PopFade)),
+                ) {
+                    FocusScreen(onClose = { focusMode = false })
                 }
             }
         }

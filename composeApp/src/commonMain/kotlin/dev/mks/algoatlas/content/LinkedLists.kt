@@ -15,6 +15,14 @@ val LinkedLists = Topic(
     level = Level.BASIC,
     scene = { linkedListScene() },
 
+    quickSummary = listOf(
+        "Give up contiguity: each node just points to the next, so insertion is O(1) once you already hold the node.",
+        "No random access — reaching element `i` means walking `i` hops, so indexing is O(n).",
+        "Scattered nodes miss the CPU cache, so lists lose to arrays on scans despite matching Big-O.",
+        "The dummy head node removes the \"deleting the first element\" special case almost everywhere.",
+    ),
+    readMore = Refs.BasecsHome,
+
     intuition = listOf(
         "Arrays are fast to read and slow to modify, and both facts come from the same source: the elements sit in one unbroken block. A linked list is the obvious question that follows — what if we simply stopped requiring that? Let each element live wherever memory happens to have room, and have it remember the address of the next one.",
         "The consequence is an exact inversion of the array's trade-offs. Inserting no longer means shifting anything, because there is nothing to shift; you point the new node at the rest of the list and point its predecessor at the new node. Two writes, done, O(1). But reading element `i` is no longer arithmetic. You hold only the head, and the only way to reach the fifth node is to walk through the first four. That is O(n), and no cleverness removes it.",

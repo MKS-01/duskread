@@ -15,6 +15,13 @@ val BinarySearch = Topic(
     level = Level.BASIC,
     scene = { binarySearchScene() },
 
+    quickSummary = listOf(
+        "Halve the search space on every comparison — O(log n) instead of O(n), but only on sorted data.",
+        "Reframe it as finding the boundary of a monotonic predicate, not just a value in an array — that unlocks 'search the answer' problems.",
+        "Write `lo + (hi - lo) / 2`, never `(lo + hi) / 2` — the latter can silently overflow.",
+    ),
+    readMore = Refs.BasecsHome,
+
     intuition = listOf(
         "Binary search is the pay-off for keeping data sorted. One comparison against the middle element tells you which half the answer cannot be in, so you throw that half away and repeat. Ten elements takes four comparisons; a billion takes thirty.",
         "The mental model that generalises best is not \"find a value in an array\" — it is \"find the boundary in a monotonic predicate\". Imagine mapping every index to true or false, where the sequence looks like false, false, false, true, true. Binary search finds the first true. Once you can phrase a problem that way, it does not matter whether you are searching an array, a range of answers, or a rotated list.",

@@ -26,6 +26,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -59,6 +60,9 @@ fun TopicScreen(
     // Reset scroll when the topic changes, otherwise you land mid-article.
     val listState = rememberLazyListState()
     val scene = remember(topic.id) { topic.scene?.invoke() }
+    // A topic with no quickSummary has nothing shorter to show, so it opens
+    // straight into the full notes as before.
+    val expanded = remember(topic.id) { mutableStateOf(topic.quickSummary.isEmpty()) }
 
     LazyColumn(
         state = listState,
@@ -73,6 +77,8 @@ fun TopicScreen(
     ) {
         item("head") { TopicHeader(topic) }
 
+        // Shown in both modes — a topic never ships without its visualisation,
+        // condensed or not.
         scene?.let {
             item("scene") {
                 Column {
@@ -82,101 +88,139 @@ fun TopicScreen(
             }
         }
 
-        item("intuition") {
-            Column {
-                SectionHeading("Intuition")
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    topic.intuition.forEach { paragraph ->
-                        Text(
-                            text = markup(paragraph),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onBackground,
-                        )
+        if (!expanded.value) {
+            item("quick") {
+                Column {
+                    SectionHeading("Quick notes")
+                    BulletList(topic.quickSummary)
+                }
+            }
+
+            item("key") {
+                Column {
+                    SectionHeading("What to remember")
+                    BulletList(topic.keyPoints)
+                }
+            }
+
+            topic.readMore?.let { readMore ->
+                item("read-more") {
+                    Column {
+                        SectionHeading("Read more")
+                        ReferenceCard(readMore)
                     }
                 }
             }
-        }
 
-        topic.origin?.let { origin ->
-            item("origin") { OriginCard(origin) }
-        }
-
-        item("key") {
-            Column {
-                SectionHeading("What to remember")
-                BulletList(topic.keyPoints)
+            item("expand") {
+                Text(
+                    text = "Show full notes",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(999.dp))
+                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(999.dp))
+                        .clickable { expanded.value = true }
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                )
             }
-        }
-
-        if (topic.steps.isNotEmpty()) {
-            item("steps") {
+        } else {
+            item("intuition") {
                 Column {
-                    SectionHeading("Walkthrough")
-                    NumberedList(topic.steps)
-                }
-            }
-        }
-
-        item("complexity") {
-            Column {
-                SectionHeading("Complexity")
-                ComplexityTable(topic.complexity)
-            }
-        }
-
-        item("code") {
-            Column {
-                SectionHeading("Implementation")
-                CodeBlock(topic.code, lang, onLangChange)
-            }
-        }
-
-        if (topic.pitfalls.isNotEmpty()) {
-            item("pitfalls") {
-                Column {
-                    SectionHeading("Where it goes wrong")
-                    BulletList(topic.pitfalls, bulletColor = LocalVizPalette.current.bad)
-                }
-            }
-        }
-
-        item("q-head") { SectionHeading("Practice") }
-
-        items(topic.questions, key = { it.title }) { question ->
-            QuestionCard(question)
-        }
-
-        if (topic.references.isNotEmpty()) {
-            item("refs") {
-                Column {
-                    SectionHeading("Further reading")
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        topic.references.forEach { reference -> ReferenceCard(reference) }
-                    }
-                }
-            }
-        }
-
-        if (topic.related.isNotEmpty()) {
-            item("related") {
-                Column {
-                    SectionHeading("Related")
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        topic.related.mapNotNull { topicById(it) }.forEach { related ->
+                    SectionHeading("Intuition")
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        topic.intuition.forEach { paragraph ->
                             Text(
-                                text = related.title,
-                                fontSize = 13.sp,
-                                color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(999.dp))
-                                    .border(
-                                        1.dp,
-                                        MaterialTheme.colorScheme.outlineVariant,
-                                        RoundedCornerShape(999.dp),
-                                    )
-                                    .clickable { onOpenTopic(related.id) }
-                                    .padding(horizontal = 14.dp, vertical = 6.dp),
+                                text = markup(paragraph),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onBackground,
                             )
+                        }
+                    }
+                }
+            }
+
+            topic.origin?.let { origin ->
+                item("origin") { OriginCard(origin) }
+            }
+
+            item("key") {
+                Column {
+                    SectionHeading("What to remember")
+                    BulletList(topic.keyPoints)
+                }
+            }
+
+            if (topic.steps.isNotEmpty()) {
+                item("steps") {
+                    Column {
+                        SectionHeading("Walkthrough")
+                        NumberedList(topic.steps)
+                    }
+                }
+            }
+
+            item("complexity") {
+                Column {
+                    SectionHeading("Complexity")
+                    ComplexityTable(topic.complexity)
+                }
+            }
+
+            item("code") {
+                Column {
+                    SectionHeading("Implementation")
+                    CodeBlock(topic.code, lang, onLangChange)
+                }
+            }
+
+            if (topic.pitfalls.isNotEmpty()) {
+                item("pitfalls") {
+                    Column {
+                        SectionHeading("Where it goes wrong")
+                        BulletList(topic.pitfalls, bulletColor = LocalVizPalette.current.bad)
+                    }
+                }
+            }
+
+            item("q-head") { SectionHeading("Practice") }
+
+            items(topic.questions, key = { it.title }) { question ->
+                QuestionCard(question)
+            }
+
+            if (topic.references.isNotEmpty()) {
+                item("refs") {
+                    Column {
+                        SectionHeading("Further reading")
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            topic.references.forEach { reference -> ReferenceCard(reference) }
+                        }
+                    }
+                }
+            }
+
+            if (topic.related.isNotEmpty()) {
+                item("related") {
+                    Column {
+                        SectionHeading("Related")
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            topic.related.mapNotNull { topicById(it) }.forEach { related ->
+                                Text(
+                                    text = related.title,
+                                    fontSize = 13.sp,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(999.dp))
+                                        .border(
+                                            1.dp,
+                                            MaterialTheme.colorScheme.outlineVariant,
+                                            RoundedCornerShape(999.dp),
+                                        )
+                                        .clickable { onOpenTopic(related.id) }
+                                        .padding(horizontal = 14.dp, vertical = 6.dp),
+                                )
+                            }
                         }
                     }
                 }

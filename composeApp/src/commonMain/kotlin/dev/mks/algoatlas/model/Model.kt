@@ -173,6 +173,14 @@ data class Topic(
     val intuition: List<String>,
     val keyPoints: List<String>,
     /**
+     * 2-4 bullets shown before the full [intuition] prose — the topic opens
+     * condensed on this plus [keyPoints], expanding to everything else on
+     * request. Empty means there is nothing shorter than the full notes yet.
+     */
+    val quickSummary: List<String> = emptyList(),
+    /** A deeper piece worth the extra time — shown alongside the condensed view. */
+    val readMore: Reference? = null,
+    /**
      * Where the idea (and usually the name) came from — who invented it, when,
      * and what problem they were staring at. Origin stories are what make a
      * structure stick in memory long after the implementation has faded.

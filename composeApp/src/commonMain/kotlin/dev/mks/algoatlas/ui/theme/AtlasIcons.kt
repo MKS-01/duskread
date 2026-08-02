@@ -143,6 +143,96 @@ object AtlasIcons {
         }
     }
 
+    /** Play, for starting or resuming a focus session — filled, not stroked, to read as a button. */
+    val Play: ImageVector by lazy {
+        icon("Play") {
+            path(fill = IconStroke.Colour) {
+                moveTo(8f, 5.5f)
+                lineTo(19f, 12f)
+                lineTo(8f, 18.5f)
+                close()
+            }
+        }
+    }
+
+    /** Pause, for a focus session in progress. */
+    val Pause: ImageVector by lazy {
+        icon("Pause") {
+            path(fill = IconStroke.Colour) {
+                moveTo(6.5f, 5.5f)
+                lineTo(10.5f, 5.5f)
+                lineTo(10.5f, 18.5f)
+                lineTo(6.5f, 18.5f)
+                close()
+                moveTo(13.5f, 5.5f)
+                lineTo(17.5f, 5.5f)
+                lineTo(17.5f, 18.5f)
+                lineTo(13.5f, 18.5f)
+                close()
+            }
+        }
+    }
+
+    /** Reader: a small waveform — bars of varying height, like a played-back recording. */
+    val Waveform: ImageVector by lazy {
+        icon("Waveform") {
+            path(
+                stroke = IconStroke.Colour,
+                strokeLineWidth = IconStroke.Width,
+                strokeLineCap = StrokeCap.Round,
+            ) {
+                moveTo(4.5f, 10f)
+                lineTo(4.5f, 14f)
+                moveTo(8.5f, 8f)
+                lineTo(8.5f, 16f)
+                moveTo(12.5f, 5f)
+                lineTo(12.5f, 19f)
+                moveTo(16.5f, 8f)
+                lineTo(16.5f, 16f)
+                moveTo(20.5f, 10f)
+                lineTo(20.5f, 14f)
+            }
+        }
+    }
+
+    /**
+     * A folder with a small link badge — for connecting the Reader to a
+     * synced readback folder for the first time.
+     */
+    val FolderConnect: ImageVector by lazy {
+        icon("FolderConnect") {
+            path(
+                stroke = IconStroke.Colour,
+                strokeLineWidth = IconStroke.Width,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round,
+            ) {
+                moveTo(2.5f, 7.5f)
+                lineTo(8.5f, 7.5f)
+                lineTo(10.5f, 10f)
+                lineTo(16.5f, 10f)
+                lineTo(16.5f, 17f)
+                lineTo(2.5f, 17f)
+                close()
+            }
+            path(
+                stroke = IconStroke.Colour,
+                strokeLineWidth = IconStroke.Width,
+                strokeLineCap = StrokeCap.Round,
+            ) {
+                // Small "connect" badge, bottom right.
+                moveTo(17f, 14.8f)
+                arcToRelative(3.2f, 3.2f, 0f, true, true, 6.4f, 0f)
+                arcToRelative(3.2f, 3.2f, 0f, true, true, -6.4f, 0f)
+                close()
+                moveTo(20.2f, 13.2f)
+                lineTo(20.2f, 16.4f)
+                moveTo(18.6f, 14.8f)
+                lineTo(21.8f, 14.8f)
+            }
+        }
+    }
+
     /** Outbound link, for the web fallbacks in search. */
     val External: ImageVector by lazy {
         icon("External") {

@@ -20,6 +20,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -32,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 import dev.mks.algoatlas.ui.PlatformBackHandler
+import dev.mks.algoatlas.ui.reader.ReaderTab
 import dev.mks.algoatlas.ui.theme.Motion
 
 /**
@@ -52,6 +55,16 @@ fun HomeScreen(
     var searching by remember { mutableStateOf(false) }
     var query by remember { mutableStateOf("") }
     val hazeState = remember { HazeState() }
+
+    // Lets a tapped Reader notification land on the Reader tab specifically,
+    // rather than just reopening the app onto whatever tab it last showed.
+    val requestedTab by HomeTabRequest.target.collectAsState()
+    LaunchedEffect(requestedTab) {
+        requestedTab?.let {
+            tab = it
+            HomeTabRequest.consume()
+        }
+    }
 
     fun closeSearch() {
         searching = false
@@ -88,6 +101,8 @@ fun HomeScreen(
                     onOpenTopic = onOpenTopic,
                     contentPadding = listPadding,
                 )
+
+                HomeTab.READER -> ReaderTab(contentPadding = listPadding)
             }
         }
 

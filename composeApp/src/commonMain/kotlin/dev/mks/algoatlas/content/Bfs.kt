@@ -15,6 +15,14 @@ val Bfs = Topic(
     level = Level.INTERMEDIATE,
     scene = { bfsScene() },
 
+    quickSummary = listOf(
+        "Explores in rings of increasing distance using a FIFO queue — the first time you reach a node, it's via the fewest edges.",
+        "Mark visited **on enqueue**, not dequeue, or the same node re-enters the queue and blows up the runtime.",
+        "Only gives shortest paths on unweighted graphs; weighted graphs need Dijkstra instead.",
+        "Multi-source BFS seeds every source at distance 0, finding nearest-source distance for every node in one pass.",
+    ),
+    readMore = Refs.BasecsHome,
+
     intuition = listOf(
         "BFS spreads outward from a source like ripples on water. It finishes every node at distance 1 before touching anything at distance 2, and so on. The queue is what enforces that discipline: first in, first out means nodes leave the queue in the same order they were discovered, which is non-decreasing distance order.",
         "That ordering is the entire correctness argument for shortest paths. The first time you reach a node, you have reached it by the fewest possible edges — no later route can be shorter, because any later route was discovered from a node at least as far away. This is why you mark a node visited **when you enqueue it, not when you dequeue it**; delaying the mark lets the same node enter the queue several times and quietly turns O(V + E) into something much worse.",

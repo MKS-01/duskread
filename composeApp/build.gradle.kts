@@ -50,6 +50,9 @@ kotlin {
             implementation(compose.ui)
             implementation(libs.androidx.lifecycle.runtimeCompose)
             implementation(libs.haze)
+            // The Pomodoro clock's shared state is a StateFlow, read the same
+            // way whether a coroutine or a foreground service is driving it.
+            implementation(libs.kotlinx.coroutines.core)
         }
 
         androidMain.dependencies {
@@ -57,11 +60,22 @@ kotlin {
             implementation(libs.androidx.activity.compose)
             // Chrome Custom Tabs, for opening reference links in-app.
             implementation(libs.androidx.browser)
+            // NotificationCompat, for the Pomodoro foreground-service notification.
+            implementation(libs.androidx.core)
+            // Navigating the SAF tree the Reader folder picker returns.
+            implementation(libs.androidx.documentfile)
+            // MediaSessionCompat + NotificationCompat.MediaStyle, for proper
+            // lock-screen/notification/Bluetooth controls on Reader playback.
+            implementation(libs.androidx.media)
         }
 
         val desktopMain by getting
         desktopMain.dependencies {
             implementation(compose.desktop.currentOs)
+            // Reads readback's library.db directly; the Reader's only
+            // non-Android platform with a real (if manual) way to point at
+            // a synced folder.
+            implementation(libs.sqlite.jdbc)
         }
 
         commonTest.dependencies {

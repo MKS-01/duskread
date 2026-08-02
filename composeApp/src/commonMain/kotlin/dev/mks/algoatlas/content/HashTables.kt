@@ -15,6 +15,14 @@ val HashTables = Topic(
     level = Level.INTERMEDIATE,
     scene = { hashTableScene() },
 
+    quickSummary = listOf(
+        "Let the key compute its own bucket instead of scanning or sorting — O(1) average for insert, lookup and delete.",
+        "Collisions are a mathematical certainty, not a bug — chaining or open addressing decide how they're handled.",
+        "Crossing a load factor of roughly 0.75 triggers a resize; amortises to O(1), but the worst case is O(n).",
+        "No ordering guarantee — reach for a tree-backed map when iteration order matters.",
+    ),
+    readMore = Refs.BasecsHome,
+
     intuition = listOf(
         "Arrays gave us O(1) access, but only if you know the *index*. Usually you do not — you know a username, a URL, a word. The obvious approach is to scan until you find it, which is O(n), or to keep things sorted and binary search, which is O(log n). A hash table asks a better question: what if the key could tell us its own index?",
         "That is all a hash function is. Feed it a key, get back a number, take that number modulo the table size, and you have a bucket. No searching happened — the location was computed. Insert, lookup and delete all become O(1), which is genuinely remarkable given we started with arbitrary strings.",

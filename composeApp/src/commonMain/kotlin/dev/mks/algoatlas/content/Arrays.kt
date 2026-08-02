@@ -15,6 +15,14 @@ val Arrays = Topic(
     level = Level.BASIC,
     scene = { arrayScene() },
 
+    quickSummary = listOf(
+        "One contiguous block of equal-sized slots — access is address arithmetic, O(1), not a search.",
+        "Insert or delete anywhere but the end costs O(n): everything has to shift to keep the block unbroken.",
+        "Dynamic arrays grow by doubling — appending is O(1) **amortised**, not guaranteed O(1) on every call.",
+        "Unmatched cache locality: a linear scan of an array beats the same scan over a linked list, despite matching Big-O.",
+    ),
+    readMore = Refs.BasecsHome,
+
     intuition = listOf(
         "Almost every data structure you will ever use is either an array underneath or a reaction against being one. So it is worth being precise about what an array actually is: a single contiguous block of memory, divided into equal-sized slots.",
         "Both halves of that sentence do real work. Because the slots are equal-sized, the computer knows exactly how far apart they are. Because the block is contiguous, it knows they all follow from one starting address. Put those together and finding element `i` is not a search at all — it is one multiplication and one addition: `address = base + i × size`. That is the entire reason array access is O(1), and it is why array indices start at zero: index 0 sits zero slots away from the base address.",
