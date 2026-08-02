@@ -32,6 +32,13 @@ data class VizPalette(
     val onInfo: Color,
     val warn: Color,
     val onWarn: Color,
+    // Practice difficulty gets its own three colours rather than reusing
+    // good/active/bad: those already mean "topic level" (Basic/Intermediate/
+    // Advanced) elsewhere on the same screen, and a green dot meaning two
+    // different things next to each other is worse than two green families.
+    val easy: Color,
+    val medium: Color,
+    val hard: Color,
 ) {
     fun bg(tone: Tone): Color = when (tone) {
         Tone.IDLE -> idle
@@ -58,9 +65,9 @@ data class VizPalette(
     }
 
     fun of(difficulty: Difficulty): Color = when (difficulty) {
-        Difficulty.EASY -> good
-        Difficulty.MEDIUM -> active
-        Difficulty.HARD -> bad
+        Difficulty.EASY -> easy
+        Difficulty.MEDIUM -> medium
+        Difficulty.HARD -> hard
     }
 }
 
@@ -78,6 +85,9 @@ private val LightViz = VizPalette(
     bad = Color(0xFFC2685F), onBad = Color(0xFFFFFFFF),
     info = Color(0xFF3057E3), onInfo = Color(0xFFFFFFFF),
     warn = Color(0xFF7C63BE), onWarn = Color(0xFFFFFFFF),
+    easy = Color(0xFF1F9D5C),
+    medium = Color(0xFFBB7A17),
+    hard = Color(0xFFCB4E45),
 )
 
 private val DarkViz = VizPalette(
@@ -87,6 +97,9 @@ private val DarkViz = VizPalette(
     bad = Color(0xFFCC7A72), onBad = Color(0xFF240605),
     info = Color(0xFF6F92FF), onInfo = Color(0xFF060C1F),
     warn = Color(0xFF9C8AD9), onWarn = Color(0xFF14051F),
+    easy = Color(0xFF3FC189),
+    medium = Color(0xFFE0A93F),
+    hard = Color(0xFFE06C61),
 )
 
 val LocalVizPalette = staticCompositionLocalOf { DarkViz }
