@@ -85,9 +85,12 @@ private val LightViz = VizPalette(
     bad = Color(0xFFC2685F), onBad = Color(0xFFFFFFFF),
     info = Color(0xFF3057E3), onInfo = Color(0xFFFFFFFF),
     warn = Color(0xFF7C63BE), onWarn = Color(0xFFFFFFFF),
-    easy = Color(0xFF1F9D5C),
-    medium = Color(0xFFBB7A17),
-    hard = Color(0xFFCB4E45),
+    // A blue gradient rather than a second traffic-light set: palest for
+    // Easy, the app's own primary blue for Medium, deepest/most saturated
+    // for Hard — intensity carries the severity instead of hue.
+    easy = Color(0xFF7C93E8),
+    medium = Color(0xFF3057E3),
+    hard = Color(0xFF1E3A99),
 )
 
 private val DarkViz = VizPalette(
@@ -97,9 +100,9 @@ private val DarkViz = VizPalette(
     bad = Color(0xFFCC7A72), onBad = Color(0xFF240605),
     info = Color(0xFF6F92FF), onInfo = Color(0xFF060C1F),
     warn = Color(0xFF9C8AD9), onWarn = Color(0xFF14051F),
-    easy = Color(0xFF3FC189),
-    medium = Color(0xFFE0A93F),
-    hard = Color(0xFFE06C61),
+    easy = Color(0xFF8B9AC7),
+    medium = Color(0xFF6F92FF),
+    hard = Color(0xFF4C6FFF),
 )
 
 val LocalVizPalette = staticCompositionLocalOf { DarkViz }
