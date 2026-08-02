@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-Algo Atlas — a Compose Multiplatform study app: DSA topics with steppable
+Stacks — a Compose Multiplatform study app: DSA topics with steppable
 animated visualisations, code in Kotlin/Go/JavaScript, and interview questions.
 Read mostly on an Android phone.
 
@@ -36,8 +36,8 @@ uses the AGP 9 `androidLibrary` KMP DSL, not `com.android.library`:
 Compiling proves nothing about layout. For any UI change, check it on a device:
 
 ```bash
-adb shell am force-stop dev.mks.algoatlas
-adb shell am start -n dev.mks.algoatlas/dev.mks.algoatlas.android.MainActivity
+adb shell am force-stop dev.mks.stacks
+adb shell am start -n dev.mks.stacks/dev.mks.stacks.android.MainActivity
 adb exec-out screencap -p > /tmp/check.png
 ```
 
@@ -60,7 +60,7 @@ xcrun simctl boot "iPhone 17" 2>/dev/null; open -a Simulator
 APP_PATH=$(find ~/Library/Developer/Xcode/DerivedData/iosApp-*/Build/Products/Debug-iphonesimulator \
   -maxdepth 1 -name "iosApp.app")
 xcrun simctl install "iPhone 17" "$APP_PATH"
-xcrun simctl launch "iPhone 17" dev.mks.algoatlas
+xcrun simctl launch "iPhone 17" dev.mks.stacks
 xcrun simctl io "iPhone 17" screenshot /tmp/ios_check.png
 ```
 

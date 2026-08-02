@@ -12,11 +12,11 @@ dependencies {
 }
 
 android {
-    namespace = "dev.mks.algoatlas.android"
+    namespace = "dev.mks.stacks.android"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
     defaultConfig {
-        applicationId = "dev.mks.algoatlas"
+        applicationId = "dev.mks.stacks"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1

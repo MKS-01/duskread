@@ -1,4 +1,4 @@
-# Algo Atlas
+# Stacks
 
 Data structures and algorithms notes, built to be read on a phone.
 
@@ -71,7 +71,7 @@ the full account, including the decision record and known gaps. There is a
 rendered version at [`docs/architecture.html`](docs/architecture.html).
 
 ```
-composeApp/src/commonMain/kotlin/dev/mks/algoatlas/
+composeApp/src/commonMain/kotlin/dev/mks/stacks/
 ├── model/      Topic, Scene, Frame — everything the UI renders is plain data
 ├── content/    the notes themselves, one file per topic
 ├── viz/        frame generators: run the algorithm once, record each step

@@ -47,22 +47,20 @@ that can.
 
 ## Naming
 
-`Algo Atlas` stops fitting once this covers ML and agentic coding.
+`Algo Atlas` stopped fitting once the app grew a Pomodoro timer and a reading
+mode alongside the DSA content — decided and executed: **`Stacks`**.
 
-**Recommendation: `Atlas`.**
+`Atlas` was the earlier front-runner (see history below) on the argument that
+it scales cleanly as the app widens past algorithms. `Stacks` won instead for
+the double meaning: a stack is already a topic in the curriculum, and "stacks
+of books/reading" fits the direction toward general study and reading tools,
+not just algorithms. Package is now `dev.mks.stacks`.
 
-An atlas is precisely this product — a collection of maps you consult to
-navigate territory you do not know yet, dipped into rather than read cover to
-cover, valued for coverage *and* accuracy. It carries over from the current
-name, so nothing already built feels renamed. It scales to any subject without
-strain, and it is short enough to say out loud.
-
-Package would become `dev.mks.atlas`.
-
-Alternatives worth considering:
+Alternatives considered and passed over:
 
 | Name | Argument | Against |
 |---|---|---|
+| **Atlas** | Collection of maps you consult, dipped into rather than read cover to cover; carries over from the old name. | Reads as reference-only; doesn't hint at the focus/reading tools alongside the content. |
 | **Bedrock** | Foundations, the layer everything sits on. Strong and concrete. | Slightly heavy; suggests only basics, not LLMs or agents. |
 | **Lodestar** | What you navigate by. Memorable, uncommon. | Less obviously a reference work. |
 | **Primer** | Exactly the genre — the first thing you read on a subject. | Generic, hard to search for, many products use it. |
@@ -253,8 +251,8 @@ during process start instead of adding time to it. Keep it under 800 ms and
 never add an artificial delay.
 
 Design: the app mark on the background colour, with the icon animating in.
-Given the "Atlas" name, a mark built from a simple grid or contour-line motif
-would suit — abstract, no literal book or globe.
+Given the "Stacks" name, a mark built from stacked bars or plates would suit —
+abstract, no literal book icon.
 
 Also needed at the same time: **adaptive launcher icon** (foreground/background
 layers), monochrome variant for themed icons, and a proper app label.
@@ -266,7 +264,7 @@ layers), monochrome variant for themed icons, and a proper app label.
   desktop, `localStorage` on Wasm. One expect/actual.
 - **Progress** — mark topics read; a strip atop Learn. Same persistence layer.
 - **Company filter in Practice** — `askedAt` is already in the model.
-- **Deep links** — `atlas://topic/binary-search`, so notes and messages can
+- **Deep links** — `stacks://topic/binary-search`, so notes and messages can
   point at a page. Needed before any sharing feature.
 - **Text scaling** — respect the system font size; currently untested.
 - **Offline is already true** and worth keeping: everything ships in the

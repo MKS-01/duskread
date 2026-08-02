@@ -9,6 +9,9 @@
     <!-- For the Reader's playback foreground service (API 34+). -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
 
+    <!-- For the dashboard's Trending card, the only network call in the app. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <!--
         Package visibility (Android 11+) for the Custom Tabs host. Launching a
         link works without this, but anything that inspects browsers — warmup,
@@ -26,12 +29,14 @@
 
     <application
         android:allowBackup="true"
-        android:label="Algo Atlas"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:label="Stacks"
         android:supportsRtl="true"
-        android:theme="@style/Theme.AlgoAtlas.Splash">
+        android:theme="@style/Theme.Stacks.Splash">
 
         <activity
-            android:name="dev.mks.algoatlas.android.MainActivity"
+            android:name="dev.mks.stacks.android.MainActivity"
             android:exported="true"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode|density|fontScale"
             android:windowSoftInputMode="adjustResize">
@@ -47,7 +52,7 @@
             harmless no-op on older versions where the type is not enforced.
         -->
         <service
-            android:name="dev.mks.algoatlas.pomodoro.PomodoroService"
+            android:name="dev.mks.stacks.pomodoro.PomodoroService"
             android:exported="false"
             android:foregroundServiceType="specialUse">
             <property
@@ -57,7 +62,7 @@
 
         <!-- Reader playback: a real foreground-service type exists for this one. -->
         <service
-            android:name="dev.mks.algoatlas.reader.ReaderPlaybackService"
+            android:name="dev.mks.stacks.reader.ReaderPlaybackService"
             android:exported="false"
             android:foregroundServiceType="mediaPlayback" />
     </application>

@@ -1,4 +1,4 @@
-rootProject.name = "AlgoAtlas"
+rootProject.name = "Stacks"
 
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 

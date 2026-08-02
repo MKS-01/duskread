@@ -1,6 +1,6 @@
 # Architecture
 
-How Algo Atlas is built, and why. Written 2026-07-28, against six topics and
+How Stacks is built, and why. Written 2026-07-28, against six topics and
 four chapters.
 
 A rendered version of this document lives at [`architecture.html`](architecture.html).

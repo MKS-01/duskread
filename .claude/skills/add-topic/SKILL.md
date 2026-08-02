@@ -1,9 +1,9 @@
 ---
 name: add-topic
-description: Add a new DSA topic to Algo Atlas — note content, an animated scene, 3-language code, and interview questions. Use when the user asks to add, write, or draft a topic/chapter for the algo notes app (e.g. "add quicksort", "add a topic on tries", "write up Dijkstra").
+description: Add a new DSA topic to Stacks — note content, an animated scene, 3-language code, and interview questions. Use when the user asks to add, write, or draft a topic/chapter for the algo notes app (e.g. "add quicksort", "add a topic on tries", "write up Dijkstra").
 ---
 
-# Adding a topic to Algo Atlas
+# Adding a topic to Stacks
 
 A topic is plain data. Nothing here touches the UI — the renderers already
 handle every scene type, so adding a topic means writing content and a frame
@@ -11,7 +11,7 @@ generator, never a composable.
 
 ## 1. Write the content file
 
-Create `composeApp/src/commonMain/kotlin/dev/mks/algoatlas/content/<Name>.kt`
+Create `composeApp/src/commonMain/kotlin/dev/mks/stacks/content/<Name>.kt`
 holding a single `val` of type `Topic`. Copy the shape from
 `content/HashTables.kt` — it is the most complete example.
 
@@ -119,8 +119,8 @@ session shape (e.g. scheduled spaced-repetition review) would justify a third.
 Then check it on a device, because compiling proves nothing about layout:
 
 ```bash
-adb shell am force-stop dev.mks.algoatlas
-adb shell am start -n dev.mks.algoatlas/dev.mks.algoatlas.android.MainActivity
+adb shell am force-stop dev.mks.stacks
+adb shell am start -n dev.mks.stacks/dev.mks.stacks.android.MainActivity
 adb exec-out screencap -p > /tmp/check.png
 ```
 
