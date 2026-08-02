@@ -1,13 +1,18 @@
 # Stacks
 
-Data structures and algorithms notes, built to be read on a phone.
+DSA notes built to be read on a phone, alongside a focus timer and a reader
+for whatever you're studying from elsewhere — one app for the whole study
+session, not just the notes part of it.
 
 Each topic carries an explanation, an **animated visualisation** you can step
 through frame by frame, implementations in **Kotlin, Go and JavaScript**, and
 the two or three interview questions that topic actually gets asked through.
+A Pomodoro timer runs alongside it, and the Reader tab picks up a synced
+[readback](https://github.com/MKS-01/readback) audio library where you left
+off.
 
 Built with **Compose Multiplatform** — one Kotlin codebase targeting Android,
-iOS, desktop and web. Six topics so far, across four chapters; the intended
+iOS, desktop and web. Nine topics so far, across five chapters; the intended
 curriculum is roughly forty, ordered basic to advanced.
 
 ## Running it
@@ -76,7 +81,7 @@ composeApp/src/commonMain/kotlin/dev/mks/stacks/
 ├── content/    the notes themselves, one file per topic
 ├── viz/        frame generators: run the algorithm once, record each step
 └── ui/
-    ├── home/   two tabs behind a floating bottom bar
+    ├── home/   Home, Library and Reader behind a floating bottom bar, search growing out of it
     ├── viz/    renderers that play frames back
     ├── code/   syntax highlighting for the three languages
     └── theme/  Material scheme, plus the semantic visualisation palette
@@ -111,9 +116,9 @@ topic actually on screen.
 A `Topic` is a plain data class: prose paragraphs, key points, a complexity
 table, a `Map<Lang, String>` of code samples, questions, references, and an
 optional scene. Chapters group topics, and `content/Catalog.kt` is the single
-registry — everything else derives from it. `AllQuestions` feeds the Practice
-tab, so a new topic's questions appear with no extra wiring, and `searchTopics`
-backs the search sheet.
+registry — everything else derives from it. `AllQuestions` feeds the Library
+tab's questions filter, so a new topic's questions appear with no extra
+wiring, and `searchTopics` backs the search screen.
 
 Content is compiled Kotlin rather than parsed files. That is pleasant at this
 size — type-safe, refactorable, no parsing — and the roadmap plans the move to
@@ -128,12 +133,15 @@ navigation library. State is `remember { mutableStateOf(...) }` hoisted into
 nullable topic id plus `AnimatedContent`, with a 720dp breakpoint that switches
 between a two-pane layout and a single-pane stack.
 
-This is not minimalism for its own sake. There is no network, no database, no
-async work and no mutable domain state — the entire content set is compile-time
-constants. A ViewModel here would be a box with nothing in it. That calculus
-changes when bookmarks and progress arrive, since persistence brings suspending
-calls and state that outlives composition; until then, adding architecture would
-only add indirection.
+This is not minimalism for its own sake. The content itself has no network, no
+database and no mutable domain state — the entire topic set is compile-time
+constants, and a ViewModel over it would be a box with nothing in it. The
+Trending card is the one place with real async work (a network fetch, a
+cache), and it still just holds its own `remember { mutableStateOf(...) }`
+rather than reaching for one — one `LaunchedEffect` doesn't earn a layer. That
+calculus changes when bookmarks and progress arrive, since persistence brings
+suspending calls and state that outlives composition across the whole app;
+until then, adding architecture would only add indirection.
 
 ### Platform differences are three functions
 
@@ -181,10 +189,15 @@ is one file in `content/`, optionally a frame generator in `viz/`, and a line in
 ./gradlew ktlintFormat   # auto-fix
 ```
 
-Four dependencies, and each earns its place: `activity-compose` for the back
-handler, `androidx.browser` for Custom Tabs, `core-splashscreen` for the launch
-window, and `haze` for the backdrop blur behind the floating bar — no Compose
-API blurs what sits *behind* a composable across all four targets.
+Each dependency earns its place: `activity-compose` for the back handler,
+`androidx.browser` for Custom Tabs, `core-splashscreen` for the launch window,
+and `haze` for the backdrop blur behind the floating bar — no Compose API
+blurs what sits *behind* a composable across all four targets. The dashboard's
+Trending card is the one exception to "no network required": it needed an
+HTTP client and an image loader multiplatform Compose doesn't ship, so it
+pulls in Ktor (per-platform engine: OkHttp, Darwin, or the JS engine) and
+Coil 3, both chosen because they already support all four targets rather than
+needing an `expect`/`actual` client of our own.
 
 Several ktlint rules are switched off in `.editorconfig` where they fought
 deliberate layout — scene definitions group related arguments on one line, and
