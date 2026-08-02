@@ -45,7 +45,10 @@ val Chapters: List<Chapter> = listOf(
 
 val AllTopics: List<Topic> = Chapters.flatMap { it.topics }
 
-fun topicById(id: String): Topic? = AllTopics.firstOrNull { it.id == id }
+/** Keyed lookup for opening a topic — every screen renders off this map, never a fresh scan. */
+private val TopicsById: Map<String, Topic> = AllTopics.associateBy { it.id }
+
+fun topicById(id: String): Topic? = TopicsById[id]
 
 fun chapterOf(topic: Topic): Chapter? = Chapters.firstOrNull { chapter ->
     chapter.topics.any { it.id == topic.id }

@@ -441,7 +441,7 @@ private fun highlightedText(
     }
 }
 
-private fun formatDuration(seconds: Double): String {
+internal fun formatDuration(seconds: Double): String {
     val total = seconds.toInt().coerceAtLeast(0)
     val minutes = total / 60
     val secs = total % 60

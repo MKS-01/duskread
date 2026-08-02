@@ -60,6 +60,26 @@ object AtlasIcons {
         }
     }
 
+    /** Home: a roofline over a floor — the dashboard, not a curriculum step. */
+    val Home: ImageVector by lazy {
+        icon("Home") {
+            path(
+                stroke = IconStroke.Colour,
+                strokeLineWidth = IconStroke.Width,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round,
+            ) {
+                moveTo(4f, 11.5f)
+                lineTo(12f, 4.5f)
+                lineTo(20f, 11.5f)
+                moveTo(6.2f, 10f)
+                lineTo(6.2f, 19.5f)
+                lineTo(17.8f, 19.5f)
+                lineTo(17.8f, 10f)
+            }
+        }
+    }
+
     /**
      * Practice: a target. Questions are aimed at something specific — the one
      * insight that unlocks them — which a lightning bolt does not say.

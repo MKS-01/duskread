@@ -28,13 +28,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dev.mks.algoatlas.pomodoro.PickableMinutes
+import dev.mks.algoatlas.pomodoro.clockLabel
 import dev.mks.algoatlas.pomodoro.rememberPomodoroController
 import dev.mks.algoatlas.ui.PlatformBackHandler
 import dev.mks.algoatlas.ui.theme.AtlasIcons
 import dev.mks.algoatlas.ui.theme.Radius
 import dev.mks.algoatlas.ui.theme.Stroke
-
-private val PickableMinutes = listOf(15, 25, 30)
 
 /**
  * The big-timer mode: a session used as its own destination rather than a

@@ -46,12 +46,13 @@ import dev.mks.algoatlas.ui.theme.Motion
 @Composable
 fun HomeScreen(
     onOpenTopic: (String) -> Unit,
+    onOpenFocus: () -> Unit,
     greeting: String?,
     isDark: Boolean,
     onToggleTheme: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var tab by remember { mutableStateOf(HomeTab.LEARN) }
+    var tab by remember { mutableStateOf(HomeTab.HOME) }
     var searching by remember { mutableStateOf(false) }
     var query by remember { mutableStateOf("") }
     val hazeState = remember { HazeState() }
@@ -89,15 +90,17 @@ fun HomeScreen(
             label = "tab",
         ) { current ->
             when (current) {
-                HomeTab.LEARN -> LearnTab(
+                HomeTab.HOME -> DashboardTab(
                     greeting = greeting,
                     onOpenTopic = onOpenTopic,
+                    onOpenFocus = onOpenFocus,
+                    onOpenReader = { tab = HomeTab.READER },
                     isDark = isDark,
                     onToggleTheme = onToggleTheme,
                     contentPadding = listPadding,
                 )
 
-                HomeTab.PRACTICE -> PracticeTab(
+                HomeTab.LIBRARY -> LibraryTab(
                     onOpenTopic = onOpenTopic,
                     contentPadding = listPadding,
                 )

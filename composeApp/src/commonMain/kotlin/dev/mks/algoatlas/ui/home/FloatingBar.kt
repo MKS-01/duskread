@@ -31,8 +31,8 @@ import dev.mks.algoatlas.ui.theme.AtlasIcons
 import dev.mks.algoatlas.ui.theme.Motion
 
 enum class HomeTab(val label: String, val icon: ImageVector) {
-    LEARN("Learn", AtlasIcons.Steps),
-    PRACTICE("Practice", AtlasIcons.Target),
+    HOME("Home", AtlasIcons.Home),
+    LIBRARY("Library", AtlasIcons.Steps),
     READER("Reader", AtlasIcons.Waveform),
 }
 

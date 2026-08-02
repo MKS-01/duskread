@@ -1,7 +1,6 @@
 package dev.mks.algoatlas.ui.home
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -18,7 +17,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,43 +31,43 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.mks.algoatlas.content.AllQuestions
-import dev.mks.algoatlas.content.PracticeItem
+import dev.mks.algoatlas.content.Chapters
 import dev.mks.algoatlas.model.Difficulty
 import dev.mks.algoatlas.ui.theme.LocalVizPalette
-import dev.mks.algoatlas.ui.theme.Mono
+import dev.mks.algoatlas.ui.theme.SectionLabel
+import dev.mks.algoatlas.ui.theme.Space
 
 /**
- * Every interview question across the curriculum, in one list.
+ * The curriculum and its practice questions, together.
  *
- * A different session shape from Learn: many short items you skim to check
- * recall, rather than one topic you sit with. Filtering by difficulty is what
- * makes it usable once this reaches a hundred-odd problems.
+ * This used to be two tabs — Learn to browse, Practice to drill. Splitting
+ * them meant a topic's questions were never visible next to the topic itself,
+ * so browsing told you nothing about what you would be asked. Each card now
+ * carries a short question preview; the difficulty filter narrows which
+ * topics show rather than flattening everything into a second list.
  */
 @Composable
-fun PracticeTab(
+fun LibraryTab(
     onOpenTopic: (String) -> Unit,
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
 ) {
     var filter by remember { mutableStateOf<Difficulty?>(null) }
-    val items = remember(filter) {
-        AllQuestions.filter { filter == null || it.question.difficulty == filter }
-    }
 
     LazyColumn(
         modifier = modifier.fillMaxWidth(),
         contentPadding = contentPadding,
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(Space.CardGap),
     ) {
         item("head") {
             Column(Modifier.padding(bottom = 4.dp)) {
                 Text(
-                    text = "Practice",
+                    text = "Library",
                     style = MaterialTheme.typography.headlineMedium,
                     color = MaterialTheme.colorScheme.onBackground,
                 )
                 Text(
-                    text = "${AllQuestions.size} problems from the topics you have read.",
+                    text = "${AllQuestions.size} problems across ${Chapters.sumOf { it.topics.size }} topics.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -84,10 +82,10 @@ fun PracticeTab(
                     .padding(bottom = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(7.dp),
             ) {
-                FilterChip("All", filter == null) { filter = null }
+                DifficultyChip("All", filter == null) { filter = null }
                 Difficulty.entries.forEach { difficulty ->
                     val count = AllQuestions.count { it.question.difficulty == difficulty }
-                    FilterChip(
+                    DifficultyChip(
                         label = "${difficulty.label} · $count",
                         active = filter == difficulty,
                         accent = LocalVizPalette.current.of(difficulty),
@@ -98,16 +96,48 @@ fun PracticeTab(
             }
         }
 
-        items.forEach { item ->
-            item("${item.topic.id}-${item.question.title}") {
-                QuestionRow(item) { onOpenTopic(item.topic.id) }
+        Chapters.forEach { chapter ->
+            val topics = chapter.topics.filter { topic ->
+                filter == null || topic.questions.any { it.difficulty == filter }
+            }
+            if (topics.isEmpty()) return@forEach
+
+            item("${chapter.id}-head") {
+                Column(Modifier.padding(top = 14.dp, bottom = 2.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = chapter.title.uppercase(),
+                            style = SectionLabel,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(Modifier.width(9.dp))
+                        Box(
+                            Modifier
+                                .weight(1f)
+                                .height(1.dp)
+                                .background(MaterialTheme.colorScheme.outlineVariant),
+                        )
+                    }
+                    Spacer(Modifier.height(3.dp))
+                    Text(
+                        text = chapter.blurb,
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
+                    )
+                }
+            }
+
+            topics.forEach { topic ->
+                item(topic.id) {
+                    TopicCard(topic, onClick = { onOpenTopic(topic.id) }, showQuestions = true)
+                }
             }
         }
     }
 }
 
 @Composable
-private fun FilterChip(
+private fun DifficultyChip(
     label: String,
     active: Boolean,
     accent: androidx.compose.ui.graphics.Color? = null,
@@ -135,76 +165,5 @@ private fun FilterChip(
             color = if (active) MaterialTheme.colorScheme.onPrimaryContainer
             else MaterialTheme.colorScheme.onSurfaceVariant,
         )
-    }
-}
-
-@Composable
-private fun QuestionRow(item: PracticeItem, onClick: () -> Unit) {
-    val palette = LocalVizPalette.current
-    val difficultyColor = palette.of(item.question.difficulty)
-
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .background(MaterialTheme.colorScheme.surface)
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(14.dp))
-            .clickable(onClick = onClick)
-            .padding(14.dp),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            item.question.id?.let { id ->
-                Text(
-                    text = "#$id",
-                    fontFamily = Mono,
-                    fontSize = 11.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(end = 7.dp),
-                )
-            }
-            Text(
-                text = item.question.title,
-                style = MaterialTheme.typography.titleSmall,
-                fontSize = 14.5.sp,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.weight(1f),
-            )
-            Text(
-                text = item.question.difficulty.label,
-                fontSize = 9.5.sp,
-                fontWeight = FontWeight.Bold,
-                color = difficultyColor,
-                modifier = Modifier
-                    .clip(CircleShape)
-                    .background(difficultyColor.copy(alpha = 0.14f))
-                    .padding(horizontal = 8.dp, vertical = 3.dp),
-            )
-        }
-
-        Spacer(Modifier.height(7.dp))
-        Text(
-            text = item.question.idea,
-            style = MaterialTheme.typography.bodyMedium,
-            fontSize = 13.sp,
-            lineHeight = 19.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-
-        Spacer(Modifier.height(9.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                Modifier
-                    .size(5.dp)
-                    .clip(CircleShape)
-                    .background(palette.of(item.topic.level)),
-            )
-            Spacer(Modifier.width(6.dp))
-            Text(
-                text = item.topic.title,
-                fontSize = 11.sp,
-                fontFamily = Mono,
-                color = MaterialTheme.colorScheme.primary,
-            )
-        }
     }
 }

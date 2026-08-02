@@ -40,9 +40,18 @@ import dev.mks.algoatlas.ui.theme.Radius
  * The metadata strip along the bottom is the point: level, how many practice
  * questions, and whether there is an animation to watch. Enough to choose what
  * to read next without opening anything.
+ *
+ * [showQuestions] adds up to two of the topic's question titles beneath the
+ * meta row — Library wants that preview so browsing and practice read as one
+ * list; the two-pane list rail does not have the width to spare for it.
  */
 @Composable
-fun TopicCard(topic: Topic, onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun TopicCard(
+    topic: Topic,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    showQuestions: Boolean = false,
+) {
     val palette = LocalVizPalette.current
     val levelColor = palette.of(topic.level)
 
@@ -95,6 +104,38 @@ fun TopicCard(topic: Topic, onClick: () -> Unit, modifier: Modifier = Modifier) 
                 MetaChip(topic.level.label, levelColor)
                 MetaChip("${topic.questions.size} problems", null)
                 if (topic.scene != null) MetaChip("visual", null)
+            }
+
+            if (showQuestions && topic.questions.isNotEmpty()) {
+                Spacer(Modifier.height(8.dp))
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    topic.questions.take(2).forEach { question ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                Modifier
+                                    .size(5.dp)
+                                    .clip(CircleShape)
+                                    .background(palette.of(question.difficulty)),
+                            )
+                            Spacer(Modifier.width(6.dp))
+                            Text(
+                                text = question.title,
+                                fontSize = 11.5.sp,
+                                maxLines = 1,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                    val remaining = topic.questions.size - 2
+                    if (remaining > 0) {
+                        Text(
+                            text = "+$remaining more",
+                            fontSize = 11.sp,
+                            fontFamily = Mono,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                        )
+                    }
+                }
             }
         }
 

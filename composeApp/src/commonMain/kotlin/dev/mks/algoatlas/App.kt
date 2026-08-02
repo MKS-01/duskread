@@ -16,12 +16,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -52,8 +53,8 @@ import dev.mks.algoatlas.ui.TopicScreen
 import dev.mks.algoatlas.ui.home.HomeScreen
 import dev.mks.algoatlas.ui.onboarding.Onboarding
 import dev.mks.algoatlas.ui.pomodoro.FocusScreen
-import dev.mks.algoatlas.ui.pomodoro.PomodoroChip
 import dev.mks.algoatlas.ui.theme.AlgoAtlasTheme
+import dev.mks.algoatlas.ui.theme.AtlasIcons
 import dev.mks.algoatlas.ui.theme.Layout
 import dev.mks.algoatlas.ui.theme.Motion
 
@@ -88,6 +89,7 @@ fun App() {
                         TwoPaneLayout(
                             selectedId = selectedId ?: AllTopics.first().id,
                             onSelect = { selectedId = it },
+                            onOpenFocus = { focusMode = true },
                             lang = lang,
                             onLangChange = { lang = it },
                             isDark = isDark,
@@ -99,6 +101,7 @@ fun App() {
                             greeting = prefs.name?.let { "Hello, $it" },
                             onSelect = { selectedId = it },
                             onBack = { selectedId = null },
+                            onOpenFocus = { focusMode = true },
                             lang = lang,
                             onLangChange = { lang = it },
                             isDark = isDark,
@@ -106,18 +109,6 @@ fun App() {
                         )
                     }
                 }
-
-                // Floats above both layouts, in the bottom corner alongside the
-                // floating bar rather than the top — the top corner is already
-                // the per-tab theme toggle, and a running session should stay
-                // reachable no matter where in the app you are.
-                PomodoroChip(
-                    onOpen = { focusMode = true },
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .navigationBarsPadding()
-                        .padding(bottom = 14.dp, end = 16.dp),
-                )
 
                 // The big-timer mode: a full-screen destination for whenever
                 // the point is to actually stare at the clock, not glance at a
@@ -140,6 +131,7 @@ private fun PhoneLayout(
     greeting: String?,
     onSelect: (String) -> Unit,
     onBack: () -> Unit,
+    onOpenFocus: () -> Unit,
     lang: Lang,
     onLangChange: (Lang) -> Unit,
     isDark: Boolean,
@@ -167,6 +159,7 @@ private fun PhoneLayout(
         if (current == null) {
             HomeScreen(
                 onOpenTopic = onSelect,
+                onOpenFocus = onOpenFocus,
                 greeting = greeting,
                 isDark = isDark,
                 onToggleTheme = onToggleTheme,
@@ -210,6 +203,7 @@ private fun PhoneLayout(
 private fun TwoPaneLayout(
     selectedId: String,
     onSelect: (String) -> Unit,
+    onOpenFocus: () -> Unit,
     lang: Lang,
     onLangChange: (Lang) -> Unit,
     isDark: Boolean,
@@ -229,6 +223,22 @@ private fun TwoPaneLayout(
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.weight(1f),
                 )
+                Box(
+                    Modifier
+                        .size(34.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surfaceContainer)
+                        .clickable(onClick = onOpenFocus),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = AtlasIcons.Play,
+                        contentDescription = "Open focus timer",
+                        modifier = Modifier.size(15.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Spacer(Modifier.width(6.dp))
                 Box(
                     Modifier
                         .size(34.dp)

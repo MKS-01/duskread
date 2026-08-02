@@ -29,6 +29,17 @@ object PomodoroClock {
     }
 }
 
+/** Durations offered wherever a session can be quick-started. */
+val PickableMinutes = listOf(15, 25, 30)
+
+/** `mm:ss` remaining — shared by the Focus card and the full-screen timer. */
+val PomodoroState.clockLabel: String
+    get() {
+        val minutes = remainingSeconds / 60
+        val seconds = remainingSeconds % 60
+        return "$minutes:${seconds.toString().padStart(2, '0')}"
+    }
+
 interface PomodoroController {
     val state: StateFlow<PomodoroState>
 
