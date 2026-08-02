@@ -34,24 +34,18 @@ import dev.mks.stacks.ui.theme.Radius
 import dev.mks.stacks.ui.theme.StacksIcons
 
 /**
- * One topic as a tappable card.
- *
- * The metadata strip along the bottom is the point: level, how many practice
- * questions, and whether there is an animation to watch. Enough to choose what
- * to read next without opening anything.
- *
- * [showQuestions] adds one of the topic's question titles beneath the meta
- * row — Library wants that preview so browsing and practice read as one
- * list; the two-pane list rail does not have the width to spare for it. Kept
- * to one line rather than two now that the card itself is compact, since the
- * curriculum keeps growing and a shorter card means less scrolling per topic.
+ * One topic as a tappable card, kept to a single compact row: title, one-line
+ * tagline, and a meta strip (level, problem count, whether there is an
+ * animation to watch). Enough to choose what to read next without opening
+ * anything. No per-question preview any more — the curriculum keeps growing,
+ * and a shorter card means less scrolling per topic; the meta strip's problem
+ * count is enough of a signal, and Practice detail lives one tap away.
  */
 @Composable
 fun TopicCard(
     topic: Topic,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    showQuestions: Boolean = false,
 ) {
     val palette = LocalVizPalette.current
     val levelColor = palette.of(topic.level)
@@ -70,7 +64,7 @@ fun TopicCard(
         // the title rather than floating beside the middle of the card.
         Box(
             Modifier
-                .padding(vertical = 12.dp, horizontal = 10.dp)
+                .padding(vertical = 10.dp, horizontal = 10.dp)
                 .width(3.dp)
                 .fillMaxHeight()
                 .clip(RoundedCornerShape(Radius.Marker))
@@ -80,24 +74,24 @@ fun TopicCard(
         Column(
             Modifier
                 .weight(1f)
-                .padding(top = 10.dp, bottom = 10.dp, end = 8.dp),
+                .padding(top = 8.dp, bottom = 8.dp, end = 8.dp),
         ) {
             Text(
                 text = topic.title,
                 style = MaterialTheme.typography.titleSmall,
-                fontSize = 15.sp,
+                fontSize = 14.5.sp,
                 color = MaterialTheme.colorScheme.onSurface,
             )
             Spacer(Modifier.height(2.dp))
             Text(
                 text = topic.tagline,
-                fontSize = 12.sp,
-                lineHeight = 15.sp,
+                fontSize = 11.5.sp,
+                lineHeight = 14.sp,
                 maxLines = 1,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
-            Spacer(Modifier.height(7.dp))
+            Spacer(Modifier.height(6.dp))
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -105,38 +99,6 @@ fun TopicCard(
                 MetaChip(topic.level.label, levelColor)
                 MetaChip("${topic.questions.size} problems", null)
                 if (topic.scene != null) MetaChip("visual", null)
-            }
-
-            if (showQuestions && topic.questions.isNotEmpty()) {
-                Spacer(Modifier.height(6.dp))
-                Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                    topic.questions.take(1).forEach { question ->
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                Modifier
-                                    .size(5.dp)
-                                    .clip(CircleShape)
-                                    .background(palette.of(question.difficulty)),
-                            )
-                            Spacer(Modifier.width(6.dp))
-                            Text(
-                                text = question.title,
-                                fontSize = 11.sp,
-                                maxLines = 1,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
-                    val remaining = topic.questions.size - 1
-                    if (remaining > 0) {
-                        Text(
-                            text = "+$remaining more",
-                            fontSize = 10.5.sp,
-                            fontFamily = Mono,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                        )
-                    }
-                }
             }
         }
 

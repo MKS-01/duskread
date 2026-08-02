@@ -42,9 +42,10 @@ import dev.mks.stacks.ui.theme.Space
  *
  * This used to be two tabs — Learn to browse, Practice to drill. Splitting
  * them meant a topic's questions were never visible next to the topic itself,
- * so browsing told you nothing about what you would be asked. Each card now
- * carries a short question preview; the difficulty filter narrows which
- * topics show rather than flattening everything into a second list.
+ * so browsing told you nothing about what you would be asked. The difficulty
+ * filter narrows which topics show rather than flattening everything into a
+ * second list; each card's problem count is the signal, question detail is
+ * one tap away rather than inline, so cards stay short as the curriculum grows.
  */
 @Composable
 fun LibraryTab(
@@ -129,7 +130,7 @@ fun LibraryTab(
 
             topics.forEach { topic ->
                 item(topic.id) {
-                    TopicCard(topic, onClick = { onOpenTopic(topic.id) }, showQuestions = true)
+                    TopicCard(topic, onClick = { onOpenTopic(topic.id) })
                 }
             }
         }
