@@ -6,12 +6,19 @@ import android.database.sqlite.SQLiteDatabase
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,6 +35,8 @@ import androidx.documentfile.provider.DocumentFile
 import dev.mks.stacks.data.KeyValueStore
 import dev.mks.stacks.data.rememberKeyValueStore
 import dev.mks.stacks.ui.theme.Radius
+import dev.mks.stacks.ui.theme.StacksIcons
+import dev.mks.stacks.ui.theme.Stroke
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -164,15 +173,31 @@ actual fun ReaderSourcePicker(repository: ReadRepository, compact: Boolean) {
 
     if (compact) {
         Column {
-            Text(
-                text = "Change folder",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier
+            // A folder icon plus a pill background, rather than plain text —
+            // this sits next to the Newest/Oldest sort chips and needs to
+            // read as its own tappable action, not a stray hyperlink.
+            Row(
+                Modifier
                     .clip(RoundedCornerShape(Radius.Pill))
+                    .background(MaterialTheme.colorScheme.surfaceContainer)
+                    .border(Stroke.Hairline, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(Radius.Pill))
                     .clickable { pickFolder.launch(null) }
                     .padding(horizontal = 13.dp, vertical = 7.dp),
-            )
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    imageVector = StacksIcons.Folder,
+                    contentDescription = null,
+                    modifier = Modifier.size(14.dp),
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    text = "Change folder",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
             error?.let { message ->
                 Text(
                     text = message,

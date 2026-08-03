@@ -257,6 +257,26 @@ object StacksIcons {
         }
     }
 
+    /** A plain folder, no connect badge — for switching an already-linked folder, not pairing a new one. */
+    val Folder: ImageVector by lazy {
+        icon("Folder") {
+            path(
+                stroke = IconStroke.Colour,
+                strokeLineWidth = IconStroke.Width,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round,
+            ) {
+                moveTo(3f, 6f)
+                lineTo(9.5f, 6f)
+                lineTo(11.5f, 8.5f)
+                lineTo(21f, 8.5f)
+                lineTo(21f, 18f)
+                lineTo(3f, 18f)
+                close()
+            }
+        }
+    }
+
     /**
      * A folder with a small link badge — for connecting the Reader to a
      * synced readback folder for the first time.

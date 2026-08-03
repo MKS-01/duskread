@@ -1,12 +1,19 @@
 package dev.mks.stacks.reader
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -16,12 +23,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import dev.mks.stacks.data.KeyValueStore
 import dev.mks.stacks.data.rememberKeyValueStore
 import dev.mks.stacks.ui.theme.Radius
+import dev.mks.stacks.ui.theme.StacksIcons
+import dev.mks.stacks.ui.theme.Stroke
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -129,15 +139,31 @@ actual fun ReaderSourcePicker(repository: ReadRepository, compact: Boolean) {
     var path by remember { mutableStateOf(desktopRepository.currentPath()) }
 
     if (compact && !expanded) {
-        Text(
-            text = "Change folder",
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier
+        // A folder icon plus a pill background, rather than plain text —
+        // this sits next to the Newest/Oldest sort chips and needs to read
+        // as its own tappable action, not a stray hyperlink.
+        Row(
+            Modifier
                 .clip(RoundedCornerShape(Radius.Pill))
+                .background(MaterialTheme.colorScheme.surfaceContainer)
+                .border(Stroke.Hairline, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(Radius.Pill))
                 .clickable { expanded = true }
                 .padding(horizontal = 13.dp, vertical = 7.dp),
-        )
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = StacksIcons.Folder,
+                contentDescription = null,
+                modifier = Modifier.size(14.dp),
+                tint = MaterialTheme.colorScheme.primary,
+            )
+            Spacer(Modifier.width(6.dp))
+            Text(
+                text = "Change folder",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
         return
     }
 
