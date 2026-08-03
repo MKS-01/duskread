@@ -10,9 +10,8 @@ same treatment throughout, one concept, one page, read in ten minutes.
 
 Each topic carries an explanation that opens on the problem rather than the
 definition, an **animated visualisation** you can step through frame by
-frame, implementations in **Kotlin, Go and JavaScript**, and a couple of
-interview questions it actually shows up in. A Pomodoro timer runs alongside
-it, and the Reader tab picks up a synced
+frame, and implementations in **Kotlin, Go and JavaScript**. A Pomodoro
+timer runs alongside it, and the Reader tab picks up a synced
 [readback](https://github.com/MKS-01/readback) audio library where you left
 off.
 
