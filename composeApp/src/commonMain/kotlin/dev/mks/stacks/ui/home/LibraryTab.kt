@@ -82,6 +82,9 @@ fun LibraryTab(
                     .horizontalScroll(rememberScrollState())
                     .padding(bottom = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(7.dp),
+                // "All" has no accent dot, the rest do — without this they
+                // default to top-aligned instead of sharing a centre line.
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 DifficultyChip("All", filter == null) { filter = null }
                 Difficulty.entries.forEach { difficulty ->

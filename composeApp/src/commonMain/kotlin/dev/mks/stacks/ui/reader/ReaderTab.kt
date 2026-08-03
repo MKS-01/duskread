@@ -138,6 +138,10 @@ fun ReaderTab(contentPadding: PaddingValues, modifier: Modifier = Modifier) {
                     .horizontalScroll(rememberScrollState())
                     .padding(bottom = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(7.dp),
+                // The icon chip from ReaderSourcePicker is taller than the
+                // plain-text sort chips beside it — without this they default
+                // to top-aligned instead of sharing a centre line.
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 SortChip("Newest", sort == ReadSort.NEWEST) { sort = ReadSort.NEWEST }
                 SortChip("Oldest", sort == ReadSort.OLDEST) { sort = ReadSort.OLDEST }
