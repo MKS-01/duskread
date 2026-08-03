@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -63,6 +64,10 @@ fun TopicCard(
             .clickable(onClick = onClick),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        // A stronger at-a-glance signal than the meta chip's small dot alone —
+        // clipped by the card's own rounded corners since it sits inside them.
+        Box(Modifier.fillMaxHeight().width(3.dp).background(levelColor))
+
         Column(
             Modifier
                 .weight(1f)
