@@ -39,6 +39,14 @@ data class VizPalette(
     val easy: Color,
     val medium: Color,
     val hard: Color,
+    // Topic level is a blue gradient too, same intensity-carries-severity
+    // idea as difficulty — but a cooler, cyan-leaning blue rather than
+    // difficulty's indigo one, so a level badge and a difficulty badge
+    // sitting on the same screen (topic detail) still read as two distinct
+    // signals rather than one dot repeated twice.
+    val levelBasic: Color,
+    val levelIntermediate: Color,
+    val levelAdvanced: Color,
 ) {
     fun bg(tone: Tone): Color = when (tone) {
         Tone.IDLE -> idle
@@ -59,9 +67,9 @@ data class VizPalette(
     }
 
     fun of(level: Level): Color = when (level) {
-        Level.BASIC -> good
-        Level.INTERMEDIATE -> active
-        Level.ADVANCED -> bad
+        Level.BASIC -> levelBasic
+        Level.INTERMEDIATE -> levelIntermediate
+        Level.ADVANCED -> levelAdvanced
     }
 
     fun of(difficulty: Difficulty): Color = when (difficulty) {
@@ -91,6 +99,12 @@ private val LightViz = VizPalette(
     easy = Color(0xFF7C93E8),
     medium = Color(0xFF3057E3),
     hard = Color(0xFF1E3A99),
+    // Same intensity-gradient idea, cyan-leaning rather than indigo so it
+    // reads as a distinct signal from difficulty above when both appear
+    // on the same screen.
+    levelBasic = Color(0xFF6FB8D4),
+    levelIntermediate = Color(0xFF2E8FB0),
+    levelAdvanced = Color(0xFF1A5C73),
 )
 
 private val DarkViz = VizPalette(
@@ -103,6 +117,9 @@ private val DarkViz = VizPalette(
     easy = Color(0xFF8B9AC7),
     medium = Color(0xFF6F92FF),
     hard = Color(0xFF4C6FFF),
+    levelBasic = Color(0xFF7FC4D9),
+    levelIntermediate = Color(0xFF4FA8C9),
+    levelAdvanced = Color(0xFF2D7A99),
 )
 
 val LocalVizPalette = staticCompositionLocalOf { DarkViz }
