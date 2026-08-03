@@ -130,19 +130,18 @@ fun DashboardTab(
             }
         }
 
+        // Leads the screen — the focus timer is the habit this app wants
+        // reached for every time it opens, ahead of any specific content pick.
+        item("focus") {
+            FocusCard(onOpen = onOpenFocus, modifier = Modifier.padding(top = 6.dp))
+        }
+
         item("library-pick") {
-            LibraryPickCard(modifier = Modifier.padding(top = 6.dp))
+            LibraryPickCard()
         }
 
         item("algo-of-day") {
             AlgoOfDayCard(onOpen = onOpenTopic)
-        }
-
-        // Ahead of Readback, not at the very top — today's topic stays the
-        // first thing seen, but the timer still surfaces before whatever
-        // happens to be queued up in the reader.
-        item("focus") {
-            FocusCard(onOpen = onOpenFocus)
         }
 
         item("readback") {
@@ -220,13 +219,24 @@ private fun FocusCard(onOpen: () -> Unit, modifier: Modifier = Modifier) {
             .padding(16.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                imageVector = if (!state.idle && state.running) StacksIcons.Pause else StacksIcons.Play,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp),
-                tint = MaterialTheme.colorScheme.primary,
-            )
-            Spacer(Modifier.width(8.dp))
+            // A badge rather than a bare glyph — this card now leads the
+            // screen, and the other lead-in eyebrows (theme toggle, Reader's
+            // empty state) all give their icon a filled circle of its own.
+            Box(
+                Modifier
+                    .size(30.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primaryContainer),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = if (!state.idle && state.running) StacksIcons.Pause else StacksIcons.Play,
+                    contentDescription = null,
+                    modifier = Modifier.size(15.dp),
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+            }
+            Spacer(Modifier.width(10.dp))
             Text(
                 text = "FOCUS",
                 style = SectionLabel,
