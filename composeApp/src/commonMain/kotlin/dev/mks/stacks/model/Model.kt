@@ -21,10 +21,14 @@ enum class Level(val label: String) {
     ADVANCED("Advanced"),
 }
 
+// Labels read as Basic/Intermediate/Advanced rather than LeetCode's own
+// Easy/Medium/Hard, so a question's difficulty and a topic's level share one
+// vocabulary everywhere they appear together in the UI. The enum names stay
+// EASY/MEDIUM/HARD since that's still what LeetCode itself calls them.
 enum class Difficulty(val label: String) {
-    EASY("Easy"),
-    MEDIUM("Medium"),
-    HARD("Hard"),
+    EASY("Basic"),
+    MEDIUM("Intermediate"),
+    HARD("Advanced"),
 }
 
 data class ComplexityRow(
