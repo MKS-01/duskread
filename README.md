@@ -1,12 +1,12 @@
 # Stacks
 
-Tech concepts explained properly, read on a phone — a focus timer and a
-reader for whatever you're studying elsewhere sit alongside the notes, so it's
-one app for the whole study session.
+Algorithms explained properly, read on a phone — a focus timer and a reader
+for whatever you're studying elsewhere sit alongside the notes, so it's one
+app for the whole study session.
 
-Not just DSA: algorithms are the current core, but the curriculum widens to
-systems, cryptography, AI/ML and agentic coding. Same shape throughout — one
-concept, one page, read in ten minutes.
+Not just classic DSA: sorting, searching and graph algorithms are the
+current core, and cryptographic and ML/AI algorithms are on the way in —
+same treatment throughout, one concept, one page, read in ten minutes.
 
 Each topic carries an explanation that opens on the problem rather than the
 definition, an **animated visualisation** you can step through frame by
