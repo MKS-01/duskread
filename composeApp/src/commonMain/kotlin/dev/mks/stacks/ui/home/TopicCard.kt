@@ -54,11 +54,11 @@ fun TopicCard(
             .fillMaxWidth()
             .height(IntrinsicSize.Min)
             .clip(RoundedCornerShape(Radius.Card))
+            // Flat neutral surface, same as every other card in the app
+            // (Home's Algo of the Day, every Reader entry) — level is
+            // carried by the small dot in the meta chip below, not a
+            // full-card colour wash.
             .background(MaterialTheme.colorScheme.surface)
-            // A soft level-coloured wash across the whole card reads at a
-            // glance without needing a hard-edged ribbon to carry it — low
-            // enough alpha that it never competes with the text sitting on it.
-            .background(levelColor.copy(alpha = 0.07f))
             .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(Radius.Card))
             .clickable(onClick = onClick),
         verticalAlignment = Alignment.CenterVertically,

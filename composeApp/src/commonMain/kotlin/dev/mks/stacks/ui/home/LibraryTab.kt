@@ -144,26 +144,13 @@ private fun DifficultyChip(
     accent: androidx.compose.ui.graphics.Color? = null,
     onClick: () -> Unit,
 ) {
-    // Each difficulty gets its own blue-intensity wash rather than one flat
-    // "selected" colour — Easy/Medium/Hard stay visually distinct even while
-    // active, the same idea as TopicCard's level wash. "All" has no accent,
-    // so it keeps the plain primary/surface container treatment.
-    val background = when {
-        accent != null && active -> accent.copy(alpha = 0.22f)
-        accent != null -> accent.copy(alpha = 0.08f)
-        active -> MaterialTheme.colorScheme.primaryContainer
-        else -> MaterialTheme.colorScheme.surfaceContainer
-    }
-    val textColor = when {
-        accent != null && active -> accent
-        active -> MaterialTheme.colorScheme.onPrimaryContainer
-        else -> MaterialTheme.colorScheme.onSurfaceVariant
-    }
-
     Row(
         Modifier
             .clip(CircleShape)
-            .background(background)
+            .background(
+                if (active) MaterialTheme.colorScheme.primaryContainer
+                else MaterialTheme.colorScheme.surfaceContainer,
+            )
             .clickable(onClick = onClick)
             .padding(horizontal = 13.dp, vertical = 7.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -176,7 +163,8 @@ private fun DifficultyChip(
             text = label,
             fontSize = 12.5.sp,
             fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal,
-            color = textColor,
+            color = if (active) MaterialTheme.colorScheme.onPrimaryContainer
+            else MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
