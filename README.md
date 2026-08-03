@@ -12,8 +12,8 @@ A Pomodoro timer runs alongside it, and the Reader tab picks up a synced
 off.
 
 Built with **Compose Multiplatform** — one Kotlin codebase targeting Android,
-iOS, desktop and web. Nine topics so far, across five chapters; the intended
-curriculum is roughly forty, ordered basic to advanced.
+iOS, desktop and web. Thirty topics so far, across seven chapters; the
+intended curriculum is roughly forty, ordered basic to advanced.
 
 ## Running it
 
@@ -78,7 +78,9 @@ rendered version at [`docs/architecture.html`](docs/architecture.html).
 ```
 composeApp/src/commonMain/kotlin/dev/mks/stacks/
 ├── model/      Topic, Scene, Frame — everything the UI renders is plain data
-├── content/    the notes themselves, one file per topic
+├── content/    the notes themselves — Topics.kt holds every Topic value,
+│               Catalog.kt groups them into chapters, References.kt the
+│               shared basecs links
 ├── viz/        frame generators: run the algorithm once, record each step
 └── ui/
     ├── home/   Home, Library and Reader behind a floating bottom bar, search growing out of it
@@ -176,8 +178,8 @@ so that a reader learns them once.
 ## Adding a topic
 
 Run the `/add-topic` skill in `.claude/skills/`, or follow it by hand. A topic
-is one file in `content/`, optionally a frame generator in `viz/`, and a line in
-`content/Catalog.kt`.
+is one `Topic` value appended to `content/Topics.kt`, optionally a frame
+generator in `viz/`, and a line in `content/Catalog.kt`.
 
 ## Development
 
