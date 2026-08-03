@@ -241,6 +241,16 @@ private fun FocusCard(onOpen: () -> Unit, modifier: Modifier = Modifier) {
         )
 
         if (state.idle) {
+            // The other dashboard cards all pair their title with a line of
+            // supporting text before anything else — bare title straight
+            // into the chips was what made this one read as plain next to them.
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = "One topic, no distractions, until the timer runs out.",
+                fontSize = 13.5.sp,
+                lineHeight = 19.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             Spacer(Modifier.height(10.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 PickableMinutes.forEach { minutes ->
