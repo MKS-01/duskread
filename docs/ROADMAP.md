@@ -154,7 +154,9 @@ the coin-change DP table.
 ### Phase 2 — Structural work
 
 The `Track` level, the Markdown content move, splash screen, and the rename.
-No new topics — this is the phase that makes the next 150 affordable.
+No new topics — this is the phase that makes the next 150 affordable. The
+Markdown content move has a concrete plan written up already:
+[`CONTENT-MIGRATION.md`](CONTENT-MIGRATION.md).
 
 **Ships as:** the same app, ready to grow.
 
