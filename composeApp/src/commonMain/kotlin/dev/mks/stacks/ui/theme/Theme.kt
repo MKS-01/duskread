@@ -33,20 +33,16 @@ data class VizPalette(
     val warn: Color,
     val onWarn: Color,
     // Practice difficulty gets its own three colours rather than reusing
-    // good/active/bad: those already mean "topic level" (Basic/Intermediate/
-    // Advanced) elsewhere on the same screen, and a green dot meaning two
-    // different things next to each other is worse than two green families.
+    // good/active/bad: those still mean IDLE/ACTIVE/etc. tones in the
+    // visualiser, and a green dot meaning two different things next to each
+    // other is worse than two green families. Topic level uses this same
+    // trio (see `of(level)` below) — Level and Difficulty now share the
+    // same three words (Basic/Intermediate/Advanced) everywhere in the UI,
+    // so they share the same three colours too, rather than two blues that
+    // would just look like a mismatch on the same label.
     val easy: Color,
     val medium: Color,
     val hard: Color,
-    // Topic level is a blue gradient too, same intensity-carries-severity
-    // idea as difficulty — but a cooler, cyan-leaning blue rather than
-    // difficulty's indigo one, so a level badge and a difficulty badge
-    // sitting on the same screen (topic detail) still read as two distinct
-    // signals rather than one dot repeated twice.
-    val levelBasic: Color,
-    val levelIntermediate: Color,
-    val levelAdvanced: Color,
 ) {
     fun bg(tone: Tone): Color = when (tone) {
         Tone.IDLE -> idle
@@ -67,9 +63,9 @@ data class VizPalette(
     }
 
     fun of(level: Level): Color = when (level) {
-        Level.BASIC -> levelBasic
-        Level.INTERMEDIATE -> levelIntermediate
-        Level.ADVANCED -> levelAdvanced
+        Level.BASIC -> easy
+        Level.INTERMEDIATE -> medium
+        Level.ADVANCED -> hard
     }
 
     fun of(difficulty: Difficulty): Color = when (difficulty) {
@@ -99,12 +95,6 @@ private val LightViz = VizPalette(
     easy = Color(0xFF7C93E8),
     medium = Color(0xFF3057E3),
     hard = Color(0xFF1E3A99),
-    // Same intensity-gradient idea, cyan-leaning rather than indigo so it
-    // reads as a distinct signal from difficulty above when both appear
-    // on the same screen.
-    levelBasic = Color(0xFF6FB8D4),
-    levelIntermediate = Color(0xFF2E8FB0),
-    levelAdvanced = Color(0xFF1A5C73),
 )
 
 private val DarkViz = VizPalette(
@@ -117,9 +107,6 @@ private val DarkViz = VizPalette(
     easy = Color(0xFF8B9AC7),
     medium = Color(0xFF6F92FF),
     hard = Color(0xFF4C6FFF),
-    levelBasic = Color(0xFF7FC4D9),
-    levelIntermediate = Color(0xFF4FA8C9),
-    levelAdvanced = Color(0xFF2D7A99),
 )
 
 val LocalVizPalette = staticCompositionLocalOf { DarkViz }
