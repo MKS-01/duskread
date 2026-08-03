@@ -138,6 +138,9 @@ fun DashboardTab(
             AlgoOfDayCard(onOpen = onOpenTopic)
         }
 
+        // Ahead of Readback, not at the very top — today's topic stays the
+        // first thing seen, but the timer still surfaces before whatever
+        // happens to be queued up in the reader.
         item("focus") {
             FocusCard(onOpen = onOpenFocus)
         }
@@ -257,17 +260,28 @@ private fun FocusCard(onOpen: () -> Unit, modifier: Modifier = Modifier) {
 
 @Composable
 private fun QuickStartChip(text: String, onClick: () -> Unit) {
-    Text(
-        text = text,
-        fontSize = 12.5.sp,
-        fontWeight = FontWeight.Medium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier
+    Row(
+        Modifier
             .clip(RoundedCornerShape(Radius.Pill))
             .background(MaterialTheme.colorScheme.surfaceContainer)
             .clickable(onClick = onClick)
             .padding(horizontal = 13.dp, vertical = 7.dp),
-    )
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = StacksIcons.Clock,
+            contentDescription = null,
+            modifier = Modifier.size(13.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.width(5.dp))
+        Text(
+            text = text,
+            fontSize = 12.5.sp,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
 }
 
 @Composable

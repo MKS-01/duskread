@@ -111,6 +111,26 @@ object StacksIcons {
         }
     }
 
+    /** Clock face with hands at ten-past-ten — for picking or showing a session duration. */
+    val Clock: ImageVector by lazy {
+        icon("Clock") {
+            path(
+                stroke = IconStroke.Colour,
+                strokeLineWidth = IconStroke.Width,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round,
+            ) {
+                moveTo(3.6f, 12f)
+                arcToRelative(8.4f, 8.4f, 0f, true, true, 16.8f, 0f)
+                arcToRelative(8.4f, 8.4f, 0f, true, true, -16.8f, 0f)
+                close()
+                moveTo(12f, 7.2f)
+                lineTo(12f, 12f)
+                lineTo(15.2f, 14f)
+            }
+        }
+    }
+
     /** Search. Deliberately the conventional shape — recognition beats novelty here. */
     val Search: ImageVector by lazy {
         icon("Search") {
