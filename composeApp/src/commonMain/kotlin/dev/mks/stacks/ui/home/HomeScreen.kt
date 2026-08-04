@@ -50,9 +50,10 @@ fun HomeScreen(
     greeting: String?,
     isDark: Boolean,
     onToggleTheme: () -> Unit,
+    tab: HomeTab,
+    onTabChange: (HomeTab) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var tab by remember { mutableStateOf(HomeTab.HOME) }
     var searching by remember { mutableStateOf(false) }
     var query by remember { mutableStateOf("") }
     val hazeState = remember { HazeState() }
@@ -62,7 +63,7 @@ fun HomeScreen(
     val requestedTab by HomeTabRequest.target.collectAsState()
     LaunchedEffect(requestedTab) {
         requestedTab?.let {
-            tab = it
+            onTabChange(it)
             HomeTabRequest.consume()
         }
     }
@@ -94,7 +95,7 @@ fun HomeScreen(
                     greeting = greeting,
                     onOpenTopic = onOpenTopic,
                     onOpenFocus = onOpenFocus,
-                    onOpenReader = { tab = HomeTab.READER },
+                    onOpenReader = { onTabChange(HomeTab.READER) },
                     isDark = isDark,
                     onToggleTheme = onToggleTheme,
                     contentPadding = listPadding,
@@ -115,7 +116,7 @@ fun HomeScreen(
             // background colour would defeat the effect.
             FloatingBar(
                 selected = tab,
-                onSelect = { tab = it },
+                onSelect = onTabChange,
                 onSearch = { searching = true },
                 hazeState = hazeState,
                 modifier = Modifier
@@ -147,7 +148,7 @@ fun HomeScreen(
             },
             onOpenReader = {
                 closeSearch()
-                tab = HomeTab.READER
+                onTabChange(HomeTab.READER)
             },
             onDismiss = ::closeSearch,
         )

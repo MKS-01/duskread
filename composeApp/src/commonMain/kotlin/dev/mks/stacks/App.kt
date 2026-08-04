@@ -29,12 +29,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.LightMode
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -44,6 +46,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import dev.mks.stacks.content.AllTopics
+import dev.mks.stacks.content.loadCatalog
 import dev.mks.stacks.content.topicById
 import dev.mks.stacks.data.rememberUserPrefs
 import dev.mks.stacks.model.Lang
@@ -51,6 +54,7 @@ import dev.mks.stacks.ui.PlatformBackHandler
 import dev.mks.stacks.ui.TopicListPane
 import dev.mks.stacks.ui.TopicScreen
 import dev.mks.stacks.ui.home.HomeScreen
+import dev.mks.stacks.ui.home.HomeTab
 import dev.mks.stacks.ui.onboarding.Onboarding
 import dev.mks.stacks.ui.pomodoro.FocusScreen
 import dev.mks.stacks.ui.theme.Layout
@@ -67,8 +71,21 @@ fun App() {
 
     val prefs = rememberUserPrefs()
 
+    var catalogLoaded by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        loadCatalog()
+        catalogLoaded = true
+    }
+
     StacksTheme(dark = isDark) {
         Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+            if (!catalogLoaded) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+                return@Surface
+            }
+
             if (!prefs.introSeen) {
                 Onboarding(
                     onDone = { name ->
@@ -140,6 +157,12 @@ private fun PhoneLayout(
     val topic = selectedId?.let { topicById(it) }
     PlatformBackHandler(enabled = topic != null, onBack = onBack)
 
+    // Hoisted here, not inside HomeScreen — HomeScreen leaves composition
+    // while a topic is open (it's the null branch of the AnimatedContent
+    // below), so state remembered inside it would reset to HOME on every
+    // return from a topic. This call site survives that swap.
+    var homeTab by remember { mutableStateOf(HomeTab.HOME) }
+
     AnimatedContent(
         targetState = topic?.id,
         transitionSpec = {
@@ -163,6 +186,8 @@ private fun PhoneLayout(
                 greeting = greeting,
                 isDark = isDark,
                 onToggleTheme = onToggleTheme,
+                tab = homeTab,
+                onTabChange = { homeTab = it },
             )
         } else {
             Column(Modifier.fillMaxSize().statusBarsPadding()) {
