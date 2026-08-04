@@ -3,6 +3,7 @@ package dev.mks.stacks.reader
 import android.content.Context
 import android.content.Intent
 import android.database.sqlite.SQLiteDatabase
+import android.database.sqlite.SQLiteException
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -120,28 +121,37 @@ internal class AndroidReadRepository(private val context: Context, private val s
         }
         val args = if (trimmed.isEmpty()) null else Array(4) { "%$trimmed%" }
 
-        val db = SQLiteDatabase.openDatabase(cacheFile.path, null, SQLiteDatabase.OPEN_READONLY)
-        db.query("reads", null, selection, args, null, null, orderBy).use { cursor ->
-            buildList {
-                while (cursor.moveToNext()) {
-                    add(
-                        ReadItem(
-                            id = cursor.getString(cursor.getColumnIndexOrThrow("id")),
-                            title = cursor.getString(cursor.getColumnIndexOrThrow("title")),
-                            summary = cursor.getStringOrNull(cursor.getColumnIndexOrThrow("summary")),
-                            excerpt = cursor.getString(cursor.getColumnIndexOrThrow("excerpt")),
-                            sourceUrl = cursor.getString(cursor.getColumnIndexOrThrow("source_url")),
-                            mode = cursor.getString(cursor.getColumnIndexOrThrow("mode")),
-                            voice = cursor.getString(cursor.getColumnIndexOrThrow("voice")),
-                            durationSec = cursor.getDouble(cursor.getColumnIndexOrThrow("duration_sec")),
-                            wordCount = cursor.getInt(cursor.getColumnIndexOrThrow("word_count")),
-                            audioFilename = cursor.getString(cursor.getColumnIndexOrThrow("audio_filename")),
-                            createdAt = cursor.getString(cursor.getColumnIndexOrThrow("created_at")),
-                        ),
-                    )
+        // A folder can pass the onFolderPicked check (library.db exists) and
+        // still not have synced a single read yet, in which case readback
+        // hasn't created the `reads` table at all — that's "no reads", not
+        // an error, so it degrades to an empty list rather than crashing.
+        try {
+            SQLiteDatabase.openDatabase(cacheFile.path, null, SQLiteDatabase.OPEN_READONLY).use { db ->
+                db.query("reads", null, selection, args, null, null, orderBy).use { cursor ->
+                    buildList {
+                        while (cursor.moveToNext()) {
+                            add(
+                                ReadItem(
+                                    id = cursor.getString(cursor.getColumnIndexOrThrow("id")),
+                                    title = cursor.getString(cursor.getColumnIndexOrThrow("title")),
+                                    summary = cursor.getStringOrNull(cursor.getColumnIndexOrThrow("summary")),
+                                    excerpt = cursor.getString(cursor.getColumnIndexOrThrow("excerpt")),
+                                    sourceUrl = cursor.getString(cursor.getColumnIndexOrThrow("source_url")),
+                                    mode = cursor.getString(cursor.getColumnIndexOrThrow("mode")),
+                                    voice = cursor.getString(cursor.getColumnIndexOrThrow("voice")),
+                                    durationSec = cursor.getDouble(cursor.getColumnIndexOrThrow("duration_sec")),
+                                    wordCount = cursor.getInt(cursor.getColumnIndexOrThrow("word_count")),
+                                    audioFilename = cursor.getString(cursor.getColumnIndexOrThrow("audio_filename")),
+                                    createdAt = cursor.getString(cursor.getColumnIndexOrThrow("created_at")),
+                                ),
+                            )
+                        }
+                    }
                 }
             }
-        }.also { db.close() }
+        } catch (_: SQLiteException) {
+            emptyList()
+        }
     }
 
     /** Resolved fresh each call rather than cached — cheap, and the tree can change between reads. */
