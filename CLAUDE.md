@@ -3,7 +3,7 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 Stacks — a Compose Multiplatform study app: DSA topics with steppable
-animated visualisations, code in Kotlin/Go/JavaScript, and interview questions.
+animated visualisations, code in Kotlin and Go, and interview questions.
 Read mostly on an Android phone.
 
 **This is a personal learning and exploration project.** Trying an unfamiliar

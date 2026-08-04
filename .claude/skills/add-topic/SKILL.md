@@ -1,6 +1,6 @@
 ---
 name: add-topic
-description: Add a new DSA topic to Stacks — note content, an animated scene, 3-language code, and interview questions. Use when the user asks to add, write, or draft a topic/chapter for the algo notes app (e.g. "add quicksort", "add a topic on tries", "write up Dijkstra").
+description: Add a new DSA topic to Stacks — note content, an animated scene, two-language code, and interview questions. Use when the user asks to add, write, or draft a topic/chapter for the algo notes app (e.g. "add quicksort", "add a topic on tries", "write up Dijkstra").
 ---
 
 # Adding a topic to Stacks
@@ -11,13 +11,81 @@ generator, never a composable.
 
 ## 1. Write the content file
 
-Create `composeApp/src/commonMain/kotlin/dev/mks/stacks/content/<Name>.kt`
-holding a single `val` of type `Topic`. Copy the shape from
-`content/HashTables.kt` — it is the most complete example.
+Create `composeApp/src/commonMain/composeResources/files/topics/<id>.md` — the
+file's `<id>` (kebab-case, must be unique) is the topic's `id`. Copy the shape
+from `files/topics/hash-tables.md` — it is the most complete example. The
+format is a small hand-parsed one (`content/TopicMarkdown.kt`), not full
+YAML or Markdown: flat `key: value` front matter, then `##`-headed body
+sections, each with its own tiny syntax:
 
-Required: `id` (kebab-case, must be unique), `title`, `tagline`, `level`,
-`intuition`, `keyPoints`, `complexity`, `code`, `questions`.
-Strongly encouraged: `origin`, `pitfalls`, `steps`, `related`, `references`.
+```
+---
+id: binary-search
+title: Binary Search
+tagline: Halve the search space on every comparison.
+level: basic
+scene: binarySearchScene
+related: arrays, merge-sort
+---
+
+## Quick Summary
+- Halve the search space on every comparison...
+
+## Read More
+basecs — computer science fundamentals, explained properly | https://medium.com/basecs | Vaidehi Joshi · Medium
+
+## Intuition
+Paragraph one.
+
+Paragraph two.
+
+## Origin
+Origin story prose.
+
+## Key Points
+- The input must be **sorted**...
+
+## Complexity
+Search | O(log n) | O(1) | Iterative form.
+
+## Pitfalls
+- Using (lo+hi)/2 on large ranges...
+
+## Steps
+1. Set lo = 0 and hi = n - 1...
+
+## Code: Kotlin
+```kotlin
+fun binarySearch(...) { ... }
+```
+
+## Code: Go
+```go
+func BinarySearch(...) { ... }
+```
+
+## Questions
+### Binary Search
+id: 704
+difficulty: easy
+askedAt: Warm-up at almost every company
+The insight that unlocks it, written from memory.
+
+## References
+```
+
+Required front matter: `id`, `title`, `tagline`, `level`. Required sections:
+`Intuition`, `Key Points`, `Complexity`, `Code: Kotlin`, `Code: Go`,
+`Questions`. Strongly encouraged: `Origin`, `Pitfalls`, `Steps`, `related` in
+front matter. `scene:` is a string key resolved through
+`content/SceneRegistry.kt` — set once you've written the scene in step 3, or
+omit for a topic with no visualisation yet.
+
+`Complexity` rows and `## References` links both use
+`label | value | value | note` (final field optional). `Read More` uses
+`label | url | source`. Don't repeat the two fixed basecs links under
+`## References` — the loader appends them to every topic automatically; only
+add topic-specific extras there.
 
 ## 2. Write in the basecs style
 
@@ -82,15 +150,12 @@ LeetCode slug matches the title.
 
 ## 5. Register it
 
-Add the topic to a chapter in `content/Catalog.kt`. Chapters are ordered
-basic → advanced and topics within them likewise. Add a new `Chapter` if it
-does not fit an existing one.
+Add the topic's id to a chapter's `topicIds` in the `ChapterManifest` in
+`content/Catalog.kt`. Chapters are ordered basic → advanced and topics within
+them likewise. Add a new `ChapterSpec` if it does not fit an existing one.
 
 Cross-link with `related` in **both** directions — a new topic should be
 reachable from the ones it builds on.
-
-Add `references = Refs.basecs()` (from `content/References.kt`), plus any
-topic-specific links as arguments.
 
 ## 6. Where it appears in the UI
 
@@ -125,7 +190,7 @@ adb exec-out screencap -p > /tmp/check.png
 ```
 
 Confirm the scene renders, plays, and scrubs; that captions are not clipped;
-and that all three code tabs highlight. Long values or many elements are the
+and that both code tabs highlight. Long values or many elements are the
 usual layout breakers.
 
 Do not build iOS or Wasm unless specifically asked — a cold Kotlin/Native

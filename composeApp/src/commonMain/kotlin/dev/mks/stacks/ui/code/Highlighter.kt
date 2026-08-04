@@ -9,7 +9,7 @@ import dev.mks.stacks.model.Lang
 import dev.mks.stacks.ui.theme.CodePalette
 
 /**
- * A small hand-rolled tokeniser for Kotlin, Go and JavaScript.
+ * A small hand-rolled tokeniser for Kotlin and Go.
  *
  * This is deliberately not a full grammar. It is a single left-to-right scan
  * that recognises comments, strings, numbers, keywords, type-ish names and call
@@ -126,7 +126,6 @@ private fun scanString(code: String, start: Int, quote: Char): Int {
 private fun keywordsFor(lang: Lang): Set<String> = when (lang) {
     Lang.KOTLIN -> KotlinKeywords
     Lang.GO -> GoKeywords
-    Lang.JAVASCRIPT -> JsKeywords
 }
 
 private val KotlinKeywords = setOf(
@@ -148,13 +147,4 @@ private val GoKeywords = setOf(
     "package", "import", "nil", "true", "false", "make", "len", "cap",
     "append", "copy", "new", "delete", "panic", "recover", "int", "int64",
     "string", "bool", "byte", "rune", "float64", "error",
-)
-
-private val JsKeywords = setOf(
-    "function", "const", "let", "var", "if", "else", "for", "while", "do",
-    "return", "break", "continue", "switch", "case", "default", "new",
-    "class", "extends", "this", "super", "null", "undefined", "true",
-    "false", "typeof", "instanceof", "in", "of", "delete", "void", "try",
-    "catch", "finally", "throw", "async", "await", "yield", "import",
-    "export", "from", "static", "get", "set",
 )

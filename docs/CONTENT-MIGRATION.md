@@ -1,7 +1,12 @@
 # Move content off compiled Kotlin, drop JavaScript as a reference language
 
 Plan for the Phase 2 content-architecture item in [`ROADMAP.md`](ROADMAP.md) —
-written 2026-08, not yet started. Pick this up as a standalone session.
+written 2026-08. **Done as of 2026-08-04**: all 30 topics live in
+`composeApp/src/commonMain/composeResources/files/topics/*.md`, parsed by
+`content/TopicMarkdown.kt` and loaded by `content/Catalog.kt`'s
+`loadCatalog()`. `content/Topics.kt` is deleted. JavaScript is dropped as a
+reference language throughout. The plan below is kept for the record of how
+and why; it no longer describes work in progress.
 
 ## Context
 

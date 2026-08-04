@@ -102,33 +102,22 @@ Craft          Performance          Profiling, Cache Locality…
 Tracks become the top-level browse in Learn. This is additive — `Chapter`
 gains a `track` field, and the existing six topics land in Foundations.
 
-### 2. Move content out of Kotlin, into bundled data
+### 2. Move content out of Kotlin, into bundled data — done
 
-Today each topic is a compiled Kotlin file. That is genuinely nice for six —
-type-safe, refactorable, no parsing. It stops being nice around fifty:
+Every topic used to be a compiled Kotlin file. That was genuinely nice for
+six — type-safe, refactorable, no parsing — but stopped being nice around
+thirty: every content typo meant an app rebuild, compile time grew with
+prose, and non-code contributions were awkward.
 
-- Every content typo is an app rebuild and a release.
-- Compile time grows with prose, which is absurd.
-- APK size carries all content whether read or not.
-- Non-code contributions (yours, from a laptop, in a text editor) are awkward.
+As of 2026-08, topics are **bundled Markdown with flat front matter**,
+parsed at startup by `content/TopicMarkdown.kt` and loaded by
+`content/Catalog.kt`'s `loadCatalog()`. The `Topic` model is unchanged —
+only the source did. See [`CONTENT-MIGRATION.md`](CONTENT-MIGRATION.md) for
+the format and how it was done. Frame generators stay in Kotlin, as planned.
 
-Move topics to **bundled Markdown with YAML front matter**, parsed at startup
-and cached. Keep the same `Topic` model — only the source changes.
-
-```
-content/
-  foundations/
-    arrays.md
-    linked-lists.md
-  ai-ml/
-    attention.md
-```
-
-Frame generators stay in Kotlin — they are code, and they should be.
-
-This unlocks the thing that matters later: **content updates without an app
-release**, by fetching a newer content bundle and falling back to the shipped
-one. Do the file move early; add remote fetch only when it is actually needed.
+Still open: this unlocks **content updates without an app release**, by
+fetching a newer content bundle and falling back to the shipped one — not
+built yet, add it only when actually needed.
 
 ---
 

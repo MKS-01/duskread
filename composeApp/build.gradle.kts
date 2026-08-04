@@ -48,6 +48,7 @@ kotlin {
             implementation(compose.material3)
             implementation(compose.materialIconsExtended)
             implementation(compose.ui)
+            implementation(compose.components.resources)
             implementation(libs.androidx.lifecycle.runtimeCompose)
             implementation(libs.haze)
             // The Pomodoro clock's shared state is a StateFlow, read the same

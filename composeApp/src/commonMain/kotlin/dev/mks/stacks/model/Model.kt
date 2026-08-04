@@ -12,7 +12,6 @@ package dev.mks.stacks.model
 enum class Lang(val label: String) {
     KOTLIN("Kotlin"),
     GO("Go"),
-    JAVASCRIPT("JavaScript"),
 }
 
 enum class Level(val label: String) {

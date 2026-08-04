@@ -10,7 +10,7 @@ same treatment throughout, one concept, one page, read in ten minutes.
 
 Each topic carries an explanation that opens on the problem rather than the
 definition, an **animated visualisation** you can step through frame by
-frame, and implementations in **Kotlin, Go and JavaScript**. A Pomodoro
+frame, and implementations in **Kotlin and Go**. A Pomodoro
 timer runs alongside it, and the Reader tab picks up a synced
 [readback](https://github.com/MKS-01/readback) audio library where you left
 off.
@@ -44,16 +44,17 @@ not a re-simulation, and adding a topic means writing a generator, never a
 renderer. Full account in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 A `Topic` is a plain data class — prose, key points, a complexity table, code
-samples, questions, an optional scene — living in `content/Topics.kt`, grouped
-into chapters by `content/Catalog.kt`. No ViewModel, no DI, no navigation
-library: state is hoisted into `App.kt`, and there's no mutable domain state
-to justify the indirection yet.
+samples, questions, an optional scene — parsed from bundled Markdown files in
+`composeApp/src/commonMain/composeResources/files/topics/`, grouped into
+chapters by `content/Catalog.kt`. No ViewModel, no DI, no navigation library:
+state is hoisted into `App.kt`, and there's no mutable domain state to
+justify the indirection yet.
 
 ## Adding a topic
 
 Run the `/add-topic` skill in `.claude/skills/`, or follow it by hand. A
-topic is one `Topic` value in `content/Topics.kt`, optionally a frame
-generator in `viz/`, and a line in `content/Catalog.kt`.
+topic is one Markdown file in `composeApp/src/commonMain/composeResources/files/topics/`,
+optionally a frame generator in `viz/`, and a line in `content/Catalog.kt`.
 
 ## Development
 

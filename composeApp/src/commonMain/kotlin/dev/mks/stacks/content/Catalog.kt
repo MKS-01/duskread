@@ -3,71 +3,102 @@ package dev.mks.stacks.content
 import dev.mks.stacks.model.Chapter
 import dev.mks.stacks.model.Question
 import dev.mks.stacks.model.Topic
+import stacks.composeapp.generated.resources.Res
 
 /**
  * The curriculum, ordered basic → advanced.
  *
- * Chapters are declared here even while thin, so the reading order is visible
- * and adding a topic is a one-line change.
+ * Chapter *structure* — which topic ids belong to which chapter, in what
+ * order — stays a compile-checked Kotlin manifest, since it is navigation
+ * metadata that rarely changes. Each topic's actual content is a bundled
+ * Markdown file, loaded once at startup by [loadCatalog].
  */
-val Chapters: List<Chapter> = listOf(
-    Chapter(
+private data class ChapterSpec(val id: String, val title: String, val blurb: String, val topicIds: List<String>)
+
+private val ChapterManifest = listOf(
+    ChapterSpec(
         id = "foundations",
         title = "Foundations",
         blurb = "How data is actually laid out, and what that costs you.",
-        topics = listOf(Arrays, LinkedLists, StacksQueues, HashTables),
+        topicIds = listOf("arrays", "linked-lists", "stacks-queues", "hash-tables"),
     ),
-    Chapter(
+    ChapterSpec(
         id = "searching",
         title = "Searching",
         blurb = "Finding things fast, and the invariants that make it valid.",
-        topics = listOf(BinarySearch),
+        topicIds = listOf("binary-search"),
     ),
-    Chapter(
+    ChapterSpec(
         id = "patterns",
         title = "Patterns",
         blurb = "Recurring shapes that turn a brute-force scan into something faster.",
-        topics = listOf(TwoPointers, SlidingWindow, Backtracking),
+        topicIds = listOf("two-pointers", "sliding-window", "backtracking"),
     ),
-    Chapter(
+    ChapterSpec(
         id = "sorting",
         title = "Sorting",
         blurb = "Ordering data, and the trade-offs between the classic algorithms.",
-        topics = listOf(
-            BubbleSort,
-            SelectionSort,
-            InsertionSort,
-            MergeSort,
-            Quicksort,
-            HeapSort,
-            CountingSort,
-            RadixSort,
+        topicIds = listOf(
+            "bubble-sort",
+            "selection-sort",
+            "insertion-sort",
+            "merge-sort",
+            "quicksort",
+            "heap-sort",
+            "counting-sort",
+            "radix-sort",
         ),
     ),
-    Chapter(
+    ChapterSpec(
         id = "trees",
         title = "Trees",
         blurb = "Hierarchy instead of a line, and the shapes that buys you.",
-        topics = listOf(BinaryTrees, Tries, Heaps, AvlTrees, RedBlackTrees, BTrees),
+        topicIds = listOf("binary-trees", "tries", "heaps", "avl-trees", "red-black-trees", "b-trees"),
     ),
-    Chapter(
+    ChapterSpec(
         id = "graphs",
         title = "Graphs",
         blurb = "Traversal, connectivity, and shortest paths.",
-        topics = listOf(GraphRepresentation, Bfs, Dfs, Dags, Dijkstra, UnionFindTopic, Kruskal),
+        topicIds = listOf(
+            "graph-representation",
+            "bfs",
+            "dfs",
+            "dags",
+            "dijkstra",
+            "union-find",
+            "kruskal",
+        ),
     ),
-    Chapter(
+    ChapterSpec(
         id = "dynamic-programming",
         title = "Dynamic Programming",
         blurb = "Solving a problem once, then never solving it again.",
-        topics = listOf(CoinChange),
+        topicIds = listOf("coin-change"),
     ),
 )
 
-val AllTopics: List<Topic> = Chapters.flatMap { it.topics }
+/** Populated once by [loadCatalog]; empty until then. */
+var Chapters: List<Chapter> = emptyList()
+    private set
+
+/** Reads and parses every topic's bundled Markdown file, grouped per [ChapterManifest]. */
+suspend fun loadCatalog() {
+    Chapters = ChapterManifest.map { spec ->
+        Chapter(
+            id = spec.id,
+            title = spec.title,
+            blurb = spec.blurb,
+            topics = spec.topicIds.map { id -> parseTopic(Res.readBytes("files/topics/$id.md").decodeToString()) },
+        )
+    }
+}
+
+val AllTopics: List<Topic>
+    get() = Chapters.flatMap { it.topics }
 
 /** Keyed lookup for opening a topic — every screen renders off this map, never a fresh scan. */
-private val TopicsById: Map<String, Topic> = AllTopics.associateBy { it.id }
+private val TopicsById: Map<String, Topic>
+    get() = AllTopics.associateBy { it.id }
 
 fun topicById(id: String): Topic? = TopicsById[id]
 
@@ -82,9 +113,8 @@ data class PracticeItem(val question: Question, val topic: Topic)
  * Every question across the curriculum, hardest last within each topic's
  * ordering preserved. This is what the Practice tab lists.
  */
-val AllQuestions: List<PracticeItem> = AllTopics.flatMap { topic ->
-    topic.questions.map { PracticeItem(it, topic) }
-}
+val AllQuestions: List<PracticeItem>
+    get() = AllTopics.flatMap { topic -> topic.questions.map { PracticeItem(it, topic) } }
 
 /**
  * Case-insensitive match across titles, taglines and question names, so
