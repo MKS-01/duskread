@@ -30,13 +30,6 @@ enum class Difficulty(val label: String) {
     HARD("Advanced"),
 }
 
-data class ComplexityRow(
-    val label: String,
-    val time: String,
-    val space: String,
-    val note: String? = null,
-)
-
 data class Question(
     val title: String,
     val difficulty: Difficulty,
@@ -173,27 +166,12 @@ data class Topic(
     val title: String,
     val tagline: String,
     val level: Level,
-    val intuition: List<String>,
-    val keyPoints: List<String>,
-    /**
-     * 2-4 bullets shown before the full [intuition] prose — the topic opens
-     * condensed on this plus [keyPoints], expanding to everything else on
-     * request. Empty means there is nothing shorter than the full notes yet.
-     */
-    val quickSummary: List<String> = emptyList(),
-    /** A deeper piece worth the extra time — shown alongside the condensed view. */
+    /** The shortest note that still stands on its own — a handful of bullets. */
+    val note: List<String>,
+    /** The full article this note is a pointer to — depth lives there, not here. */
     val readMore: Reference? = null,
-    /**
-     * Where the idea (and usually the name) came from — who invented it, when,
-     * and what problem they were staring at. Origin stories are what make a
-     * structure stick in memory long after the implementation has faded.
-     */
-    val origin: String? = null,
-    val complexity: List<ComplexityRow>,
     val code: Map<Lang, String>,
     val questions: List<Question>,
-    val steps: List<String> = emptyList(),
-    val pitfalls: List<String> = emptyList(),
     val related: List<String> = emptyList(),
     val references: List<Reference> = emptyList(),
     /** Built on demand so we only compute frames for the topic on screen. */

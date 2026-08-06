@@ -28,31 +28,14 @@ scene: binarySearchScene
 related: arrays, merge-sort
 ---
 
-## Quick Summary
+## Note
 - Halve the search space on every comparison...
+- The input must be **sorted**...
+- Iterative form runs in O(log n) time, O(1) space...
+- Using (lo+hi)/2 on large ranges can overflow...
 
 ## Read More
 basecs — computer science fundamentals, explained properly | https://medium.com/basecs | Vaidehi Joshi · Medium
-
-## Intuition
-Paragraph one.
-
-Paragraph two.
-
-## Origin
-Origin story prose.
-
-## Key Points
-- The input must be **sorted**...
-
-## Complexity
-Search | O(log n) | O(1) | Iterative form.
-
-## Pitfalls
-- Using (lo+hi)/2 on large ranges...
-
-## Steps
-1. Set lo = 0 and hi = n - 1...
 
 ## Code: Kotlin
 ```kotlin
@@ -75,70 +58,75 @@ The insight that unlocks it, written from memory.
 ```
 
 Required front matter: `id`, `title`, `tagline`, `level`. Required sections:
-`Intuition`, `Key Points`, `Complexity`, `Code: Kotlin`, `Code: Go`,
-`Questions`. Strongly encouraged: `Origin`, `Pitfalls`, `Steps`, `related` in
-front matter. `scene:` is a string key resolved through
-`content/SceneRegistry.kt` — set once you've written the scene in step 3, or
-omit for a topic with no visualisation yet.
+`Note`, `Code: Kotlin`, `Code: Go`, `Questions`. Strongly encouraged:
+`Read More`, `related` in front matter. `scene:` is a string key resolved
+through `content/SceneRegistry.kt` — set once you've written the scene in
+step 3, or omit for a topic with no visualisation yet.
 
-`Complexity` rows and `## References` links both use
-`label | value | value | note` (final field optional). `Read More` uses
-`label | url | source`. Don't repeat the two fixed basecs links under
+**The note is the whole page, not a teaser.** As of 2026-08 this app stopped
+trying to be a second place to read the deep explanation — that's what the
+`Read More` link is for. `Note` is 4-6 bullets: what the thing is, the one or
+two facts worth remembering, the trade-off, maybe a complexity figure inline
+if it's genuinely load-bearing. There is no separate Intuition, Origin, Key
+Points, Complexity table, Pitfalls, or Steps section anymore — fold anything
+essential into the bullets, and if it doesn't fit in a bullet, it belongs in
+the linked article, not here.
+
+`## References` links use `label | url | source` (final field optional),
+same shape as `Read More`. Don't repeat the two fixed basecs links under
 `## References` — the loader appends them to every topic automatically; only
 add topic-specific extras there.
 
-## 2. Write in the basecs style
+## 2. Write the note
 
-The model is Vaidehi Joshi's [basecs](https://medium.com/basecs) series
-([index](https://github.com/vaidehijoshi/basecs-series)). Take the approach,
-never the words — all prose must be original.
-
-What that means concretely:
-
-- **Open on the problem, not the definition.** Start with why someone needed
-  this thing. "Arrays are fast to read and slow to modify, and both facts come
-  from the same source" beats "An array is a contiguous block of memory."
-- **Motivate before mechanising.** The reader should understand why the
-  structure exists before seeing how it works.
-- **Always write an `origin`.** Who invented it, roughly when, what problem
-  they were staring at, and where the name came from. These are the details
-  that make a topic stick. **Verify them** — if you cannot confirm a claim,
-  leave it out rather than guess. Dates and attributions must be real.
-- **Name the trade-off explicitly.** Every structure buys something and pays
-  for it somewhere. Say what, in both directions.
-- **Be precise where interviews are pedantic.** Amortised vs worst case,
-  average vs guaranteed, "O(1) insert" vs "O(1) once you hold the node".
-- Write `intuition` as 3–6 paragraphs, each a complete thought. Conversational
-  but never padded. No filler sentences, no "let's dive in".
+- **Open on what matters, not a definition.** "Halves the search space on
+  every comparison" beats "Binary search is an algorithm that finds a target
+  in a sorted array."
+- **Name the trade-off** where there is one, in one bullet.
+- **Be precise where interviews are pedantic** — amortised vs worst case,
+  average vs guaranteed — if it fits a bullet; otherwise leave it for the
+  linked article.
+- If you write an origin fact at all (inventor, year), **verify it** — if you
+  cannot confirm a claim, leave it out rather than guess. It's fine, and
+  often better, to have no origin bullet at all now that there's no dedicated
+  Origin section to hold one.
 - `markup()` supports `**bold**`, `*italic*` and `` `code` `` in note text.
 
 ## 3. Write the scene
 
-Add a generator to `viz/`, returning a `Scene`. Run the real algorithm and
-record a frame at each meaningful step — the UI only plays frames back, so
-scrubbing is exact and nothing is recomputed.
+Add a generator to `viz/`, returning a `Scene`. As of 2026-08 the default is a
+**single static frame** — a labelled wireframe of the concept, not a played-
+back animation — `Scene.X(listOf(frame))`, no loop, no per-step recording.
+Reserve a multi-frame, step-by-step scene (record a frame at each meaningful
+step of the real algorithm, as `BinarySearchScene.kt` or `MergeSortScene.kt`
+do) for topics where the *process* is the point — sorting, searching,
+traversal — where scrubbing through steps is how the reader actually
+understands it. For a concept better shown as one labelled diagram
+(architecture, a static distribution, a small fixed structure), one frame is
+correct and a multi-step animation would be manufacturing motion nothing
+needs. `GradientDescentScene.kt` is the reference for the single-frame shape.
 
 Pick the scene type by what the reader needs to see:
 
 | Type | Use for | Example |
 |---|---|---|
 | `Scene.Cells` | indices, pointers, windows, ranges | `BinarySearchScene.kt` |
-| `Scene.Bars` | relative magnitude — sorting | `MergeSortScene.kt` |
-| `Scene.Chain` | linked nodes with arrows | `linkedListScene` |
+| `Scene.Bars` | relative magnitude — sorting, distributions | `MergeSortScene.kt` |
+| `Scene.Chain` | linked nodes with arrows, or a linear pipeline | `linkedListScene` |
 | `Scene.Graph` | nodes and edges; set `tree = true` for trees | `BfsScene.kt` |
-| `Scene.Matrix` | DP tables, grids | `DpScene.kt` |
+| `Scene.Matrix` | DP tables, grids, weight matrices | `DpScene.kt` |
 
 Tone meanings are fixed and consistent across every topic — do not repurpose
 them: `ACTIVE` being examined now, `INFO` in scope, `GOOD` settled/accepted,
 `BAD` discarded/rejected, `WARN` special (pivot, collision), `IDLE` untouched.
 
-Captions carry the teaching. Each one should say *why* this step happens, not
-narrate the obvious — "16 < 23, so every element at or left of mid is too
-small" rather than "comparing index 4". Use `aux` for running counters
-(comparisons, queue contents, load factor).
+Captions carry the teaching. Each one should say *why*, not narrate the
+obvious — "16 < 23, so every element at or left of mid is too small" rather
+than "comparing index 4". Use `aux` for 1-2 illustrative values (that's the
+house convention even for multi-frame scenes — check `viz/` if unsure).
 
-Keep scenes under ~50 frames; pick small inputs that still show the interesting
-case.
+Keep multi-frame scenes under ~50 frames; pick small inputs that still show
+the interesting case.
 
 ## 4. Questions
 

@@ -13,9 +13,8 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 
 /**
- * Talks to [ReaderPlaybackService] purely through intents — the same
- * fire-and-forget shape as `AndroidPomodoroController` — and reattaches
- * whichever [ReadItem] was last asked to play (from [CurrentReaderItem])
+ * Talks to [ReaderPlaybackService] purely through intents — a fire-and-forget
+ * shape — and reattaches whichever [ReadItem] was last asked to play (from [CurrentReaderItem])
  * onto the shared [ReaderPlaybackClock] state, since the service itself only
  * ever sees a resolved URI, not the item. Both of those are top-level
  * singletons rather than fields on this class specifically so a recreated

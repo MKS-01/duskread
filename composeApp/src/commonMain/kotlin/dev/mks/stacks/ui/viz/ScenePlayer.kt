@@ -107,17 +107,21 @@ fun ScenePlayer(scene: Scene, modifier: Modifier = Modifier) {
             Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
             verticalAlignment = Alignment.Top,
         ) {
-            Text(
-                text = "${index + 1}/${frames.size}",
-                fontFamily = Mono,
-                fontSize = 10.5.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier
-                    .padding(end = 10.dp, top = 2.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                    .padding(horizontal = 6.dp, vertical = 2.dp),
-            )
+            // A single-frame scene is a static diagram, not something to step
+            // through, so the "1/1" counter would just be noise.
+            if (frames.size > 1) {
+                Text(
+                    text = "${index + 1}/${frames.size}",
+                    fontFamily = Mono,
+                    fontSize = 10.5.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .padding(end = 10.dp, top = 2.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                        .padding(horizontal = 6.dp, vertical = 2.dp),
+                )
+            }
             // Deliberately not cross-faded: captions differ in length, so
             // overlapping two of them mid-fade just looks like double vision.
             Text(
@@ -149,66 +153,70 @@ fun ScenePlayer(scene: Scene, modifier: Modifier = Modifier) {
             }
         }
 
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+        // A single-frame scene is a static diagram — there is nothing to
+        // step through, so the whole transport bar (play, scrub, speed)
+        // would just be chrome around a picture that never changes.
+        if (frames.size > 1) {
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
-        // Transport
-        Row(
-            Modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            IconButton(onClick = { if (index > 0) index-- }, enabled = index > 0) {
-                Icon(Icons.Filled.SkipPrevious, "Previous step", Modifier.size(20.dp))
-            }
-
-            IconButton(
-                onClick = {
-                    if (atEnd) {
-                        index = 0
-                        playing = true
-                    } else {
-                        playing = !playing
-                    }
-                },
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(
-                    imageVector = when {
-                        atEnd -> Icons.Filled.Refresh
-                        playing -> Icons.Filled.Pause
-                        else -> Icons.Filled.PlayArrow
+                IconButton(onClick = { if (index > 0) index-- }, enabled = index > 0) {
+                    Icon(Icons.Filled.SkipPrevious, "Previous step", Modifier.size(20.dp))
+                }
+
+                IconButton(
+                    onClick = {
+                        if (atEnd) {
+                            index = 0
+                            playing = true
+                        } else {
+                            playing = !playing
+                        }
                     },
-                    contentDescription = if (playing) "Pause" else "Play",
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(24.dp),
+                ) {
+                    Icon(
+                        imageVector = when {
+                            atEnd -> Icons.Filled.Refresh
+                            playing -> Icons.Filled.Pause
+                            else -> Icons.Filled.PlayArrow
+                        },
+                        contentDescription = if (playing) "Pause" else "Play",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp),
+                    )
+                }
+
+                IconButton(
+                    onClick = { if (index < frames.lastIndex) index++ },
+                    enabled = index < frames.lastIndex,
+                ) {
+                    Icon(Icons.Filled.SkipNext, "Next step", Modifier.size(20.dp))
+                }
+
+                Slider(
+                    value = index.toFloat(),
+                    onValueChange = {
+                        playing = false
+                        index = it.toInt().coerceIn(0, frames.lastIndex)
+                    },
+                    valueRange = 0f..frames.lastIndex.toFloat(),
+                    modifier = Modifier.weight(1f).padding(horizontal = 6.dp).height(24.dp),
                 )
-            }
 
-            IconButton(
-                onClick = { if (index < frames.lastIndex) index++ },
-                enabled = index < frames.lastIndex,
-            ) {
-                Icon(Icons.Filled.SkipNext, "Next step", Modifier.size(20.dp))
-            }
-
-            Slider(
-                value = index.toFloat(),
-                onValueChange = {
-                    playing = false
-                    index = it.toInt().coerceIn(0, frames.lastIndex)
-                },
-                valueRange = 0f..frames.lastIndex.toFloat(),
-                modifier = Modifier.weight(1f).padding(horizontal = 6.dp).height(24.dp),
-            )
-
-            TextButton(
-                onClick = { speed = if (speed >= 2f) 0.5f else speed * 2f },
-                modifier = Modifier.defaultMinSize(minWidth = 44.dp),
-            ) {
-                Text(
-                    text = if (speed % 1f == 0f) "${speed.toInt()}x" else "${speed}x",
-                    fontFamily = Mono,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                )
+                TextButton(
+                    onClick = { speed = if (speed >= 2f) 0.5f else speed * 2f },
+                    modifier = Modifier.defaultMinSize(minWidth = 44.dp),
+                ) {
+                    Text(
+                        text = if (speed % 1f == 0f) "${speed.toInt()}x" else "${speed}x",
+                        fontFamily = Mono,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
             }
         }
     }

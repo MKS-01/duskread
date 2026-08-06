@@ -3,86 +3,30 @@ id: arrays
 title: Arrays
 tagline: One unbroken block of memory — and everything that follows from it.
 level: basic
-scene: arrayScene
 related: linked-lists, stacks-queues, binary-search, hash-tables, heaps, quicksort, counting-sort, radix-sort
 ---
 
-## Quick Summary
-- One contiguous block of equal-sized slots — access is address arithmetic, O(1), not a search.
+## Note
+- Random access is O(1) because the address is **computed, not searched** — `base + i × size`.
 - Insert or delete anywhere but the end costs O(n): everything has to shift to keep the block unbroken.
 - Dynamic arrays grow by doubling — appending is O(1) **amortised**, not guaranteed O(1) on every call.
-- Unmatched cache locality: a linear scan of an array beats the same scan over a linked list, despite matching Big-O.
+- Unmatched **cache locality**: a linear scan of an array beats the same scan over a linked list, despite matching Big-O.
+- A **two-dimensional array is still one-dimensional underneath**, laid out row by row — row-major iteration is much faster than columns-then-rows.
+- Deleting when order does not matter: swap the victim with the last element and shrink. That turns an O(n) removal into O(1).
 
 ## Read More
 basecs — computer science fundamentals, explained properly | https://medium.com/basecs | Vaidehi Joshi · Medium
-
-## Intuition
-Almost every data structure you will ever use is either an array underneath or a reaction against being one. So it is worth being precise about what an array actually is: a single contiguous block of memory, divided into equal-sized slots.
-
-Both halves of that sentence do real work. Because the slots are equal-sized, the computer knows exactly how far apart they are. Because the block is contiguous, it knows they all follow from one starting address. Put those together and finding element `i` is not a search at all — it is one multiplication and one addition: `address = base + i × size`. That is the entire reason array access is O(1), and it is why array indices start at zero: index 0 sits zero slots away from the base address.
-
-Every weakness of arrays is the same fact seen from the other side. The block cannot bend. Inserting into the middle means physically shifting everything after it to make room, and deleting means shifting everything back to close the gap — both O(n). Growing past the allocated block means asking for a bigger one and copying the whole thing across.
-
-That last point is where dynamic arrays come in — `ArrayList`, Go slices, JavaScript arrays. When they run out of room they allocate a larger block, usually double, and copy. Any single append can therefore cost O(n), but because doubling makes those copies exponentially rare, the cost spread over many appends is O(1). That is called **amortised** O(1), and it is a different claim from plain O(1): it promises the average is cheap, not that any individual call is.
-
-## Origin
-The word predates computing entirely — an "array" was an ordered arrangement of troops, from the Old French *areer*, to put in order. The idea of *subscripting* one in a program arrived with **Fortran in 1957**, where John Backus's team at IBM let you write `A(I)` and have the compiler do the address arithmetic for you. Before that, programmers computed those memory offsets by hand. Zero-based indexing became the norm much later through C, where `a[i]` is defined as literally meaning "the value at address a plus i".
-
-## Key Points
-- Random access is O(1) because the address is **computed, not searched** — `base + i × size`.
-- Insertion and deletion anywhere except the end are O(n), because the contiguity has to be restored by shifting.
-- Appending to a dynamic array is **amortised** O(1). Growth by doubling makes the copies rare enough to average out; a single append can still cost O(n).
-- Arrays have unmatched **cache locality**. Neighbouring elements share cache lines, so a linear scan of an array is dramatically faster in practice than the same scan over scattered nodes — even though both are O(n).
-- A **two-dimensional array is still one-dimensional underneath**, laid out row by row. Iterating rows-then-columns is much faster than columns-then-rows for exactly that reason.
-- Deleting when order does not matter: swap the victim with the last element and shrink. That turns an O(n) removal into O(1).
-
-## Complexity
-Access by index | O(1) | O(1) | One multiply and one add — no comparison involved.
-Search (unsorted) | O(n) | O(1) | No structure to exploit, so every element may need checking.
-Insert / delete at end | O(1) amortised | O(1) | Occasionally O(n) when the block has to grow and be copied.
-Insert / delete at front | O(n) | O(1) | Every following element shifts by one slot.
-Storage | — | O(n) | Dynamic arrays over-allocate, so real usage is typically 1–2× the element count.
-
-## Pitfalls
-- Removing elements inside a forward loop. Each removal shifts everything left, so the loop skips the next element. Iterate backwards, or build a new array.
-- Treating amortised O(1) as a latency guarantee. In a real-time path, the one append that triggers a resize is the one that misses your deadline.
-- Building a list by repeatedly prepending. That is O(n²) overall — append and reverse at the end instead.
-- Iterating a 2D array column-major. Same complexity, several times slower, because every step jumps a full row in memory and misses the cache.
-- Assuming JavaScript arrays are arrays. They are objects with integer-ish keys, and holes or non-numeric keys quietly demote them to a dictionary representation.
 
 ## Code: Kotlin
 ```kotlin
 // Access is address arithmetic — no search, no comparison.
 val nums = intArrayOf(7, 12, 19, 26, 33)
-val third = nums[2]   // base + 2 * 4 bytes
+val third = nums[2] // base + 2 * 4 bytes
 
-/**
- * Removes the element at [index] while preserving order.
- * Everything to the right shifts left by one, so this is O(n).
- */
+/** Removes [index] while preserving order — everything right shifts left, O(n). */
 fun removeAt(nums: MutableList<Int>, index: Int) {
-    for (i in index until nums.lastIndex) {
-        nums[i] = nums[i + 1]
-    }
+    for (i in index until nums.lastIndex) nums[i] = nums[i + 1]
     nums.removeAt(nums.lastIndex)
-}
-
-/**
- * Removes in O(1) by swapping the victim with the last element.
- * Only valid when the ordering does not matter.
- */
-fun removeUnordered(nums: MutableList<Int>, index: Int) {
-    nums[index] = nums[nums.lastIndex]
-    nums.removeAt(nums.lastIndex)
-}
-
-/** Row-major iteration: neighbours in memory, so the cache stays warm. */
-fun sumGrid(grid: Array<IntArray>): Long {
-    var total = 0L
-    for (row in grid) {
-        for (value in row) total += value
-    }
-    return total
 }
 ```
 
@@ -96,23 +40,6 @@ third := nums[2] // base + 2 * 8 bytes
 // right shifts left by one, so this is O(n).
 func RemoveAt(nums []int, index int) []int {
 	return append(nums[:index], nums[index+1:]...)
-}
-
-// RemoveUnordered deletes in O(1) by swapping in the last element.
-// Only valid when the ordering does not matter.
-func RemoveUnordered(nums []int, index int) []int {
-	nums[index] = nums[len(nums)-1]
-	return nums[:len(nums)-1]
-}
-
-// Preallocating capacity avoids the repeated grow-and-copy cycle
-// entirely when the final size is known up front.
-func Squares(n int) []int {
-	out := make([]int, 0, n) // len 0, cap n
-	for i := 0; i < n; i++ {
-		out = append(out, i*i)
-	}
-	return out
 }
 ```
 

@@ -34,7 +34,10 @@ iosApp/iosApp.xcodeproj/
 
 # Node (Kotlin/Wasm toolchain)
 node_modules/
-kotlin-js-store/
+kotlin-js-store/*
+# Commit the lock file so the Wasm target resolves the same yarn tree everywhere.
+!kotlin-js-store/**/
+!kotlin-js-store/**/yarn.lock
 
 # OS
 .DS_Store

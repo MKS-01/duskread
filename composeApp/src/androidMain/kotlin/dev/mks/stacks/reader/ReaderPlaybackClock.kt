@@ -6,8 +6,7 @@ import kotlinx.coroutines.flow.asStateFlow
 
 /**
  * Shared between [ReaderPlaybackService] and [AndroidAudioPlayer] so every UI
- * entry point reads the same live session — same reasoning as
- * `PomodoroClock`. Does not carry a [ReadItem], only the transport state;
+ * entry point reads the same live session. Does not carry a [ReadItem], only the transport state;
  * [AndroidAudioPlayer] attaches whichever item it last asked the service to
  * play, since the service itself only ever sees a resolved URI.
  */

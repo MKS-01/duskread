@@ -1,6 +1,5 @@
 package dev.mks.stacks.content
 
-import dev.mks.stacks.model.ComplexityRow
 import dev.mks.stacks.model.Difficulty
 import dev.mks.stacks.model.Lang
 import dev.mks.stacks.model.Level
@@ -11,7 +10,7 @@ import dev.mks.stacks.model.Topic
 /**
  * Reader for the topic content format: flat `key: value` front matter
  * followed by `##`-headed body sections, each with its own tiny per-section
- * syntax (bullets, numbered steps, `label | value | value` rows, fenced code).
+ * syntax (bullets, `label | value | value` rows, fenced code).
  *
  * Deliberately not YAML or a Markdown-spec parser — the format is small and
  * fully ours (written by hand or by `/add-topic`), so a purpose-built reader
@@ -30,16 +29,10 @@ fun parseTopic(raw: String): Topic {
         title = fields.getValue("title"),
         tagline = fields.getValue("tagline"),
         level = Level.valueOf(fields.getValue("level").uppercase()),
-        quickSummary = sections["Quick Summary"]?.let(::parseBullets).orEmpty(),
+        note = sections["Note"]?.let(::parseBullets).orEmpty(),
         readMore = sections["Read More"]?.let(::firstNonBlankLine)?.let(::parseReferenceRow),
-        intuition = sections["Intuition"]?.let(::parseParagraphs).orEmpty(),
-        origin = sections["Origin"]?.trim()?.takeIf { it.isNotEmpty() },
-        keyPoints = sections["Key Points"]?.let(::parseBullets).orEmpty(),
-        complexity = sections["Complexity"]?.let(::parseComplexityRows).orEmpty(),
         code = parseCode(sections),
         questions = sections["Questions"]?.let(::parseQuestions).orEmpty(),
-        steps = sections["Steps"]?.let(::parseNumbered).orEmpty(),
-        pitfalls = sections["Pitfalls"]?.let(::parseBullets).orEmpty(),
         related = fields["related"]?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() }.orEmpty(),
         references = Refs.basecs(*parseReferenceRows(sections["References"]).toTypedArray()),
         scene = sceneKey?.let { key -> SceneRegistry[key] },
@@ -94,15 +87,6 @@ private fun parseBullets(section: String): List<String> = section.lines()
     .filter { it.isNotBlank() }
     .map { it.trim().removePrefix("- ").trim() }
 
-private fun parseNumbered(section: String): List<String> = section.lines()
-    .filter { it.isNotBlank() }
-    .map { it.trim().replace(Regex("""^\d+\.\s*"""), "") }
-
-/** Paragraphs are separated by a blank line; each paragraph is one physical line. */
-private fun parseParagraphs(section: String): List<String> = section.split("\n\n")
-    .map { it.trim() }
-    .filter { it.isNotEmpty() }
-
 private fun firstNonBlankLine(section: String): String? = section.lines().firstOrNull { it.isNotBlank() }?.trim()
 
 /** `label | url | source` — source is optional and blank collapses to null. */
@@ -116,19 +100,6 @@ private fun parseReferenceRows(section: String?): List<Reference> = section?.lin
     ?.filter { it.isNotBlank() }
     ?.map(::parseReferenceRow)
     .orEmpty()
-
-/** `label | time | space | note` — note is optional and blank collapses to null. */
-private fun parseComplexityRows(section: String): List<ComplexityRow> = section.lines()
-    .filter { it.isNotBlank() }
-    .map { line ->
-        val parts = line.split("|").map { it.trim() }
-        ComplexityRow(
-            label = parts[0],
-            time = parts[1],
-            space = parts[2],
-            note = parts.getOrNull(3)?.takeIf { it.isNotEmpty() },
-        )
-    }
 
 private fun parseCode(sections: Map<String, String>): Map<Lang, String> = buildMap {
     sections["Code: Kotlin"]?.let { put(Lang.KOTLIN, extractFence(it)) }

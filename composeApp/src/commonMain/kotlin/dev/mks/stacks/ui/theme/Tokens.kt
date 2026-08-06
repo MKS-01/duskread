@@ -43,13 +43,13 @@ object Layout {
 /** Corner radii, largest to smallest. */
 object Radius {
     /** Topic and question cards. */
-    val Card = 16.dp
+    val Card = 20.dp
 
     /** Panels inside a card — origin note, code block, complexity table. */
-    val Panel = 12.dp
+    val Panel = 14.dp
 
     /** Inline surfaces: reference rows, list-pane rows. */
-    val Inline = 10.dp
+    val Inline = 12.dp
 
     /** Difficulty and level chips, and the floating bar itself. */
     val Pill = 999.dp

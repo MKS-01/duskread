@@ -119,6 +119,33 @@ Still open: this unlocks **content updates without an app release**, by
 fetching a newer content bundle and falling back to the shipped one — not
 built yet, add it only when actually needed.
 
+### 3. Note-plus-link, not a second article — done (2026-08)
+
+Partway through drafting the AI/ML track, the content shape changed: a topic
+is now the **shortest useful note** (4-6 bullets) plus a prominent link to a
+**full external article** for anyone who wants the depth, plus code in
+Kotlin and Go. `Topic.intuition`, `origin`, `complexity`, `pitfalls` and
+`steps` are gone from the model; `quickSummary` and `keyPoints` collapsed
+into a single `note`. Reasoning: this app was drifting toward writing
+another blog post competing with the sources it would cite, which is both
+more work per topic and a worse product than pointing at the real thing and
+staying out of the way. Scenes also default to a single static wireframe
+frame now rather than a played-back animation, unless the topic's whole
+point is the step-by-step process (sorting, searching, traversal).
+
+A distraction-free reading-mode overlay was tried and then cut the same
+session — the plain topic page, already just a note, a scene, code and links,
+turned out to be distraction-free enough on its own to make a second reading
+surface redundant. The Practice/Questions block on the topic page went the
+same way: removed from the page (the underlying `Question` data stays, since
+Library's counts and filters still read it — only the per-topic display was
+cut).
+
+The 38 existing DSA topics still carry their old long-form sections in the
+`.md` files — those sections are simply no longer parsed or rendered, and get
+trimmed later as each topic is revisited, not in one pass. See
+`.claude/skills/add-topic/SKILL.md` for the current format.
+
 ---
 
 ## Phases

@@ -1,8 +1,8 @@
 # Stacks
 
-Algorithms explained properly, read on a phone — a focus timer and a reader
-for whatever you're studying elsewhere sit alongside the notes, so it's one
-app for the whole study session.
+Algorithms explained properly, read on a phone — a reader for whatever
+you're studying elsewhere sits alongside the notes, so it's one app for the
+whole study session.
 
 Not just classic DSA: sorting, searching and graph algorithms are the
 current core, and cryptographic and ML/AI algorithms are on the way in —
@@ -10,10 +10,9 @@ same treatment throughout, one concept, one page, read in ten minutes.
 
 Each topic carries an explanation that opens on the problem rather than the
 definition, an **animated visualisation** you can step through frame by
-frame, and implementations in **Kotlin and Go**. A Pomodoro
-timer runs alongside it, and the Reader tab picks up a synced
-[readback](https://github.com/MKS-01/readback) audio library where you left
-off.
+frame, and implementations in **Kotlin and Go**. The Reader tab picks up a
+synced [readback](https://github.com/MKS-01/readback) audio library where you
+left off.
 
 Built with **Compose Multiplatform** — one Kotlin codebase targeting Android,
 iOS, desktop and web. Thirty topics so far.

@@ -1,7 +1,7 @@
 <!--
     Themed-icon layer (Android 13+ Material You): the same mark as
     ic_launcher_foreground, flattened to one opaque colour. The system tints
-    this from the user's wallpaper palette, so per-bar tint and alpha would be
+    this from the user's wallpaper palette, so per-block colour would be
     discarded anyway — shape is all that survives.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
@@ -12,11 +12,11 @@
 
     <path
         android:fillColor="#FFFFFFFF"
-        android:pathData="M30,38 h48 a4,4 0 0 1 0,8 h-48 a4,4 0 0 1 0,-8 z" />
+        android:pathData="M40,32 H68 A4,4 0 0 1 72,36 V40 A4,4 0 0 1 68,44 H40 A4,4 0 0 1 36,40 V36 A4,4 0 0 1 40,32 Z" />
     <path
         android:fillColor="#FFFFFFFF"
-        android:pathData="M38,54 h32 a4,4 0 0 1 0,8 h-32 a4,4 0 0 1 0,-8 z" />
+        android:pathData="M40,48 H68 A4,4 0 0 1 72,52 V56 A4,4 0 0 1 68,60 H40 A4,4 0 0 1 36,56 V52 A4,4 0 0 1 40,48 Z" />
     <path
         android:fillColor="#FFFFFFFF"
-        android:pathData="M48,70 h12 a4,4 0 0 1 0,8 h-12 a4,4 0 0 1 0,-8 z" />
+        android:pathData="M40,64 H68 A4,4 0 0 1 72,68 V72 A4,4 0 0 1 68,76 H40 A4,4 0 0 1 36,72 V68 A4,4 0 0 1 40,64 Z" />
 </vector>

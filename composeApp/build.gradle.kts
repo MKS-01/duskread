@@ -28,7 +28,10 @@ kotlin {
         compilerOptions { jvmTarget.set(JvmTarget.JVM_17) }
     }
 
-    listOf(iosX64(), iosArm64(), iosSimulatorArm64()).forEach { target ->
+    // iosX64 (Intel simulator) dropped: Compose Multiplatform 1.11 no longer
+    // publishes runtime/foundation/ui for it, matching Apple's own removal of
+    // Intel simulator support.
+    listOf(iosArm64(), iosSimulatorArm64()).forEach { target ->
         target.binaries.framework {
             baseName = "ComposeApp"
             isStatic = true

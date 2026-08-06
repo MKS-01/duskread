@@ -75,6 +75,30 @@ private val ChapterManifest = listOf(
         blurb = "Solving a problem once, then never solving it again.",
         topicIds = listOf("coin-change"),
     ),
+    ChapterSpec(
+        id = "machine-learning",
+        title = "Machine Learning",
+        blurb = "How a model actually learns, one gradient step at a time.",
+        topicIds = listOf("gradient-descent", "linear-regression"),
+    ),
+    ChapterSpec(
+        id = "neural-networks",
+        title = "Neural Networks",
+        blurb = "Layers, gradients, and the mechanism modern models are built from.",
+        topicIds = listOf("backpropagation", "attention", "transformer-architecture"),
+    ),
+    ChapterSpec(
+        id = "llms",
+        title = "LLMs",
+        blurb = "What actually happens between a prompt and a generated token.",
+        topicIds = listOf("tokenisation", "context-windows", "temperature-sampling"),
+    ),
+    ChapterSpec(
+        id = "agentic-coding",
+        title = "Agentic Coding",
+        blurb = "Letting a model act, not just answer — and knowing if it worked.",
+        topicIds = listOf("tool-use", "planning-loops", "evals"),
+    ),
 )
 
 /** Populated once by [loadCatalog]; empty until then. */

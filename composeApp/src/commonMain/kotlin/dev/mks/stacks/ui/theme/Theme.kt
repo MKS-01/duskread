@@ -77,24 +77,24 @@ data class VizPalette(
 
 // Good/active/bad/warn were originally full-saturation traffic-light hues,
 // which read as louder than everything else in the app — every other colour
-// here is a muted, blue-leaning tone (info *is* the primary blue). These keep
-// the same hue family per tone (still green/amber/red/purple, so the meaning
-// carries over instantly) but pulled down in saturation to sit in the same
-// register as the rest of the palette, the same move the background/surface
-// colours already make relative to pure black.
+// here is a muted tone (info *is* the primary — blue in light mode, orange in
+// dark mode). These keep the same hue family per tone (still green/amber/red/
+// purple, so the meaning carries over instantly) but pulled down in
+// saturation to sit in the same register as the rest of the palette, the same
+// move the background/surface colours already make relative to pure black.
 private val LightViz = VizPalette(
-    idle = Color(0xFFE8ECF2), onIdle = Color(0xFF37404E),
+    idle = Color(0xFFEFE7D6), onIdle = Color(0xFF4A4032),
     active = Color(0xFFC98A3C), onActive = Color(0xFF3D2A00),
     good = Color(0xFF3B8F68), onGood = Color(0xFFFFFFFF),
     bad = Color(0xFFC2685F), onBad = Color(0xFFFFFFFF),
-    info = Color(0xFF3057E3), onInfo = Color(0xFFFFFFFF),
+    info = Color(0xFFB5562F), onInfo = Color(0xFFFFFFFF),
     warn = Color(0xFF7C63BE), onWarn = Color(0xFFFFFFFF),
-    // A blue gradient rather than a second traffic-light set: palest for
-    // Easy, the app's own primary blue for Medium, deepest/most saturated
-    // for Hard — intensity carries the severity instead of hue.
-    easy = Color(0xFF7C93E8),
-    medium = Color(0xFF3057E3),
-    hard = Color(0xFF1E3A99),
+    // A terracotta gradient rather than a second traffic-light set: palest
+    // for Easy, the app's own primary orange for Medium, deepest/most
+    // saturated for Hard — intensity carries the severity instead of hue.
+    easy = Color(0xFFCB9A79),
+    medium = Color(0xFFB5562F),
+    hard = Color(0xFF7E3A1C),
 )
 
 private val DarkViz = VizPalette(
@@ -102,11 +102,11 @@ private val DarkViz = VizPalette(
     active = Color(0xFFD4A15C), onActive = Color(0xFF241800),
     good = Color(0xFF5CAB8A), onGood = Color(0xFF04170E),
     bad = Color(0xFFCC7A72), onBad = Color(0xFF240605),
-    info = Color(0xFF6F92FF), onInfo = Color(0xFF060C1F),
+    info = Color(0xFFC6684A), onInfo = Color(0xFF2B1006),
     warn = Color(0xFF9C8AD9), onWarn = Color(0xFF14051F),
-    easy = Color(0xFF8B9AC7),
-    medium = Color(0xFF6F92FF),
-    hard = Color(0xFF4C6FFF),
+    easy = Color(0xFFC4A98F),
+    medium = Color(0xFFC6684A),
+    hard = Color(0xFFB8582F),
 )
 
 val LocalVizPalette = staticCompositionLocalOf { DarkViz }
@@ -134,7 +134,7 @@ private val LightCode = CodePalette(
     function = Color(0xFF8250DF),
     type = Color(0xFF953800),
     punctuation = Color(0xFF57606A),
-    background = Color(0xFFFBFBFD),
+    background = Color(0xFFF3EBDC),
 )
 
 private val DarkCode = CodePalette(
@@ -151,40 +151,54 @@ private val DarkCode = CodePalette(
 
 val LocalCodePalette = staticCompositionLocalOf { DarkCode }
 
+// "Paper Black" — the dark twin of the light theme's "Paper White" below:
+// same idea (a page, not a screen; ink, not a glow), opposite polarity. A
+// neutral, matte near-black rather than tinted brown, with soft warm-white
+// "ink" text rather than stark white, and the same terracotta accent as
+// Paper White so the two read as one theme, not two unrelated palettes.
+//
+// `background` sits just above pure black — close enough to still save real
+// power on an OLED/AMOLED panel (background is by far the largest area on
+// screen), but not so flat that it loses depth against the cards. Cards get
+// a slightly lifted `surface` so they read as raised above that background.
 private val DarkScheme = darkColorScheme(
-    primary = Color(0xFF6F92FF),
-    onPrimary = Color(0xFF060C1F),
-    primaryContainer = Color(0xFF1A2340),
-    onPrimaryContainer = Color(0xFFB9C9FF),
-    background = Color(0xFF0C0F14),
-    onBackground = Color(0xFFE6EAF0),
-    surface = Color(0xFF12161D),
-    onSurface = Color(0xFFE6EAF0),
-    surfaceVariant = Color(0xFF0F131A),
-    onSurfaceVariant = Color(0xFF97A1B0),
-    surfaceContainer = Color(0xFF161B23),
-    surfaceContainerHigh = Color(0xFF1A2029),
-    outline = Color(0xFF313A48),
-    outlineVariant = Color(0xFF212832),
+    primary = Color(0xFFC6684A),
+    onPrimary = Color(0xFF2B1006),
+    primaryContainer = Color(0xFF352822),
+    onPrimaryContainer = Color(0xFFFFD9C0),
+    background = Color(0xFF101010),
+    onBackground = Color(0xFFE8E6E2),
+    surface = Color(0xFF1A1A1A),
+    onSurface = Color(0xFFE8E6E2),
+    surfaceVariant = Color(0xFF0D0D0D),
+    onSurfaceVariant = Color(0xFFA3A19D),
+    surfaceContainer = Color(0xFF212121),
+    surfaceContainerHigh = Color(0xFF282828),
+    outline = Color(0xFF3E3E3D),
+    outlineVariant = Color(0xFF242423),
     error = Color(0xFFF0645F),
 )
 
+// "Paper White" — an e-reader look, not a software-blue light theme: a warm
+// cream page rather than cool white, dark ink-brown text rather than flat
+// black, and the same terracotta accent as dark mode so the two themes read
+// as one brand rather than two unrelated palettes.
 private val LightScheme = lightColorScheme(
-    primary = Color(0xFF3057E3),
-    onPrimary = Color(0xFFFFFFFF),
-    primaryContainer = Color(0xFFE6ECFD),
-    onPrimaryContainer = Color(0xFF17307F),
-    background = Color(0xFFF6F7F9),
-    onBackground = Color(0xFF10151C),
-    surface = Color(0xFFFFFFFF),
-    onSurface = Color(0xFF10151C),
-    surfaceVariant = Color(0xFFF0F2F5),
-    onSurfaceVariant = Color(0xFF5A6472),
-    surfaceContainer = Color(0xFFF0F2F5),
-    surfaceContainerHigh = Color(0xFFECEFF3),
-    outline = Color(0xFFCBD2DC),
-    outlineVariant = Color(0xFFE0E4EA),
-    error = Color(0xFFD94A4A),
+    primary = Color(0xFFB5562F),
+    onPrimary = Color(0xFFFFFBF3),
+    primaryContainer = Color(0xFFF0DCC8),
+    onPrimaryContainer = Color(0xFF6B3113),
+    background = Color(0xFFF7F1E6),
+    onBackground = Color(0xFF2B2620),
+    surface = Color(0xFFFAF5EA),
+    onSurface = Color(0xFF2B2620),
+    surfaceVariant = Color(0xFFEFE7D6),
+    onSurfaceVariant = Color(0xFF7A7263),
+    surfaceContainer = Color(0xFFEFE7D6),
+    surfaceContainerHigh = Color(0xFFE8DEC9),
+    outline = Color(0xFFD8CCB0),
+    outlineVariant = Color(0xFFE3D9C2),
+    error = Color(0xFFC94A3F),
 )
 
 @Composable
