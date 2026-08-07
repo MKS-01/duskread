@@ -24,7 +24,6 @@ import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -45,13 +44,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dev.mks.stacks.reader.AudioPlayer
 import dev.mks.stacks.reader.PlaybackState
 import dev.mks.stacks.reader.ReadItem
+import dev.mks.stacks.reader.ReadRepository
 import dev.mks.stacks.reader.ReadSort
 import dev.mks.stacks.reader.ReaderSource
 import dev.mks.stacks.reader.ReaderSourcePicker
-import dev.mks.stacks.reader.rememberAudioPlayer
-import dev.mks.stacks.reader.rememberReadRepository
 import dev.mks.stacks.ui.rememberUrlOpener
 import dev.mks.stacks.ui.theme.Radius
 import dev.mks.stacks.ui.theme.StacksIcons
@@ -66,9 +65,12 @@ import dev.mks.stacks.ui.theme.Stroke
  * systems in one screen would be the mistake, not the fix.
  */
 @Composable
-fun ReaderTab(contentPadding: PaddingValues, modifier: Modifier = Modifier) {
-    val repository = rememberReadRepository()
-    val player = rememberAudioPlayer(repository)
+fun ReaderTab(
+    repository: ReadRepository,
+    player: AudioPlayer,
+    contentPadding: PaddingValues,
+    modifier: Modifier = Modifier,
+) {
     val source by repository.source.collectAsState()
     val playback by player.state.collectAsState()
 
@@ -100,17 +102,9 @@ fun ReaderTab(contentPadding: PaddingValues, modifier: Modifier = Modifier) {
             }
         }
 
-        playback.item?.let { current ->
-            item("now-playing") {
-                NowPlayingBar(
-                    item = current,
-                    playback = playback,
-                    onToggle = { player.togglePlayPause() },
-                    onSeek = { player.seekTo(it) },
-                    onStop = { player.stop() },
-                )
-            }
-        }
+        // No now-playing bar in the list any more — the transport is a face of
+        // the floating nav bar in HomeScreen, where it survives both scrolling
+        // this list and leaving the tab entirely. See `FloatingBar`.
 
         if (source == ReaderSource.NOT_CONFIGURED) {
             item("picker") {
@@ -262,75 +256,6 @@ private fun SortChip(label: String, active: Boolean, onClick: () -> Unit) {
             .clickable(onClick = onClick)
             .padding(horizontal = 13.dp, vertical = 7.dp),
     )
-}
-
-/**
- * A pinned transport bar, not a per-card one — a card can scroll out of view
- * or the whole tab can be unmounted and remounted (switching tabs and back),
- * and either way this is what stays put and correctly reflects the one live
- * session, sourced directly from [PlaybackState] rather than by matching a
- * specific card's id against it.
- */
-@Composable
-private fun NowPlayingBar(
-    item: ReadItem,
-    playback: PlaybackState,
-    onToggle: () -> Unit,
-    onSeek: (Float) -> Unit,
-    onStop: () -> Unit,
-) {
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(Radius.Card))
-            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-            .border(Stroke.Hairline, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(Radius.Card))
-            .padding(12.dp),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                imageVector = if (playback.playing) StacksIcons.Pause else StacksIcons.Play,
-                contentDescription = if (playback.playing) "Pause" else "Play",
-                modifier = Modifier.size(20.dp).clickable(onClick = onToggle),
-                tint = MaterialTheme.colorScheme.primary,
-            )
-            Spacer(Modifier.width(10.dp))
-            Text(
-                text = item.title,
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f),
-            )
-            Spacer(Modifier.width(10.dp))
-            Icon(
-                imageVector = StacksIcons.Close,
-                contentDescription = "Stop",
-                modifier = Modifier.size(14.dp).clickable(onClick = onStop),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        Spacer(Modifier.height(6.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = formatDuration(playback.positionSec.toDouble()),
-                fontSize = 11.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Slider(
-                value = playback.positionSec,
-                valueRange = 0f..(playback.durationSec.takeIf { it > 0f } ?: 1f),
-                onValueChange = onSeek,
-                modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
-            )
-            Text(
-                text = formatDuration(playback.durationSec.toDouble()),
-                fontSize = 11.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
 }
 
 @Composable
