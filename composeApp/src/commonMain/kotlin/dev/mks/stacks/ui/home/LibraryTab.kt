@@ -14,7 +14,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
@@ -46,6 +48,12 @@ import dev.mks.stacks.ui.theme.Space
  * filter narrows which topics show rather than flattening everything into a
  * second list; each card's problem count is the signal, question detail is
  * one tap away rather than inline, so cards stay short as the curriculum grows.
+ *
+ * Two columns, because the curriculum outgrew a single one: 41 topics over 11
+ * chapters at four-and-a-half full-width cards per screen is a lot of
+ * scrolling to find anything. The tile that pays for it is in [TopicCard] —
+ * the tagline had to go. Chapter headers still span the full width, so the
+ * chapter rhythm survives the change.
  */
 @Composable
 fun LibraryTab(
@@ -55,12 +63,14 @@ fun LibraryTab(
 ) {
     var filter by remember { mutableStateOf<Difficulty?>(null) }
 
-    LazyColumn(
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(2),
         modifier = modifier.fillMaxWidth(),
         contentPadding = contentPadding,
         verticalArrangement = Arrangement.spacedBy(Space.CardGap),
+        horizontalArrangement = Arrangement.spacedBy(Space.CardGap),
     ) {
-        item("head") {
+        item("head", span = { GridItemSpan(maxLineSpan) }) {
             Column(Modifier.padding(bottom = 4.dp)) {
                 Text(
                     text = "Library",
@@ -75,7 +85,7 @@ fun LibraryTab(
             }
         }
 
-        item("filters") {
+        item("filters", span = { GridItemSpan(maxLineSpan) }) {
             Row(
                 Modifier
                     .fillMaxWidth()
@@ -106,7 +116,7 @@ fun LibraryTab(
             }
             if (topics.isEmpty()) return@forEach
 
-            item("${chapter.id}-head") {
+            item("${chapter.id}-head", span = { GridItemSpan(maxLineSpan) }) {
                 Column(Modifier.padding(top = 14.dp, bottom = 2.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
