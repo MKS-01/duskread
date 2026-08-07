@@ -360,4 +360,32 @@ object StacksIcons {
             }
         }
     }
+
+    /**
+     * Contrast: a circle with one half filled.
+     *
+     * The theme toggle swaps colour for greyscale, not light for dark, so the
+     * usual sun/moon pair would say the wrong thing — this is the same circle
+     * either way, differing only in how much of it is ink.
+     */
+    val Contrast: ImageVector by lazy {
+        icon("Contrast") {
+            path(
+                stroke = IconStroke.Colour,
+                strokeLineWidth = IconStroke.Width,
+            ) {
+                moveTo(3.6f, 12f)
+                arcToRelative(8.4f, 8.4f, 0f, true, true, 16.8f, 0f)
+                arcToRelative(8.4f, 8.4f, 0f, true, true, -16.8f, 0f)
+                close()
+            }
+            // The filled half, drawn as its own closed semicircle so the ring
+            // above stays an even stroke all the way round.
+            path(fill = IconStroke.Colour) {
+                moveTo(12f, 3.6f)
+                arcToRelative(8.4f, 8.4f, 0f, false, true, 0f, 16.8f)
+                close()
+            }
+        }
+    }
 }

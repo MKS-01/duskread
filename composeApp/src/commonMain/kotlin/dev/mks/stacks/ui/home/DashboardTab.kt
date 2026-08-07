@@ -19,9 +19,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DarkMode
-import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -79,7 +76,7 @@ fun DashboardTab(
     onOpenFocus: () -> Unit,
     onOpenReader: () -> Unit,
     greeting: String?,
-    isDark: Boolean,
+    mono: Boolean,
     onToggleTheme: () -> Unit,
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
@@ -121,8 +118,8 @@ fun DashboardTab(
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
-                        imageVector = if (isDark) Icons.Filled.LightMode else Icons.Filled.DarkMode,
-                        contentDescription = if (isDark) "Switch to light theme" else "Switch to dark theme",
+                        imageVector = StacksIcons.Contrast,
+                        contentDescription = if (mono) "Switch to the colour theme" else "Switch to the monochrome theme",
                         modifier = Modifier.size(18.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

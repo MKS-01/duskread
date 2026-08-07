@@ -1,9 +1,7 @@
 package dev.mks.stacks.ui.theme
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
@@ -77,26 +75,11 @@ data class VizPalette(
 
 // Good/active/bad/warn were originally full-saturation traffic-light hues,
 // which read as louder than everything else in the app — every other colour
-// here is a muted tone (info *is* the primary — blue in light mode, orange in
-// dark mode). These keep the same hue family per tone (still green/amber/red/
-// purple, so the meaning carries over instantly) but pulled down in
-// saturation to sit in the same register as the rest of the palette, the same
-// move the background/surface colours already make relative to pure black.
-private val LightViz = VizPalette(
-    idle = Color(0xFFEFE7D6), onIdle = Color(0xFF4A4032),
-    active = Color(0xFFC98A3C), onActive = Color(0xFF3D2A00),
-    good = Color(0xFF3B8F68), onGood = Color(0xFFFFFFFF),
-    bad = Color(0xFFC2685F), onBad = Color(0xFFFFFFFF),
-    info = Color(0xFFB5562F), onInfo = Color(0xFFFFFFFF),
-    warn = Color(0xFF7C63BE), onWarn = Color(0xFFFFFFFF),
-    // A terracotta gradient rather than a second traffic-light set: palest
-    // for Easy, the app's own primary orange for Medium, deepest/most
-    // saturated for Hard — intensity carries the severity instead of hue.
-    easy = Color(0xFFCB9A79),
-    medium = Color(0xFFB5562F),
-    hard = Color(0xFF7E3A1C),
-)
-
+// here is a muted tone (info *is* the primary orange). These keep the same
+// hue family per tone (still green/amber/red/purple, so the meaning carries
+// over instantly) but pulled down in saturation to sit in the same register
+// as the rest of the palette, the same move the background/surface colours
+// already make relative to pure black.
 private val DarkViz = VizPalette(
     idle = Color(0xFF232B36), onIdle = Color(0xFFB6C0CD),
     active = Color(0xFFD4A15C), onActive = Color(0xFF241800),
@@ -107,6 +90,27 @@ private val DarkViz = VizPalette(
     easy = Color(0xFFC4A98F),
     medium = Color(0xFFC6684A),
     hard = Color(0xFFB8582F),
+)
+
+// The monochrome twin. Hue is the whole encoding in [DarkViz] — "green means
+// settled" — so stripping it means the tones have to be told apart by
+// lightness alone, and the six then have to be spaced far enough apart to
+// survive that. They are ordered by how much attention each deserves rather
+// than by any traffic-light convention: ACTIVE is the brightest because it is
+// the one element the reader should be looking at, IDLE the dimmest because
+// it is the background of the structure, and the rest fall between.
+private val MonoViz = VizPalette(
+    idle = Color(0xFF262626), onIdle = Color(0xFF9C9C9C),
+    active = Color(0xFFDCDCDC), onActive = Color(0xFF161616),
+    good = Color(0xFF9C9C9C), onGood = Color(0xFF161616),
+    bad = Color(0xFF565656), onBad = Color(0xFFDCDCDC),
+    info = Color(0xFFBBBBBB), onInfo = Color(0xFF161616),
+    warn = Color(0xFF787878), onWarn = Color(0xFFDCDCDC),
+    // Same "intensity carries severity" idea as the terracotta gradient, with
+    // intensity now the only thing left to carry it.
+    easy = Color(0xFF757575),
+    medium = Color(0xFFA8A8A8),
+    hard = Color(0xFFDCDCDC),
 )
 
 val LocalVizPalette = staticCompositionLocalOf { DarkViz }
@@ -125,18 +129,6 @@ data class CodePalette(
     val background: Color,
 )
 
-private val LightCode = CodePalette(
-    plain = Color(0xFF1F2328),
-    keyword = Color(0xFFCF222E),
-    string = Color(0xFF0A3069),
-    number = Color(0xFF0550AE),
-    comment = Color(0xFF6E7781),
-    function = Color(0xFF8250DF),
-    type = Color(0xFF953800),
-    punctuation = Color(0xFF57606A),
-    background = Color(0xFFF3EBDC),
-)
-
 private val DarkCode = CodePalette(
     plain = Color(0xFFD1D7E0),
     keyword = Color(0xFFFF7B72),
@@ -149,13 +141,28 @@ private val DarkCode = CodePalette(
     background = Color(0xFF0F131A),
 )
 
+// Highlighting without hue. Rather than nine near-identical greys, the roles
+// collapse into four legibility bands — comments and punctuation recede,
+// plain code sits at reading weight, and the two things you actually scan a
+// snippet for (keywords and the names being declared or called) come forward.
+// Type and string sit a step under those so a line still has texture.
+private val MonoCode = CodePalette(
+    plain = Color(0xFFC2C2C2),
+    keyword = Color(0xFFDCDCDC),
+    string = Color(0xFF9E9E9E),
+    number = Color(0xFF9E9E9E),
+    comment = Color(0xFF6E6E6E),
+    function = Color(0xFFD2D2D2),
+    type = Color(0xFFD2D2D2),
+    punctuation = Color(0xFF808080),
+    background = Color(0xFF171717),
+)
+
 val LocalCodePalette = staticCompositionLocalOf { DarkCode }
 
-// "Paper Black" — the dark twin of the light theme's "Paper White" below:
-// same idea (a page, not a screen; ink, not a glow), opposite polarity. A
-// neutral, matte near-black rather than tinted brown, with soft warm-white
-// "ink" text rather than stark white, and the same terracotta accent as
-// Paper White so the two read as one theme, not two unrelated palettes.
+// "Paper Black" — a page, not a screen; ink, not a glow. A neutral, matte
+// near-black rather than tinted brown, with soft warm-white "ink" text rather
+// than stark white, lit by a single terracotta accent.
 //
 // `background` sits just above pure black — close enough to still save real
 // power on an OLED/AMOLED panel (background is by far the largest area on
@@ -179,39 +186,56 @@ private val DarkScheme = darkColorScheme(
     error = Color(0xFFF0645F),
 )
 
-// "Paper White" — an e-reader look, not a software-blue light theme: a warm
-// cream page rather than cool white, dark ink-brown text rather than flat
-// black, and the same terracotta accent as dark mode so the two themes read
-// as one brand rather than two unrelated palettes.
-private val LightScheme = lightColorScheme(
-    primary = Color(0xFFB5562F),
-    onPrimary = Color(0xFFFFFBF3),
-    primaryContainer = Color(0xFFF0DCC8),
-    onPrimaryContainer = Color(0xFF6B3113),
-    background = Color(0xFFF7F1E6),
-    onBackground = Color(0xFF2B2620),
-    surface = Color(0xFFFAF5EA),
-    onSurface = Color(0xFF2B2620),
-    surfaceVariant = Color(0xFFEFE7D6),
-    onSurfaceVariant = Color(0xFF7A7263),
-    surfaceContainer = Color(0xFFEFE7D6),
-    surfaceContainerHigh = Color(0xFFE8DEC9),
-    outline = Color(0xFFD8CCB0),
-    outlineVariant = Color(0xFFE3D9C2),
-    error = Color(0xFFC94A3F),
+// "Ink" — the same page, with the ink drained out of it. Not a second dark
+// theme in a different hue but the *absence* of hue: black through white and
+// nothing else, so the only things that can distinguish one element from
+// another are lightness, weight and spacing.
+//
+// Neither end of the range is taken all the way. The ground is a soft
+// charcoal rather than #000 and the ink stops short of #FFF: with no hue
+// anywhere, a true-black-to-true-white span is the harshest possible contrast
+// and reads as glare on a phone at night. Pulling both ends in costs a little
+// range but leaves the greys sitting in a band the eye can rest on, and the
+// steps between surfaces stay visible because they are spaced, not extreme.
+//
+// `primary` is the lightest ink: in a scheme with no colour, "the accent" can
+// only mean the brightest thing on the page. `error` stays grey rather than
+// sneaking a red back in — anything that has to read as wrong here is loud
+// through brightness and wording, not hue.
+private val MonoScheme = darkColorScheme(
+    primary = Color(0xFFDCDCDC),
+    onPrimary = Color(0xFF161616),
+    primaryContainer = Color(0xFF2E2E2E),
+    onPrimaryContainer = Color(0xFFE4E4E4),
+    background = Color(0xFF161616),
+    onBackground = Color(0xFFDCDCDC),
+    surface = Color(0xFF202020),
+    onSurface = Color(0xFFDCDCDC),
+    surfaceVariant = Color(0xFF121212),
+    onSurfaceVariant = Color(0xFF9C9C9C),
+    surfaceContainer = Color(0xFF272727),
+    surfaceContainerHigh = Color(0xFF303030),
+    outline = Color(0xFF464646),
+    outlineVariant = Color(0xFF2B2B2B),
+    error = Color(0xFFCBCBCB),
 )
 
+/**
+ * Both themes are dark; [mono] picks which. The app is read on a phone in the
+ * evening, so a light polarity never got used — what the toggle is actually
+ * for is dropping colour entirely on the days the terracotta is a distraction.
+ */
 @Composable
 fun StacksTheme(
-    dark: Boolean = isSystemInDarkTheme(),
+    mono: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     CompositionLocalProvider(
-        LocalVizPalette provides if (dark) DarkViz else LightViz,
-        LocalCodePalette provides if (dark) DarkCode else LightCode,
+        LocalVizPalette provides if (mono) MonoViz else DarkViz,
+        LocalCodePalette provides if (mono) MonoCode else DarkCode,
     ) {
         MaterialTheme(
-            colorScheme = if (dark) DarkScheme else LightScheme,
+            colorScheme = if (mono) MonoScheme else DarkScheme,
             typography = AlgoTypography(),
             content = content,
         )

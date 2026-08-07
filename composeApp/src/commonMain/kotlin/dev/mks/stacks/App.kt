@@ -11,7 +11,6 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -27,8 +26,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.DarkMode
-import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -65,9 +62,9 @@ import dev.mks.stacks.ui.theme.StacksTheme
 /** Below this width there is no room for two panes, so we navigate instead. */
 @Composable
 fun App() {
-    var dark by remember { mutableStateOf<Boolean?>(null) }
-    val systemDark = isSystemInDarkTheme()
-    val isDark = dark ?: systemDark
+    // Both themes are dark; this picks the colourless one. Not persisted —
+    // it is a mood switch for the current sitting, not a setting.
+    var mono by remember { mutableStateOf(false) }
 
     val prefs = rememberUserPrefs()
 
@@ -77,7 +74,7 @@ fun App() {
         catalogLoaded = true
     }
 
-    StacksTheme(dark = isDark) {
+    StacksTheme(mono = mono) {
         Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
             if (!catalogLoaded) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -109,8 +106,8 @@ fun App() {
                             onOpenFocus = { focusMode = true },
                             lang = lang,
                             onLangChange = { lang = it },
-                            isDark = isDark,
-                            onToggleTheme = { dark = !isDark },
+                            mono = mono,
+                            onToggleTheme = { mono = !mono },
                         )
                     } else {
                         PhoneLayout(
@@ -121,8 +118,8 @@ fun App() {
                             onOpenFocus = { focusMode = true },
                             lang = lang,
                             onLangChange = { lang = it },
-                            isDark = isDark,
-                            onToggleTheme = { dark = !isDark },
+                            mono = mono,
+                            onToggleTheme = { mono = !mono },
                         )
                     }
                 }
@@ -151,7 +148,7 @@ private fun PhoneLayout(
     onOpenFocus: () -> Unit,
     lang: Lang,
     onLangChange: (Lang) -> Unit,
-    isDark: Boolean,
+    mono: Boolean,
     onToggleTheme: () -> Unit,
 ) {
     val topic = selectedId?.let { topicById(it) }
@@ -184,7 +181,7 @@ private fun PhoneLayout(
                 onOpenTopic = onSelect,
                 onOpenFocus = onOpenFocus,
                 greeting = greeting,
-                isDark = isDark,
+                mono = mono,
                 onToggleTheme = onToggleTheme,
                 tab = homeTab,
                 onTabChange = { homeTab = it },
@@ -231,7 +228,7 @@ private fun TwoPaneLayout(
     onOpenFocus: () -> Unit,
     lang: Lang,
     onLangChange: (Lang) -> Unit,
-    isDark: Boolean,
+    mono: Boolean,
     onToggleTheme: () -> Unit,
 ) {
     val topic = topicById(selectedId) ?: AllTopics.first()
@@ -273,8 +270,8 @@ private fun TwoPaneLayout(
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
-                        imageVector = if (isDark) Icons.Filled.LightMode else Icons.Filled.DarkMode,
-                        contentDescription = "Toggle theme",
+                        imageVector = StacksIcons.Contrast,
+                        contentDescription = if (mono) "Switch to the colour theme" else "Switch to the monochrome theme",
                         modifier = Modifier.size(17.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

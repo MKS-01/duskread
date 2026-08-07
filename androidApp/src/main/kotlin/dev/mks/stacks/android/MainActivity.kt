@@ -2,9 +2,11 @@ package dev.mks.stacks.android
 
 import android.Manifest
 import android.content.Intent
+import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
@@ -26,7 +28,14 @@ class MainActivity : ComponentActivity() {
         // the very first frame. It is dismissed automatically once there is
         // content to draw — nothing here holds it open.
         installSplashScreen()
-        enableEdgeToEdge()
+        // Pinned dark rather than left on the default `auto`, which follows the
+        // system's light/dark setting: both app themes are dark, so on a phone
+        // set to light mode `auto` would draw dark status-bar icons over our
+        // near-black background and lose them entirely.
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
+        )
         super.onCreate(savedInstanceState)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
