@@ -32,22 +32,23 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import dev.mks.stacks.content.AllQuestions
 import dev.mks.stacks.content.Chapters
-import dev.mks.stacks.model.Difficulty
+import dev.mks.stacks.model.Level
 import dev.mks.stacks.ui.theme.LocalVizPalette
 import dev.mks.stacks.ui.theme.SectionLabel
 import dev.mks.stacks.ui.theme.Space
 
 /**
- * The curriculum and its practice questions, together.
+ * The curriculum: chapters, and the topics inside them.
  *
- * This used to be two tabs — Learn to browse, Practice to drill. Splitting
- * them meant a topic's questions were never visible next to the topic itself,
- * so browsing told you nothing about what you would be asked. The difficulty
- * filter narrows which topics show rather than flattening everything into a
- * second list; each card's problem count is the signal, question detail is
- * one tap away rather than inline, so cards stay short as the curriculum grows.
+ * Practice questions are deliberately absent from this screen. The library is
+ * where you go to find *the thing itself* — what a heap is, how Dijkstra
+ * works — and framing that browse around LeetCode problems answered a question
+ * nobody was asking here: the subtitle counted problems rather than topics, and
+ * the filter sorted topics by the difficulty of questions attached to them,
+ * which is not a property of the topic at all. A topic's own level is, so that
+ * is what filters now. The questions still live on the topic screen, one tap
+ * away, next to the algorithm they belong to.
  *
  * Two columns, because the curriculum outgrew a single one: 41 topics over 11
  * chapters at four-and-a-half full-width cards per screen is a lot of
@@ -61,7 +62,7 @@ fun LibraryTab(
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
 ) {
-    var filter by remember { mutableStateOf<Difficulty?>(null) }
+    var filter by remember { mutableStateOf<Level?>(null) }
 
     LazyVerticalGrid(
         columns = GridCells.Fixed(2),
@@ -78,7 +79,7 @@ fun LibraryTab(
                     color = MaterialTheme.colorScheme.onBackground,
                 )
                 Text(
-                    text = "${AllQuestions.size} problems across ${Chapters.sumOf { it.topics.size }} topics.",
+                    text = "${Chapters.sumOf { it.topics.size }} topics across ${Chapters.size} chapters.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -96,24 +97,22 @@ fun LibraryTab(
                 // default to top-aligned instead of sharing a centre line.
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                DifficultyChip("All", filter == null) { filter = null }
-                Difficulty.entries.forEach { difficulty ->
-                    val count = AllQuestions.count { it.question.difficulty == difficulty }
-                    DifficultyChip(
-                        label = "${difficulty.label} · $count",
-                        active = filter == difficulty,
-                        accent = LocalVizPalette.current.of(difficulty),
+                LevelChip("All", filter == null) { filter = null }
+                Level.entries.forEach { level ->
+                    val count = Chapters.sumOf { chapter -> chapter.topics.count { it.level == level } }
+                    LevelChip(
+                        label = "${level.label} · $count",
+                        active = filter == level,
+                        accent = LocalVizPalette.current.of(level),
                     ) {
-                        filter = if (filter == difficulty) null else difficulty
+                        filter = if (filter == level) null else level
                     }
                 }
             }
         }
 
         Chapters.forEach { chapter ->
-            val topics = chapter.topics.filter { topic ->
-                filter == null || topic.questions.any { it.difficulty == filter }
-            }
+            val topics = chapter.topics.filter { filter == null || it.level == filter }
             if (topics.isEmpty()) return@forEach
 
             item("${chapter.id}-head", span = { GridItemSpan(maxLineSpan) }) {
@@ -151,7 +150,7 @@ fun LibraryTab(
 }
 
 @Composable
-private fun DifficultyChip(
+private fun LevelChip(
     label: String,
     active: Boolean,
     accent: androidx.compose.ui.graphics.Color? = null,
