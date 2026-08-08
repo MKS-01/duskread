@@ -6,6 +6,9 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
 
+    <!-- Saved links fetch the title of a pasted or shared page. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <!-- For the Reader's playback foreground service (API 34+). -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
 
@@ -32,14 +35,36 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Stacks.Splash">
 
+        <!--
+            singleTask so a share reuses the running app instead of stacking a
+            second copy of it. With the default `standard` mode, sharing a link
+            builds a fresh MainActivity — and with it a second Compose tree
+            holding its own copy of the saved-link library — so the link was
+            saved into an instance that was not the one on screen, and the
+            visible list never showed it. There is only ever one of this
+            activity; onNewIntent is where a share now arrives.
+        -->
         <activity
             android:name="dev.mks.stacks.android.MainActivity"
             android:exported="true"
+            android:launchMode="singleTask"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode|density|fontScale"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!--
+                Share target: "Share -> Stacks" from a browser or any app that
+                sends text. Chrome sends the page URL as EXTRA_TEXT, often with
+                the title in front of it, which is why the handler extracts the
+                link rather than storing the payload whole.
+            -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
             </intent-filter>
         </activity>
 

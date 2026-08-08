@@ -1,0 +1,73 @@
+package dev.mks.stacks.links
+
+/**
+ * An article saved from outside the app — pasted in, or shared to Stacks from
+ * a browser.
+ *
+ * This is the one thing in the app the *user* writes. Topics are bundled
+ * Markdown and the Reader is a read-only view of a synced readback library;
+ * a saved link has no source of truth anywhere else, so this record is it.
+ *
+ * [title] and [description] start as whatever the URL alone can tell us and
+ * are replaced once the page has been fetched, so a link is usable the instant
+ * it is saved and improves a second later rather than blocking on the network.
+ */
+data class SavedLink(
+    val id: String,
+    val url: String,
+    val title: String,
+    val description: String? = null,
+    val savedAt: Long,
+    /** When it was read, or null if it has not been. The record outlives the reading. */
+    val readAt: Long? = null,
+    /** False until the page itself has answered; the title is a guess from the URL until then. */
+    val fetched: Boolean = false,
+) {
+    val read: Boolean
+        get() = readAt != null
+
+    /** "arstechnica.com" — the one piece of provenance worth showing in a list. */
+    val host: String
+        get() = url
+            .substringAfter("://", url)
+            .substringBefore('/')
+            .substringBefore('?')
+            .removePrefix("www.")
+}
+
+/**
+ * Best guess at a title before the network answers: the last meaningful path
+ * segment, un-slugged. "…/blog/how-heaps-actually-work?ref=x" → "How heaps
+ * actually work". Falls back to the host, which is never wrong, only vague.
+ */
+fun titleFromUrl(url: String): String {
+    val path = url.substringAfter("://", url).substringBefore('?').substringBefore('#')
+    val slug = path.split('/')
+        .drop(1)
+        .lastOrNull { segment -> segment.isNotBlank() && segment.any { it.isLetter() } }
+        ?.substringBeforeLast('.') // strip .html, .php and friends
+
+    if (slug.isNullOrBlank()) return path.substringBefore('/').removePrefix("www.")
+
+    val words = slug.replace('-', ' ').replace('_', ' ').trim()
+    return words.replaceFirstChar { it.uppercaseChar() }
+}
+
+/**
+ * Whether this looks enough like a link to save. Deliberately permissive: the
+ * cost of accepting something odd is one bad row the user can delete, and the
+ * cost of rejecting a real URL is that the feature appears broken.
+ */
+fun looksLikeUrl(text: String): Boolean {
+    val trimmed = text.trim()
+    if (trimmed.isEmpty() || trimmed.any { it.isWhitespace() }) return false
+
+    val host = trimmed.substringAfter("://", trimmed).substringBefore('/')
+    return host.contains('.') && host.substringAfterLast('.').length >= 2
+}
+
+/** Adds the scheme a pasted "example.com/x" is missing, so it can actually be fetched or opened. */
+fun normaliseUrl(text: String): String {
+    val trimmed = text.trim()
+    return if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) trimmed else "https://$trimmed"
+}

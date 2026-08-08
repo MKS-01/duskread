@@ -12,6 +12,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import dev.mks.stacks.App
+import dev.mks.stacks.links.SharedLinkRequest
 import dev.mks.stacks.ui.home.HomeTab
 import dev.mks.stacks.ui.home.HomeTabRequest
 import dev.mks.stacks.ui.home.OpenReaderTabExtra
@@ -52,10 +53,21 @@ class MainActivity : ComponentActivity() {
         handleIntent(intent)
     }
 
-    /** Tapping the Reader notification should land on the Reader tab, not whatever tab the app last showed. */
+    /**
+     * Two ways in that are not the launcher icon: the Reader notification,
+     * which should land on the Reader tab rather than whatever tab the app
+     * last showed, and a shared link, which should be saved and then shown.
+     */
     private fun handleIntent(intent: Intent?) {
         if (intent?.getBooleanExtra(OpenReaderTabExtra, false) == true) {
             HomeTabRequest.request(HomeTab.READER)
+        }
+
+        if (intent?.action == Intent.ACTION_SEND && intent.type == "text/plain") {
+            intent.getStringExtra(Intent.EXTRA_TEXT)?.let { shared ->
+                SharedLinkRequest.offer(shared)
+                HomeTabRequest.request(HomeTab.SAVED)
+            }
         }
     }
 }

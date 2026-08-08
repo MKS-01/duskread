@@ -57,9 +57,14 @@ kotlin {
             // The Pomodoro clock's shared state is a StateFlow, read the same
             // way whether a coroutine or a foreground service is driving it.
             implementation(libs.kotlinx.coroutines.core)
+            // Saved links fetch the page title of a pasted URL. Only the core
+            // is shared — every target brings its own engine below, since
+            // there is no engine that works on all five.
+            implementation(libs.ktor.client.core)
         }
 
         androidMain.dependencies {
+            implementation(libs.ktor.client.okhttp)
             // Supplies BackHandler for the single-pane navigation.
             implementation(libs.androidx.activity.compose)
             // Chrome Custom Tabs, for opening reference links in-app.
@@ -73,9 +78,18 @@ kotlin {
             implementation(libs.androidx.media)
         }
 
+        iosMain.dependencies {
+            implementation(libs.ktor.client.darwin)
+        }
+
+        wasmJsMain.dependencies {
+            implementation(libs.ktor.client.js)
+        }
+
         val desktopMain by getting
         desktopMain.dependencies {
             implementation(compose.desktop.currentOs)
+            implementation(libs.ktor.client.cio)
             // Reads readback's library.db directly; the Reader's only
             // non-Android platform with a real (if manual) way to point at
             // a synced folder.
