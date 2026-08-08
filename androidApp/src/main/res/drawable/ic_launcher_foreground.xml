@@ -1,5 +1,5 @@
 <!--
-    Adaptive icon foreground: the same stacked-blocks mark as the splash icon
+    Adaptive icon foreground: the same aperture mark as the splash icon
     (ic_stacks_mark), so the launcher icon and the launch animation are the
     same idea rather than two competing marks. Kept within the centre safe
     zone launchers actually crop to — see ic_stacks_mark for what the shape
@@ -12,12 +12,17 @@
     android:viewportHeight="108">
 
     <path
-        android:fillColor="#4ADE80"
-        android:pathData="M40,32 H68 A4,4 0 0 1 72,36 V40 A4,4 0 0 1 68,44 H40 A4,4 0 0 1 36,40 V36 A4,4 0 0 1 40,32 Z" />
+        android:strokeColor="#C6684A"
+        android:strokeWidth="4.5"
+        android:pathData="M31,54 A23,23 0 1 1 77,54 A23,23 0 1 1 31,54 Z" />
+
     <path
-        android:fillColor="#6F92FF"
-        android:pathData="M40,48 H68 A4,4 0 0 1 72,52 V56 A4,4 0 0 1 68,60 H40 A4,4 0 0 1 36,56 V52 A4,4 0 0 1 40,48 Z" />
+        android:fillColor="#E8E6E2"
+        android:pathData="M47.25,45.75 H62.25 A2.25,2.25 0 0 1 62.25,50.25 H47.25 A2.25,2.25 0 0 1 47.25,45.75 Z" />
     <path
-        android:fillColor="#4C6FFF"
-        android:pathData="M40,64 H68 A4,4 0 0 1 72,68 V72 A4,4 0 0 1 68,76 H40 A4,4 0 0 1 36,72 V68 A4,4 0 0 1 40,64 Z" />
+        android:fillColor="#9C9A96"
+        android:pathData="M47.25,55.75 H62.25 A2.25,2.25 0 0 1 62.25,60.25 H47.25 A2.25,2.25 0 0 1 47.25,55.75 Z" />
+    <path
+        android:fillColor="#6B6965"
+        android:pathData="M47.25,65.75 H53.75 A2.25,2.25 0 0 1 53.75,70.25 H47.25 A2.25,2.25 0 0 1 47.25,65.75 Z" />
 </vector>

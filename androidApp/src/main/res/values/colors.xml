@@ -2,5 +2,5 @@
 <resources>
     <!-- Matches DarkScheme.background in ui/theme/Theme.kt, so the handover
          from the launch window to the first composed frame is invisible. -->
-    <color name="splash_background">#FF0C0F14</color>
+    <color name="splash_background">#FF101010</color>
 </resources>
