@@ -1,16 +1,10 @@
 package dev.mks.stacks.ui.home
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -27,6 +21,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalTextStyle
@@ -41,33 +36,37 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import dev.mks.stacks.content.AllTopics
-import dev.mks.stacks.content.Chapters
-import dev.mks.stacks.content.searchTopics
-import dev.mks.stacks.model.Topic
+import dev.mks.stacks.content.MatchField
+import dev.mks.stacks.content.SearchHit
+import dev.mks.stacks.content.closestMatches
+import dev.mks.stacks.content.rankedSearch
+import dev.mks.stacks.data.rememberRecentSearches
 import dev.mks.stacks.ui.rememberUrlOpener
 import dev.mks.stacks.ui.theme.LocalVizPalette
 import dev.mks.stacks.ui.theme.Mono
 import dev.mks.stacks.ui.theme.Radius
 import dev.mks.stacks.ui.theme.SectionLabel
-import dev.mks.stacks.ui.theme.Space
 import dev.mks.stacks.ui.theme.StacksIcons
 
 /**
  * Search, as a screen of its own rather than a sheet over the list.
  *
- * The field floats at the bottom beside the back button, where the thumb
- * already is, and the keyboard pushes the pair up rather than covering them.
+ * The field floats at the bottom beside the thumb, and the keyboard pushes it
+ * up rather than covering it. Everything above the field is a single scrolling
+ * column, so the same layout works whether the keyboard is up or not — the
+ * previous version centred its empty state in the free space, which the
+ * keyboard then ate.
  *
- * Before anything is typed the middle of the screen runs a slow carousel with
- * one slide per pillar of the app — Algo, Focus, Reader — each drawn moving,
- * not described. Tapping a slide acts on it directly: Focus and Reader are
- * destinations, not text to match, so they could never surface from a typed
- * query the way a topic can.
+ * Results are ranked rather than filtered (see [rankedSearch]) and the matched
+ * span is marked in the accent, so a list of near-identical sorting algorithms
+ * still shows *why* each row is there.
  */
 @Composable
 fun SearchScreen(
@@ -79,7 +78,16 @@ fun SearchScreen(
     onDismiss: () -> Unit,
 ) {
     val trimmed = query.trim()
-    val results = remember(trimmed) { searchTopics(trimmed) }
+    val results = remember(trimmed) { if (trimmed.isEmpty()) emptyList() else rankedSearch(trimmed) }
+    val recents = rememberRecentSearches()
+
+    // A query is worth remembering once it has led somewhere — opening a topic,
+    // or submitting the field. Recording every keystroke would fill the list
+    // with the prefixes of one word.
+    fun open(id: String) {
+        recents.record(trimmed)
+        onSelect(id)
+    }
 
     Column(
         Modifier
@@ -89,13 +97,26 @@ fun SearchScreen(
     ) {
         Box(Modifier.weight(1f).fillMaxWidth()) {
             when {
-                trimmed.isEmpty() -> BrowseList(onQueryChange, onOpenFocus, onOpenReader)
-                results.isEmpty() -> NoResults(trimmed, onSelect)
-                else -> ResultsList(results, trimmed, onSelect)
+                trimmed.isEmpty() -> BrowsePane(
+                    recents = recents.entries,
+                    onPick = onQueryChange,
+                    onForget = recents::forget,
+                    onClear = recents::clear,
+                    onOpenFocus = onOpenFocus,
+                    onOpenReader = onOpenReader,
+                )
+
+                results.isEmpty() -> NoResults(trimmed, ::open)
+                else -> ResultsList(results, ::open)
             }
         }
 
-        SearchBar(query, onQueryChange, onDismiss)
+        SearchBar(
+            query = query,
+            onQueryChange = onQueryChange,
+            onSubmit = { recents.record(trimmed) },
+            onDismiss = onDismiss,
+        )
     }
 }
 
@@ -103,6 +124,7 @@ fun SearchScreen(
 private fun SearchBar(
     query: String,
     onQueryChange: (String) -> Unit,
+    onSubmit: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     val focus = remember { FocusRequester() }
@@ -159,6 +181,7 @@ private fun SearchBar(
                     ),
                     cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    keyboardActions = KeyboardActions(onSearch = { onSubmit() }),
                 )
             }
 
@@ -180,52 +203,95 @@ private fun SearchBar(
     }
 }
 
-/** Nothing typed: the three-pillar carousel, centred in the space above the field. */
+/**
+ * Nothing typed: the three-pillar carousel, then whatever was searched for
+ * before.
+ *
+ * The carousel stays because Focus and Reader are destinations rather than
+ * text — no typed query could ever surface them. Recents sit under it because
+ * they are the faster path for anyone who came back for a second look, and
+ * both scroll together so the keyboard can take half the screen without
+ * hiding either.
+ */
 @Composable
-private fun BrowseList(
-    onQueryChange: (String) -> Unit,
+private fun BrowsePane(
+    recents: List<String>,
+    onPick: (String) -> Unit,
+    onForget: (String) -> Unit,
+    onClear: () -> Unit,
     onOpenFocus: () -> Unit,
     onOpenReader: () -> Unit,
 ) {
-    Box(
-        Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center,
-    ) {
-        PillarCarousel(
-            onSearchAlgo = onQueryChange,
-            onOpenFocus = onOpenFocus,
-            onOpenReader = onOpenReader,
-            modifier = Modifier.padding(bottom = 40.dp),
-        )
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = ListPadding) {
+        item("carousel") {
+            PillarCarousel(
+                onSearchAlgo = onPick,
+                onOpenFocus = onOpenFocus,
+                onOpenReader = onOpenReader,
+                modifier = Modifier.padding(top = 12.dp, bottom = 26.dp),
+            )
+        }
+
+        if (recents.isNotEmpty()) {
+            item("recent-head") {
+                Row(
+                    Modifier.fillMaxWidth().padding(start = 4.dp, bottom = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = "RECENT",
+                        style = SectionLabel,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Text(
+                        text = "Clear",
+                        style = SectionLabel,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(Radius.Inline))
+                            .clickable(onClick = onClear)
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                    )
+                }
+            }
+
+            recents.forEach { entry ->
+                item(entry) { RecentRow(entry, onPick = { onPick(entry) }, onForget = { onForget(entry) }) }
+            }
+        }
     }
 }
 
 @Composable
-private fun ResultsList(results: List<Topic>, query: String, onSelect: (String) -> Unit) {
-    LazyColumn(
-        Modifier.fillMaxSize(),
-        contentPadding = ListPadding,
-    ) {
-        results.forEach { topic ->
-            item(topic.id) { TopicRow(topic, query) { onSelect(topic.id) } }
+private fun ResultsList(results: List<SearchHit>, onSelect: (String) -> Unit) {
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = ListPadding) {
+        item("count") {
+            Text(
+                text = if (results.size == 1) "1 RESULT" else "${results.size} RESULTS",
+                style = SectionLabel,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 4.dp, top = 6.dp, bottom = 8.dp),
+            )
+        }
+        results.forEach { hit ->
+            item(hit.topic.id) { ResultRow(hit) { onSelect(hit.topic.id) } }
         }
     }
 }
 
 /**
  * A dead end is where a reference loses people, so this never stops at
- * "nothing found": it offers a way out to the web for the thing we do not
- * have, then the topics we do.
+ * "nothing found": it retries the query one word at a time, and failing that
+ * offers a way out to the web for the thing we do not have.
  */
 @Composable
 private fun NoResults(query: String, onSelect: (String) -> Unit) {
     val open = rememberUrlOpener()
     val encoded = remember(query) { query.replace(" ", "+") }
+    val closest = remember(query) { closestMatches(query) }
 
-    LazyColumn(
-        Modifier.fillMaxSize(),
-        contentPadding = ListPadding,
-    ) {
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = ListPadding) {
         item("head") {
             Text(
                 text = "Nothing on “$query” yet",
@@ -234,14 +300,26 @@ private fun NoResults(query: String, onSelect: (String) -> Unit) {
                 color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.padding(start = 4.dp, top = 6.dp, bottom = 16.dp),
             )
+        }
+
+        if (closest.isNotEmpty()) {
+            item("closest-head") {
+                Text(
+                    text = "CLOSEST",
+                    style = SectionLabel,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = 4.dp, bottom = 6.dp),
+                )
+            }
+            closest.forEach { hit ->
+                item(hit.topic.id) { ResultRow(hit) { onSelect(hit.topic.id) } }
+            }
+            item("closest-gap") { Spacer(Modifier.height(18.dp)) }
+        }
+
+        item("web") {
             WebOut("Search the web", "https://duckduckgo.com/?q=$encoded", open)
             WebOut("Wikipedia", "https://en.wikipedia.org/w/index.php?search=$encoded", open)
-            Spacer(Modifier.height(18.dp))
-        }
-        // Two, not four. Enough to offer a way onward without turning a dead
-        // end into a second menu.
-        AllTopics.take(2).forEach { topic ->
-            item(topic.id) { TopicRow(topic, null) { onSelect(topic.id) } }
         }
     }
 }
@@ -252,41 +330,10 @@ private fun NoResults(query: String, onSelect: (String) -> Unit) {
 
 private val ListPadding = PaddingValues(start = 14.dp, end = 14.dp, bottom = 24.dp)
 
-/** Short queries, each known to return something. */
-private val Shortcuts = listOf("arrays", "binary search", "hash", "sort", "graph", "linked")
-
 @Composable
-private fun Label(text: String) {
-    Text(
-        text = text,
-        style = SectionLabel,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(start = 4.dp),
-    )
-}
-
-@Composable
-private fun Chip(label: String, onClick: () -> Unit) {
-    Text(
-        text = label,
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurface,
-        modifier = Modifier
-            .clip(RoundedCornerShape(Radius.Pill))
-            .background(MaterialTheme.colorScheme.surfaceContainer)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 8.dp),
-    )
-}
-
-@Composable
-private fun TopicRow(topic: Topic, query: String?, onClick: () -> Unit) {
-    // Show which question matched, when the hit came from the question list
-    // rather than the title — otherwise the result looks arbitrary.
-    val matched = query?.let { q ->
-        topic.questions.firstOrNull { it.title.contains(q, ignoreCase = true) }
-            ?.takeUnless { topic.title.contains(q, ignoreCase = true) }
-    }
+private fun ResultRow(hit: SearchHit, onClick: () -> Unit) {
+    val topic = hit.topic
+    val title = markMatch(topic.title, hit.highlight.takeIf { hit.field == MatchField.TITLE })
 
     Row(
         Modifier
@@ -305,17 +352,70 @@ private fun TopicRow(topic: Topic, query: String?, onClick: () -> Unit) {
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text(
-                text = topic.title,
+                text = title,
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onSurface,
             )
-            Text(
-                text = matched?.let { "matches ${it.title}" } ?: topic.tagline,
-                fontSize = 11.5.sp,
-                maxLines = 1,
-                fontFamily = if (matched != null) Mono else null,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+
+            // Say which question matched when the hit came from the question
+            // list rather than the title — otherwise the row looks arbitrary,
+            // which is exactly how the unranked version failed.
+            if (hit.field == MatchField.QUESTION && hit.question != null) {
+                Text(
+                    text = markMatch(hit.question.title, hit.highlight),
+                    fontSize = 11.5.sp,
+                    maxLines = 1,
+                    fontFamily = Mono,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            } else {
+                Text(
+                    text = topic.tagline,
+                    fontSize = 11.5.sp,
+                    maxLines = 1,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun RecentRow(query: String, onPick: () -> Unit, onForget: () -> Unit) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(Radius.Inline))
+            .clickable(onClick = onPick)
+            .padding(start = 12.dp, end = 4.dp, top = 9.dp, bottom = 9.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            StacksIcons.Clock,
+            contentDescription = null,
+            modifier = Modifier.size(15.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.width(12.dp))
+        Text(
+            text = query,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f),
+        )
+        Box(
+            Modifier
+                .size(30.dp)
+                .clip(CircleShape)
+                .clickable(onClick = onForget),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                StacksIcons.Close,
+                contentDescription = "Forget “$query”",
+                modifier = Modifier.size(13.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
@@ -343,5 +443,30 @@ private fun WebOut(label: String, url: String, open: (String) -> Unit) {
             modifier = Modifier.size(14.dp),
             tint = MaterialTheme.colorScheme.primary,
         )
+    }
+}
+
+/**
+ * Tints the matched span in the accent. Bold alone would not survive a row of
+ * near-identical titles — the point is to answer "why is *this* here?" at a
+ * glance, and colour is the fastest answer the palette has.
+ *
+ * A match covering the whole string is left plain: there is no contrast to
+ * draw, and an entirely terracotta row reads as a link rather than a result.
+ */
+@Composable
+private fun markMatch(text: String, range: IntRange?): AnnotatedString {
+    val accent = MaterialTheme.colorScheme.primary
+    return remember(text, range, accent) {
+        buildAnnotatedString {
+            append(text)
+            val marks = range != null &&
+                range.first >= 0 &&
+                range.last < text.length &&
+                !(range.first == 0 && range.last == text.lastIndex)
+            if (marks) {
+                addStyle(SpanStyle(color = accent, fontWeight = FontWeight.SemiBold), range!!.first, range.last + 1)
+            }
+        }
     }
 }

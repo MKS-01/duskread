@@ -139,18 +139,3 @@ data class PracticeItem(val question: Question, val topic: Topic)
  */
 val AllQuestions: List<PracticeItem>
     get() = AllTopics.flatMap { topic -> topic.questions.map { PracticeItem(it, topic) } }
-
-/**
- * Case-insensitive match across titles, taglines and question names, so
- * searching for a LeetCode problem finds the topic that teaches it.
- */
-fun searchTopics(query: String): List<Topic> {
-    val q = query.trim().lowercase()
-    if (q.isEmpty()) return AllTopics
-
-    return AllTopics.filter { topic ->
-        topic.title.lowercase().contains(q) ||
-            topic.tagline.lowercase().contains(q) ||
-            topic.questions.any { it.title.lowercase().contains(q) }
-    }
-}
