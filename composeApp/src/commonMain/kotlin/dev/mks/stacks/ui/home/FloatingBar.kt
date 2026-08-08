@@ -59,8 +59,8 @@ import dev.mks.stacks.ui.theme.StacksIcons
 
 enum class HomeTab(val label: String, val icon: ImageVector) {
     HOME("Home", StacksIcons.Home),
-    LIBRARY("Library", StacksIcons.Steps),
     READER("Reader", StacksIcons.Waveform),
+    SAVED("Saved", StacksIcons.Bookmark),
 }
 
 /** Every face of the bar is this tall; only the width changes between them. */
@@ -149,7 +149,6 @@ fun rememberBarCollapse(): BarCollapse {
 fun FloatingBar(
     selected: HomeTab,
     onSelect: (HomeTab) -> Unit,
-    onSearch: () -> Unit,
     hazeState: HazeState,
     nowPlaying: ReadItem?,
     playback: PlaybackState,
@@ -234,7 +233,6 @@ fun FloatingBar(
                         onSelect(it)
                         peekingTabs = false
                     },
-                    onSearch = onSearch,
                 )
 
                 BarFace.PLAYER -> PlayerFace(
@@ -261,7 +259,7 @@ fun FloatingBar(
 }
 
 @Composable
-private fun TabsFace(selected: HomeTab, onSelect: (HomeTab) -> Unit, onSearch: () -> Unit) {
+private fun TabsFace(selected: HomeTab, onSelect: (HomeTab) -> Unit) {
     Row(
         Modifier.padding(horizontal = 7.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -270,8 +268,6 @@ private fun TabsFace(selected: HomeTab, onSelect: (HomeTab) -> Unit, onSearch: (
         HomeTab.entries.forEach { tab ->
             BarButton(tab.icon, tab.label, active = tab == selected) { onSelect(tab) }
         }
-        BarDivider()
-        BarButton(StacksIcons.Search, "Search", onClick = onSearch)
     }
 }
 

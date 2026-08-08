@@ -42,9 +42,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import dev.mks.stacks.content.AllTopics
-import dev.mks.stacks.content.Chapters
-import dev.mks.stacks.model.Topic
 import dev.mks.stacks.pomodoro.PickableMinutes
 import dev.mks.stacks.pomodoro.clockLabel
 import dev.mks.stacks.pomodoro.rememberPomodoroController
@@ -54,25 +51,20 @@ import dev.mks.stacks.reader.ReaderSource
 import dev.mks.stacks.reader.rememberReadRepository
 import dev.mks.stacks.ui.reader.formatDuration
 import dev.mks.stacks.ui.rememberUrlOpener
-import dev.mks.stacks.ui.theme.LocalVizPalette
 import dev.mks.stacks.ui.theme.Radius
 import dev.mks.stacks.ui.theme.SectionLabel
 import dev.mks.stacks.ui.theme.Space
 import dev.mks.stacks.ui.theme.StacksIcons
 import dev.mks.stacks.ui.theme.Stroke
-import kotlin.time.Clock
-import kotlin.time.ExperimentalTime
 import androidx.compose.ui.graphics.drawscope.Stroke as DrawStroke
 
 /**
- * Home: a dashboard rather than another list — the curriculum browser moved
- * to [LibraryTab]. What is left is the small set of things worth seeing every
- * time the app opens: one topic to read today, the focus timer, and whatever
+ * Home: a dashboard rather than a list. What is left is the small set of
+ * things worth seeing every time the app opens: the focus timer and whatever
  * is queued up in the reader.
  */
 @Composable
 fun DashboardTab(
-    onOpenTopic: (String) -> Unit,
     onOpenFocus: () -> Unit,
     onOpenReader: () -> Unit,
     greeting: String?,
@@ -103,11 +95,6 @@ fun DashboardTab(
                         style = MaterialTheme.typography.headlineMedium,
                         color = MaterialTheme.colorScheme.onBackground,
                     )
-                    Text(
-                        text = "${AllTopics.size} topics · ${Chapters.size} chapters",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
                 }
                 Box(
                     Modifier
@@ -137,66 +124,8 @@ fun DashboardTab(
             LibraryPickCard()
         }
 
-        item("algo-of-day") {
-            AlgoOfDayCard(onOpen = onOpenTopic)
-        }
-
         item("readback") {
             ReadbackOfDayCard(onOpen = onOpenReader)
-        }
-    }
-}
-
-/** Stable across a single calendar day, so it does not change on every recompose. */
-@OptIn(ExperimentalTime::class)
-private fun algoOfTheDay(): Topic {
-    val dayIndex = Clock.System.now().toEpochMilliseconds() / 86_400_000L
-    return AllTopics[(dayIndex % AllTopics.size).toInt()]
-}
-
-@Composable
-private fun AlgoOfDayCard(onOpen: (String) -> Unit, modifier: Modifier = Modifier) {
-    val topic = remember { algoOfTheDay() }
-    val palette = LocalVizPalette.current
-    val levelColor = palette.of(topic.level)
-
-    Column(
-        modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(Radius.Card))
-            .background(MaterialTheme.colorScheme.surface)
-            .border(Stroke.Hairline, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(Radius.Card))
-            .clickable { onOpen(topic.id) }
-            .padding(16.dp),
-    ) {
-        Text(
-            text = "ALGO OF THE DAY",
-            style = SectionLabel,
-            color = MaterialTheme.colorScheme.primary,
-        )
-        Spacer(Modifier.height(6.dp))
-        Text(
-            text = topic.title,
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-        Spacer(Modifier.height(4.dp))
-        Text(
-            text = topic.tagline,
-            fontSize = 13.5.sp,
-            lineHeight = 19.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Spacer(Modifier.height(10.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(6.dp).clip(CircleShape).background(levelColor))
-            Spacer(Modifier.width(6.dp))
-            Text(
-                text = topic.level.label,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
         }
     }
 }

@@ -34,33 +34,7 @@ private fun icon(name: String, block: androidx.compose.ui.graphics.vector.ImageV
 
 object StacksIcons {
 
-    /**
-     * Learn: a staircase climbing to the right.
-     *
-     * The curriculum runs basic to advanced, and every scene in the app is
-     * something you step through — so the one motif does both jobs.
-     */
-    val Steps: ImageVector by lazy {
-        icon("Steps") {
-            path(
-                stroke = IconStroke.Colour,
-                strokeLineWidth = IconStroke.Width,
-                strokeLineCap = StrokeCap.Round,
-                strokeLineJoin = StrokeJoin.Round,
-            ) {
-                moveTo(3.5f, 19.5f)
-                lineTo(8f, 19.5f)
-                lineTo(8f, 14.5f)
-                lineTo(13f, 14.5f)
-                lineTo(13f, 9.5f)
-                lineTo(18f, 9.5f)
-                lineTo(18f, 4.5f)
-                lineTo(21f, 4.5f)
-            }
-        }
-    }
-
-    /** Home: a roofline over a floor — the dashboard, not a curriculum step. */
+    /** Home: a roofline over a floor. */
     val Home: ImageVector by lazy {
         icon("Home") {
             path(
@@ -127,24 +101,6 @@ object StacksIcons {
                 moveTo(12f, 7.2f)
                 lineTo(12f, 12f)
                 lineTo(15.2f, 14f)
-            }
-        }
-    }
-
-    /** Search. Deliberately the conventional shape — recognition beats novelty here. */
-    val Search: ImageVector by lazy {
-        icon("Search") {
-            path(
-                stroke = IconStroke.Colour,
-                strokeLineWidth = IconStroke.Width,
-                strokeLineCap = StrokeCap.Round,
-            ) {
-                moveTo(3.8f, 10.6f)
-                arcToRelative(6.8f, 6.8f, 0f, true, true, 13.6f, 0f)
-                arcToRelative(6.8f, 6.8f, 0f, true, true, -13.6f, 0f)
-                close()
-                moveTo(15.6f, 15.6f)
-                lineTo(20.4f, 20.4f)
             }
         }
     }
@@ -357,6 +313,51 @@ object StacksIcons {
                 lineTo(4.5f, 9f)
                 arcToRelative(1.5f, 1.5f, 0f, false, true, 1.5f, -1.5f)
                 lineTo(10.5f, 7.5f)
+            }
+        }
+    }
+
+    /**
+     * Saved links: a bookmark.
+     *
+     * Not a chain-link glyph, which is what "link" usually gets — a chain says
+     * *this is a URL*, and the tab is not about URLs, it is about things put
+     * aside to read. A bookmark is the only thing in this set that means
+     * "later".
+     */
+    val Bookmark: ImageVector by lazy {
+        icon("Bookmark") {
+            path(
+                stroke = IconStroke.Colour,
+                strokeLineWidth = IconStroke.Width,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round,
+            ) {
+                moveTo(6.5f, 4.5f)
+                lineTo(17.5f, 4.5f)
+                arcToRelative(1f, 1f, 0f, false, true, 1f, 1f)
+                lineTo(18.5f, 20f)
+                lineTo(12f, 15.6f)
+                lineTo(5.5f, 20f)
+                lineTo(5.5f, 5.5f)
+                arcToRelative(1f, 1f, 0f, false, true, 1f, -1f)
+                close()
+            }
+        }
+    }
+
+    /** A tick, for marking a saved link read. */
+    val Check: ImageVector by lazy {
+        icon("Check") {
+            path(
+                stroke = IconStroke.Colour,
+                strokeLineWidth = IconStroke.Width,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round,
+            ) {
+                moveTo(5f, 12.5f)
+                lineTo(10f, 17.5f)
+                lineTo(19f, 6.5f)
             }
         }
     }

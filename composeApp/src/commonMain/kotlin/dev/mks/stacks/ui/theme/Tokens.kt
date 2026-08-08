@@ -11,8 +11,8 @@ import androidx.compose.ui.unit.dp
  * are reached through `MaterialTheme` and `LocalVizPalette`.
  *
  * **What belongs here:** a value used in more than one place, or one whose
- * exact number matters to how the app reads (the two-pane breakpoint, the
- * tone-change duration). **What does not:** optical one-offs. Padding of
+ * exact number matters to how the app reads (the tone-change duration).
+ * **What does not:** optical one-offs. Padding of
  * `top = 14.dp, bottom = 13.dp` is a nudge to make a specific label sit right,
  * not a rule, and naming it would imply a system that is not there.
  *
@@ -21,15 +21,6 @@ import androidx.compose.ui.unit.dp
 
 /** Sizes that shape the page rather than decorate it. */
 object Layout {
-    /** Above this width the list and the topic sit side by side. */
-    val TwoPaneBreakpoint = 720.dp
-
-    /** The list column in two-pane mode. */
-    val ListPaneWidth = 320.dp
-
-    /** Long-form prose stops widening here — beyond it, lines get hard to track. */
-    val ReadingMaxWidth = 860.dp
-
     /** Horizontal padding for reading surfaces. */
     val ReadingGutter = 18.dp
 
@@ -51,11 +42,8 @@ object Radius {
     /** Inline surfaces: reference rows, list-pane rows. */
     val Inline = 12.dp
 
-    /** Difficulty and level chips, and the floating bar itself. */
+    /** Chips, and the floating bar itself. */
     val Pill = 999.dp
-
-    /** The level marker down the side of a topic card. */
-    val Marker = 2.dp
 }
 
 /** Line weights. */
@@ -81,20 +69,11 @@ object Space {
  * discarded, so it is slow enough to follow.
  */
 object Motion {
-    /** A cell, node or bar changing [dev.mks.stacks.model.Tone]. */
+    /** A cell or dot changing [dev.mks.stacks.ui.theme.Tone]. */
     const val Tone = 320
 
-    /** Pushing to a topic: the incoming screen slides and fades in. */
+    /** Pushing to a full-screen destination: the incoming screen slides and fades in. */
     const val PushIn = 260
-
-    /** The outgoing screen just fades. */
-    const val PushOut = 140
-
-    /** Coming back: the topic screen fades in. */
-    const val PopIn = 200
-
-    /** The leaving screen slides back out. */
-    const val PopOut = 240
 
     /** …fading slightly slower than it slides, so it does not vanish mid-travel. */
     const val PopFade = 160
@@ -104,7 +83,4 @@ object Motion {
 
     /** Chip and bar state changes. */
     const val Chip = 220
-
-    /** Autoplay dwell per frame at 1x, before the speed multiplier. */
-    const val FrameDwell = 950f
 }

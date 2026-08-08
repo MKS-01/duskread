@@ -7,14 +7,13 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
-import dev.mks.stacks.model.Difficulty
-import dev.mks.stacks.model.Level
-import dev.mks.stacks.model.Tone
+/** Semantic colour roles. The theme maps these to concrete colours. */
+enum class Tone { IDLE, ACTIVE, GOOD, BAD, INFO, WARN }
 
 /**
- * Semantic colours for the visualiser, kept out of the Material scheme because
- * they mean something specific ("this element is being compared", "this one is
- * settled") rather than being decorative roles.
+ * Semantic colours for state, kept out of the Material scheme because they
+ * mean something specific ("this is settled", "this needs attention") rather
+ * than being decorative roles.
  */
 @Immutable
 data class VizPalette(
@@ -30,17 +29,6 @@ data class VizPalette(
     val onInfo: Color,
     val warn: Color,
     val onWarn: Color,
-    // Practice difficulty gets its own three colours rather than reusing
-    // good/active/bad: those still mean IDLE/ACTIVE/etc. tones in the
-    // visualiser, and a green dot meaning two different things next to each
-    // other is worse than two green families. Topic level uses this same
-    // trio (see `of(level)` below) — Level and Difficulty now share the
-    // same three words (Basic/Intermediate/Advanced) everywhere in the UI,
-    // so they share the same three colours too, rather than two blues that
-    // would just look like a mismatch on the same label.
-    val easy: Color,
-    val medium: Color,
-    val hard: Color,
 ) {
     fun bg(tone: Tone): Color = when (tone) {
         Tone.IDLE -> idle
@@ -59,18 +47,6 @@ data class VizPalette(
         Tone.INFO -> onInfo
         Tone.WARN -> onWarn
     }
-
-    fun of(level: Level): Color = when (level) {
-        Level.BASIC -> easy
-        Level.INTERMEDIATE -> medium
-        Level.ADVANCED -> hard
-    }
-
-    fun of(difficulty: Difficulty): Color = when (difficulty) {
-        Difficulty.EASY -> easy
-        Difficulty.MEDIUM -> medium
-        Difficulty.HARD -> hard
-    }
 }
 
 // Good/active/bad/warn were originally full-saturation traffic-light hues,
@@ -87,9 +63,6 @@ private val DarkViz = VizPalette(
     bad = Color(0xFFCC7A72), onBad = Color(0xFF240605),
     info = Color(0xFFC6684A), onInfo = Color(0xFF2B1006),
     warn = Color(0xFF9C8AD9), onWarn = Color(0xFF14051F),
-    easy = Color(0xFFC4A98F),
-    medium = Color(0xFFC6684A),
-    hard = Color(0xFFB8582F),
 )
 
 // The monochrome twin. Hue is the whole encoding in [DarkViz] — "green means
@@ -106,11 +79,6 @@ private val MonoViz = VizPalette(
     bad = Color(0xFF565656), onBad = Color(0xFFDCDCDC),
     info = Color(0xFFBBBBBB), onInfo = Color(0xFF161616),
     warn = Color(0xFF787878), onWarn = Color(0xFFDCDCDC),
-    // Same "intensity carries severity" idea as the terracotta gradient, with
-    // intensity now the only thing left to carry it.
-    easy = Color(0xFF757575),
-    medium = Color(0xFFA8A8A8),
-    hard = Color(0xFFDCDCDC),
 )
 
 val LocalVizPalette = staticCompositionLocalOf { DarkViz }

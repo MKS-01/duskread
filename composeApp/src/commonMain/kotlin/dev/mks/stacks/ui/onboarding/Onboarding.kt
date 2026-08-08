@@ -44,7 +44,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import dev.mks.stacks.model.Tone
 import dev.mks.stacks.reader.ReaderSourcePicker
 import dev.mks.stacks.reader.rememberReadRepository
 import dev.mks.stacks.ui.theme.LocalVizPalette
@@ -52,6 +51,7 @@ import dev.mks.stacks.ui.theme.Motion
 import dev.mks.stacks.ui.theme.Radius
 import dev.mks.stacks.ui.theme.SectionLabel
 import dev.mks.stacks.ui.theme.Space
+import dev.mks.stacks.ui.theme.Tone
 import kotlinx.coroutines.launch
 
 /**
