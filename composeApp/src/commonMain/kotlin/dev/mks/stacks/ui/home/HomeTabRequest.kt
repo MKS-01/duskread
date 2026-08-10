@@ -24,5 +24,5 @@ object HomeTabRequest {
     }
 }
 
-/** Read by `MainActivity` and set on the Reader notification's content intent. */
-const val OpenReaderTabExtra = "dev.mks.stacks.OPEN_READER_TAB"
+/** Read by `MainActivity` and set on the Readback notification's content intent. */
+const val OpenReadbackTabExtra = "dev.mks.stacks.OPEN_READER_TAB"

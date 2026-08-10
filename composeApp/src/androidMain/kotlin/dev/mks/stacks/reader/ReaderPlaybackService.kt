@@ -15,7 +15,7 @@ import android.support.v4.media.session.PlaybackStateCompat
 import androidx.core.app.NotificationCompat
 import androidx.media.app.NotificationCompat.MediaStyle
 import androidx.media.session.MediaButtonReceiver
-import dev.mks.stacks.ui.home.OpenReaderTabExtra
+import dev.mks.stacks.ui.home.OpenReadbackTabExtra
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -217,18 +217,18 @@ class ReaderPlaybackService : Service() {
     }
 
     /**
-     * Tapping the notification body should bring the app back to the Reader
+     * Tapping the notification body should bring the app back to the Readback
      * tab specifically, whether or not the process is still alive — this
      * module never references `MainActivity` directly (it lives in the host
      * `androidApp` module, and a library can't depend back on its host), so
      * the launcher intent is resolved by package instead of by class, with
-     * [OpenReaderTabExtra] carrying the "which tab" signal `MainActivity`
+     * [OpenReadbackTabExtra] carrying the "which tab" signal `MainActivity`
      * reads back out.
      */
     private fun contentIntent(): PendingIntent? {
         val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
             ?.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-            ?.putExtra(OpenReaderTabExtra, true)
+            ?.putExtra(OpenReadbackTabExtra, true)
             ?: return null
         return PendingIntent.getActivity(
             this,
@@ -242,7 +242,7 @@ class ReaderPlaybackService : Service() {
         val manager = getSystemService(NotificationManager::class.java) ?: return
         if (manager.getNotificationChannel(ChannelId) == null) {
             manager.createNotificationChannel(
-                NotificationChannel(ChannelId, "Reader playback", NotificationManager.IMPORTANCE_LOW),
+                NotificationChannel(ChannelId, "Readback playback", NotificationManager.IMPORTANCE_LOW),
             )
         }
     }

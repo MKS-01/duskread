@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.StateFlow
  * No synced-folder mechanism exists on iOS yet — the sandbox has no
  * equivalent of Android's SAF folder grant or a plain desktop path, and this
  * app is read mostly on a phone that already has Android covered. Revisit if
- * that changes; for now the Reader tab just explains why.
+ * that changes; for now the Readback tab just explains why.
  */
 private class UnavailableReadRepository : ReadRepository {
     override val source: StateFlow<ReaderSource> = MutableStateFlow(ReaderSource.NOT_CONFIGURED)

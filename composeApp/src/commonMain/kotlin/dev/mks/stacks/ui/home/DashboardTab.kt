@@ -42,6 +42,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dev.mks.stacks.links.LinkLibrary
 import dev.mks.stacks.pomodoro.PickableMinutes
 import dev.mks.stacks.pomodoro.clockLabel
 import dev.mks.stacks.pomodoro.rememberPomodoroController
@@ -59,14 +60,17 @@ import dev.mks.stacks.ui.theme.Stroke
 import androidx.compose.ui.graphics.drawscope.Stroke as DrawStroke
 
 /**
- * Home: a dashboard rather than a list. What is left is the small set of
- * things worth seeing every time the app opens: the focus timer and whatever
- * is queued up in the reader.
+ * Home: a dashboard rather than a list. Two doors into the app's actual
+ * content — something saved to read, something already turned into audio —
+ * lead the screen, with the focus timer ahead of both because it is the one
+ * habit worth reaching for before picking either.
  */
 @Composable
 fun DashboardTab(
     onOpenFocus: () -> Unit,
-    onOpenReader: () -> Unit,
+    onOpenSaved: () -> Unit,
+    onOpenReadback: () -> Unit,
+    links: LinkLibrary,
     greeting: String?,
     mono: Boolean,
     onToggleTheme: () -> Unit,
@@ -120,12 +124,12 @@ fun DashboardTab(
             FocusCard(onOpen = onOpenFocus, modifier = Modifier.padding(top = 6.dp))
         }
 
-        item("library-pick") {
-            LibraryPickCard()
+        item("saved-pick") {
+            SavedPickCard(links = links, onOpenSaved = onOpenSaved)
         }
 
         item("readback") {
-            ReadbackOfDayCard(onOpen = onOpenReader)
+            ReadbackOfDayCard(onOpen = onOpenReadback)
         }
     }
 }
@@ -182,7 +186,7 @@ private fun FocusCard(onOpen: () -> Unit, modifier: Modifier = Modifier) {
             // into the chips was what made this one read as plain next to them.
             Spacer(Modifier.height(4.dp))
             Text(
-                text = "One topic, no distractions, until the timer runs out.",
+                text = "One read, no distractions, until the timer runs out.",
                 fontSize = 13.5.sp,
                 lineHeight = 19.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -279,7 +283,7 @@ private fun ReadbackOfDayCard(onOpen: () -> Unit, modifier: Modifier = Modifier)
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    text = "Point the Reader tab at a synced readback-audio-db folder to see your latest reads here.",
+                    text = "Point the Readback tab at a synced readback-audio-db folder to see your latest reads here.",
                     fontSize = 12.5.sp,
                     lineHeight = 18.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -323,37 +327,17 @@ private fun ReadbackOfDayCard(onOpen: () -> Unit, modifier: Modifier = Modifier)
 }
 
 /**
- * A random pick from the reader's own library rather than anything from the
- * network — every other card on the dashboard is either bundled content or
- * local state, and a "trending" claim sourced from an outside API was the odd
- * one out. Renders nothing until the library has at least one read, so it
- * never duplicates the "Connect your library" prompt [ReadbackOfDayCard]
- * already shows.
+ * A pick from the saved links rather than the readback library — every other
+ * card on the dashboard is either bundled content or local state, and this is
+ * where "something to read" comes from now that there is no curriculum to
+ * browse instead. Only unread links are candidates, so this never repeats
+ * [ReadbackOfDayCard]'s job of surfacing something already finished.
  */
 @Composable
-private fun LibraryPickCard(modifier: Modifier = Modifier) {
-    val repository = rememberReadRepository()
-    val source by repository.source.collectAsState()
+private fun SavedPickCard(links: LinkLibrary, onOpenSaved: () -> Unit, modifier: Modifier = Modifier) {
     val open = rememberUrlOpener()
-    // Candidates are loaded once per source change; shuffling re-picks from
-    // this in memory rather than re-querying, since it is a local library and
-    // the whole point of the button is an instant re-roll.
-    var candidates by remember { mutableStateOf<List<ReadItem>>(emptyList()) }
-    var item by remember { mutableStateOf<ReadItem?>(null) }
-
-    LaunchedEffect(source) {
-        candidates = if (source == ReaderSource.READY) {
-            // Only reads with a real source link — the card's whole point is
-            // "Read original", so one without a link is a dead end.
-            repository.listReads(query = "", sort = ReadSort.NEWEST)
-                .filter { it.sourceUrl.isNotBlank() }
-        } else {
-            emptyList()
-        }
-        item = candidates.randomOrNull()
-    }
-
-    val found = item ?: return
+    val unread = links.links.filterNot { it.read }
+    var pick by remember(unread.map { it.id }) { mutableStateOf(unread.randomOrNull()) }
 
     Column(
         modifier
@@ -361,23 +345,31 @@ private fun LibraryPickCard(modifier: Modifier = Modifier) {
             .clip(RoundedCornerShape(Radius.Card))
             .background(MaterialTheme.colorScheme.surface)
             .border(Stroke.Hairline, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(Radius.Card))
-            .clickable { open(found.sourceUrl) }
+            .clickable {
+                val found = pick
+                if (found == null) {
+                    onOpenSaved()
+                } else {
+                    open(found.url)
+                    links.toggleRead(found.id)
+                }
+            }
             .padding(16.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = "FROM YOUR LIBRARY",
+                text = "FROM SAVED",
                 style = SectionLabel,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.weight(1f),
             )
-            if (candidates.size > 1) {
+            if (unread.size > 1) {
                 Box(
                     Modifier
                         .size(26.dp)
                         .clip(CircleShape)
                         .clickable {
-                            item = candidates.filterNot { it.id == found.id }.random()
+                            pick = unread.filterNot { it.id == pick?.id }.random()
                         },
                     contentAlignment = Alignment.Center,
                 ) {
@@ -391,82 +383,104 @@ private fun LibraryPickCard(modifier: Modifier = Modifier) {
             }
         }
         Spacer(Modifier.height(10.dp))
-        // No cover image comes from the library, unlike a web article — an
-        // icon for what the read is actually about stands in, matched by
-        // keyword against the title and excerpt rather than picked at random.
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .height(90.dp)
-                .clip(RoundedCornerShape(Radius.Panel))
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh),
-            contentAlignment = Alignment.Center,
-        ) {
-            LibraryPickArt(
-                category = categorize("${found.title} ${found.summary ?: found.excerpt}"),
-                modifier = Modifier.size(46.dp),
+
+        val found = pick
+        if (found == null) {
+            Text(
+                text = if (links.links.isEmpty()) "Nothing saved yet" else "All caught up",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
             )
-        }
-        Spacer(Modifier.height(10.dp))
-        Text(
-            text = found.title,
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-        (found.summary ?: found.excerpt).let {
             Spacer(Modifier.height(4.dp))
             Text(
-                text = it,
+                text = if (links.links.isEmpty()) {
+                    "Share an article to Stacks, or paste its address in the Saved tab."
+                } else {
+                    "Every saved link has been read — tap to see them."
+                },
                 fontSize = 12.5.sp,
                 lineHeight = 18.sp,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+        } else {
+            // No cover image comes with a saved link, unlike a bundled read —
+            // an icon for what the article is actually about stands in,
+            // matched by keyword against the title and description rather
+            // than picked at random.
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(90.dp)
+                    .clip(RoundedCornerShape(Radius.Panel))
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                contentAlignment = Alignment.Center,
+            ) {
+                SavedPickArt(
+                    category = categorize("${found.title} ${found.description.orEmpty()}"),
+                    modifier = Modifier.size(46.dp),
+                )
+            }
+            Spacer(Modifier.height(10.dp))
+            Text(
+                text = found.title,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            found.description?.let {
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = it,
+                    fontSize = 12.5.sp,
+                    lineHeight = 18.sp,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = found.host,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.primary,
+            )
         }
-        Spacer(Modifier.height(8.dp))
-        Text(
-            text = "Read original",
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.primary,
-        )
     }
 }
 
-/** What a read is actually about, matched by keyword rather than guessed at random. */
-private enum class LibraryCategory { ANDROID, AI, HACKING, MOBILE, GADGET, TECH }
+/** What a saved article is actually about, matched by keyword rather than guessed at random. */
+private enum class SavedCategory { ANDROID, AI, HACKING, MOBILE, GADGET, TECH }
 
-private fun categorize(text: String): LibraryCategory {
+private fun categorize(text: String): SavedCategory {
     val lower = text.lowercase()
     fun matches(vararg words: String) = words.any { it in lower }
     return when {
-        matches("android", "jetpack", "google play", "kotlin multiplatform") -> LibraryCategory.ANDROID
+        matches("android", "jetpack", "google play", "kotlin multiplatform") -> SavedCategory.ANDROID
         matches("llm", "large language model", "gpt", "chatgpt", "claude", "machine learning", "neural network", "artificial intelligence") ->
-            LibraryCategory.AI
-        matches("hack", "exploit", "vulnerab", "breach", "malware", "cve", "penetration test") -> LibraryCategory.HACKING
-        matches("iphone", "smartphone", "ios ", "mobile app", "app store") -> LibraryCategory.MOBILE
-        matches("gadget", "wearable", "smartwatch", "hardware review", "unboxing") -> LibraryCategory.GADGET
-        else -> LibraryCategory.TECH
+            SavedCategory.AI
+        matches("hack", "exploit", "vulnerab", "breach", "malware", "cve", "penetration test") -> SavedCategory.HACKING
+        matches("iphone", "smartphone", "ios ", "mobile app", "app store") -> SavedCategory.MOBILE
+        matches("gadget", "wearable", "smartwatch", "hardware review", "unboxing") -> SavedCategory.GADGET
+        else -> SavedCategory.TECH
     }
 }
 
 /**
- * A stand-in for the cover image a library read doesn't have: a small stroked
+ * A stand-in for the cover image a saved link doesn't have: a small stroked
  * glyph for the category [categorize] matched, in the same hand-drawn style
  * as [StacksIcons] rather than a stock illustration.
  */
 @Composable
-private fun LibraryPickArt(category: LibraryCategory, modifier: Modifier = Modifier) {
+private fun SavedPickArt(category: SavedCategory, modifier: Modifier = Modifier) {
     val color = MaterialTheme.colorScheme.primary
     Canvas(modifier) {
         when (category) {
-            LibraryCategory.ANDROID -> drawAndroidGlyph(color)
-            LibraryCategory.AI -> drawAiGlyph(color)
-            LibraryCategory.HACKING -> drawHackingGlyph(color)
-            LibraryCategory.MOBILE -> drawMobileGlyph(color)
-            LibraryCategory.GADGET -> drawGadgetGlyph(color)
-            LibraryCategory.TECH -> drawTechGlyph(color)
+            SavedCategory.ANDROID -> drawAndroidGlyph(color)
+            SavedCategory.AI -> drawAiGlyph(color)
+            SavedCategory.HACKING -> drawHackingGlyph(color)
+            SavedCategory.MOBILE -> drawMobileGlyph(color)
+            SavedCategory.GADGET -> drawGadgetGlyph(color)
+            SavedCategory.TECH -> drawTechGlyph(color)
         }
     }
 }

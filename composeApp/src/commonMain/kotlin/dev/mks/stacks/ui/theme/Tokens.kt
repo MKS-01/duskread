@@ -8,11 +8,11 @@ import androidx.compose.ui.unit.dp
  * These are plain objects rather than CompositionLocals because none of them
  * vary by theme, platform or window size — a card is 16dp round in dark mode
  * too. Colour and typography, which *do* vary, live in [StacksTheme] and
- * are reached through `MaterialTheme` and `LocalVizPalette`.
+ * are reached through `MaterialTheme`.
  *
  * **What belongs here:** a value used in more than one place, or one whose
- * exact number matters to how the app reads (the tone-change duration).
- * **What does not:** optical one-offs. Padding of
+ * exact number matters to how the app reads. **What does not:** optical
+ * one-offs. Padding of
  * `top = 14.dp, bottom = 13.dp` is a nudge to make a specific label sit right,
  * not a rule, and naming it would imply a system that is not there.
  *
@@ -33,7 +33,7 @@ object Layout {
 
 /** Corner radii, largest to smallest. */
 object Radius {
-    /** Topic and question cards. */
+    /** Dashboard and list cards. */
     val Card = 20.dp
 
     /** Panels inside a card — origin note, code block, complexity table. */
@@ -69,9 +69,6 @@ object Space {
  * discarded, so it is slow enough to follow.
  */
 object Motion {
-    /** A cell or dot changing [dev.mks.stacks.ui.theme.Tone]. */
-    const val Tone = 320
-
     /** Pushing to a full-screen destination: the incoming screen slides and fades in. */
     const val PushIn = 260
 

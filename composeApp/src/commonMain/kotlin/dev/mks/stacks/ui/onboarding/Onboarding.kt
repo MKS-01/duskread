@@ -1,7 +1,6 @@
 package dev.mks.stacks.ui.onboarding
 
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -46,25 +45,22 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import dev.mks.stacks.reader.ReaderSourcePicker
 import dev.mks.stacks.reader.rememberReadRepository
-import dev.mks.stacks.ui.theme.LocalVizPalette
 import dev.mks.stacks.ui.theme.Motion
 import dev.mks.stacks.ui.theme.Radius
 import dev.mks.stacks.ui.theme.SectionLabel
 import dev.mks.stacks.ui.theme.Space
-import dev.mks.stacks.ui.theme.Tone
 import kotlinx.coroutines.launch
 
 /**
- * Three panels — algorithm, Focus, Reader — then a name.
+ * Three panels — Saved, Focus, Readback — then a name.
  *
- * One panel per pillar of the app, not one per feature: interview questions
- * and language choice are real but secondary, so the algorithm panel carries
- * the curriculum alone and Focus and Reader each get their own panel instead
- * of being crammed into a single "and also" slide. The Reader panel does real
- * work — connecting the folder here, rather than only describing the feature,
- * means someone who finishes onboarding is actually set up rather than merely
- * informed. Every screen is skippable: the intro is a courtesy, not a gate,
- * and the name is optional because nothing here needs an identity to work.
+ * One panel per pillar of the app, not one per feature: the two ways articles
+ * get read here are real but different enough that either alone would be
+ * half the story. The Readback panel does real work — connecting the folder
+ * here, rather than only describing the feature, means someone who finishes
+ * onboarding is actually set up rather than merely informed. Every screen is
+ * skippable: the intro is a courtesy, not a gate, and the name is optional
+ * because nothing here needs an identity to work.
  */
 @Composable
 fun Onboarding(onDone: (name: String?) -> Unit) {
@@ -98,9 +94,9 @@ fun Onboarding(onDone: (name: String?) -> Unit) {
             modifier = Modifier.weight(1f).fillMaxWidth(),
         ) { page ->
             when (page) {
-                0 -> IntroPanel(AlgoPanel)
+                0 -> IntroPanel(SavedPanel)
                 1 -> IntroPanel(FocusPanel)
-                2 -> ReaderPanel()
+                2 -> ReadbackPanel()
                 else -> NamePanel(
                     name = name,
                     onNameChange = { name = it },
@@ -135,19 +131,19 @@ private data class Panel(
     val art: @Composable () -> Unit,
 )
 
-private val AlgoPanel = Panel(
-    label = "STEP THROUGH IT",
-    title = "Watch the algorithm run",
-    body = "Every topic has a visualisation you drive yourself — play it, pause it, " +
-        "scrub back a step. The captions explain why each move happens, not what just moved.",
-    art = { CellsArt() },
+private val SavedPanel = Panel(
+    label = "SAVE ANYTHING",
+    title = "Keep the good reads",
+    body = "Paste a link or share one in from any app — it saves instantly and stays " +
+        "here, read or not, until you decide it's done.",
+    art = { SavedArt() },
 )
 
 private val FocusPanel = Panel(
     label = "FOCUS",
-    title = "A timer built for study sessions",
-    body = "Run a Pomodoro session while you work through a topic — start it from the " +
-        "dashboard, and it keeps going even when you close the timer screen.",
+    title = "A timer built for reading sessions",
+    body = "Run a Pomodoro session while you read — start it from the dashboard, and " +
+        "it keeps going even when you close the timer screen.",
     art = { TimerArt() },
 )
 
@@ -185,13 +181,14 @@ private fun IntroPanel(panel: Panel) {
 }
 
 /**
- * Not a generic [IntroPanel] because it does real work: connecting the Reader
- * folder here, rather than only describing the feature, means someone who
- * finishes onboarding is actually set up rather than just informed. iOS,
- * desktop and web fall back to [ReaderSourcePicker]'s own platform message.
+ * Not a generic [IntroPanel] because it does real work: connecting the
+ * Readback folder here, rather than only describing the feature, means
+ * someone who finishes onboarding is actually set up rather than just
+ * informed. iOS, desktop and web fall back to [ReaderSourcePicker]'s own
+ * platform message.
  */
 @Composable
-private fun ReaderPanel() {
+private fun ReadbackPanel() {
     val repository = rememberReadRepository()
     Column(
         Modifier.fillMaxSize().padding(horizontal = 30.dp),
@@ -201,7 +198,7 @@ private fun ReaderPanel() {
         Box(Modifier.height(150.dp), contentAlignment = Alignment.Center) { WaveformArt() }
         Spacer(Modifier.height(40.dp))
         Text(
-            text = "READER",
+            text = "READBACK",
             style = SectionLabel,
             color = MaterialTheme.colorScheme.primary,
         )
@@ -324,19 +321,27 @@ private fun PrimaryButton(label: String, onClick: () -> Unit) {
  * showing the real thing rather than a stock illustration of it.
  * ------------------------------------------------------------------------- */
 
+/** Three rows of a saved-link list, reduced to a bookmark dot and a line of title. */
 @Composable
-private fun CellsArt() {
-    val palette = LocalVizPalette.current
-    val tones = listOf(Tone.BAD, Tone.BAD, Tone.ACTIVE, Tone.IDLE, Tone.IDLE, Tone.GOOD)
-    Row(horizontalArrangement = Arrangement.spacedBy(Space.ChipGap)) {
-        tones.forEach { tone ->
-            val alpha by animateFloatAsState(1f, tween(Motion.Tone), label = "cell")
-            Box(
-                Modifier
-                    .size(width = 34.dp, height = 42.dp)
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(palette.bg(tone).copy(alpha = alpha)),
-            )
+private fun SavedArt() {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        listOf(0.9f, 0.55f, 0.75f).forEach { widthFraction ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    Modifier
+                        .size(6.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary),
+                )
+                Spacer(Modifier.width(10.dp))
+                Box(
+                    Modifier
+                        .width(130.dp * widthFraction)
+                        .height(10.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(MaterialTheme.colorScheme.outlineVariant),
+                )
+            }
         }
     }
 }

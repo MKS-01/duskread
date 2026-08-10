@@ -70,12 +70,11 @@ import dev.mks.stacks.ui.theme.StacksIcons
 import kotlinx.coroutines.delay
 
 /**
- * Saved links: anything worth reading that is not part of the curriculum.
+ * Saved links: the blogs and articles worth reading, one URL at a time.
  *
- * The app is otherwise entirely made of content it shipped with — bundled
- * topics, a synced readback library — and half of what actually gets read on a
- * phone is a link someone sent you. This is where those go, and it is the only
- * screen in the app whose contents the reader writes.
+ * Readback is a synced library of audio someone else prepared; a link here is
+ * whatever the reader found themselves, still as text. This is where those
+ * go, and it is the only screen in the app whose contents the reader writes.
  *
  * A link is saved immediately with a title guessed from its URL, and the page
  * is fetched afterwards to replace that guess. The alternative — blocking the

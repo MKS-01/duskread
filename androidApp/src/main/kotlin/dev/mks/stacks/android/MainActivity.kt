@@ -15,7 +15,7 @@ import dev.mks.stacks.App
 import dev.mks.stacks.links.SharedLinkRequest
 import dev.mks.stacks.ui.home.HomeTab
 import dev.mks.stacks.ui.home.HomeTabRequest
-import dev.mks.stacks.ui.home.OpenReaderTabExtra
+import dev.mks.stacks.ui.home.OpenReadbackTabExtra
 
 class MainActivity : ComponentActivity() {
     // Requested eagerly at launch rather than deferred to the first Pomodoro
@@ -54,13 +54,13 @@ class MainActivity : ComponentActivity() {
     }
 
     /**
-     * Two ways in that are not the launcher icon: the Reader notification,
-     * which should land on the Reader tab rather than whatever tab the app
+     * Two ways in that are not the launcher icon: the Readback notification,
+     * which should land on the Readback tab rather than whatever tab the app
      * last showed, and a shared link, which should be saved and then shown.
      */
     private fun handleIntent(intent: Intent?) {
-        if (intent?.getBooleanExtra(OpenReaderTabExtra, false) == true) {
-            HomeTabRequest.request(HomeTab.READER)
+        if (intent?.getBooleanExtra(OpenReadbackTabExtra, false) == true) {
+            HomeTabRequest.request(HomeTab.READBACK)
         }
 
         if (intent?.action == Intent.ACTION_SEND && intent.type == "text/plain") {

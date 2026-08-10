@@ -4,9 +4,9 @@ package dev.mks.stacks.links
  * An article saved from outside the app — pasted in, or shared to Stacks from
  * a browser.
  *
- * This is the one thing in the app the *user* writes. Topics are bundled
- * Markdown and the Reader is a read-only view of a synced readback library;
- * a saved link has no source of truth anywhere else, so this record is it.
+ * This is the one thing in the app the *user* writes. Readback is a read-only
+ * view of a synced audio library; a saved link has no source of truth
+ * anywhere else, so this record is it.
  *
  * [title] and [description] start as whatever the URL alone can tell us and
  * are replaced once the page has been fetched, so a link is usable the instant

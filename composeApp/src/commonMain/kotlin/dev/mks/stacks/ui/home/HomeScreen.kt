@@ -59,8 +59,9 @@ fun HomeScreen(
     val player = rememberAudioPlayer(readRepository)
     val playback by player.state.collectAsState()
 
-    // Lets a tapped Reader notification land on the Reader tab specifically,
-    // rather than just reopening the app onto whatever tab it last showed.
+    // Lets a tapped Readback notification land on the Readback tab
+    // specifically, rather than just reopening the app onto whatever tab it
+    // last showed.
     val requestedTab by HomeTabRequest.target.collectAsState()
     LaunchedEffect(requestedTab) {
         requestedTab?.let {
@@ -116,14 +117,16 @@ fun HomeScreen(
             when (current) {
                 HomeTab.HOME -> DashboardTab(
                     greeting = greeting,
+                    links = links,
                     onOpenFocus = onOpenFocus,
-                    onOpenReader = { onTabChange(HomeTab.READER) },
+                    onOpenSaved = { onTabChange(HomeTab.SAVED) },
+                    onOpenReadback = { onTabChange(HomeTab.READBACK) },
                     mono = mono,
                     onToggleTheme = onToggleTheme,
                     contentPadding = listPadding,
                 )
 
-                HomeTab.READER -> ReaderTab(
+                HomeTab.READBACK -> ReaderTab(
                     repository = readRepository,
                     player = player,
                     contentPadding = listPadding,
@@ -142,7 +145,7 @@ fun HomeScreen(
         //
         // The horizontal padding is what bounds the bar's width: the
         // transport face fills it, the tab face wraps and centres inside
-        // it. Playback already outlives the Reader tab; keeping the
+        // it. Playback already outlives the Readback tab; keeping the
         // transport here rather than in the tab is what makes the controls
         // outlive it too, instead of sending you to the notification shade.
         FloatingBar(

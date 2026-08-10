@@ -90,12 +90,12 @@ fun ReaderTab(
         item("head") {
             Column(Modifier.padding(bottom = 4.dp)) {
                 Text(
-                    text = "Reader",
+                    text = "Readback",
                     style = MaterialTheme.typography.headlineMedium,
                     color = MaterialTheme.colorScheme.onBackground,
                 )
                 Text(
-                    text = "Past reads from readback, synced onto this device.",
+                    text = "Past reads, synced onto this device.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

@@ -5,8 +5,8 @@ package dev.mks.stacks.links
  *
  * The store is a private key/value blob on one device, which makes the saved
  * links the only thing in the app that cannot be recovered if that device is
- * wiped — topics ship with the binary, the readback library syncs. So there
- * has to be a way out.
+ * wiped — the readback library syncs, but a saved link has no copy anywhere
+ * else. So there has to be a way out.
  *
  * The carrier is the clipboard and the format is a Markdown list, for the same
  * reason: both are universal. Text pastes into whatever the reader already

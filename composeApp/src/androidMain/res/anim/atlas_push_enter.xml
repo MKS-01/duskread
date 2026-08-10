@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Mirrors the in-app push in App.kt: slideInHorizontally { it / 3 } + fadeIn.
-    A reference opens the way a topic does, so the Custom Tab reads as the next
+    A slide-and-fade push, so opening a link reads as moving to the next
     screen rather than a hand-off to the browser.
 -->
 <set xmlns:android="http://schemas.android.com/apk/res/android"

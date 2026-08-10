@@ -6,8 +6,8 @@ import androidx.compose.runtime.Composable
  * The smallest persistence surface that does the job.
  *
  * Everything this app needs to remember — a name, whether the intro has been
- * seen, later which topics are read and which questions are due — is a few
- * kilobytes of key/value state. That does not warrant a database: there is
+ * seen, the saved links themselves — is a few kilobytes of key/value state.
+ * That does not warrant a database: there is
  * nothing to query, nothing to join, and the whole set fits in memory many
  * times over. It also keeps every target: Room publishes no Wasm artifact, so
  * adopting it would quietly drop the web build.

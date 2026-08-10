@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The outgoing topic screen just fades, as it does in App.kt. -->
+<!-- The app behind the Custom Tab just fades, mirroring the exit half of atlas_push_enter. -->
 <set xmlns:android="http://schemas.android.com/apk/res/android"
     android:interpolator="@android:interpolator/fast_out_linear_in">
     <alpha

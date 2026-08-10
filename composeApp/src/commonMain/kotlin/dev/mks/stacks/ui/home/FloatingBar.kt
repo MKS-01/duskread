@@ -59,7 +59,7 @@ import dev.mks.stacks.ui.theme.StacksIcons
 
 enum class HomeTab(val label: String, val icon: ImageVector) {
     HOME("Home", StacksIcons.Home),
-    READER("Reader", StacksIcons.Waveform),
+    READBACK("Readback", StacksIcons.Waveform),
     SAVED("Saved", StacksIcons.Bookmark),
 }
 
