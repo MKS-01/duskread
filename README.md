@@ -19,12 +19,17 @@
 
 ---
 
-- **Home** — a dashboard, not a list: a Pomodoro focus timer, the next pick
-  from Saved, today's Readback, and new posts from the blogs you follow.
-- **Save** — paste a link, or share one in from a browser. Usable instantly,
-  fills in its real title a second later.
-- **Readback** — a synced [readback](https://github.com/MKS-01/readback)
-  library, playable from the floating bar without leaving your tab.
+- **One dashboard, not a pile of tabs.** A focus timer, the next pick from
+  your reading list, today's Readback, and new posts from the blogs you
+  follow — all on one screen, nothing to dig for.
+- **Never lose a link again.** Paste one in or share it from a browser and
+  it's usable instantly; the real title fills in a second later on its own.
+- **Read with your ears, hands-free.** A synced
+  [readback](https://github.com/MKS-01/readback) library plays right from
+  the floating bar, so listening never means leaving what you're doing.
+- **Colour when you want it, grayscale when you don't.** One tap swaps the
+  whole app to a colourless theme for the days the terracotta accent is a
+  distraction rather than a help.
 
 Everything lives in the lower third of the screen — phone-first, one thumb.
 
