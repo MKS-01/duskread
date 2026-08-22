@@ -19,13 +19,12 @@
 
 ---
 
+- **Home** — a dashboard, not a list: a Pomodoro focus timer, the next pick
+  from Saved, today's Readback, and new posts from the blogs you follow.
 - **Save** — paste a link, or share one in from a browser. Usable instantly,
   fills in its real title a second later.
-- **Follow** — point it at a blog's RSS/Atom feed; new posts show up on Home,
-  one tap from becoming a saved link.
 - **Readback** — a synced [readback](https://github.com/MKS-01/readback)
   library, playable from the floating bar without leaving your tab.
-- **Focus** — a Pomodoro timer with a full-screen big-clock mode.
 
 Everything lives in the lower third of the screen — phone-first, one thumb.
 
