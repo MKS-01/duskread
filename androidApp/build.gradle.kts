@@ -12,11 +12,11 @@ dependencies {
 }
 
 android {
-    namespace = "dev.mks.stacks.android"
+    namespace = "dev.mks.blogmark.android"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
     defaultConfig {
-        applicationId = "dev.mks.stacks"
+        applicationId = "dev.mks.blogmark"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1

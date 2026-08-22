@@ -1,6 +1,6 @@
 # Move content off compiled Kotlin, drop JavaScript as a reference language
 
-Plan for the Phase 2 content-architecture item in [`ROADMAP.md`](ROADMAP.md) —
+Plan for the Phase 2 content-architecture item in `ROADMAP.md` (since removed) —
 written 2026-08. **Done as of 2026-08-04**: all 30 topics live in
 `composeApp/src/commonMain/composeResources/files/topics/*.md`, parsed by
 `content/TopicMarkdown.kt` and loaded by `content/Catalog.kt`'s
@@ -12,7 +12,7 @@ and why; it no longer describes work in progress.
 
 `content/Topics.kt` holds every `Topic` as a compiled Kotlin object literal
 and has grown to ~6000 lines for 30 topics (~10KB/topic, mostly the three code
-samples). `docs/ROADMAP.md` already names this as a Phase 2 blocker — every
+samples). `docs/ROADMAP.md` (since removed) already named this as a Phase 2 blocker — every
 content edit needs a full app rebuild, compile time grows with prose, and
 non-code contributions are awkward. The user wants to address this now,
 before adding more topics, and — while touching every topic's content anyway
@@ -171,7 +171,7 @@ if (catalog == null) { /* small loading state */ } else { /* existing app, catal
 Parsing ~30 small files once at startup is the same amount of data already
 held in memory today (compiled `Topic` constants) — no eager per-topic lazy
 loading is being introduced now. **Deferred, not built**: if the topic count
-grows enough that startup parse time becomes measurable (the ROADMAP's own
+grows enough that startup parse time becomes measurable (the old roadmap's
 "fifty topics" marker is the natural point to revisit), split into an eager
 lightweight index (id/title/tagline/level/questions — enough for Library and
 Search) plus a lazy per-topic parse on open. Not worth the complexity at 30-40

@@ -1,6 +1,6 @@
 # Architecture
 
-How Stacks is built, and why. Written 2026-07-28, against six topics and
+How Blogmark is built, and why. Written 2026-07-28, against six topics and
 four chapters.
 
 A rendered version of this document lives at [`architecture.html`](architecture.html).
@@ -225,7 +225,7 @@ A query with no matches never dead-ends: it offers the web and Wikipedia first
 
 ## Icons
 
-`ui/theme/AtlasIcons.kt` holds the icon set as vector paths rather than pulling
+`ui/theme/BlogmarkIcons.kt` holds the icon set as vector paths rather than pulling
 from Material. Two reasons: they are **stroked** at a consistent weight where
 Material's are filled, which sits better against the thin type and hairline
 borders used everywhere else; and they can mean something specific — the Learn
@@ -265,10 +265,3 @@ one specific insight, which is not what "fast" says.
 | Backdrop blur via `haze` | No Compose API blurs what is *behind* a composable on all four targets | A first-party backdrop API lands |
 | Hand-drawn icon set | Stroked weight matches the type; the Learn icon carries the app's mark | — |
 | Search as a screen, field at the bottom | Consistent with having no top chrome anywhere; thumb reach | The two-pane layout, where a mouse changes the argument |
-
-## Where it goes next
-
-[`ROADMAP.md`](ROADMAP.md) has the plan: finish the DSA core, add a `Track`
-level above chapters, move content to Markdown, then widen to systems, AI/ML and
-agentic coding. The rule that holds throughout is that no topic ships without a
-visualisation or a concrete worked example.

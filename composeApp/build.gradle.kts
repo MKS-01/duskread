@@ -13,7 +13,7 @@ kotlin {
     // Since AGP 9 the Android side of a KMP module is configured here rather
     // than with the `com.android.library` plugin.
     androidLibrary {
-        namespace = "dev.mks.stacks"
+        namespace = "dev.mks.blogmark"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
 
@@ -62,7 +62,7 @@ kotlin {
             // there is no engine that works on all five.
             implementation(libs.ktor.client.core)
             // Per-topic badges on the Home feed carousels — a small, stable
-            // icon per followed blog, distinct from AtlasIcons which is
+            // icon per followed blog, distinct from BlogmarkIcons which is
             // reserved for the app's own chrome.
             implementation(libs.compose.icons.feather)
         }
@@ -108,11 +108,11 @@ kotlin {
 
 compose.desktop {
     application {
-        mainClass = "dev.mks.stacks.MainKt"
+        mainClass = "dev.mks.blogmark.MainKt"
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg)
-            packageName = "Stacks"
+            packageName = "Blogmark"
             packageVersion = "1.0.0"
         }
     }

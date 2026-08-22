@@ -1,4 +1,4 @@
-rootProject.name = "Stacks"
+rootProject.name = "Blogmark"
 
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 

@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-Stacks — a Compose Multiplatform study app: DSA topics with steppable
+Blogmark — a Compose Multiplatform study app: DSA topics with steppable
 animated visualisations, code in Kotlin and Go, and interview questions.
 Read mostly on an Android phone.
 
@@ -13,7 +13,7 @@ and the rule that no topic ships without a visualisation.
 
 Architecture and content authoring are already documented — read `README.md`
 for how the app is put together, and the `/add-topic` skill for writing a
-topic. Do not restate them here. `docs/ROADMAP.md` holds planned work.
+topic. Do not restate them here.
 
 ## Build and verify
 
@@ -36,8 +36,8 @@ uses the AGP 9 `androidLibrary` KMP DSL, not `com.android.library`:
 Compiling proves nothing about layout. For any UI change, check it on a device:
 
 ```bash
-adb shell am force-stop dev.mks.stacks
-adb shell am start -n dev.mks.stacks/dev.mks.stacks.android.MainActivity
+adb shell am force-stop dev.mks.blogmark
+adb shell am start -n dev.mks.blogmark/dev.mks.blogmark.android.MainActivity
 adb exec-out screencap -p > /tmp/check.png
 ```
 
@@ -60,7 +60,7 @@ xcrun simctl boot "iPhone 17" 2>/dev/null; open -a Simulator
 APP_PATH=$(find ~/Library/Developer/Xcode/DerivedData/iosApp-*/Build/Products/Debug-iphonesimulator \
   -maxdepth 1 -name "iosApp.app")
 xcrun simctl install "iPhone 17" "$APP_PATH"
-xcrun simctl launch "iPhone 17" dev.mks.stacks
+xcrun simctl launch "iPhone 17" dev.mks.blogmark
 xcrun simctl io "iPhone 17" screenshot /tmp/ios_check.png
 ```
 
@@ -105,7 +105,7 @@ aggregate task would be `:composeApp:allTests`. Do not invent test commands.
 
 ## Icons
 
-Use `ui/theme/AtlasIcons.kt`, not `Icons.Filled.*` — the set is stroked to match
+Use `ui/theme/BlogmarkIcons.kt`, not `Icons.Filled.*` — the set is stroked to match
 the type weight, and mixing in a filled Material glyph is immediately visible.
 Add new ones there as vector paths.
 

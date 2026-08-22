@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Stacks — Architecture</title>
+<title>Blogmark — Architecture</title>
 <style>
   :root {
     --bg: #ffffff;
@@ -194,7 +194,7 @@
 
 <div class="wrap">
 <header>
-  <div class="eyebrow">Stacks</div>
+  <div class="eyebrow">Blogmark</div>
   <h1>Architecture</h1>
   <p class="lede">How it is built, and why. Written 28 July 2026, against six topics
   and four chapters. The source of this page is <code>docs/ARCHITECTURE.md</code>.</p>
@@ -319,7 +319,7 @@ strip — not a third destination.</p>
 <svg viewBox="0 0 260 470" role="img" aria-label="Learn tab wireframe: title, chapter sections, topic cards, floating bar">
   <g class="w">
     <rect class="screen" x="8" y="8" width="244" height="454" rx="22"/>
-    <text class="lbl" x="26" y="46">Stacks</text>
+    <text class="lbl" x="26" y="46">Blogmark</text>
     <text class="sub" x="26" y="62">6 topics · 4 chapters</text>
     <circle class="ghost" cx="228" cy="46" r="13"/>
 
@@ -501,7 +501,7 @@ floats at the bottom and the keyboard pushes it up.</figcaption>
     <rect class="screen" x="8" y="8" width="504" height="284" rx="16"/>
     <line class="rule" x1="176" y1="8" x2="176" y2="292"/>
 
-    <text class="lbl sm" x="26" y="38">Stacks</text>
+    <text class="lbl sm" x="26" y="38">Blogmark</text>
     <rect class="card sm" x="22" y="54" width="136" height="26" rx="8"/>
     <rect class="card sm sel" x="22" y="86" width="136" height="26" rx="8"/>
     <rect class="card sm" x="22" y="118" width="136" height="26" rx="8"/>
@@ -612,7 +612,7 @@ decoration around it. Each illustration is a pure function of one looping
 through the same Custom Tab as references, then topics we do have.</p>
 
 <h2>Icons</h2>
-<p><code>ui/theme/AtlasIcons.kt</code> holds the icon set as vector paths rather than
+<p><code>ui/theme/BlogmarkIcons.kt</code> holds the icon set as vector paths rather than
 pulling from Material. They are <strong>stroked</strong> at a consistent weight where
 Material's are filled, which sits better against the thin type and hairline borders used
 everywhere else — and they can mean something specific: the Learn icon is the stepped

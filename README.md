@@ -1,4 +1,4 @@
-# Stacks
+# Blogmark
 
 Algorithms explained properly, read on a phone — a reader for whatever
 you're studying elsewhere sits alongside the notes, so it's one app for the
@@ -72,7 +72,3 @@ Joshi — open on the problem, explain why the thing was invented before what
 it does, always say where the name came from. Prose is original; credited on
 every topic.
 
-## Where it's going
-
-[`docs/ROADMAP.md`](docs/ROADMAP.md) has the plan. One rule holds throughout:
-no topic ships without a visualisation or a concrete worked example.

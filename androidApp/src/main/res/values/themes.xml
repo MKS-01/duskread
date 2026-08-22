@@ -9,15 +9,15 @@
         There is no animation duration and no artificial delay: the window is
         dismissed as soon as the app has something to draw.
     -->
-    <style name="Theme.Stacks.Splash" parent="Theme.SplashScreen">
+    <style name="Theme.Blogmark.Splash" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/splash_background</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_stacks_mark</item>
-        <item name="postSplashScreenTheme">@style/Theme.Stacks</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_blogmark_mark</item>
+        <item name="postSplashScreenTheme">@style/Theme.Blogmark</item>
     </style>
 
     <!-- Compose draws everything; this only needs to avoid a flash of the
          wrong colour before the first frame. -->
-    <style name="Theme.Stacks" parent="android:Theme.Material.NoActionBar">
+    <style name="Theme.Blogmark" parent="android:Theme.Material.NoActionBar">
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowBackground">@color/splash_background</item>

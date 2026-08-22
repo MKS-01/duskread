@@ -1,8 +1,8 @@
 <!--
     Adaptive icon foreground: the same aperture mark as the splash icon
-    (ic_stacks_mark), so the launcher icon and the launch animation are the
+    (ic_blogmark_mark), so the launcher icon and the launch animation are the
     same idea rather than two competing marks. Kept within the centre safe
-    zone launchers actually crop to — see ic_stacks_mark for what the shape
+    zone launchers actually crop to — see ic_blogmark_mark for what the shape
     means.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
