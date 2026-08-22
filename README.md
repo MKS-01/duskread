@@ -1,7 +1,3 @@
-<p align="center">
-  <img src="docs/media/home-dashboard.png" alt="Blogmark's Home dashboard: a focus timer, a pick from Saved, today's Readback, and followed feeds" width="280">
-</p>
-
 <h1 align="center">Blogmark</h1>
 
 <p align="center">
@@ -39,6 +35,7 @@ display is a stretch mid-session.
   when the point is to actually stare at the countdown.
 
 <p align="center">
+  <img src="docs/media/home-dashboard.png" alt="Blogmark's Home dashboard: a focus timer, a pick from Saved, today's Readback, and followed feeds" width="220">
   <img src="docs/media/saved-tab.png" alt="Saved tab: paste-a-link box, clipboard suggestion, and the reading list" width="220">
   <img src="docs/media/readback-tab.png" alt="Readback tab: past reads with summaries, word counts and durations" width="220">
 </p>
