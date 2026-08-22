@@ -1,12 +1,13 @@
 <!--
-    The mark: a bookmark ribbon inside the same lens ring the app has always
-    used — the ring is the reading idea (attention closing in on one thing),
-    the ribbon inside names the app itself, the two together say "Blogmark"
-    rather than "a generic reader". See ui/theme/Theme.kt for the palette
-    these come from.
+    The mark: three bookmark ribbons fanned like tabs peeking out from behind
+    each other — a shelf of saved things, not one article, which is closer to
+    what Following actually does than a single bookmark would be. See
+    ui/theme/Theme.kt for the palette these come from.
 
     Sized for the Android 12+ splash icon: 108dp canvas with the artwork
-    inside the safe centre (the outer third is masked away).
+    inside the safe centre (the outer third is masked away). Kept well clear
+    of the safe-zone edge — the fan's diagonal spread eats into the margin a
+    single bookmark wouldn't, so it needs more headroom than 66dp gives.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
@@ -14,14 +15,18 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Stroked rather than two filled circles so the ring stays one path and
-         the weight is tunable in one number. -->
     <path
-        android:strokeColor="#C6684A"
-        android:strokeWidth="4.5"
-        android:pathData="M31,54 A23,23 0 1 1 77,54 A23,23 0 1 1 31,54 Z" />
+        android:fillColor="#6B4438"
+        android:pathData="M52.57,31.3 Q52.57,29.11 54.76,29.11 L62.52,29.11 Q64.72,29.11 64.72,31.3
+                           L64.72,59.48 L58.64,54.59 L52.57,59.48 Z" />
 
     <path
-        android:fillColor="#E8E6E2"
-        android:pathData="M47,40 L61,40 L61,66 L54,58 L47,66 Z" />
+        android:fillColor="#8C4A34"
+        android:pathData="M47.92,35.61 Q47.92,32.91 50.54,32.91 L59.65,32.91 Q62.27,32.91 62.27,35.61
+                           L62.27,68.77 L55.1,63.03 L47.92,68.77 Z" />
+
+    <path
+        android:fillColor="#C6684A"
+        android:pathData="M43.28,39.74 Q43.28,36.7 46.32,36.7 L57.12,36.7 Q60.16,36.7 60.16,39.74
+                           L60.16,78.89 L51.72,72.14 L43.28,78.89 Z" />
 </vector>

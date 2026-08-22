@@ -1,7 +1,9 @@
 <!--
-    Themed-icon layer (Android 13+ Material You): the same ring and bookmark
-    as ic_launcher_foreground, flattened to one opaque colour for the system
-    to tint from the user's wallpaper palette.
+    Themed-icon layer (Android 13+ Material You): the same fanned bookmark
+    stack as ic_launcher_foreground, flattened to one opaque colour for the
+    system to tint from the user's wallpaper palette. The three ribbons still
+    read as stacked through the stepped silhouette their corners leave behind
+    even with no colour difference between them.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
@@ -10,11 +12,17 @@
     android:viewportHeight="108">
 
     <path
-        android:strokeColor="#FFFFFFFF"
-        android:strokeWidth="4.5"
-        android:pathData="M31,54 A23,23 0 1 1 77,54 A23,23 0 1 1 31,54 Z" />
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M52.57,31.3 Q52.57,29.11 54.76,29.11 L62.52,29.11 Q64.72,29.11 64.72,31.3
+                           L64.72,59.48 L58.64,54.59 L52.57,59.48 Z" />
 
     <path
         android:fillColor="#FFFFFFFF"
-        android:pathData="M47,40 L61,40 L61,66 L54,58 L47,66 Z" />
+        android:pathData="M47.92,35.61 Q47.92,32.91 50.54,32.91 L59.65,32.91 Q62.27,32.91 62.27,35.61
+                           L62.27,68.77 L55.1,63.03 L47.92,68.77 Z" />
+
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M43.28,39.74 Q43.28,36.7 46.32,36.7 L57.12,36.7 Q60.16,36.7 60.16,39.74
+                           L60.16,78.89 L51.72,72.14 L43.28,78.89 Z" />
 </vector>
