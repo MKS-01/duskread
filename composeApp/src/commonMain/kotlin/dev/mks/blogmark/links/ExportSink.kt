@@ -41,7 +41,7 @@ expect fun rememberExportSink(): ExportSink
  * formatter (see `savedAgo`), and a wrong or half-formatted date in a filename
  * is worse than none — the picker shows the real modified time anyway.
  */
-const val ExportFileName = "stacks-reading-list.md"
+const val ExportFileName = "blogmark-reading-list.md"
 
 /** Shared by the platforms that can do neither, so the screen falls back to the clipboard. */
 internal object ClipboardOnlySink : ExportSink {

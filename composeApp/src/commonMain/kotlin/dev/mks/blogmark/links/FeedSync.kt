@@ -54,6 +54,48 @@ private fun String.atomEntryUrl(): String? = AtomAlternateLinkPattern.firstNotNu
     ?: AtomAnyLinkPattern.find(this)?.groupValues?.get(1)?.tidy()
 
 /**
+ * Resolves whatever the reader typed — a blog's homepage, or the feed
+ * address itself — to an actual RSS/Atom URL.
+ *
+ * Asking for the exact feed address up front is how a follow can end up
+ * pointed at an HTML page with nothing to parse: a blog's homepage is what
+ * people actually have on hand, not its `/rss.xml`. So the address itself is
+ * tried first — most people who *do* paste a real feed URL should not pay for
+ * a discovery round trip — and only on a feed that parses to nothing does
+ * this fall back to reading the page for the `<link rel="alternate">` a
+ * publisher points feed readers at, then a handful of conventional paths.
+ * Whatever is tried last, successful or not, is what gets followed — a
+ * result the reader can inspect and fix beats silently failing.
+ */
+suspend fun discoverFeedUrl(client: HttpClient, rawUrl: String): String {
+    if (!runCatching { fetchFeed(client, rawUrl) }.getOrNull().isNullOrEmpty()) return rawUrl
+
+    val html = runCatching {
+        client.get(rawUrl) { header(HttpHeaders.UserAgent, UserAgent) }.bodyAsText().take(MaxBytesScanned)
+    }.getOrNull()
+
+    val linked = html?.let { page ->
+        FeedLinkPattern.firstNotNullOfOrNull { it.find(page)?.groupValues?.get(1)?.tidy() }?.let { href -> resolveAgainst(rawUrl, href) }
+    }
+    if (linked != null && !runCatching { fetchFeed(client, linked) }.getOrNull().isNullOrEmpty()) return linked
+
+    val origin = rawUrl.substringBefore("://") + "://" + rawUrl.substringAfter("://").substringBefore("/")
+    for (path in CommonFeedPaths) {
+        val candidate = origin + path
+        if (!runCatching { fetchFeed(client, candidate) }.getOrNull().isNullOrEmpty()) return candidate
+    }
+
+    return rawUrl
+}
+
+/** A `href` from a `<link>` tag, which publishers write both root-relative and absolute. */
+private fun resolveAgainst(pageUrl: String, href: String): String = when {
+    href.startsWith("http://") || href.startsWith("https://") -> href
+    href.startsWith("/") -> pageUrl.substringBefore("://") + "://" + pageUrl.substringAfter("://").substringBefore("/") + href
+    else -> pageUrl.substringBeforeLast("/") + "/" + href
+}
+
+/**
  * Fetches every followed feed and, for each one that actually yields posts,
  * replaces its slot in [cache] — the source Home's topic rows read from. A
  * feed that fails to load — down, moved, not actually a feed — keeps
@@ -95,6 +137,24 @@ private val AtomAlternateLinkPattern = listOf(
     Regex("""<link[^>]+href\s*=\s*["']([^"']+)["'][^>]*rel\s*=\s*["']alternate["']""", RegexOption.IGNORE_CASE),
 )
 private val AtomAnyLinkPattern = Regex("""<link[^>]+href\s*=\s*["']([^"']+)["']""", RegexOption.IGNORE_CASE)
+
+// The tag a publisher's <head> uses to point feed readers at the real feed —
+// matched in either attribute order, same reasoning as the two patterns above.
+private val FeedLinkPattern = listOf(
+    Regex(
+        """<link[^>]+type\s*=\s*["']application/(?:rss|atom)\+xml["'][^>]*href\s*=\s*["']([^"']+)["']""",
+        RegexOption.IGNORE_CASE,
+    ),
+    Regex(
+        """<link[^>]+href\s*=\s*["']([^"']+)["'][^>]*type\s*=\s*["']application/(?:rss|atom)\+xml["']""",
+        RegexOption.IGNORE_CASE,
+    ),
+)
+
+// Tried in this order once neither the address itself nor a discovery link
+// worked — the paths enough blogging platforms default to that it is worth
+// trying before giving up.
+private val CommonFeedPaths = listOf("/feed", "/feed/", "/rss.xml", "/rss", "/atom.xml", "/index.xml")
 
 // A feed with a thousand-item archive should not flood the list on first
 // sync — the point of following a blog is what's new, not its backlog.

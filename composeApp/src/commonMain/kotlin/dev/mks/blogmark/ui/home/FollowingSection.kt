@@ -40,7 +40,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.layout
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -50,7 +49,9 @@ import dev.mks.blogmark.links.FeedLibrary
 import dev.mks.blogmark.links.FeedPost
 import dev.mks.blogmark.links.FeedPostCache
 import dev.mks.blogmark.links.LinkLibrary
-import dev.mks.blogmark.links.hostOf
+import dev.mks.blogmark.links.discoverFeedUrl
+import dev.mks.blogmark.links.looksLikeUrl
+import dev.mks.blogmark.links.normaliseUrl
 import dev.mks.blogmark.links.syncFeeds
 import dev.mks.blogmark.links.topicIcon
 import dev.mks.blogmark.ui.rememberUrlOpener
@@ -86,8 +87,24 @@ fun FollowingSection(
     val scope = rememberCoroutineScope()
     var managing by remember { mutableStateOf(false) }
     var feedUrl by remember { mutableStateOf("") }
+    var discovering by remember { mutableStateOf(false) }
     var syncing by remember { mutableStateOf(false) }
     var note by remember { mutableStateOf<String?>(null) }
+
+    // Following a blog by its homepage rather than its exact feed address is
+    // the common case — this is what turns "swmansion.com/blog/" into the
+    // `/rss.xml` underneath it before it ever reaches [FeedLibrary].
+    fun follow() {
+        val typed = feedUrl
+        if (discovering || !looksLikeUrl(typed)) return
+        discovering = true
+        scope.launch {
+            val resolved = discoverFeedUrl(client, normaliseUrl(typed))
+            feedLibrary.add(resolved)
+            feedUrl = ""
+            discovering = false
+        }
+    }
 
     LaunchedEffect(note) {
         if (note != null) {
@@ -131,7 +148,8 @@ fun FollowingSection(
                 feeds = feedLibrary.feeds,
                 url = feedUrl,
                 onUrlChange = { feedUrl = it },
-                onAdd = { if (feedLibrary.add(feedUrl) != null) feedUrl = "" },
+                discovering = discovering,
+                onAdd = ::follow,
                 onRemove = { id ->
                     feedLibrary.remove(id)
                     postCache.removeFeed(id)
@@ -351,6 +369,7 @@ private fun FeedManagePanel(
     feeds: List<Feed>,
     url: String,
     onUrlChange: (String) -> Unit,
+    discovering: Boolean,
     onAdd: () -> Unit,
     onRemove: (String) -> Unit,
 ) {
@@ -367,7 +386,7 @@ private fun FeedManagePanel(
             Box(Modifier.weight(1f)) {
                 if (url.isEmpty()) {
                     Text(
-                        text = "Blog's RSS or Atom address",
+                        text = "Blog's address or its RSS/Atom feed",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 14.5.sp,
                     )
@@ -375,6 +394,7 @@ private fun FeedManagePanel(
                 BasicTextField(
                     value = url,
                     onValueChange = onUrlChange,
+                    enabled = !discovering,
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     textStyle = LocalTextStyle.current.copy(
@@ -387,14 +407,14 @@ private fun FeedManagePanel(
                 )
             }
 
-            AnimatedVisibility(url.isNotBlank()) {
+            AnimatedVisibility(url.isNotBlank() || discovering) {
                 Text(
-                    text = "Follow",
+                    text = if (discovering) "Finding…" else "Follow",
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier
                         .clip(CircleShape)
-                        .clickable(onClick = onAdd)
+                        .clickable(enabled = !discovering, onClick = onAdd)
                         .padding(horizontal = 12.dp, vertical = 6.dp),
                 )
             }
@@ -423,9 +443,14 @@ private fun FeedManagePanel(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
-                            text = hostOf(feed.url),
-                            fontSize = 11.5.sp,
-                            fontWeight = FontWeight.Medium,
+                            // The full path, not just the host — a feed
+                            // followed by its blog's homepage instead of its
+                            // actual RSS/Atom endpoint fetches real HTML with
+                            // nothing to parse, and looks identical to a
+                            // working feed if only the host is shown here.
+                            text = feed.url.removePrefix("https://").removePrefix("http://"),
+                            fontFamily = Mono,
+                            fontSize = 11.sp,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             color = MaterialTheme.colorScheme.onSurface,
