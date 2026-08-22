@@ -1,9 +1,7 @@
 <!--
-    Themed-icon layer (Android 13+ Material You): the same aperture as
-    ic_launcher_foreground, flattened to one opaque colour. The system tints
-    this from the user's wallpaper palette, so the ink ramp down the three
-    lines would be discarded anyway — shape is all that survives, which is
-    why the shortest line stays short: length is the only hierarchy left.
+    Themed-icon layer (Android 13+ Material You): the same ring and bookmark
+    as ic_launcher_foreground, flattened to one opaque colour for the system
+    to tint from the user's wallpaper palette.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
@@ -18,11 +16,5 @@
 
     <path
         android:fillColor="#FFFFFFFF"
-        android:pathData="M47.25,45.75 H62.25 A2.25,2.25 0 0 1 62.25,50.25 H47.25 A2.25,2.25 0 0 1 47.25,45.75 Z" />
-    <path
-        android:fillColor="#FFFFFFFF"
-        android:pathData="M47.25,55.75 H62.25 A2.25,2.25 0 0 1 62.25,60.25 H47.25 A2.25,2.25 0 0 1 47.25,55.75 Z" />
-    <path
-        android:fillColor="#FFFFFFFF"
-        android:pathData="M47.25,65.75 H53.75 A2.25,2.25 0 0 1 53.75,70.25 H47.25 A2.25,2.25 0 0 1 47.25,65.75 Z" />
+        android:pathData="M47,40 L61,40 L61,66 L54,58 L47,66 Z" />
 </vector>

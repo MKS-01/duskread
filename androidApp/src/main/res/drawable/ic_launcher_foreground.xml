@@ -1,5 +1,5 @@
 <!--
-    Adaptive icon foreground: the same aperture mark as the splash icon
+    Adaptive icon foreground: the same ring and bookmark as the splash icon
     (ic_blogmark_mark), so the launcher icon and the launch animation are the
     same idea rather than two competing marks. Kept within the centre safe
     zone launchers actually crop to — see ic_blogmark_mark for what the shape
@@ -18,11 +18,5 @@
 
     <path
         android:fillColor="#E8E6E2"
-        android:pathData="M47.25,45.75 H62.25 A2.25,2.25 0 0 1 62.25,50.25 H47.25 A2.25,2.25 0 0 1 47.25,45.75 Z" />
-    <path
-        android:fillColor="#9C9A96"
-        android:pathData="M47.25,55.75 H62.25 A2.25,2.25 0 0 1 62.25,60.25 H47.25 A2.25,2.25 0 0 1 47.25,55.75 Z" />
-    <path
-        android:fillColor="#6B6965"
-        android:pathData="M47.25,65.75 H53.75 A2.25,2.25 0 0 1 53.75,70.25 H47.25 A2.25,2.25 0 0 1 47.25,65.75 Z" />
+        android:pathData="M47,40 L61,40 L61,66 L54,58 L47,66 Z" />
 </vector>

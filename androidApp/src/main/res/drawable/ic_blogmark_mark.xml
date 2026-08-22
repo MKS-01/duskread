@@ -1,13 +1,9 @@
 <!--
-    The mark: a lens closing on three lines of text — the app is a thing you
-    read, with attention on one line at a time, so focus is the idea rather
-    than the data structures themselves. The ring carries the theme's single
-    terracotta accent and the lines step down through ink, brightest at the
-    top: the line being read, the one after it, the rest of the page falling
-    away. See ui/theme/Theme.kt for the palette these come from.
-
-    A ring is also the only candidate here with an outline of its own — a
-    stack of bars alone reads as a generic list glyph on a launcher screen.
+    The mark: a bookmark ribbon inside the same lens ring the app has always
+    used — the ring is the reading idea (attention closing in on one thing),
+    the ribbon inside names the app itself, the two together say "Blogmark"
+    rather than "a generic reader". See ui/theme/Theme.kt for the palette
+    these come from.
 
     Sized for the Android 12+ splash icon: 108dp canvas with the artwork
     inside the safe centre (the outer third is masked away).
@@ -27,11 +23,5 @@
 
     <path
         android:fillColor="#E8E6E2"
-        android:pathData="M47.25,45.75 H62.25 A2.25,2.25 0 0 1 62.25,50.25 H47.25 A2.25,2.25 0 0 1 47.25,45.75 Z" />
-    <path
-        android:fillColor="#9C9A96"
-        android:pathData="M47.25,55.75 H62.25 A2.25,2.25 0 0 1 62.25,60.25 H47.25 A2.25,2.25 0 0 1 47.25,55.75 Z" />
-    <path
-        android:fillColor="#6B6965"
-        android:pathData="M47.25,65.75 H53.75 A2.25,2.25 0 0 1 53.75,70.25 H47.25 A2.25,2.25 0 0 1 47.25,65.75 Z" />
+        android:pathData="M47,40 L61,40 L61,66 L54,58 L47,66 Z" />
 </vector>
