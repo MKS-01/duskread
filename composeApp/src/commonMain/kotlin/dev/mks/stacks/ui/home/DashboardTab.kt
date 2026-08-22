@@ -42,6 +42,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dev.mks.stacks.links.FeedLibrary
+import dev.mks.stacks.links.FeedPostCache
 import dev.mks.stacks.links.LinkLibrary
 import dev.mks.stacks.pomodoro.PickableMinutes
 import dev.mks.stacks.pomodoro.clockLabel
@@ -57,6 +59,7 @@ import dev.mks.stacks.ui.theme.SectionLabel
 import dev.mks.stacks.ui.theme.Space
 import dev.mks.stacks.ui.theme.StacksIcons
 import dev.mks.stacks.ui.theme.Stroke
+import io.ktor.client.HttpClient
 import androidx.compose.ui.graphics.drawscope.Stroke as DrawStroke
 
 /**
@@ -71,6 +74,9 @@ fun DashboardTab(
     onOpenSaved: () -> Unit,
     onOpenReadback: () -> Unit,
     links: LinkLibrary,
+    feeds: FeedLibrary,
+    feedPosts: FeedPostCache,
+    feedClient: HttpClient,
     greeting: String?,
     mono: Boolean,
     onToggleTheme: () -> Unit,
@@ -130,6 +136,16 @@ fun DashboardTab(
 
         item("readback") {
             ReadbackOfDayCard(onOpen = onOpenReadback)
+        }
+
+        item("following") {
+            FollowingSection(
+                feedLibrary = feeds,
+                postCache = feedPosts,
+                linkLibrary = links,
+                client = feedClient,
+                modifier = Modifier.padding(top = 4.dp),
+            )
         }
     }
 }

@@ -61,6 +61,10 @@ kotlin {
             // is shared — every target brings its own engine below, since
             // there is no engine that works on all five.
             implementation(libs.ktor.client.core)
+            // Per-topic badges on the Home feed carousels — a small, stable
+            // icon per followed blog, distinct from AtlasIcons which is
+            // reserved for the app's own chrome.
+            implementation(libs.compose.icons.feather)
         }
 
         androidMain.dependencies {

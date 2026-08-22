@@ -62,7 +62,10 @@ private fun String.metaContent(key: String): String? {
     }
 }
 
-private fun String.tidy(): String? {
+// Internal rather than private: FeedSync.kt cleans the same kind of tag soup
+// out of RSS and Atom titles, and a second entity table would only drift from
+// this one.
+internal fun String.tidy(): String? {
     var text = replace(Whitespace, " ").trim()
     for ((entity, char) in Entities) text = text.replace(entity, char, ignoreCase = true)
     return text.takeIf { it.isNotBlank() }
@@ -89,7 +92,7 @@ private val Entities = listOf(
     "&hellip;" to "…",
 )
 
-private const val UserAgent = "Mozilla/5.0 (compatible; Stacks/1.0; +https://github.com/MKS-01)"
+internal const val UserAgent = "Mozilla/5.0 (compatible; Stacks/1.0; +https://github.com/MKS-01)"
 
 /** The head is all we need, and some pages are megabytes. */
 private const val MaxBytesScanned = 200_000

@@ -47,7 +47,6 @@ import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -61,6 +60,7 @@ import dev.mks.stacks.links.fetchLinkMetadata
 import dev.mks.stacks.links.looksLikeUrl
 import dev.mks.stacks.links.rememberExportSink
 import dev.mks.stacks.links.savedAgo
+import dev.mks.stacks.links.topicIcon
 import dev.mks.stacks.ui.rememberUrlOpener
 import dev.mks.stacks.ui.theme.Mono
 import dev.mks.stacks.ui.theme.Radius
@@ -640,64 +640,82 @@ private fun LinkCardFace(
     onOpen: () -> Unit,
     onToggleRead: () -> Unit,
 ) {
-    Column(
+    Row(
         Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(Radius.Card))
-            .background(scheme.surface)
+            // Read cards sit on a quieter surface rather than losing their
+            // title to a strikethrough — the whole card reads as "done" at a
+            // glance, not just the one line.
+            .background(if (link.read) scheme.surfaceContainer else scheme.surface)
             .border(1.dp, scheme.outlineVariant, RoundedCornerShape(Radius.Card))
             .clickable(onClick = onOpen)
             .padding(start = 14.dp, end = 8.dp, top = 12.dp, bottom = 8.dp),
     ) {
-        Text(
-            text = link.title,
-            style = MaterialTheme.typography.titleSmall,
-            fontSize = 15.sp,
-            lineHeight = 19.sp,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            // Struck through rather than merely dimmed: a read item is done,
-            // and dimming alone reads as "loading" next to rows that genuinely
-            // are still fetching.
-            textDecoration = if (link.read) TextDecoration.LineThrough else null,
-            color = if (link.read) scheme.onSurfaceVariant else scheme.onSurface,
-        )
-
-        link.description?.takeIf { !link.read }?.let { description ->
-            Spacer(Modifier.height(4.dp))
-            Text(
-                text = description,
-                fontSize = 12.sp,
-                lineHeight = 16.sp,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                color = scheme.onSurfaceVariant,
+        Box(
+            Modifier
+                .padding(top = 1.dp)
+                .size(30.dp)
+                .clip(CircleShape)
+                .background(if (link.read) scheme.surfaceContainerHigh else scheme.primaryContainer),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = topicIcon(link.host),
+                contentDescription = null,
+                modifier = Modifier.size(15.dp),
+                tint = if (link.read) scheme.onSurfaceVariant else scheme.onPrimaryContainer,
             )
         }
+        Spacer(Modifier.width(12.dp))
 
-        Spacer(Modifier.height(8.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
             Text(
-                text = when {
-                    !link.fetched -> "${link.host} · reading the page…"
-                    link.readAt != null && link.readAt > 0L -> "${link.host} · read ${savedAgo(link.readAt)}"
-                    link.read -> "${link.host} · read"
-                    else -> "${link.host} · saved ${savedAgo(link.savedAt)}"
-                },
-                fontFamily = Mono,
-                fontSize = 10.sp,
-                maxLines = 1,
+                text = link.title,
+                style = MaterialTheme.typography.titleSmall,
+                fontSize = 15.sp,
+                lineHeight = 19.sp,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
-                color = scheme.onSurfaceVariant,
-                modifier = Modifier.weight(1f),
+                color = if (link.read) scheme.onSurfaceVariant else scheme.onSurface,
             )
 
-            CardAction(
-                icon = StacksIcons.Check,
-                label = if (link.read) "Mark unread" else "Mark read",
-                tint = if (link.read) scheme.primary else scheme.onSurfaceVariant,
-                onClick = onToggleRead,
-            )
+            link.description?.takeIf { !link.read }?.let { description ->
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = description,
+                    fontSize = 12.sp,
+                    lineHeight = 16.sp,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    color = scheme.onSurfaceVariant,
+                )
+            }
+
+            Spacer(Modifier.height(8.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = when {
+                        !link.fetched -> "${link.host} · reading the page…"
+                        link.readAt != null && link.readAt > 0L -> "${link.host} · read ${savedAgo(link.readAt)}"
+                        link.read -> "${link.host} · read"
+                        else -> "${link.host} · saved ${savedAgo(link.savedAt)}"
+                    },
+                    fontFamily = Mono,
+                    fontSize = 10.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    color = scheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f),
+                )
+
+                CardAction(
+                    icon = StacksIcons.Check,
+                    label = if (link.read) "Mark unread" else "Mark read",
+                    tint = if (link.read) scheme.primary else scheme.onSurfaceVariant,
+                    onClick = onToggleRead,
+                )
+            }
         }
     }
 }

@@ -8,6 +8,7 @@ androidx-browser = "1.10.0"
 androidx-splashscreen = "1.2.0"
 androidx-lifecycle = "2.10.0"
 composeMultiplatform = "1.11.0"
+composeIconsFeather = "1.1.1"
 haze = "1.7.2"
 kotlin = "2.3.21"
 kotlinx-coroutines = "1.10.2"
@@ -31,6 +32,7 @@ androidx-documentfile = { module = "androidx.documentfile:documentfile", version
 androidx-media = { module = "androidx.media:media", version.ref = "androidx-media" }
 androidx-lifecycle-runtimeCompose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose", version.ref = "androidx-lifecycle" }
 haze = { module = "dev.chrisbanes.haze:haze", version.ref = "haze" }
+compose-icons-feather = { module = "br.com.devsrsouza.compose.icons:feather", version.ref = "composeIconsFeather" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }

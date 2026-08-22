@@ -35,8 +35,12 @@ class LinkLibrary(private val store: KeyValueStore) {
      * Saves [rawUrl], or returns the existing entry if it is already here —
      * re-sharing an article you saved last week should not give you two of it.
      * Null when the text is not a link at all.
+     *
+     * [title] lets a caller that already knows the headline — a feed entry
+     * carries its own — skip the URL-slug guess. It still improves once the
+     * page itself is fetched, same as any other saved link.
      */
-    fun save(rawUrl: String): SavedLink? {
+    fun save(rawUrl: String, title: String? = null): SavedLink? {
         if (!looksLikeUrl(rawUrl)) return null
 
         val url = normaliseUrl(rawUrl).clean()
@@ -45,7 +49,7 @@ class LinkLibrary(private val store: KeyValueStore) {
         val link = SavedLink(
             id = Clock.System.now().toEpochMilliseconds().toString(36) + "-" + links.size,
             url = url,
-            title = titleFromUrl(url),
+            title = title?.clean()?.takeIf { it.isNotBlank() } ?: titleFromUrl(url),
             savedAt = Clock.System.now().toEpochMilliseconds(),
         )
         links = listOf(link) + links
@@ -91,6 +95,21 @@ class LinkLibrary(private val store: KeyValueStore) {
             persist()
         }
         return ImportSummary(found = found.size, added = fresh.size)
+    }
+
+    /** Whether [url] is already in the reading list — the state a save button on a feed card renders itself from. */
+    fun isSaved(url: String): Boolean = links.any { it.url.equals(url, ignoreCase = true) }
+
+    /**
+     * The feed-card save button: tapping it once adds [url] to the reading
+     * list, tapping it again on the same card takes it back out. Unlike
+     * [remove], there is no swipe-to-confirm here — a card the reader is
+     * looking at right now is not the same "did I mean that" risk a row
+     * already filed away is.
+     */
+    fun toggleSaved(url: String, title: String?) {
+        val existing = links.firstOrNull { it.url.equals(url, ignoreCase = true) }
+        if (existing != null) remove(existing.id) else save(url, title)
     }
 
     /** Replaces the URL-derived guess once the page itself has answered. */

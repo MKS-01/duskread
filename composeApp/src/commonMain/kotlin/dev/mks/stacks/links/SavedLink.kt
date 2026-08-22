@@ -28,12 +28,15 @@ data class SavedLink(
 
     /** "arstechnica.com" — the one piece of provenance worth showing in a list. */
     val host: String
-        get() = url
-            .substringAfter("://", url)
-            .substringBefore('/')
-            .substringBefore('?')
-            .removePrefix("www.")
+        get() = hostOf(url)
 }
+
+/** The bare host out of any URL — shared with [Feed], which wants the same reduction. */
+fun hostOf(url: String): String = url
+    .substringAfter("://", url)
+    .substringBefore('/')
+    .substringBefore('?')
+    .removePrefix("www.")
 
 /**
  * Best guess at a title before the network answers: the last meaningful path

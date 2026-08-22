@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -25,6 +26,9 @@ import androidx.compose.ui.unit.dp
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 import dev.mks.stacks.links.SharedLinkRequest
+import dev.mks.stacks.links.createHttpClient
+import dev.mks.stacks.links.rememberFeedLibrary
+import dev.mks.stacks.links.rememberFeedPostCache
 import dev.mks.stacks.links.rememberLinkLibrary
 import dev.mks.stacks.reader.rememberAudioPlayer
 import dev.mks.stacks.reader.rememberReadRepository
@@ -82,6 +86,14 @@ fun HomeScreen(
         }
     }
 
+    // The followed-blogs thread on Home: a cache of the last sync plus a
+    // client to run the next one, both owned here so they survive a tab
+    // switch instead of re-fetching every time the dashboard recomposes.
+    val feeds = rememberFeedLibrary()
+    val feedPosts = rememberFeedPostCache()
+    val feedClient = remember { createHttpClient() }
+    DisposableEffect(feedClient) { onDispose { feedClient.close() } }
+
     // One fixed clearance for the last card. It used to grow while the player
     // was docked above the bar; now that the transport lives inside the bar,
     // the bar is the same height whether anything is playing or not, and the
@@ -118,6 +130,9 @@ fun HomeScreen(
                 HomeTab.HOME -> DashboardTab(
                     greeting = greeting,
                     links = links,
+                    feeds = feeds,
+                    feedPosts = feedPosts,
+                    feedClient = feedClient,
                     onOpenFocus = onOpenFocus,
                     onOpenSaved = { onTabChange(HomeTab.SAVED) },
                     onOpenReadback = { onTabChange(HomeTab.READBACK) },
