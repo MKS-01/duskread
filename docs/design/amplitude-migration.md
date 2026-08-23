@@ -134,6 +134,50 @@ The mockup's bar carries icons and nothing else, and at the row pitch it
 moirés into a hatch across the pill while any coarser pitch collides with the
 play control. The remaining-time readout already answers "how much is left".
 
+## Brand — app icon and splash (this pass)
+
+The mockup's Brand section had never been built. The launcher icon was still
+three fanned bookmark ribbons, whose fault the mockup names exactly: scale,
+not concept — the artwork occupied about 15% of its canvas and dissolved into
+a speck at 48px.
+
+- [x] `ic_blogmark_mark.xml` rebuilt to the mockup's Amplitude mark: a level
+      meter whose tallest bar is a bookmark, so the notch reads as both a
+      ribbon tail and a peak. Fills roughly 70% of the canvas and folds *save*
+      and *listen* into one silhouette
+- [x] Terracotta, not the mockup's cyan — one accent at four alpha weights
+      (0.45 / 0.7 / 1.0 / 0.55), keeping the two-palette rule
+- [x] Geometry is the mockup's own, shifted 2 units left to centre it on the
+      canvas and scaled 0.85 about the centre so nothing leaves the 66-unit
+      safe zone a launcher mask and the splash icon both crop to
+- [x] One drawable, three consumers: the adaptive foreground now references
+      `ic_blogmark_mark` directly rather than duplicating its path data, and
+      `ic_launcher_foreground.xml` is deleted. Only the monochrome layer is
+      separate, because a themed icon needs one opaque colour
+- [x] **Splash animates**, as the mockup's rationale specifies: the outer bars
+      settle to rest while the app boots, staggered left-to-right the way the
+      app's own waveforms fill. `ic_blogmark_splash.xml` is an
+      `animated-vector` over the same mark; the bookmark does not move
+- [x] No delay added. `installSplashScreen` still dismisses the window on the
+      first frame, so a warm start cuts the settle off part-way through —
+      the splash covers a wait, it does not impose one
+- [x] iOS `AppIcon-1024.png` and the Wasm `favicon.png` regenerated from the
+      same geometry, full-bleed (neither platform crops the way an adaptive
+      icon does, so they skip the safe-zone scale)
+- [x] The Wasm page's body background was `#0c0f14`, a bluish near-black left
+      over from an earlier direction — now `#101010`, the app's own ground
+- [x] Verified on device: launcher icon under the circular mask, and the
+      splash caught mid-settle
+
+Open:
+
+- [ ] The splash was only ever seen on the emulator's modern API level. The
+      platform splash screen is API 31+; below that the androidx library
+      draws the icon itself, and whether it runs the AVD or shows the mark at
+      rest is unverified. Either is acceptable — the resting mark is the base
+      vector — but nobody has looked
+- [ ] Desktop has no icon at all (`nativeDistributions` sets no `iconFile`)
+
 ## Where this stands (end of the waveform pass)
 
 Everything ticked above is committed and pushed. What follows is the open

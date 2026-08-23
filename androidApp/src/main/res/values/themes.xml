@@ -6,12 +6,18 @@
         appear once there is a first frame, and so would add to startup rather
         than cover it.
 
-        There is no animation duration and no artificial delay: the window is
-        dismissed as soon as the app has something to draw.
+        The icon animates (the meter's bars settling — see
+        ic_blogmark_splash), but nothing here imposes a delay: the duration
+        below only tells the system how long the animation runs, and the
+        window is still dismissed the moment the app has something to draw.
+        On a warm start that cuts the settle off part-way through, which is
+        the right trade — the splash is there to cover a wait, not to make
+        one.
     -->
     <style name="Theme.Blogmark.Splash" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/splash_background</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_blogmark_mark</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_blogmark_splash</item>
+        <item name="windowSplashScreenAnimationDuration">700</item>
         <item name="postSplashScreenTheme">@style/Theme.Blogmark</item>
     </style>
 

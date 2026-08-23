@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Pre-adaptive-icon fallback (API 24-25 only); see ic_launcher.xml. -->
+<!--
+    Pre-adaptive-icon fallback (API 24-25 only; mipmap-anydpi-v26 wins from
+    API 26 on). No OS-applied mask exists at this API level, so background
+    and foreground are stacked as flat layers rather than split for masking.
+-->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:drawable="@drawable/ic_launcher_background" />
-    <item android:drawable="@drawable/ic_launcher_foreground" />
+    <item android:drawable="@drawable/ic_blogmark_mark" />
 </layer-list>

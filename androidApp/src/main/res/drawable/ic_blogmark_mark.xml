@@ -1,13 +1,24 @@
 <!--
-    The mark: three bookmark ribbons fanned like tabs peeking out from behind
-    each other — a shelf of saved things, not one article, which is closer to
-    what Following actually does than a single bookmark would be. See
-    ui/theme/Theme.kt for the palette these come from.
+    The mark, as specified in the Brand section of
+    `docs/design/redesign-variants.html`: a level meter whose tallest bar is a
+    bookmark. The notch reads as both a ribbon tail and a peak, which is the
+    whole app in one silhouette — save a link, hear it read back — rather than
+    a bookmark that says nothing about the listening or a waveform that says
+    nothing about the saving.
 
-    Sized for the Android 12+ splash icon: 108dp canvas with the artwork
-    inside the safe centre (the outer third is masked away). Kept well clear
-    of the safe-zone edge — the fan's diagonal spread eats into the margin a
-    single bookmark wouldn't, so it needs more headroom than 66dp gives.
+    It replaces three fanned bookmark ribbons whose fault was scale rather than
+    concept: that artwork occupied about 15% of its canvas and dissolved into a
+    speck at launcher size. This fills roughly 70%.
+
+    Terracotta, not the mockup's cyan — the migration kept two palettes,
+    terracotta and monochrome, and never adopted the "signature" accent. The
+    three bars step down in alpha off the bookmark, so the accent is one colour
+    at four weights and not four colours.
+
+    Geometry is the mockup's own, shifted 2 units left so the mark centres on
+    the canvas, and held inside the 66-unit safe zone by the outer group's
+    scale. Both consumers crop: a launcher masks the outer third of an adaptive
+    icon, and the Android 12+ splash shows the inner two thirds of its icon.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
@@ -15,18 +26,51 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <path
-        android:fillColor="#6B4438"
-        android:pathData="M52.92,36.98 Q52.92,35.33 54.57,35.33 L60.39,35.33 Q62.04,35.33 62.04,36.98
-                           L62.04,58.11 L57.48,54.44 L52.92,58.11 Z" />
+    <group
+        android:name="mark"
+        android:pivotX="54"
+        android:pivotY="54"
+        android:scaleX="0.85"
+        android:scaleY="0.85">
 
-    <path
-        android:fillColor="#8C4A34"
-        android:pathData="M49.44,40.2 Q49.44,38.18 51.41,38.18 L58.24,38.18 Q60.2,38.18 60.2,40.2
-                           L60.2,65.07 L54.82,60.77 L49.44,65.07 Z" />
+        <!--
+            Each bar is its own group so the splash can animate it. The pivot
+            is the row's centre line, which every bar is already centred on, so
+            a bar grows out of the middle rather than up off a baseline.
+        -->
+        <group
+            android:name="bar_a"
+            android:pivotX="24.5"
+            android:pivotY="54">
+            <path
+                android:fillAlpha="0.45"
+                android:fillColor="#C6684A"
+                android:pathData="M20,44.5 a4.5,4.5 0 0 1 9,0 v19 a4.5,4.5 0 0 1 -9,0 z" />
+        </group>
 
-    <path
-        android:fillColor="#C6684A"
-        android:pathData="M45.96,43.31 Q45.96,41.03 48.24,41.03 L56.34,41.03 Q58.62,41.03 58.62,43.31
-                           L58.62,72.67 L52.29,67.61 L45.96,72.67 Z" />
+        <group
+            android:name="bar_b"
+            android:pivotX="39.5"
+            android:pivotY="54">
+            <path
+                android:fillAlpha="0.7"
+                android:fillColor="#C6684A"
+                android:pathData="M35,34.5 a4.5,4.5 0 0 1 9,0 v39 a4.5,4.5 0 0 1 -9,0 z" />
+        </group>
+
+        <!-- The peak: a bookmark rather than a fourth bar. -->
+        <path
+            android:fillColor="#C6684A"
+            android:pathData="M50,24 h20 a3,3 0 0 1 3,3 v57 l-13,-10 l-13,10 V27 a3,3 0 0 1 3,-3 z" />
+
+        <group
+            android:name="bar_c"
+            android:pivotX="83.5"
+            android:pivotY="54">
+            <path
+                android:fillAlpha="0.55"
+                android:fillColor="#C6684A"
+                android:pathData="M79,40.5 a4.5,4.5 0 0 1 9,0 v27 a4.5,4.5 0 0 1 -9,0 z" />
+        </group>
+    </group>
 </vector>
