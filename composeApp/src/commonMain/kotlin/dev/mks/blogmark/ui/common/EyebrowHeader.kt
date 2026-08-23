@@ -19,12 +19,12 @@ import androidx.compose.ui.unit.dp
 import dev.mks.blogmark.ui.theme.SectionLabel
 
 /**
- * A card's small-caps label, an optional glyph beside it, and a hairline rule
- * underneath — the one repeating cadence every card on Home and Following
- * opens with, so the screen reads as one system instead of a stack of
- * differently-built boxes. The rule is what a bare label-then-content jump
- * was missing: it gives the eyebrow somewhere to land before the title
- * starts, the same way a printed page rules off a section head.
+ * A section's small-caps label with a hairline trailing off to the right of
+ * it on the *same* line — the one repeating way every section on Home,
+ * Readback and Saved opens, so the screen reads as rule-and-rhythm rather
+ * than a stack of boxes. This is not a rule sitting under the label: the
+ * line is what is left of the row after the label and any trailing content,
+ * the way a printed section head trails a line off into the margin.
  */
 @Composable
 fun EyebrowHeader(
@@ -32,8 +32,7 @@ fun EyebrowHeader(
     modifier: Modifier = Modifier,
     icon: ImageVector? = null,
     // Defaults to the accent, but a lower-priority section — read history
-    // under an unread list, say — can ask for the quieter muted tone instead,
-    // the same distinction those sections already drew before this existed.
+    // under an unread list, say — can ask for the quieter muted tone instead.
     tint: Color? = null,
     trailing: (@Composable () -> Unit)? = null,
 ) {
@@ -43,25 +42,22 @@ fun EyebrowHeader(
             Icon(
                 imageVector = it,
                 contentDescription = null,
-                modifier = Modifier.height(16.dp),
+                modifier = Modifier.height(14.dp),
                 tint = color,
             )
-            Spacer(Modifier.width(8.dp))
+            Spacer(Modifier.width(7.dp))
         }
-        Text(
-            text = text,
-            style = SectionLabel,
-            color = color,
-            modifier = Modifier.weight(1f),
+        Text(text = text, style = SectionLabel, color = color)
+        Spacer(Modifier.width(8.dp))
+        Box(
+            Modifier
+                .weight(1f)
+                .height(1.dp)
+                .background(MaterialTheme.colorScheme.outlineVariant),
         )
-        trailing?.invoke()
+        if (trailing != null) {
+            Spacer(Modifier.width(8.dp))
+            trailing()
+        }
     }
-    Spacer(Modifier.height(8.dp))
-    Box(
-        Modifier
-            .fillMaxWidth()
-            .height(1.dp)
-            .background(MaterialTheme.colorScheme.outlineVariant),
-    )
-    Spacer(Modifier.height(10.dp))
 }

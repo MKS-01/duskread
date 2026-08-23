@@ -5,17 +5,12 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -23,13 +18,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import dev.mks.blogmark.data.KeyValueStore
 import dev.mks.blogmark.data.rememberKeyValueStore
-import dev.mks.blogmark.ui.theme.BlogmarkIcons
+import dev.mks.blogmark.ui.common.AppTextField
+import dev.mks.blogmark.ui.theme.Mono
 import dev.mks.blogmark.ui.theme.Radius
 import dev.mks.blogmark.ui.theme.Stroke
 import kotlinx.coroutines.Dispatchers
@@ -139,31 +135,22 @@ actual fun ReaderSourcePicker(repository: ReadRepository, compact: Boolean) {
     var path by remember { mutableStateOf(desktopRepository.currentPath()) }
 
     if (compact && !expanded) {
-        // A folder icon plus a pill background, rather than plain text —
-        // this sits next to the Newest/Oldest sort chips and needs to read
-        // as its own tappable action, not a stray hyperlink.
-        Row(
-            Modifier
-                .clip(RoundedCornerShape(Radius.Pill))
-                .background(MaterialTheme.colorScheme.surfaceContainer)
-                .border(Stroke.Hairline, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(Radius.Pill))
+        // A bordered pill, the same `.pill` shape as the Newest/Oldest sort
+        // chips beside it — plain text, no icon, so the three read as one
+        // row of equal-weight controls rather than one of them standing out
+        // as a button.
+        Text(
+            text = "FOLDER",
+            fontFamily = Mono,
+            fontSize = 11.sp,
+            letterSpacing = 0.4.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier
+                .clip(RoundedCornerShape(Radius.Inline))
+                .border(Stroke.Hairline, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(Radius.Inline))
                 .clickable { expanded = true }
                 .padding(horizontal = 13.dp, vertical = 7.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(
-                imageVector = BlogmarkIcons.Folder,
-                contentDescription = null,
-                modifier = Modifier.size(14.dp),
-                tint = MaterialTheme.colorScheme.primary,
-            )
-            Spacer(Modifier.width(6.dp))
-            Text(
-                text = "Change folder",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.primary,
-            )
-        }
+        )
         return
     }
 
@@ -175,12 +162,10 @@ actual fun ReaderSourcePicker(repository: ReadRepository, compact: Boolean) {
                 color = MaterialTheme.colorScheme.error,
             )
         }
-        OutlinedTextField(
+        AppTextField(
             value = path,
             onValueChange = { path = it },
-            placeholder = { Text("/path/to/readback-audio-db") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
+            placeholder = "/path/to/readback-audio-db",
         )
         Button(
             onClick = {

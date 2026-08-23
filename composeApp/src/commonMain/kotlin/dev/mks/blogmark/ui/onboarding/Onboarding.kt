@@ -26,9 +26,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -45,6 +43,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import dev.mks.blogmark.reader.ReaderSourcePicker
 import dev.mks.blogmark.reader.rememberReadRepository
+import dev.mks.blogmark.ui.common.AppTextField
 import dev.mks.blogmark.ui.theme.Motion
 import dev.mks.blogmark.ui.theme.Radius
 import dev.mks.blogmark.ui.theme.SectionLabel
@@ -258,13 +257,11 @@ private fun NamePanel(
             modifier = Modifier.widthIn(max = 400.dp),
         )
         Spacer(Modifier.height(26.dp))
-        OutlinedTextField(
+        AppTextField(
             value = name,
             onValueChange = { if (it.length <= 24) onNameChange(it) },
-            singleLine = true,
-            placeholder = { Text("Your name", color = MaterialTheme.colorScheme.onSurfaceVariant) },
-            textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.Center),
-            shape = RoundedCornerShape(Radius.Panel),
+            placeholder = "Your name",
+            textAlign = TextAlign.Center,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = { onSubmit() }),
             modifier = Modifier.fillMaxWidth().widthIn(max = 320.dp),

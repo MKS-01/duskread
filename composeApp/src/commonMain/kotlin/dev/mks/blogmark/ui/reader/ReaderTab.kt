@@ -1,7 +1,6 @@
 package dev.mks.blogmark.ui.reader
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -18,7 +17,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -36,13 +34,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dev.mks.blogmark.links.hostOf
 import dev.mks.blogmark.reader.AudioPlayer
 import dev.mks.blogmark.reader.PlaybackState
 import dev.mks.blogmark.reader.ReadItem
@@ -51,20 +47,20 @@ import dev.mks.blogmark.reader.ReadSort
 import dev.mks.blogmark.reader.ReaderSource
 import dev.mks.blogmark.reader.ReaderSourcePicker
 import dev.mks.blogmark.ui.common.EmptyState
-import dev.mks.blogmark.ui.rememberUrlOpener
+import dev.mks.blogmark.ui.common.MonogramBadge
+import dev.mks.blogmark.ui.common.WaveformMeter
 import dev.mks.blogmark.ui.theme.BlogmarkIcons
 import dev.mks.blogmark.ui.theme.Mono
 import dev.mks.blogmark.ui.theme.Radius
-import dev.mks.blogmark.ui.theme.Stroke
 import kotlinx.coroutines.launch
 
 /**
  * Past reads from readback (github.com/MKS-01/readback) — a personal
  * text-to-speech reader whose library this app only ever reads, never
- * writes. Mirrors the shape of readback's own dashboard (search, sort,
- * card-per-read, tap to expand a player) translated into this app's own
- * Material design system rather than readback's CSS tokens — two design
- * systems in one screen would be the mistake, not the fix.
+ * writes. This is the signature screen of the Amplitude direction: two facts
+ * per row instead of five, and the third fact — how long this actually is —
+ * is drawn as a waveform rather than written out. Rows sit flush on the
+ * background with a hairline underneath each one; nothing here is boxed.
  */
 @Composable
 fun ReaderTab(
@@ -107,7 +103,6 @@ fun ReaderTab(
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = contentPadding,
-            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             // No now-playing bar in the list any more — the transport is a face of
             // the floating nav bar in HomeScreen, where it survives both scrolling
@@ -115,12 +110,8 @@ fun ReaderTab(
 
             if (source == ReaderSource.NOT_CONFIGURED) {
                 item("picker") {
-                    // Fills the rest of the viewport below the header so the empty
-                    // state centres in the space actually available, rather than
-                    // sitting pinned under the header the way a plain list item would.
-                    Box(Modifier.fillMaxWidth().fillParentMaxHeight(0.85f), contentAlignment = Alignment.Center) {
+                    Box(Modifier.fillMaxWidth().fillParentMaxHeight(0.85f), contentAlignment = Alignment.BottomStart) {
                         EmptyState(
-                            icon = BlogmarkIcons.FolderConnect,
                             title = "Connect your library",
                             message = "Choose the readback-audio-db folder synced onto this device — the main " +
                                 "folder itself, not one of the folders inside it.",
@@ -137,7 +128,7 @@ fun ReaderTab(
                     Modifier
                         .fillMaxWidth()
                         .horizontalScroll(rememberScrollState())
-                        .padding(bottom = 4.dp),
+                        .padding(bottom = 20.dp),
                     horizontalArrangement = Arrangement.spacedBy(7.dp),
                     // The icon chip from ReaderSourcePicker is taller than the
                     // plain-text sort chips beside it — without this they default
@@ -159,13 +150,8 @@ fun ReaderTab(
                 }
             } else if (loaded.isEmpty()) {
                 item("empty") {
-                    // Fills the rest of the viewport below the header and sort
-                    // controls so the empty state centres in the space actually
-                    // left over, rather than sitting pinned under those controls
-                    // the way a plain list item would.
-                    Box(Modifier.fillMaxWidth().fillParentMaxHeight(0.75f), contentAlignment = Alignment.Center) {
+                    Box(Modifier.fillMaxWidth().fillParentMaxHeight(0.75f), contentAlignment = Alignment.BottomStart) {
                         EmptyState(
-                            icon = BlogmarkIcons.Waveform,
                             title = "Nothing here yet",
                             message = "Generate a read with the readback CLI, sync it onto this device, " +
                                 "and it will show up here.",
@@ -173,11 +159,12 @@ fun ReaderTab(
                     }
                 }
             } else {
-                loaded.forEach { read ->
+                loaded.forEachIndexed { index, read ->
                     item(read.id) {
-                        ReadCard(
+                        ReadRow(
                             item = read,
                             playback = if (playback.item?.id == read.id) playback else null,
+                            last = index == loaded.lastIndex,
                             onTap = {
                                 if (playback.item?.id == read.id) player.togglePlayPause() else player.play(read)
                             },
@@ -189,136 +176,108 @@ fun ReaderTab(
     }
 }
 
+/** A small bordered pill — `.pill` in the mockup, not a filled chip. */
 @Composable
 private fun SortChip(label: String, active: Boolean, onClick: () -> Unit) {
     Text(
-        text = label,
-        fontSize = 12.5.sp,
-        fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal,
-        color = if (active) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+        text = label.uppercase(),
+        fontFamily = Mono,
+        fontSize = 11.sp,
+        letterSpacing = 0.4.sp,
+        color = if (active) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier
-            .clip(CircleShape)
-            .background(if (active) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainer)
+            .clip(RoundedCornerShape(Radius.Inline))
+            .background(if (active) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.surfaceContainer)
             .clickable(onClick = onClick)
             .padding(horizontal = 13.dp, vertical = 7.dp),
     )
 }
 
+/**
+ * One read: a monogram, a title, two facts (duration, word count) and a
+ * waveform — real data, not a decoration, since its filled fraction is the
+ * clip's actual playback position. The playing row is the only coloured
+ * thing here: title and duration switch to the accent, and its waveform
+ * fills in from the left as the clip runs.
+ */
 @Composable
-private fun ReadCard(
+private fun ReadRow(
     item: ReadItem,
     playback: PlaybackState?,
+    last: Boolean,
     onTap: () -> Unit,
 ) {
-    val open = rememberUrlOpener()
+    val scheme = MaterialTheme.colorScheme
+    val playing = playback != null
 
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(Radius.Card))
-            .background(MaterialTheme.colorScheme.surface)
-            .border(Stroke.Hairline, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(Radius.Card))
-            .clickable(onClick = onTap)
-            .padding(14.dp),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                imageVector = if (playback?.playing == true) BlogmarkIcons.Pause else BlogmarkIcons.Play,
-                contentDescription = null,
-                modifier = Modifier.size(15.dp),
-                tint = MaterialTheme.colorScheme.primary,
-            )
-            Spacer(Modifier.width(9.dp))
-            Text(
-                text = item.title,
-                style = MaterialTheme.typography.titleSmall,
-                fontSize = 14.5.sp,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.weight(1f),
-            )
-        }
-
-        Spacer(Modifier.height(6.dp))
-        Text(
-            text = "${item.createdAt.take(10)} · ${formatDuration(item.durationSec)} · ${item.mode} · ${item.voice} · ${item.wordCount} words",
-            fontFamily = Mono,
-            fontSize = 11.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-
-        Spacer(Modifier.height(8.dp))
-        val text = item.summary ?: item.excerpt
-        // The card for the active item expands to the full text — safe now
-        // that the slider lives in the pinned bar above instead of inline
-        // here. It was *that* Row appearing and disappearing that jumped
-        // the list around before, not the text growing on its own.
-        if (playback != null && playback.durationSec > 0f) {
-            // No per-word timestamps exist (readback's own dashboard fakes
-            // this the same way) — the "read" fraction is elapsed ÷ total,
-            // walked across the text weighted by character length rather
-            // than word count, so long words take proportionally longer.
-            Text(
-                text = highlightedText(
-                    text = text,
-                    fraction = (playback.positionSec / playback.durationSec).coerceIn(0f, 1f),
-                    readColor = MaterialTheme.colorScheme.onSurface,
-                    unreadColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                ),
-                style = MaterialTheme.typography.bodyMedium,
-                fontSize = 13.sp,
-                lineHeight = 19.sp,
-            )
-        } else {
-            Text(
-                text = text,
-                style = MaterialTheme.typography.bodyMedium,
-                fontSize = 13.sp,
-                lineHeight = 19.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis,
+    Column(Modifier.fillMaxWidth()) {
+        Column(Modifier.fillMaxWidth().clickable(onClick = onTap)) {
+            Row(verticalAlignment = Alignment.Top) {
+                MonogramBadge(
+                    host = hostOf(item.sourceUrl),
+                    size = 22.dp,
+                    background = scheme.surfaceContainer,
+                    contentColor = if (playing) scheme.primary else scheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.width(10.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        text = item.title,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontSize = 14.sp,
+                        lineHeight = 19.sp,
+                        fontWeight = FontWeight.Normal,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        color = if (playing) scheme.primary else scheme.onSurface,
+                    )
+                    Spacer(Modifier.height(5.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text(
+                            text = if (playback != null && playback.durationSec > 0f) {
+                                "${formatDuration(playback.positionSec.toDouble())} / ${formatDuration(playback.durationSec.toDouble())}"
+                            } else {
+                                formatDuration(item.durationSec)
+                            },
+                            fontFamily = Mono,
+                            fontSize = 10.5.sp,
+                            color = if (playing) scheme.primary else scheme.onSurfaceVariant,
+                        )
+                        Text(
+                            text = "${item.wordCount}w",
+                            fontFamily = Mono,
+                            fontSize = 10.5.sp,
+                            color = scheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                if (playing) {
+                    Spacer(Modifier.width(8.dp))
+                    Icon(
+                        imageVector = if (playback?.playing == true) BlogmarkIcons.Pause else BlogmarkIcons.Play,
+                        contentDescription = null,
+                        modifier = Modifier.size(15.dp).padding(top = 2.dp),
+                        tint = scheme.primary,
+                    )
+                }
+            }
+            Spacer(Modifier.height(9.dp))
+            WaveformMeter(
+                progress = if (playback != null && playback.durationSec > 0f) {
+                    (playback.positionSec / playback.durationSec).coerceIn(0f, 1f)
+                } else {
+                    0f
+                },
+                modifier = Modifier.fillMaxWidth().height(15.dp),
+                barCount = 26,
+                dimColor = scheme.outlineVariant,
             )
         }
-
-        Spacer(Modifier.height(9.dp))
-        Row(
-            Modifier.clickable { open(item.sourceUrl) },
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = "Read original",
-                fontSize = 11.5.sp,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.primary,
-            )
-            Spacer(Modifier.width(4.dp))
-            Icon(
-                imageVector = BlogmarkIcons.External,
-                contentDescription = null,
-                modifier = Modifier.size(12.dp),
-                tint = MaterialTheme.colorScheme.primary,
-            )
+        Spacer(Modifier.height(15.dp))
+        if (!last) {
+            Box(Modifier.fillMaxWidth().height(1.dp).background(scheme.outlineVariant))
+            Spacer(Modifier.height(15.dp))
         }
-    }
-}
-
-private fun highlightedText(
-    text: String,
-    fraction: Float,
-    readColor: androidx.compose.ui.graphics.Color,
-    unreadColor: androidx.compose.ui.graphics.Color,
-) = buildAnnotatedString {
-    val words = text.split(" ")
-    val totalChars = words.sumOf { it.length + 1 }.coerceAtLeast(1)
-    val readChars = (totalChars * fraction).toInt()
-
-    var consumed = 0
-    words.forEachIndexed { index, word ->
-        withStyle(SpanStyle(color = if (consumed < readChars) readColor else unreadColor)) {
-            append(word)
-        }
-        if (index != words.lastIndex) append(" ")
-        consumed += word.length + 1
     }
 }
 

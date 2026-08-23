@@ -1,8 +1,6 @@
 package dev.mks.blogmark.ui.settings
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,18 +10,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -36,7 +30,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
@@ -48,10 +41,9 @@ import dev.mks.blogmark.links.LinkLibrary
 import dev.mks.blogmark.links.exportLinks
 import dev.mks.blogmark.links.rememberExportSink
 import dev.mks.blogmark.ui.PlatformBackHandler
+import dev.mks.blogmark.ui.common.AppTextField
+import dev.mks.blogmark.ui.common.EyebrowHeader
 import dev.mks.blogmark.ui.theme.BlogmarkIcons
-import dev.mks.blogmark.ui.theme.Mono
-import dev.mks.blogmark.ui.theme.Radius
-import dev.mks.blogmark.ui.theme.SectionLabel
 import kotlinx.coroutines.delay
 
 /**
@@ -62,6 +54,10 @@ import kotlinx.coroutines.delay
  * library is readback's own backup and a followed feed is trivially re-added
  * by URL. If more settles here later, this is where it goes, not a second
  * button bar bolted onto some other tab.
+ *
+ * Flat, same as every other screen in the Amplitude direction: an eyebrow
+ * with its inline rule opens each section, and nothing here sits in a boxed
+ * card — this used to be the one screen still built that way.
  */
 @Composable
 fun SettingsScreen(library: LinkLibrary, prefs: UserPrefs, onClose: () -> Unit, modifier: Modifier = Modifier) {
@@ -101,22 +97,14 @@ fun SettingsScreen(library: LinkLibrary, prefs: UserPrefs, onClose: () -> Unit, 
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 16.dp, vertical = 8.dp),
             ) {
-                Text(
-                    text = "PROFILE",
-                    style = SectionLabel,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(start = 4.dp, bottom = 8.dp),
-                )
+                EyebrowHeader(text = "PROFILE")
+                Spacer(Modifier.height(14.dp))
                 NameField(prefs)
 
-                Spacer(Modifier.height(20.dp))
+                Spacer(Modifier.height(28.dp))
 
-                Text(
-                    text = "SAVED LINKS",
-                    style = SectionLabel,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(start = 4.dp, bottom = 8.dp),
-                )
+                EyebrowHeader(text = "SAVED LINKS")
+                Spacer(Modifier.height(14.dp))
                 DataTransfer(library)
             }
         }
@@ -133,62 +121,32 @@ private fun NameField(prefs: UserPrefs) {
     var name by remember(prefs.name) { mutableStateOf(prefs.name.orEmpty()) }
     val dirty = name.trim() != prefs.name.orEmpty()
 
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(Radius.Card))
-            .background(MaterialTheme.colorScheme.surface)
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(Radius.Card))
-            .padding(16.dp),
-    ) {
+    Column(Modifier.fillMaxWidth()) {
         Text(
             text = "What the dashboard greeting calls you.",
             fontSize = 12.5.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.height(10.dp))
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)
-                .padding(start = 16.dp, end = 6.dp, top = 10.dp, bottom = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box(Modifier.weight(1f)) {
-                if (name.isEmpty()) {
+        AppTextField(
+            value = name,
+            onValueChange = { name = it },
+            placeholder = "Your name",
+            fontSize = 14.5.sp,
+            trailing = {
+                AnimatedVisibility(dirty) {
                     Text(
-                        text = "Your name",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 14.5.sp,
+                        text = "Save",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .clickable { prefs.updateName(name) }
+                            .padding(start = 10.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
                     )
                 }
-                BasicTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    textStyle = LocalTextStyle.current.copy(
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontSize = 14.5.sp,
-                    ),
-                    cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                )
-            }
-
-            AnimatedVisibility(dirty) {
-                Text(
-                    text = "Save",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier
-                        .clip(CircleShape)
-                        .clickable { prefs.updateName(name) }
-                        .padding(horizontal = 12.dp, vertical = 6.dp),
-                )
-            }
-        }
+            },
+        )
     }
 }
 
@@ -241,14 +199,7 @@ private fun DataTransfer(library: LinkLibrary) {
         exporting = false
     }
 
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(Radius.Card))
-            .background(MaterialTheme.colorScheme.surface)
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(Radius.Card))
-            .padding(16.dp),
-    ) {
+    Column(Modifier.fillMaxWidth()) {
         Text(
             text = "${library.links.size} link${if (library.links.size == 1) "" else "s"} saved.",
             fontSize = 13.sp,
@@ -297,7 +248,7 @@ private fun DataTransfer(library: LinkLibrary) {
                 text = it,
                 fontSize = 11.5.sp,
                 color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(start = 4.dp, top = 8.dp),
+                modifier = Modifier.padding(top = 8.dp),
             )
         }
     }
@@ -319,14 +270,7 @@ private fun ExportDestinations(
     onSaveFile: () -> Unit,
     onSend: () -> Unit,
 ) {
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .padding(top = 8.dp)
-            .clip(RoundedCornerShape(Radius.Inline))
-            .background(MaterialTheme.colorScheme.surfaceContainer)
-            .padding(vertical = 4.dp),
-    ) {
+    Column(Modifier.fillMaxWidth().padding(top = 10.dp)) {
         DestinationRow(
             title = "Copy to clipboard",
             detail = "Paste it anywhere — notes, mail, a document.",
@@ -355,7 +299,7 @@ private fun DestinationRow(title: String, detail: String, onClick: () -> Unit) {
         Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 10.dp),
+            .padding(vertical = 8.dp),
     ) {
         Text(
             text = title,
@@ -376,7 +320,7 @@ private fun DestinationRow(title: String, detail: String, onClick: () -> Unit) {
 private fun TransferAction(label: String, onClick: () -> Unit) {
     Text(
         text = label,
-        style = SectionLabel,
+        style = MaterialTheme.typography.labelMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier
             .clip(CircleShape)
@@ -401,48 +345,20 @@ private fun ImportPanel(
     onPasteClipboard: () -> Unit,
     onImport: () -> Unit,
 ) {
-    Column(Modifier.padding(top = 8.dp)) {
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(Radius.Inline))
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(Radius.Inline))
-                .padding(horizontal = 14.dp, vertical = 12.dp),
-        ) {
-            if (text.isEmpty()) {
-                Text(
-                    text = "Paste an export, a bookmarks list, or any text with links in it. " +
-                        "Anything already saved is skipped.",
-                    fontSize = 12.5.sp,
-                    lineHeight = 17.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            BasicTextField(
-                value = text,
-                onValueChange = onTextChange,
-                // The field, not the box around it, carries the height: a tap
-                // anywhere in that empty rectangle has to land on the field,
-                // and a one-line-tall field inside a tall box means most of
-                // the box does nothing when tapped.
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 84.dp),
-                textStyle = LocalTextStyle.current.copy(
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontFamily = Mono,
-                    fontSize = 11.5.sp,
-                    lineHeight = 17.sp,
-                ),
-                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-            )
-        }
+    Column(Modifier.padding(top = 10.dp)) {
+        AppTextField(
+            value = text,
+            onValueChange = onTextChange,
+            placeholder = "Paste an export, a bookmarks list, or any text with links in it. " +
+                "Anything already saved is skipped.",
+            singleLine = false,
+            minHeight = 84.dp,
+            mono = true,
+            fontSize = 11.5.sp,
+        )
 
         Row(
-            Modifier
-                .fillMaxWidth()
-                .padding(top = 6.dp),
+            Modifier.fillMaxWidth().padding(top = 8.dp),
             horizontalArrangement = Arrangement.End,
             verticalAlignment = Alignment.CenterVertically,
         ) {

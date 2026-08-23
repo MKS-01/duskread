@@ -12,14 +12,10 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,10 +28,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.documentfile.provider.DocumentFile
 import dev.mks.blogmark.data.KeyValueStore
 import dev.mks.blogmark.data.rememberKeyValueStore
-import dev.mks.blogmark.ui.theme.BlogmarkIcons
+import dev.mks.blogmark.ui.theme.Mono
 import dev.mks.blogmark.ui.theme.Radius
 import dev.mks.blogmark.ui.theme.Stroke
 import kotlinx.coroutines.Dispatchers
@@ -183,31 +180,22 @@ actual fun ReaderSourcePicker(repository: ReadRepository, compact: Boolean) {
 
     if (compact) {
         Column {
-            // A folder icon plus a pill background, rather than plain text —
-            // this sits next to the Newest/Oldest sort chips and needs to
-            // read as its own tappable action, not a stray hyperlink.
-            Row(
-                Modifier
-                    .clip(RoundedCornerShape(Radius.Pill))
-                    .background(MaterialTheme.colorScheme.surfaceContainer)
-                    .border(Stroke.Hairline, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(Radius.Pill))
+            // A bordered pill, the same `.pill` shape as the Newest/Oldest
+            // sort chips beside it — plain text, no icon, so the three read
+            // as one row of equal-weight controls rather than one of them
+            // standing out as a button.
+            Text(
+                text = "FOLDER",
+                fontFamily = Mono,
+                fontSize = 11.sp,
+                letterSpacing = 0.4.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(Radius.Inline))
+                    .border(Stroke.Hairline, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(Radius.Inline))
                     .clickable { pickFolder.launch(null) }
                     .padding(horizontal = 13.dp, vertical = 7.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(
-                    imageVector = BlogmarkIcons.Folder,
-                    contentDescription = null,
-                    modifier = Modifier.size(14.dp),
-                    tint = MaterialTheme.colorScheme.primary,
-                )
-                Spacer(Modifier.width(6.dp))
-                Text(
-                    text = "Change folder",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-            }
+            )
             error?.let { message ->
                 Text(
                     text = message,

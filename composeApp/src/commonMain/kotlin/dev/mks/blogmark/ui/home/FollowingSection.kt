@@ -20,11 +20,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -37,7 +35,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -51,6 +49,7 @@ import dev.mks.blogmark.links.discoverFeedUrl
 import dev.mks.blogmark.links.looksLikeUrl
 import dev.mks.blogmark.links.normaliseUrl
 import dev.mks.blogmark.links.syncFeeds
+import dev.mks.blogmark.ui.common.AppTextField
 import dev.mks.blogmark.ui.common.CompactEmptyState
 import dev.mks.blogmark.ui.common.EyebrowHeader
 import dev.mks.blogmark.ui.common.MonogramBadge
@@ -66,19 +65,20 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
- * The blogs followed for [syncFeeds] to pull from, shown as one horizontally
- * scrollable row per feed — a thread of what that blog last published, the
- * way an Instagram or Threads feed groups posts by who made them.
+ * The blogs followed for [syncFeeds] to pull from: a digest, not a carousel —
+ * one line per feed, "host — N new", rather than a nested strip of clipped
+ * cards competing with the rest of Home for weight. Tapping a line is what
+ * expands it into the actual posts, so the browsing feature underneath
+ * (save a post straight from its feed without ever visiting Saved) survives
+ * without costing the digest its quiet, three-lines-and-done shape.
  *
  * Nothing here is a saved link on its own. What [FeedPostCache] holds is a
  * cache of the last successful sync, replaced only when Sync runs again —
- * tapping a card's bookmark is the one thing that copies a post into
- * [LinkLibrary], where the Saved tab and the rest of the app can see it. That
- * split is deliberate: browsing what a followed blog posted should cost
- * nothing, and only the posts worth keeping should go in the reading list.
+ * tapping a post's bookmark is the one thing that copies it into
+ * [LinkLibrary], where the Saved tab and the rest of the app can see it.
  */
 @Composable
-fun FollowingSection(
+fun FollowingDigest(
     feedLibrary: FeedLibrary,
     postCache: FeedPostCache,
     linkLibrary: LinkLibrary,
@@ -91,6 +91,7 @@ fun FollowingSection(
     var discovering by remember { mutableStateOf(false) }
     var syncing by remember { mutableStateOf(false) }
     var note by remember { mutableStateOf<String?>(null) }
+    var expanded by remember { mutableStateOf<String?>(null) }
 
     // Following a blog by its homepage rather than its exact feed address is
     // the common case — this is what turns "swmansion.com/blog/" into the
@@ -130,14 +131,7 @@ fun FollowingSection(
 
     val topics = feedLibrary.feeds.filter { postCache.postsByFeed[it.id].orEmpty().isNotEmpty() }
 
-    Column(
-        modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(Radius.Card))
-            .background(MaterialTheme.colorScheme.surface)
-            .border(Stroke.Hairline, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(Radius.Card))
-            .padding(16.dp),
-    ) {
+    Column(modifier.fillMaxWidth()) {
         EyebrowHeader(
             text = "FOLLOWING",
             trailing = {
@@ -149,6 +143,7 @@ fun FollowingSection(
                 }
             },
         )
+        Spacer(Modifier.height(12.dp))
 
         AnimatedVisibility(managing) {
             FeedManagePanel(
@@ -169,29 +164,33 @@ fun FollowingSection(
                 text = it,
                 fontSize = 11.5.sp,
                 color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(start = 2.dp, top = 6.dp),
+                modifier = Modifier.padding(bottom = 8.dp),
             )
         }
 
         if (topics.isEmpty() && !managing) {
             CompactEmptyState(
-                icon = BlogmarkIcons.Feed,
                 title = if (feedLibrary.feeds.isEmpty()) "Follow a blog" else "Nothing synced yet",
                 message = if (feedLibrary.feeds.isEmpty()) {
                     "Follow a blog's RSS or Atom feed to see its posts here."
                 } else {
                     "Tap Sync now to pull in its latest posts."
                 },
-                modifier = Modifier.padding(top = 10.dp),
             )
         }
 
-        topics.forEach { feed ->
-            TopicRow(
+        topics.forEachIndexed { index, feed ->
+            val posts = postCache.postsByFeed[feed.id].orEmpty()
+            DigestLine(
                 feed = feed,
-                posts = postCache.postsByFeed[feed.id].orEmpty(),
-                linkLibrary = linkLibrary,
+                newCount = posts.count { !linkLibrary.isSaved(it.url) },
+                open = expanded == feed.id,
+                onToggle = { expanded = if (expanded == feed.id) null else feed.id },
             )
+            AnimatedVisibility(expanded == feed.id) {
+                TopicCarousel(posts = posts, host = feed.host, linkLibrary = linkLibrary)
+            }
+            if (index != topics.lastIndex) Spacer(Modifier.height(7.dp))
         }
     }
 }
@@ -210,37 +209,61 @@ private fun FollowingAction(label: String, onClick: () -> Unit) {
 }
 
 /**
- * One followed blog's thread: an icon and label for the topic, its posts as a
- * horizontally scrollable row of cards — several at once, the way an
- * Instagram or Threads profile shows a strip of what someone posted rather
- * than one at a time — and a scrubber standing in for where the row is.
+ * One line of the digest: "host — N new", the count in the accent when
+ * there's something unsaved and a plain dash otherwise. Tapping it expands
+ * the carousel below in place, rather than navigating anywhere — a digest
+ * line is a summary of a thread, not a link to a different screen.
  */
 @Composable
-private fun TopicRow(feed: Feed, posts: List<FeedPost>, linkLibrary: LinkLibrary) {
+private fun DigestLine(feed: Feed, newCount: Int, open: Boolean, onToggle: () -> Unit) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onToggle)
+            .padding(vertical = 5.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = feed.host,
+            fontFamily = Mono,
+            fontSize = 12.sp,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            text = if (newCount > 0) "$newCount new" else "—",
+            fontFamily = Mono,
+            fontSize = 11.sp,
+            fontWeight = if (newCount > 0) FontWeight.SemiBold else FontWeight.Normal,
+            color = if (newCount > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.width(6.dp))
+        Icon(
+            imageVector = BlogmarkIcons.Chevron,
+            contentDescription = if (open) "Collapse" else "Expand",
+            modifier = Modifier.size(11.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+/**
+ * The posts behind one digest line, revealed on tap: several at once, the
+ * way an Instagram or Threads profile shows a strip of what someone posted
+ * rather than one at a time, plus a scrubber standing in for where the row
+ * is. This is the one piece of the old carousel kept, so saving a post
+ * straight from its feed is still possible without leaving Home.
+ */
+@Composable
+private fun TopicCarousel(posts: List<FeedPost>, host: String, linkLibrary: LinkLibrary) {
     val listState = rememberLazyListState()
 
-    Column(Modifier.padding(top = 14.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 8.dp)) {
-            MonogramBadge(
-                host = feed.host,
-                size = 24.dp,
-                background = MaterialTheme.colorScheme.surfaceContainer,
-                contentColor = MaterialTheme.colorScheme.primary,
-            )
-            Spacer(Modifier.width(8.dp))
-            Text(
-                text = feed.host,
-                style = MaterialTheme.typography.titleSmall,
-                fontSize = 13.sp,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-        }
-
+    Column(Modifier.padding(top = 8.dp, bottom = 4.dp)) {
         LazyRow(state = listState, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             items(posts, key = { it.url }) { post ->
                 PostCard(
                     post = post,
-                    host = feed.host,
+                    host = host,
                     saved = linkLibrary.isSaved(post.url),
                     onToggleSave = {
                         val wasSaved = linkLibrary.isSaved(post.url)
@@ -321,11 +344,11 @@ private fun PostCard(post: FeedPost, host: String, saved: Boolean, onToggleSave:
 }
 
 /**
- * A page dot per post, centred under the row — not the continuous
- * thumb-in-track bar this used to be. That read as a progress bar for
- * something loading, which nothing here is; a handful of posts is closer to
- * a paged carousel than a scrollbar, and a dot per item says "which one am I
- * on" without borrowing a loading indicator's shape to say it.
+ * A page dot per post, centred under the row — not a continuous
+ * thumb-in-track bar, which would read as a progress bar for something
+ * loading. A handful of posts is closer to a paged carousel than a
+ * scrollbar, and a dot per item says "which one am I on" without borrowing a
+ * loading indicator's shape to say it.
  *
  * Pinned to one small total width rather than one fixed dot size: a feed can
  * carry up to 15 posts (see `EntriesPerFeed`), and 15 full-size dots would
@@ -364,52 +387,29 @@ private fun FeedManagePanel(
     onAdd: () -> Unit,
     onRemove: (String) -> Unit,
 ) {
-    Column(Modifier.padding(top = 8.dp)) {
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)
-                .padding(start = 16.dp, end = 6.dp, top = 10.dp, bottom = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box(Modifier.weight(1f)) {
-                if (url.isEmpty()) {
+    Column(Modifier.padding(bottom = 8.dp)) {
+        AppTextField(
+            value = url,
+            onValueChange = onUrlChange,
+            placeholder = "Blog's address or its RSS/Atom feed",
+            enabled = !discovering,
+            fontSize = 14.5.sp,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(onDone = { onAdd() }),
+            trailing = {
+                AnimatedVisibility(url.isNotBlank() || discovering) {
                     Text(
-                        text = "Blog's address or its RSS/Atom feed",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 14.5.sp,
+                        text = if (discovering) "Finding…" else "Follow",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .clickable(enabled = !discovering, onClick = onAdd)
+                            .padding(start = 10.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
                     )
                 }
-                BasicTextField(
-                    value = url,
-                    onValueChange = onUrlChange,
-                    enabled = !discovering,
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    textStyle = LocalTextStyle.current.copy(
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontSize = 14.5.sp,
-                    ),
-                    cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                    keyboardActions = KeyboardActions(onDone = { onAdd() }),
-                )
-            }
-
-            AnimatedVisibility(url.isNotBlank() || discovering) {
-                Text(
-                    text = if (discovering) "Finding…" else "Follow",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier
-                        .clip(CircleShape)
-                        .clickable(enabled = !discovering, onClick = onAdd)
-                        .padding(horizontal = 12.dp, vertical = 6.dp),
-                )
-            }
-        }
+            },
+        )
 
         if (feeds.isEmpty()) {
             Text(

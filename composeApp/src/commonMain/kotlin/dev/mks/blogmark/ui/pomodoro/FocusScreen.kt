@@ -35,11 +35,12 @@ import dev.mks.blogmark.pomodoro.PomodoroState
 import dev.mks.blogmark.pomodoro.clockLabel
 import dev.mks.blogmark.pomodoro.rememberPomodoroController
 import dev.mks.blogmark.ui.PlatformBackHandler
+import dev.mks.blogmark.ui.common.EyebrowHeader
 import dev.mks.blogmark.ui.common.WaveformMeter
 import dev.mks.blogmark.ui.theme.BlogmarkIcons
 import dev.mks.blogmark.ui.theme.CodeStyle
+import dev.mks.blogmark.ui.theme.Mono
 import dev.mks.blogmark.ui.theme.Radius
-import dev.mks.blogmark.ui.theme.SectionLabel
 import dev.mks.blogmark.ui.theme.Stroke
 
 /**
@@ -88,10 +89,9 @@ fun FocusScreen(onClose: () -> Unit, modifier: Modifier = Modifier) {
                     .fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Text(
-                    text = if (state.idle) "Focus" else "Focus · ${state.totalSeconds / 60} min",
-                    style = SectionLabel,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                EyebrowHeader(
+                    text = if (state.idle) "FOCUS" else "FOCUS · ${state.totalSeconds / 60} MIN",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
 
                 Spacer(Modifier.height(10.dp))
@@ -146,21 +146,25 @@ private val PomodoroState.elapsedFraction: Float
         (1f - remainingSeconds.toFloat() / totalSeconds.toFloat()).coerceIn(0f, 1f)
     }
 
+/**
+ * A bordered pill, never filled — the same `.pill`/`.pill.sel` shape as the
+ * sort chips on Readback and the length picker above this one. The "active"
+ * option (Pause while running, one of the length choices once tapped) gets
+ * the brighter border and text; nothing here is a filled button.
+ */
 @Composable
 private fun FocusOption(text: String, onClick: () -> Unit, primary: Boolean = false) {
+    val tone = if (primary) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
     Text(
-        text = text,
-        style = MaterialTheme.typography.labelLarge,
-        color = if (primary) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary,
+        text = text.uppercase(),
+        fontFamily = Mono,
+        fontSize = 11.sp,
+        letterSpacing = 0.6.sp,
+        color = tone,
         modifier = Modifier
-            .clip(RoundedCornerShape(Radius.Pill))
-            .background(if (primary) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHigh)
-            .border(
-                Stroke.Hairline,
-                if (primary) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
-                RoundedCornerShape(Radius.Pill),
-            )
+            .clip(RoundedCornerShape(Radius.Inline))
+            .border(Stroke.Hairline, tone, RoundedCornerShape(Radius.Inline))
             .clickable(onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 12.dp),
+            .padding(horizontal = 16.dp, vertical = 10.dp),
     )
 }
