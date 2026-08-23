@@ -8,10 +8,14 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -19,6 +23,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -26,6 +31,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
@@ -130,6 +136,13 @@ fun HomeScreen(
     // this one flag up alongside it.
     var showSettings by remember { mutableStateOf(false) }
 
+    // Read as a boolean through `derivedStateOf` so the bar's visibility
+    // recomposes once when the keyboard opens or closes, not on every frame
+    // of the inset animation that carries it there.
+    val density = LocalDensity.current
+    val imeInsets = WindowInsets.ime
+    val imeVisible by remember(density) { derivedStateOf { imeInsets.getBottom(density) > 0 } }
+
     Box(modifier.fillMaxSize()) {
         AnimatedContent(
             targetState = tab,
@@ -143,7 +156,13 @@ fun HomeScreen(
                 .fillMaxSize()
                 .nestedScroll(collapse)
                 .hazeSource(hazeState)
-                .statusBarsPadding(),
+                .statusBarsPadding()
+                // Without this the keyboard draws over the tab rather than
+                // shrinking it, so a field low in a list — the feed address
+                // on Home is the worst case, it sits in the last section —
+                // opens underneath the thing covering it. Resizing the tab
+                // is what lets the list scroll the focused field into view.
+                .imePadding(),
             label = "tab",
         ) { current ->
             when (current) {
@@ -182,23 +201,36 @@ fun HomeScreen(
         // it. Playback already outlives the Readback tab; keeping the
         // transport here rather than in the tab is what makes the controls
         // outlive it too, instead of sending you to the notification shade.
-        FloatingBar(
-            selected = tab,
-            onSelect = onTabChange,
-            hazeState = hazeState,
-            nowPlaying = playback.item,
-            playback = playback,
-            onTogglePlay = { player.togglePlayPause() },
-            onSeek = { player.seekTo(it) },
-            onStop = { player.stop() },
-            mono = mono,
-            onToggleTheme = onToggleTheme,
-            collapse = collapse,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .navigationBarsPadding()
-                .padding(bottom = 14.dp, start = 16.dp, end = 16.dp),
-        )
+        //
+        // It leaves entirely while the keyboard is up. Riding above the
+        // keyboard was worse than hiding: it eats a bar's height out of an
+        // already halved screen and puts a blurred pill against the
+        // keyboard's own edge, and there is nothing on it worth reaching
+        // mid-sentence — every field here commits with its own inline
+        // action or the IME's Done key.
+        AnimatedVisibility(
+            visible = !imeVisible,
+            enter = slideInVertically(tween(Motion.Chip)) { it } + fadeIn(tween(Motion.Fade)),
+            exit = slideOutVertically(tween(Motion.Chip)) { it } + fadeOut(tween(Motion.Fade)),
+            modifier = Modifier.align(Alignment.BottomCenter),
+        ) {
+            FloatingBar(
+                selected = tab,
+                onSelect = onTabChange,
+                hazeState = hazeState,
+                nowPlaying = playback.item,
+                playback = playback,
+                onTogglePlay = { player.togglePlayPause() },
+                onSeek = { player.seekTo(it) },
+                onStop = { player.stop() },
+                mono = mono,
+                onToggleTheme = onToggleTheme,
+                collapse = collapse,
+                modifier = Modifier
+                    .navigationBarsPadding()
+                    .padding(bottom = 14.dp, start = 16.dp, end = 16.dp),
+            )
+        }
 
         // Top, not bottom: the floating bar already owns the bottom of the
         // screen, and a toast landing there would either sit on top of it or
