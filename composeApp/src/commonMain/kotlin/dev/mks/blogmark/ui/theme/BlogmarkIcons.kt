@@ -36,9 +36,32 @@ private fun icon(name: String, block: androidx.compose.ui.graphics.vector.ImageV
     viewportHeight = 24f,
 ).apply(block).build()
 
-/** Every path in this set draws with this stroke; nothing here is filled. */
+/** The set's default: outline only, no fill. */
 private fun ImageVector.Builder.stroked(pathBuilder: androidx.compose.ui.graphics.vector.PathBuilder.() -> Unit) {
     path(
+        stroke = IconStroke.Colour,
+        strokeLineWidth = IconStroke.Width,
+        strokeLineCap = StrokeCap.Round,
+        strokeLineJoin = StrokeJoin.Round,
+        pathBuilder = pathBuilder,
+    )
+}
+
+/**
+ * The same outline with its interior filled — the *on* half of a pair, never
+ * an icon on its own.
+ *
+ * The set is otherwise entirely unfilled on purpose, so this exists only
+ * where a control has two states that must be told apart at a glance and at
+ * icon size: a tint change alone is a colour difference, and a colour
+ * difference is the one thing the monochrome scheme deliberately does not
+ * have. Filled and hollow survive the palette swap; terracotta and grey do
+ * not. Draws the stroke over the fill so both variants keep the same
+ * silhouette and optical weight.
+ */
+private fun ImageVector.Builder.filled(pathBuilder: androidx.compose.ui.graphics.vector.PathBuilder.() -> Unit) {
+    path(
+        fill = IconStroke.Colour,
         stroke = IconStroke.Colour,
         strokeLineWidth = IconStroke.Width,
         strokeLineCap = StrokeCap.Round,
@@ -284,6 +307,20 @@ object BlogmarkIcons {
     val Bookmark: ImageVector by lazy {
         icon("Bookmark") {
             stroked {
+                moveTo(7f, 19.5f)
+                lineTo(7f, 5.5f)
+                lineTo(17f, 5.5f)
+                lineTo(17f, 19.5f)
+                lineTo(12f, 15f)
+                close()
+            }
+        }
+    }
+
+    /** [Bookmark] with the flag inked in: the saved half of the save control. */
+    val BookmarkFilled: ImageVector by lazy {
+        icon("BookmarkFilled") {
+            filled {
                 moveTo(7f, 19.5f)
                 lineTo(7f, 5.5f)
                 lineTo(17f, 5.5f)

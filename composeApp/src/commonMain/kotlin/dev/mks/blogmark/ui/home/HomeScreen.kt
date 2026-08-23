@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 import dev.mks.blogmark.data.UserPrefs
+import dev.mks.blogmark.links.Feed
 import dev.mks.blogmark.links.SharedLinkRequest
 import dev.mks.blogmark.links.createHttpClient
 import dev.mks.blogmark.links.rememberFeedLibrary
@@ -136,6 +137,19 @@ fun HomeScreen(
     // this one flag up alongside it.
     var showSettings by remember { mutableStateOf(false) }
 
+    // The feed whose posts fill [TopicsScreen], or null when nobody has
+    // opened one. Owned here for the same reason as `showSettings`: the
+    // screen needs `feedPosts` and `links`, both of which already live at
+    // this level, and lifting it to `App.kt` would mean threading them up
+    // there and straight back down.
+    var topicsFeed by remember { mutableStateOf<Feed?>(null) }
+
+    // The last feed opened, kept after `topicsFeed` clears. Without it the
+    // screen would empty itself the instant Back is pressed and spend its
+    // whole exit animation as a blank surface sliding away.
+    var lastTopicsFeed by remember { mutableStateOf<Feed?>(null) }
+    LaunchedEffect(topicsFeed) { topicsFeed?.let { lastTopicsFeed = it } }
+
     // Read as a boolean through `derivedStateOf` so the bar's visibility
     // recomposes once when the keyboard opens or closes, not on every frame
     // of the inset animation that carries it there.
@@ -176,6 +190,7 @@ fun HomeScreen(
                     onOpenSaved = { onTabChange(HomeTab.SAVED) },
                     onOpenReadback = { onTabChange(HomeTab.READBACK) },
                     onOpenSettings = { showSettings = true },
+                    onOpenTopics = { topicsFeed = it },
                     contentPadding = listPadding,
                 )
 
@@ -245,6 +260,23 @@ fun HomeScreen(
         // Same overlay shape as Focus mode in `App.kt`: a full-screen
         // destination on top of everything else, reached from a door in the
         // Saved tab rather than a fourth stop on the floating bar.
+        // Same overlay shape again, one level down: opened from the all-posts
+        // row at the foot of an expanded digest line on the dashboard
+        // underneath.
+        AnimatedVisibility(
+            visible = topicsFeed != null,
+            enter = fadeIn(tween(Motion.PushIn)) + slideInVertically(tween(Motion.PushIn)) { it / 8 },
+            exit = fadeOut(tween(Motion.PopFade)),
+        ) {
+            val feed = lastTopicsFeed ?: return@AnimatedVisibility
+            TopicsScreen(
+                feed = feed,
+                posts = feedPosts.postsByFeed[feed.id].orEmpty(),
+                linkLibrary = links,
+                onClose = { topicsFeed = null },
+            )
+        }
+
         AnimatedVisibility(
             visible = showSettings,
             enter = fadeIn(tween(Motion.PushIn)) + slideInVertically(tween(Motion.PushIn)) { it / 8 },

@@ -51,6 +51,7 @@ import dev.mks.blogmark.links.LinkLibrary
 import dev.mks.blogmark.links.discoverFeedUrl
 import dev.mks.blogmark.links.looksLikeUrl
 import dev.mks.blogmark.links.normaliseUrl
+import dev.mks.blogmark.links.savedAgo
 import dev.mks.blogmark.links.syncFeeds
 import dev.mks.blogmark.ui.common.AppTextField
 import dev.mks.blogmark.ui.common.CompactEmptyState
@@ -87,6 +88,7 @@ fun FollowingDigest(
     postCache: FeedPostCache,
     linkLibrary: LinkLibrary,
     client: HttpClient,
+    onOpenTopics: (Feed) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
@@ -192,7 +194,12 @@ fun FollowingDigest(
                 onToggle = { expanded = if (expanded == feed.id) null else feed.id },
             )
             AnimatedVisibility(expanded == feed.id) {
-                TopicCarousel(posts = posts, host = feed.host, linkLibrary = linkLibrary)
+                TopicPreview(
+                    feed = feed,
+                    posts = posts,
+                    linkLibrary = linkLibrary,
+                    onOpenAll = { onOpenTopics(feed) },
+                )
             }
             if (index != topics.lastIndex) Spacer(Modifier.height(7.dp))
         }
@@ -257,134 +264,69 @@ private fun DigestLine(feed: Feed, newCount: Int, open: Boolean, onToggle: () ->
 }
 
 /**
- * The posts behind one digest line, revealed on tap: several at once, the
- * way an Instagram or Threads profile shows a strip of what someone posted
- * rather than one at a time, plus a scrubber standing in for where the row
- * is. This is the one piece of the old carousel kept, so saving a post
- * straight from its feed is still possible without leaving Home.
- */
-@Composable
-private fun TopicCarousel(posts: List<FeedPost>, host: String, linkLibrary: LinkLibrary) {
-    val listState = rememberLazyListState()
-
-    Column(Modifier.padding(top = 8.dp, bottom = 4.dp)) {
-        LazyRow(state = listState, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            items(posts, key = { it.url }) { post ->
-                PostCard(
-                    post = post,
-                    host = host,
-                    saved = linkLibrary.isSaved(post.url),
-                    onToggleSave = {
-                        val wasSaved = linkLibrary.isSaved(post.url)
-                        linkLibrary.toggleSaved(post.url, post.title)
-                        ToastRequest.show(if (wasSaved) "Removed" else "Saved")
-                    },
-                )
-            }
-        }
-
-        if (posts.size > 1) {
-            Spacer(Modifier.height(8.dp))
-            ScrollDots(listState, itemCount = posts.size, modifier = Modifier.align(Alignment.CenterHorizontally))
-        }
-    }
-}
-
-/**
- * One post: a monogram in a corner of colour so the card isn't bare type on
- * a flat surface, the headline, the host it came from, and the bookmark
- * that's the only way it ever reaches the Saved tab. No thumbnail — that
- * would mean an image fetch per post on top of the feed fetch itself, for a
- * badge [MonogramBadge] already gives for free.
- */
-@Composable
-private fun PostCard(post: FeedPost, host: String, saved: Boolean, onToggleSave: () -> Unit) {
-    val open = rememberUrlOpener()
-
-    Column(
-        Modifier
-            .width(200.dp)
-            .height(140.dp)
-            .clip(RoundedCornerShape(Radius.Card))
-            .background(MaterialTheme.colorScheme.surface)
-            .border(Stroke.Hairline, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(Radius.Card))
-            .clickable { open(post.url) }
-            .padding(12.dp),
-    ) {
-        Row(verticalAlignment = Alignment.Top) {
-            MonogramBadge(host = host, size = 28.dp)
-            Spacer(Modifier.weight(1f))
-            // Tinted rather than swapped for a filled glyph, the same way a
-            // saved link's "mark read" button changes colour instead of
-            // shape — one hand-drawn bookmark, two states.
-            Icon(
-                imageVector = BlogmarkIcons.Bookmark,
-                contentDescription = if (saved) "Saved — tap to unsave" else "Save",
-                modifier = Modifier
-                    .size(24.dp)
-                    .clip(CircleShape)
-                    .clickable(onClick = onToggleSave)
-                    .padding(4.dp),
-                tint = if (saved) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-
-        Spacer(Modifier.height(8.dp))
-        Text(
-            text = post.title,
-            style = MaterialTheme.typography.titleSmall,
-            fontSize = 13.sp,
-            lineHeight = 17.sp,
-            maxLines = 3,
-            overflow = TextOverflow.Ellipsis,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-
-        Spacer(Modifier.weight(1f))
-        Text(
-            text = host,
-            fontFamily = Mono,
-            fontSize = 10.sp,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
-}
-
-/**
- * A page dot per post, centred under the row — not a continuous
- * thumb-in-track bar, which would read as a progress bar for something
- * loading. A handful of posts is closer to a paged carousel than a
- * scrollbar, and a dot per item says "which one am I on" without borrowing a
- * loading indicator's shape to say it.
+ * The posts behind one digest line, revealed on tap: the newest few as flat
+ * rows, then the way through to all of them.
  *
- * Pinned to one small total width rather than one fixed dot size: a feed can
- * carry up to 15 posts (see `EntriesPerFeed`), and 15 full-size dots would
- * span wider than the row of cards underneath them.
+ * This used to be a horizontal strip of boxed cards, which was the last
+ * boxed surface left on Home and the reason the strip existed at all — a row
+ * of cards has to agree on a width, so it could only ever show two at a time
+ * and clip the third. Rows have no such constraint. They are also the same
+ * rows [TopicsScreen] is built from, so opening a feed in full is a change
+ * of length rather than a change of language.
+ *
+ * Three, not all of them: this is still a section inside a dashboard, and a
+ * digest line that expanded into fifteen rows would push everything under it
+ * off the screen. The rest are one tap further on.
  */
 @Composable
-private fun ScrollDots(state: LazyListState, itemCount: Int, modifier: Modifier = Modifier) {
-    val current = state.firstVisibleItemIndex.coerceIn(0, itemCount - 1)
-    val gap = 3.dp
-    val dot = ((DotsWidth - gap * (itemCount - 1)) / itemCount).coerceIn(2.dp, 5.dp)
-
-    Row(modifier, horizontalArrangement = Arrangement.spacedBy(gap)) {
-        repeat(itemCount) { index ->
-            val active = index == current
-            Box(
-                Modifier
-                    .size(dot)
-                    .clip(CircleShape)
-                    .background(
-                        if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHigh,
-                    ),
+private fun TopicPreview(feed: Feed, posts: List<FeedPost>, linkLibrary: LinkLibrary, onOpenAll: () -> Unit) {
+    Column(Modifier.padding(top = 12.dp, bottom = 4.dp)) {
+        posts.take(PreviewPosts).forEach { post ->
+            TopicRow(
+                post = post,
+                host = feed.host,
+                // Never the last thing in the column — the all-posts row
+                // always follows, so every preview row keeps its hairline.
+                last = false,
+                linkLibrary = linkLibrary,
             )
         }
+
+        AllPostsRow(count = posts.size, onClick = onOpenAll)
     }
 }
 
-private val DotsWidth = 44.dp
+/**
+ * The door to [TopicsScreen], as a row rather than a card at the end of a
+ * strip: a reader who wants more than the preview holds should not have to
+ * scroll a carousel to its end to find out that more exists.
+ */
+@Composable
+private fun AllPostsRow(count: Int, onClick: () -> Unit) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = "ALL $count POSTS",
+            style = SectionLabel,
+            color = MaterialTheme.colorScheme.primary,
+        )
+        Spacer(Modifier.width(6.dp))
+        Icon(
+            imageVector = BlogmarkIcons.Chevron,
+            contentDescription = null,
+            modifier = Modifier.size(11.dp),
+            tint = MaterialTheme.colorScheme.primary,
+        )
+    }
+}
+
+/** How much of a feed the digest shows before handing over to [TopicsScreen]. */
+private const val PreviewPosts = 3
 
 /** The feed address field, and the list of what's already followed. */
 @Composable
@@ -428,18 +370,14 @@ private fun FeedManagePanel(
                 modifier = Modifier.padding(top = 8.dp, start = 4.dp),
             )
         } else {
-            Column(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp)
-                    .clip(RoundedCornerShape(Radius.Card))
-                    .background(MaterialTheme.colorScheme.surfaceContainer),
-            ) {
-                feeds.forEach { feed ->
+            // Flush on the background with a hairline between rows, like
+            // every other list in the app. This was the last filled container
+            // in the Following section, and a panel of rows behind a "Manage"
+            // toggle is no more a card than the rows it was holding.
+            Column(Modifier.fillMaxWidth().padding(top = 10.dp)) {
+                feeds.forEachIndexed { index, feed ->
                     Row(
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        Modifier.fillMaxWidth().padding(vertical = 7.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
@@ -458,12 +396,19 @@ private fun FeedManagePanel(
                         )
                         Text(
                             text = "Unfollow",
-                            fontSize = 11.sp,
+                            style = SectionLabel,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier
-                                .clip(CircleShape)
                                 .clickable { onRemove(feed.id) }
-                                .padding(horizontal = 10.dp, vertical = 6.dp),
+                                .padding(start = 10.dp, top = 4.dp, bottom = 4.dp),
+                        )
+                    }
+                    if (index != feeds.lastIndex) {
+                        Box(
+                            Modifier
+                                .fillMaxWidth()
+                                .height(1.dp)
+                                .background(MaterialTheme.colorScheme.outlineVariant),
                         )
                     }
                 }

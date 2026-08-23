@@ -22,6 +22,8 @@ data class FeedPost(
     val title: String,
     val imageUrl: String? = null,
     val content: String? = null,
+    /** When the publisher dated it, or null for a feed that dates nothing. */
+    val publishedAt: Long? = null,
 )
 
 /** The cached post for [url], if some followed feed carried it. */
@@ -57,15 +59,21 @@ class FeedPostCache(private val store: KeyValueStore) {
     private fun load(): Map<String, List<FeedPost>> = store.getString(Key)?.split(RecordSeparator)?.mapNotNull(::decode)?.groupBy { it.feedId }.orEmpty()
 
     private fun encode(posts: List<FeedPost>): String = posts.joinToString(RecordSeparator.toString()) { post ->
-        listOf(post.feedId, post.url, post.title.clean(), post.imageUrl.orEmpty(), post.content.orEmpty().clean())
-            .joinToString(FieldSeparator.toString())
+        listOf(
+            post.feedId,
+            post.url,
+            post.title.clean(),
+            post.imageUrl.orEmpty(),
+            post.content.orEmpty().clean(),
+            post.publishedAt?.toString().orEmpty(),
+        ).joinToString(FieldSeparator.toString())
     }
 
     private fun decode(record: String): FeedPost? {
-        // Still three, not five: records written before posts carried an image
-        // or a body decode as they always did rather than being dropped, so a
-        // reader who updates the app keeps their feed lists until the next sync
-        // fills the new fields in.
+        // Still three, not six: records written before posts carried an image,
+        // a body or a date decode as they always did rather than being
+        // dropped, so a reader who updates the app keeps their feed lists
+        // until the next sync fills the new fields in.
         val fields = record.split(FieldSeparator)
         if (fields.size < 3) return null
 
@@ -75,6 +83,7 @@ class FeedPostCache(private val store: KeyValueStore) {
             title = fields[2],
             imageUrl = fields.getOrNull(3)?.takeIf { it.isNotBlank() },
             content = fields.getOrNull(4)?.takeIf { it.isNotBlank() },
+            publishedAt = fields.getOrNull(5)?.toLongOrNull(),
         )
     }
 

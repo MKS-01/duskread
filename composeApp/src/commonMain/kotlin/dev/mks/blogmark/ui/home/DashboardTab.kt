@@ -36,6 +36,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dev.mks.blogmark.links.Feed
 import dev.mks.blogmark.links.FeedLibrary
 import dev.mks.blogmark.links.FeedPostCache
 import dev.mks.blogmark.links.LinkLibrary
@@ -82,6 +83,7 @@ fun DashboardTab(
     feedClient: HttpClient,
     greeting: String?,
     onOpenSettings: () -> Unit,
+    onOpenTopics: (Feed) -> Unit,
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
 ) {
@@ -154,6 +156,7 @@ fun DashboardTab(
                     postCache = feedPosts,
                     linkLibrary = links,
                     client = feedClient,
+                    onOpenTopics = onOpenTopics,
                 )
             }
         }

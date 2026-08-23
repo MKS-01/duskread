@@ -5,6 +5,8 @@ import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpHeaders
+import kotlin.time.ExperimentalTime
+import kotlin.time.Instant
 
 /**
  * One post as the feed describes it.
@@ -19,6 +21,8 @@ data class FeedEntry(
     val title: String?,
     val content: String? = null,
     val imageUrl: String? = null,
+    /** When the publisher says it went out, or null for a feed that does not date its entries. */
+    val publishedAt: Long? = null,
 )
 
 /**
@@ -58,6 +62,9 @@ fun parseFeed(xml: String): List<FeedEntry> {
             title = FeedTitlePattern.find(block)?.groupValues?.get(1)?.tidy(),
             content = content?.takeIf { it.isNotBlank() },
             imageUrl = block.entryImage()?.let { resolveAgainst(url, it) },
+            publishedAt = DatePatterns.firstNotNullOfOrNull { pattern ->
+                pattern.find(block)?.groupValues?.get(1)?.let(::parsePostDate)
+            },
         )
     }
 }
@@ -71,6 +78,42 @@ fun parseFeed(xml: String): List<FeedEntry> {
  */
 private fun String.atomEntryUrl(): String? = AtomAlternateLinkPattern.firstNotNullOfOrNull { it.find(this)?.groupValues?.get(1)?.tidy() }
     ?: AtomAnyLinkPattern.find(this)?.groupValues?.get(1)?.tidy()
+
+/**
+ * A publication date out of either format, without a calendar library.
+ *
+ * Atom dates are ISO-8601 and [Instant] parses those outright. RSS dates are
+ * RFC-822 — "Wed, 13 Aug 2026 09:00:00 +0000" — which it will not touch, so
+ * they are rewritten into ISO and handed to the same parser rather than
+ * turned into an epoch by hand: the arithmetic that converts a civil date to
+ * a count of days is exactly the part worth not writing twice.
+ *
+ * A named zone other than UTC ("EST", "PDT") is read as UTC. They are rare in
+ * modern feeds, and the error is hours on a stamp shown as "3d ago".
+ */
+@OptIn(ExperimentalTime::class)
+internal fun parsePostDate(raw: String): Long? {
+    val text = raw.trim().removeSurrounding("<![CDATA[", "]]>").trim().ifEmpty { return null }
+    runCatching { return Instant.parse(text).toEpochMilliseconds() }
+
+    val match = Rfc822Pattern.find(text) ?: return null
+    val month = MonthNames.indexOf(match.groupValues[2].lowercase()) + 1
+    if (month == 0) return null
+
+    val zone = match.groupValues[7]
+    val offset = if (zone.length == 5 && (zone[0] == '+' || zone[0] == '-')) "${zone.take(3)}:${zone.drop(3)}" else "Z"
+    val iso = buildString {
+        append(match.groupValues[3].padStart(4, '0')).append('-')
+        append(month.toString().padStart(2, '0')).append('-')
+        append(match.groupValues[1].padStart(2, '0')).append('T')
+        append(match.groupValues[4].padStart(2, '0')).append(':')
+        append(match.groupValues[5].padStart(2, '0')).append(':')
+        append(match.groupValues[6].ifEmpty { "00" }.padStart(2, '0'))
+        append(offset)
+    }
+
+    return runCatching { Instant.parse(iso).toEpochMilliseconds() }.getOrNull()
+}
 
 /**
  * A feed's own copy of the post, unwrapped.
@@ -192,6 +235,7 @@ private fun FeedEntry.asPost(feedId: String, index: Int): FeedPost = FeedPost(
     url = url,
     title = title ?: titleFromUrl(url),
     imageUrl = imageUrl,
+    publishedAt = publishedAt,
     content = content?.take(MaxCachedContentChars)?.takeIf { index < EntriesWithContent },
 )
 
@@ -205,6 +249,21 @@ private val ContentPatterns = listOf(
     Regex("""<description[^>]*>(.*?)</description>""", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)),
     Regex("""<summary[^>]*>(.*?)</summary>""", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)),
 )
+
+// `dc:date` is what a feed generated from a CMS often carries instead of
+// either standard tag. Atom's `updated` is last: a post edited after
+// publication would otherwise report the edit as its date.
+private val DatePatterns = listOf(
+    Regex("""<pubDate[^>]*>(.*?)</pubDate>""", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)),
+    Regex("""<published[^>]*>(.*?)</published>""", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)),
+    Regex("""<dc:date[^>]*>(.*?)</dc:date>""", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)),
+    Regex("""<updated[^>]*>(.*?)</updated>""", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)),
+)
+
+private val Rfc822Pattern = Regex(
+    """(\d{1,2})\s+([A-Za-z]{3})[a-z]*\s+(\d{2,4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*([+-]\d{4}|[A-Za-z]{1,4})?""",
+)
+private val MonthNames = listOf("jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
 
 private val EntryImagePatterns = listOf(
     Regex("""<media:thumbnail[^>]+url\s*=\s*["']([^"']+)["']""", RegexOption.IGNORE_CASE),
