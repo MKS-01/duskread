@@ -1,0 +1,2762 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Amplitude vs Bindery</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Inconsolata:wght@400;500;600&family=Jost:wght@300;400;500;600&family=Karla:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&display=swap">
+
+<style>
+/* ============================================================
+   PAGE CHROME
+   Deliberately quiet and neutral so the two proposals can
+   speak. Palette follows docs/architecture.html so this sits
+   in the same family as the other docs in this repo.
+   ============================================================ */
+
+:root {
+  --bg:        #fbfaf9;
+  --surface:   #f4f3f1;
+  --surface-2: #ecebe8;
+  --text:      #17181b;
+  --muted:     #6a6b73;
+  --faint:     #93949c;
+  --line:      #e2e1de;
+  --line-firm: #cfcecb;
+  --accent:    #3a5a8c;
+  --bad:       #b3453a;
+
+  --ui:   "Hanken Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --data: "Inconsolata", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --page:   1240px;
+  --radius: 10px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg:        #131315;
+    --surface:   #191a1d;
+    --surface-2: #212226;
+    --text:      #ededef;
+    --muted:     #9a9aa4;
+    --faint:     #74747d;
+    --line:      #2a2a2e;
+    --line-firm: #3a3a40;
+    --accent:    #8aa8dd;
+    --bad:       #e08379;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg:        #131315;
+  --surface:   #191a1d;
+  --surface-2: #212226;
+  --text:      #ededef;
+  --muted:     #9a9aa4;
+  --faint:     #74747d;
+  --line:      #2a2a2e;
+  --line-firm: #3a3a40;
+  --accent:    #8aa8dd;
+  --bad:       #e08379;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--ui);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap {
+  max-width: var(--page);
+  margin: 0 auto;
+  padding: 0 24px 96px;
+}
+
+/* --- page masthead --- */
+
+.masthead { padding: 72px 0 40px; border-bottom: 1px solid var(--line); }
+
+.kicker {
+  font-family: var(--data);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0 0 14px;
+}
+
+h1 {
+  font-size: clamp(30px, 4.4vw, 46px);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+  margin: 0 0 18px;
+  text-wrap: balance;
+}
+
+.standfirst {
+  font-size: 18px;
+  line-height: 1.62;
+  color: var(--muted);
+  max-width: 62ch;
+  margin: 0;
+}
+
+.standfirst strong { color: var(--text); font-weight: 600; }
+
+/* --- generic section --- */
+
+section { padding: 56px 0 0; }
+
+h2 {
+  font-size: 13px;
+  font-family: var(--data);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--faint);
+  font-weight: 600;
+  margin: 0 0 6px;
+}
+
+.section-title {
+  font-size: 26px;
+  line-height: 1.22;
+  letter-spacing: -0.015em;
+  font-weight: 700;
+  margin: 0 0 12px;
+  text-wrap: balance;
+}
+
+.section-note {
+  color: var(--muted);
+  max-width: 66ch;
+  margin: 0 0 30px;
+  font-size: 15.5px;
+}
+
+.section-note code,
+.faults code,
+li code {
+  font-family: var(--data);
+  font-size: 0.92em;
+  background: var(--surface-2);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+/* --- the fault list --- */
+
+.faults {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.faults li {
+  background: var(--bg);
+  padding: 18px 20px;
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.faults b {
+  display: block;
+  color: var(--text);
+  font-weight: 600;
+  margin-bottom: 4px;
+  font-size: 15px;
+}
+
+/* --- comparison grid --- */
+
+.compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+  align-items: start;
+}
+
+.col-head {
+  position: sticky;
+  /* clears the sticky palette bar above it */
+  top: 51px;
+  z-index: 5;
+  background: var(--bg);
+  padding: 14px 0 12px;
+  border-bottom: 2px solid var(--text);
+  margin-bottom: 26px;
+}
+
+.col-head .name {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.col-head .thesis {
+  margin: 2px 0 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+/* stacked frame captions */
+
+.frame-block { margin-bottom: 34px; }
+
+.frame-cap {
+  font-family: var(--data);
+  font-size: 11.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--faint);
+  margin: 0 0 10px;
+}
+
+.rationale {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--muted);
+  margin: 14px 0 0;
+  padding-left: 13px;
+  border-left: 2px solid var(--line-firm);
+}
+
+.rationale b { color: var(--text); font-weight: 600; }
+
+/* spec tables */
+
+.spec {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  margin: 0 0 20px;
+}
+
+.spec th,
+.spec td {
+  text-align: left;
+  padding: 8px 10px 8px 0;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+.spec th {
+  width: 92px;
+  font-weight: 600;
+  color: var(--faint);
+  font-family: var(--data);
+  font-size: 11.5px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  padding-top: 11px;
+}
+
+.swatches { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+
+.swatches li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--data);
+  font-size: 11.5px;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 3px 10px 3px 4px;
+}
+
+.chip-dot {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: 1px solid rgb(0 0 0 / 0.28);
+  flex: none;
+}
+
+/* ============================================================
+   PHONE FRAME
+   ============================================================ */
+
+.phone {
+  width: 100%;
+  max-width: 320px;
+  margin: 0 auto;
+  aspect-ratio: 320 / 660;
+  border-radius: 30px;
+  border: 1px solid var(--line-firm);
+  padding: 7px;
+  background: var(--surface);
+  box-shadow: 0 14px 34px rgb(0 0 0 / 0.14);
+}
+
+.screen {
+  height: 100%;
+  border-radius: 24px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.statusbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 9px 16px 4px;
+  font-size: 11px;
+  flex: none;
+}
+
+.statusbar .bars { display: flex; gap: 2px; align-items: flex-end; }
+.statusbar .bars i { width: 2.5px; border-radius: 1px; display: block; background: currentColor; }
+.statusbar .bars i:nth-child(1) { height: 4px; }
+.statusbar .bars i:nth-child(2) { height: 6px; }
+.statusbar .bars i:nth-child(3) { height: 8px; }
+.statusbar .bars i:nth-child(4) { height: 10px; }
+
+.canvas {
+  flex: 1;
+  overflow: hidden;
+  /* clears the floating bar so no row ever slides under it */
+  padding: 14px 18px 76px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* the floating navigation bar, common skeleton */
+.navbar {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 7px 9px;
+  border-radius: 999px;
+}
+
+.navbar .nb {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+}
+
+/* ============================================================
+   ICON SYSTEM
+   Same geometry, two different hands. The stroke spec is set
+   per variant, which is the whole point: one rule, applied.
+   ============================================================ */
+
+.i { width: 1em; height: 1em; display: block; flex: none; }
+
+.v-amp .i {
+  stroke-width: 1.75;
+  stroke-linecap: butt;
+  stroke-linejoin: miter;
+}
+
+.v-bin .i {
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.i use, .i > * { fill: none; stroke: currentColor; }
+
+/* The solid hand inverts that: no stroke at all, so weight comes
+   from the silhouette rather than from a line width. It has to be
+   an override on `use` because the symbol children inherit paint
+   from the referencing element, not from the symbol. */
+.hand-solid .i use, .hand-solid .i > * { fill: currentColor; stroke: none; }
+
+/* The segment hand keeps butt caps on purpose — a rounded cap would
+   close the gaps optically at 17px and undo the whole idea. */
+.hand-seg .i { stroke-width: 1.75; stroke-linecap: butt; stroke-linejoin: miter; }
+
+/* ---- three-hands comparison ------------------------------------ */
+
+.hands { display: grid; gap: 18px; }
+
+@media (min-width: 900px) {
+  .hands { grid-template-columns: repeat(3, 1fr); }
+}
+
+.hand-col { display: flex; flex-direction: column; gap: 10px; }
+
+.hand-col .iconwall { grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); }
+.hand-col .iconwall figure { padding: 12px 4px 8px; }
+
+.hand-note {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+/* A static copy of the nav bar so each hand can be judged at the
+   size it actually ships at. The real one is absolutely positioned
+   inside a phone frame, which does not travel. */
+.navstrip {
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 7px 9px;
+  border-radius: 999px;
+  background: rgb(23 24 27 / 0.92);
+  border: 1px solid var(--a-line);
+  color: var(--a-faint);
+}
+
+.navstrip .nb {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+}
+
+.navstrip .nb.sel { background: var(--a-raise); color: var(--a-ink); }
+.navstrip .i { font-size: 17px; }
+
+/* ---- alphabets: three different drawings, not three pens -------- */
+
+/* Each set carries its own stroke spec because the spec is part of
+   the drawing, not a knob on top of it — Rule would go mushy at 2.4
+   and Bar would vanish at 1.6. */
+.alpha-rule .i { stroke-width: 1.6; stroke-linecap: butt; stroke-linejoin: miter; }
+.alpha-bar  .i { stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.alpha-arc  .i { stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+.alpha {
+  display: grid;
+  gap: 16px 22px;
+  margin-bottom: 34px;
+  padding-bottom: 34px;
+  border-bottom: 1px solid var(--line);
+}
+
+.alpha:last-of-type { border-bottom: 0; }
+
+@media (min-width: 1000px) {
+  .alpha { grid-template-columns: 1fr 300px; align-items: start; }
+}
+
+.alpha-side { display: flex; flex-direction: column; gap: 12px; }
+
+.alpha-main { display: flex; flex-direction: column; gap: 10px; }
+
+.alpha-strips { display: flex; flex-wrap: wrap; gap: 10px; }
+
+.alpha-rulebox {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--muted);
+  border-left: 2px solid var(--line-firm);
+  padding-left: 12px;
+  margin: 0;
+}
+
+.alpha-rulebox b { color: var(--text); }
+
+.alpha-cost {
+  font-family: var(--data);
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--faint);
+  margin: 0;
+}
+
+.alpha-cost b { color: var(--bad); font-weight: 600; }
+
+.iconwall {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.iconwall figure {
+  margin: 0;
+  padding: 15px 6px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.iconwall .i { font-size: 24px; }
+
+.iconwall figcaption {
+  font-family: var(--data);
+  font-size: 9.5px;
+  letter-spacing: 0.05em;
+  color: var(--faint);
+  text-transform: uppercase;
+}
+
+/* ============================================================
+   VARIANT A — AMPLITUDE
+   Cool graphite. Greyscale interface. The single hue appears
+   only where there is sound, so colour always means one thing.
+   These palettes are fixed dark on purpose: the app ships dark
+   only, so they must not follow the page theme.
+   ============================================================ */
+
+.v-amp {
+  --a-bg:     #0e0f11;
+  --a-raise:  #17181b;
+  --a-ink:    #e6e7ea;
+  --a-mute:   #8b8d95;
+  --a-faint:  #5c5e66;
+  --a-line:   #232529;
+  --a-sound:  #7ed0e3;
+  --a-wave-off: #5c5e66;
+
+  --a-ui:   "Jost", ui-sans-serif, system-ui, sans-serif;
+  --a-data: "Inconsolata", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.v-amp .screen { background: var(--a-bg); color: var(--a-ink); font-family: var(--a-ui); }
+.v-amp .statusbar { color: var(--a-mute); font-family: var(--a-data); }
+
+.v-amp .eyebrow {
+  font-family: var(--a-data);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--a-faint);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 9px;
+}
+
+.v-amp .eyebrow::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--a-line);
+}
+
+.v-amp .greet {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 20px;
+}
+
+.v-amp .greet h3 {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+}
+
+.v-amp .greet .i { font-size: 17px; color: var(--a-mute); }
+
+.v-amp .row { padding: 0 0 15px; margin-bottom: 15px; border-bottom: 1px solid var(--a-line); }
+.v-amp .row:last-child { border-bottom: 0; }
+
+.v-amp .row h4 {
+  margin: 0 0 6px;
+  font-size: 14px;
+  line-height: 1.32;
+  font-weight: 400;
+  letter-spacing: 0.005em;
+}
+
+.v-amp .meta {
+  font-family: var(--a-data);
+  font-size: 10.5px;
+  color: var(--a-faint);
+  display: flex;
+  gap: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* the waveform is live data — duration and position — not an ornament */
+.v-amp .wave { display: flex; align-items: center; gap: 1.5px; height: 15px; }
+.v-amp .wave i { width: 2px; border-radius: 1px; background: var(--a-wave-off); display: block; }
+.v-amp .wave.on i { background: var(--a-sound); }
+.v-amp .wave.part i.p { background: var(--a-sound); }
+
+.v-amp .sourcechip {
+  width: 22px;
+  height: 22px;
+  border-radius: 3px;
+  border: 1px solid var(--a-line);
+  display: grid;
+  place-items: center;
+  font-family: var(--a-data);
+  font-size: 10px;
+  color: var(--a-mute);
+  flex: none;
+}
+
+.v-amp .pillrow { display: flex; gap: 6px; margin-bottom: 16px; }
+
+.v-amp .pill {
+  font-family: var(--a-data);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 5px 11px;
+  border-radius: 3px;
+  border: 1px solid var(--a-line);
+  color: var(--a-mute);
+}
+
+.v-amp .pill.sel { border-color: var(--a-ink); color: var(--a-ink); }
+
+.v-amp .navbar {
+  background: rgb(23 24 27 / 0.92);
+  border: 1px solid var(--a-line);
+  color: var(--a-faint);
+}
+
+.v-amp .navbar .nb.sel { background: var(--a-raise); color: var(--a-ink); }
+.v-amp .navbar .i { font-size: 17px; }
+
+.v-amp .playing { color: var(--a-sound); }
+
+/* Amplitude, monochrome: the hue drops out and level is carried
+   by luminance alone — the design was already greyscale, so the
+   idea survives intact rather than going flat. */
+/* mono rules live at the end of the stylesheet so the dedicated
+   Monochrome row stays monochrome whichever palette is selected */
+
+/* ============================================================
+   VARIANT B — BINDERY
+   Warm brown-black, a reading serif, and no monospace at all.
+   One colour, verdigris, and it only ever means "done".
+   ============================================================ */
+
+.v-bin {
+  --b-bg:     #15120f;
+  --b-raise:  #1d1916;
+  --b-ink:    #eae3d8;
+  --b-mute:   #9b9084;
+  --b-faint:  #6d6459;
+  --b-line:   #2a2521;
+  --b-done:   #6f9384;
+
+  --b-serif: "Source Serif 4", Iowan Old Style, Georgia, serif;
+  --b-ui:    "Karla", ui-sans-serif, system-ui, sans-serif;
+}
+
+.v-bin .screen { background: var(--b-bg); color: var(--b-ink); font-family: var(--b-ui); }
+.v-bin .statusbar { color: var(--b-mute); }
+
+.v-bin .eyebrow {
+  font-family: var(--b-ui);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.19em;
+  text-transform: uppercase;
+  color: var(--b-mute);
+  margin: 0 0 3px;
+}
+
+.v-bin .rule { height: 1px; background: var(--b-line); margin: 0 0 12px; }
+.v-bin .rule.firm { height: 2px; background: var(--b-mute); opacity: 0.42; }
+
+.v-bin .greet { margin-bottom: 20px; display: flex; justify-content: space-between; align-items: baseline; }
+
+.v-bin .greet h3 {
+  margin: 0;
+  font-family: var(--b-serif);
+  font-size: 23px;
+  font-weight: 400;
+  font-style: italic;
+  letter-spacing: -0.01em;
+}
+
+.v-bin .greet .i { font-size: 17px; color: var(--b-mute); }
+
+.v-bin .row { margin-bottom: 17px; }
+
+.v-bin .row h4 {
+  margin: 0 0 5px;
+  font-family: var(--b-serif);
+  font-size: 16px;
+  line-height: 1.26;
+  font-weight: 600;
+  letter-spacing: -0.008em;
+}
+
+/* metadata is set in Karla with tabular figures — the app
+   currently falls through to each platform's default mono,
+   so this removes a real cross-platform inconsistency */
+.v-bin .meta {
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--b-faint);
+  font-variant-numeric: tabular-nums;
+  display: flex;
+  gap: 10px;
+}
+
+/* read items physically recede: dimmed, italic, hairline */
+.v-bin .row.done h4 { color: var(--b-mute); font-weight: 400; font-style: italic; }
+.v-bin .row.done .meta { color: var(--b-faint); }
+.v-bin .done-tick { color: var(--b-done); }
+
+.v-bin .sourcechip {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid var(--b-line);
+  display: grid;
+  place-items: center;
+  font-family: var(--b-serif);
+  font-size: 12px;
+  color: var(--b-mute);
+  flex: none;
+}
+
+.v-bin .pillrow { display: flex; gap: 14px; margin-bottom: 16px; align-items: baseline; }
+
+.v-bin .pill {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--b-faint);
+  padding-bottom: 3px;
+}
+
+.v-bin .pill.sel { color: var(--b-ink); border-bottom: 2px solid var(--b-ink); }
+
+.v-bin .navbar {
+  background: rgb(29 25 22 / 0.94);
+  border: 1px solid var(--b-line);
+  color: var(--b-faint);
+}
+
+.v-bin .navbar .nb.sel { background: rgb(234 227 216 / 0.09); color: var(--b-ink); }
+.v-bin .navbar .i { font-size: 17px; }
+
+/* Bindery, monochrome: verdigris becomes paper, and "done"
+   is carried by italics and dimming — which the design was
+   already using, so nothing is lost with the hue. */
+/* see the mono block at the end of the stylesheet */
+
+/* ============================================================
+   BRAND
+   ============================================================ */
+
+.brandrow { display: flex; align-items: flex-end; gap: 22px; flex-wrap: wrap; margin-bottom: 18px; }
+
+.appicon { border-radius: 22.5%; display: block; flex: none; }
+.appicon.s48 { border-radius: 22.5%; }
+.appicon.s24 { border-radius: 22.5%; }
+
+.brand-label {
+  font-family: var(--data);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--faint);
+  text-align: center;
+  margin-top: 6px;
+}
+
+.splash {
+  width: 100%;
+  max-width: 210px;
+  aspect-ratio: 9 / 16;
+  border-radius: 14px;
+  border: 1px solid var(--line-firm);
+  display: grid;
+  place-items: center;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ============================================================
+   SPECIMENS
+   ============================================================ */
+
+.specimen { border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.specimen > div { padding: 15px 18px; border-bottom: 1px solid var(--line); }
+.specimen > div:last-child { border-bottom: 0; }
+
+.specimen .lbl {
+  font-family: var(--data);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--faint);
+  margin-bottom: 5px;
+}
+
+.kit { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+
+/* ============================================================
+   CLOSING
+   ============================================================ */
+
+.followups { border: 1px solid var(--line); border-radius: var(--radius); padding: 4px 24px; margin-top: 8px; }
+.followups li { margin: 12px 0; color: var(--muted); font-size: 15px; }
+.followups li b { color: var(--text); font-weight: 600; }
+
+footer {
+  margin-top: 56px;
+  padding-top: 22px;
+  border-top: 1px solid var(--line);
+  color: var(--faint);
+  font-size: 13.5px;
+  font-family: var(--data);
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+/* ---- on-device summary ---- */
+
+/* the streaming cursor; the reduced-motion rule below stops the blink */
+.caret {
+  display: inline-block;
+  width: 6px;
+  height: 12px;
+  margin-left: 3px;
+  vertical-align: -1px;
+  background: var(--a-mute);
+  animation: caret 1.05s steps(1) infinite;
+}
+
+@keyframes caret { 50% { opacity: 0; } }
+
+.feasible {
+  margin-top: 34px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 20px 24px 6px;
+}
+
+.feasible-head {
+  font-family: var(--data);
+  font-size: 11.5px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--faint);
+  margin: 0 0 14px;
+}
+
+.spec-wide th { width: 118px; }
+.spec-wide td { line-height: 1.6; }
+
+/* ============================================================
+   PALETTE PRESETS
+   Re-tints both directions at once so they can be compared
+   wearing the same colour. Only variables are reassigned —
+   nothing about the structure changes, which is the point:
+   if a direction only works in one colour it isn't a system.
+   ============================================================ */
+
+/* Terracotta — the accent the app ships today, for reference */
+[data-palette="terracotta"] .v-amp {
+  --a-sound: #c6684a;
+  --a-wave-off: #4c4340;
+}
+[data-palette="terracotta"] .v-bin {
+  --b-done: #c6684a;
+}
+
+/* Phosphor — a green-screen terminal. The ground goes green-black
+   too, because a terminal's glow tints everything, not just the text */
+[data-palette="phosphor"] .v-amp {
+  --a-bg: #070b08;
+  --a-raise: #0e1511;
+  --a-ink: #d6ecdc;
+  --a-mute: #7c9585;
+  --a-faint: #52685a;
+  --a-line: #17251c;
+  --a-sound: #3fe06b;
+  --a-wave-off: #294a35;
+}
+[data-palette="phosphor"] .v-bin {
+  --b-bg: #080c09;
+  --b-raise: #101713;
+  --b-ink: #dcece0;
+  --b-mute: #849a8b;
+  --b-faint: #5a6f61;
+  --b-line: #1a271f;
+  --b-done: #3fe06b;
+}
+
+/* Monochrome — applied across the page rather than to one row */
+[data-palette="mono"] .v-amp {
+  --a-bg: #0f0f10;
+  --a-raise: #17171a;
+  --a-ink: #e9e9ea;
+  --a-mute: #8e8e94;
+  --a-faint: #5e5e64;
+  --a-line: #232326;
+  --a-sound: #ffffff;
+  --a-wave-off: #3d3f45;
+}
+[data-palette="mono"] .v-bin {
+  --b-bg: #131313;
+  --b-raise: #1b1b1b;
+  --b-ink: #e4e4e4;
+  --b-mute: #949494;
+  --b-faint: #676767;
+  --b-line: #262626;
+  --b-done: #e4e4e4;
+}
+
+/* ---- the switcher itself ---- */
+
+.palettebar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 0;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+}
+
+.palettebar .pb-label {
+  font-family: var(--data);
+  font-size: 10.5px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--faint);
+  margin-right: 4px;
+}
+
+.pb {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--line-firm);
+  border-radius: 999px;
+  padding: 5px 13px 5px 6px;
+  cursor: pointer;
+}
+
+.pb:hover { color: var(--text); border-color: var(--muted); }
+
+.pb:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.pb[aria-pressed="true"] {
+  color: var(--text);
+  border-color: var(--text);
+  background: var(--surface-2);
+}
+
+.pb .duo {
+  display: inline-flex;
+  border-radius: 50%;
+  overflow: hidden;
+  width: 16px;
+  height: 16px;
+  border: 1px solid rgb(128 128 128 / 0.4);
+  flex: none;
+}
+
+.pb .duo span { flex: 1; }
+
+@media (max-width: 900px) {
+  .compare { grid-template-columns: 1fr; gap: 46px; }
+  .col-head { position: static; }
+  .phone { max-width: 300px; }
+  .palettebar { position: static; }
+}
+
+/* ============================================================
+   MONO ROW — must stay last so the dedicated Monochrome
+   comparison is monochrome under every palette above.
+   ============================================================ */
+
+.v-amp.mono {
+  --a-bg: #0f0f10;
+  --a-raise: #17171a;
+  --a-ink: #e9e9ea;
+  --a-mute: #8e8e94;
+  --a-faint: #5e5e64;
+  --a-line: #232326;
+  --a-sound: #ffffff;
+  --a-wave-off: #3d3f45;
+}
+
+.v-bin.mono {
+  --b-bg: #131313;
+  --b-raise: #1b1b1b;
+  --b-ink: #e4e4e4;
+  --b-mute: #949494;
+  --b-faint: #676767;
+  --b-line: #262626;
+  --b-done: #e4e4e4;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+</style>
+
+<!-- ============================================================
+     SHARED ICON GEOMETRY
+     One set of paths. Each variant applies its own stroke width,
+     cap and join through CSS, which is exactly the discipline the
+     current BlogmarkIcons.kt is missing: today 10 of 17 stroked
+     paths set a line join, two set neither cap nor join, and
+     Play/Pause are filled while everything else is stroked.
+     ============================================================ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="g-home" viewBox="0 0 24 24"><path d="M4 10.2 12 4l8 6.2V19a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/></symbol>
+    <symbol id="g-book" viewBox="0 0 24 24"><path d="M6 4h12v16l-6-4.4L6 20z"/></symbol>
+    <symbol id="g-wave" viewBox="0 0 24 24"><path d="M3 12h1.6M7 8v8M11 4.5v15M15 8v8M19 11h2"/></symbol>
+    <symbol id="g-play" viewBox="0 0 24 24"><path d="M7 4.6 19 12 7 19.4z"/></symbol>
+    <symbol id="g-pause" viewBox="0 0 24 24"><path d="M8.5 5v14M15.5 5v14"/></symbol>
+    <symbol id="g-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.2"/><path d="M12 7.4V12l3.2 2"/></symbol>
+    <symbol id="g-folder" viewBox="0 0 24 24"><path d="M3 6.5h6.2l1.8 2.4H21V18a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/></symbol>
+    <symbol id="g-feed" viewBox="0 0 24 24"><path d="M5 19a0.6 0.6 0 1 0 0-0.1M5 12.4A6.6 6.6 0 0 1 11.6 19M5 6.2A12.8 12.8 0 0 1 17.8 19"/></symbol>
+    <symbol id="g-check" viewBox="0 0 24 24"><path d="M4.6 12.6 9.6 17.4 19.4 6.8"/></symbol>
+    <symbol id="g-ext" viewBox="0 0 24 24"><path d="M13.4 4.6H19.4V10.6M19.4 4.6 11 13M17 14v4.4a1 1 0 0 1-1 1H5.6a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1H10"/></symbol>
+    <symbol id="g-set" viewBox="0 0 24 24"><path d="M4 7.5h16M4 16.5h16"/><circle cx="9.5" cy="7.5" r="2.3"/><circle cx="15" cy="16.5" r="2.3"/></symbol>
+    <symbol id="g-contrast" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.2"/><path d="M12 3.8v16.4"/><path d="M12 5.6a6.4 6.4 0 0 1 0 12.8"/></symbol>
+    <symbol id="g-close" viewBox="0 0 24 24"><path d="M6.4 6.4 17.6 17.6M17.6 6.4 6.4 17.6"/></symbol>
+    <symbol id="g-chev" viewBox="0 0 24 24"><path d="M9.4 5.6 16 12l-6.6 6.4"/></symbol>
+
+    <!-- Amplitude alternative hand: SOLID.
+         Filled silhouettes, no stroke at all. Counters (the door, the
+         clock hands) are punched with evenodd rather than drawn, so the
+         glyph stays one shape and holds together at nav size. -->
+    <symbol id="s-home" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M12 2.9 21.4 10.2V20a1.4 1.4 0 0 1-1.4 1.4H4A1.4 1.4 0 0 1 2.6 20v-9.8zM9.8 21.4v-6.2h4.4v6.2z"/></symbol>
+    <symbol id="s-wave" viewBox="0 0 24 24"><rect x="2.6" y="10" width="2.6" height="4" rx="1.3"/><rect x="7" y="6.4" width="2.6" height="11.2" rx="1.3"/><rect x="11.4" y="3.2" width="2.6" height="17.6" rx="1.3"/><rect x="15.8" y="6.4" width="2.6" height="11.2" rx="1.3"/><rect x="20.2" y="10" width="2.6" height="4" rx="1.3"/></symbol>
+    <symbol id="s-book" viewBox="0 0 24 24"><path d="M6.4 2.6h11.2A1.4 1.4 0 0 1 19 4v17.4L12 16.2 5 21.4V4a1.4 1.4 0 0 1 1.4-1.4z"/></symbol>
+    <symbol id="s-play" viewBox="0 0 24 24"><path d="M7.6 4.2 19.8 12 7.6 19.8z"/></symbol>
+    <symbol id="s-pause" viewBox="0 0 24 24"><rect x="6.6" y="4.2" width="3.8" height="15.6" rx="1.4"/><rect x="13.6" y="4.2" width="3.8" height="15.6" rx="1.4"/></symbol>
+    <symbol id="s-clock" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M12 2.8a9.2 9.2 0 1 0 0 18.4 9.2 9.2 0 0 0 0-18.4zm-1.05 3.9h2.1v5.55l4.15 2.5-1.05 1.75-5.2-3.15z"/></symbol>
+    <symbol id="s-check" viewBox="0 0 24 24"><path d="m9.6 15.1 9-9.1 2.2 2.2-11.2 11.3-6.4-6.4 2.2-2.2z"/></symbol>
+    <symbol id="s-set" viewBox="0 0 24 24"><path d="M3 6.5h18v2h-18zM3 15.5h18v2h-18z"/><circle cx="9" cy="7.5" r="3.2"/><circle cx="15.4" cy="16.5" r="3.2"/></symbol>
+    <symbol id="s-folder" viewBox="0 0 24 24"><path d="M3 4.6h6l2 2.6h10a1.4 1.4 0 0 1 1.4 1.4v10.4a1.4 1.4 0 0 1-1.4 1.4H3a1.4 1.4 0 0 1-1.4-1.4V6a1.4 1.4 0 0 1 1.4-1.4z"/></symbol>
+    <symbol id="s-feed" viewBox="0 0 24 24"><path d="M3.2 19.6a2.2 2.2 0 1 0 4.4 0 2.2 2.2 0 1 0-4.4 0z"/><path d="M3 14.6A6.4 6.4 0 0 1 9.4 21H12A9 9 0 0 0 3 12z"/><path d="M3 8.6A12.4 12.4 0 0 1 15.4 21H18A15 15 0 0 0 3 6z"/></symbol>
+    <symbol id="s-ext" viewBox="0 0 24 24"><path d="M13.4 3.4h8v8l-3-3-5.8 5.8-2-2 5.8-5.8z"/><path d="M4.6 5.8h6.6v2.4H5.8v10.4h10.4V13.4h2.4v6.4a1.2 1.2 0 0 1-1.2 1.2H4.6a1.2 1.2 0 0 1-1.2-1.2V7a1.2 1.2 0 0 1 1.2-1.2z"/></symbol>
+    <symbol id="s-contrast" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M12 2.6a9.4 9.4 0 1 1 0 18.8 9.4 9.4 0 0 1 0-18.8zm0 2.4a7 7 0 0 0 0 14z"/></symbol>
+    <symbol id="s-close" viewBox="0 0 24 24"><path d="M6.1 4.4 12 10.3l5.9-5.9 1.7 1.7L13.7 12l5.9 5.9-1.7 1.7L12 13.7l-5.9 5.9-1.7-1.7L10.3 12 4.4 6.1z"/></symbol>
+    <symbol id="s-chev" viewBox="0 0 24 24"><path d="M9.6 4.2 17.4 12l-7.8 7.8-2-2L13.4 12 7.6 6.2z"/></symbol>
+
+    <!-- Amplitude alternative hand: SEGMENT.
+         Every glyph is broken into disconnected strokes with a deliberate
+         gap at each junction, so the set is built from the same vocabulary
+         as the waveform bars rather than merely sitting next to them. -->
+    <symbol id="m-home" viewBox="0 0 24 24"><path d="M3.4 11.2 11.2 4.7M12.8 4.7l7.8 6.5M4.4 13.4v6.9M19.6 13.4v6.9M4.4 20.3h4.2M15.4 20.3h4.2"/></symbol>
+    <symbol id="m-wave" viewBox="0 0 24 24"><path d="M3.6 10.6v2.8M8 6.8v10.4M12 3.6v16.8M16 6.8v10.4M20.4 10.6v2.8"/></symbol>
+    <symbol id="m-book" viewBox="0 0 24 24"><path d="M6.8 4h10.4M18.4 5.4v14.2M5.6 5.4v14.2M6.3 20.5 11.2 17M12.8 17l4.9 3.5"/></symbol>
+    <symbol id="m-play" viewBox="0 0 24 24"><path d="M8 5.6v12.8M9.4 5.1 18.6 11M18.6 13 9.4 18.9"/></symbol>
+    <symbol id="m-pause" viewBox="0 0 24 24"><path d="M8.8 5v14M15.2 5v14"/></symbol>
+    <symbol id="m-clock" viewBox="0 0 24 24"><path d="M12.9 3.7a8.3 8.3 0 0 1 7.4 7.4M20.3 12.9a8.3 8.3 0 0 1-7.4 7.4M11.1 20.3a8.3 8.3 0 0 1-7.4-7.4M3.7 11.1a8.3 8.3 0 0 1 7.4-7.4M12 7.4v4.6M13 12.9l2.9 1.8"/></symbol>
+    <symbol id="m-check" viewBox="0 0 24 24"><path d="m4.4 12.6 4.1 4M10.2 16.9 19.6 7.2"/></symbol>
+    <symbol id="m-set" viewBox="0 0 24 24"><path d="M3.4 7.5h2.4M12.6 7.5h8M3.4 16.5h8M18.2 16.5h2.4"/><circle cx="9.2" cy="7.5" r="2.8"/><circle cx="15.4" cy="16.5" r="2.8"/></symbol>
+    <symbol id="m-folder" viewBox="0 0 24 24"><path d="M3.4 7.2h5.6l1.8 2.4M12.6 9.6h8M3.4 8.8v9.8M20.6 11.2v7.4M4.8 19.8h5.4M13.2 19.8h5.4"/></symbol>
+    <symbol id="m-feed" viewBox="0 0 24 24"><circle cx="5" cy="19.2" r="1.2"/><path d="M4.4 13.6A6.4 6.4 0 0 1 8.1 14.8M9.6 16.3A6.4 6.4 0 0 1 10.8 20M4.4 8A12 12 0 0 1 11.3 10.2M14.2 13.1A12 12 0 0 1 16.4 20"/></symbol>
+    <symbol id="m-ext" viewBox="0 0 24 24"><path d="M13.8 4.6h5.4M19.8 5.2v5.4M18.6 5.8 12.8 11.6M9.8 7.2H5.4M4.8 7.8v10.6M5.4 19h10.6M16.6 18.4v-4.2"/></symbol>
+    <symbol id="m-contrast" viewBox="0 0 24 24"><path d="M12.9 3.7a8.3 8.3 0 0 1 7.4 7.4M20.3 12.9a8.3 8.3 0 0 1-7.4 7.4M11.1 20.3a8.3 8.3 0 0 1-7.4-7.4M3.7 11.1a8.3 8.3 0 0 1 7.4-7.4M12 4.8v4.6M12 14.6v4.6M12 6.4a5.6 5.6 0 0 1 0 11.2"/></symbol>
+    <symbol id="m-close" viewBox="0 0 24 24"><path d="M6.4 6.4 10.8 10.8M13.2 13.2 17.6 17.6M17.6 6.4 13.2 10.8M10.8 13.2 6.4 17.6"/></symbol>
+    <symbol id="m-chev" viewBox="0 0 24 24"><path d="M9.4 5.8 14.8 11.2M14.8 12.8 9.4 18.2"/></symbol>
+
+    <!-- ============================================================
+         AMPLITUDE ALPHABETS
+         Not three pens over one drawing — three different drawings.
+         Each set is built from a single construction rule, stated in
+         its comment, and each covers the full 24-glyph list rather
+         than the 14 the pen study needed.
+         ============================================================ -->
+
+    <!-- RULE. Horizontal, vertical and 45 degrees only. No curve
+         anywhere: circles are octagons, the clock is a facet, shading
+         is hatching. Reads as an instrument face rather than an app. -->
+    <symbol id="r-home" viewBox="0 0 24 24"><path d="M4 12 12 4l8 8M6 12v8h12v-8M10 20v-5h4v5"/></symbol>
+    <symbol id="r-wave" viewBox="0 0 24 24"><path d="M4 11v2M8 7v10M12 4v16M16 7v10M20 11v2"/></symbol>
+    <symbol id="r-saved" viewBox="0 0 24 24"><path d="M6 4h12v16l-6-6-6 6z"/></symbol>
+    <symbol id="r-folder" viewBox="0 0 24 24"><path d="M3 6h6l2 2h10v12H3V6z"/></symbol>
+    <symbol id="r-feed" viewBox="0 0 24 24"><path d="M4 20h1M4 15h5v5M4 10h10v10"/></symbol>
+    <symbol id="r-search" viewBox="0 0 24 24"><path d="M7.5 4.5h5l3 3v5l-3 3h-5l-3-3v-5zM15 15l4.5 4.5"/></symbol>
+    <symbol id="r-play" viewBox="0 0 24 24"><path d="M8 4 16 12 8 20z"/></symbol>
+    <symbol id="r-pause" viewBox="0 0 24 24"><path d="M9 5v14M15 5v14"/></symbol>
+    <symbol id="r-skip" viewBox="0 0 24 24"><path d="M5 5 12 12 5 19zM17 5v14"/></symbol>
+    <symbol id="r-back" viewBox="0 0 24 24"><path d="M19 5 12 12 19 19zM7 5v14"/></symbol>
+    <symbol id="r-speed" viewBox="0 0 24 24"><path d="M7 7 12 12 7 17M13 7 18 12 13 17"/></symbol>
+    <symbol id="r-sleep" viewBox="0 0 24 24"><path d="M7 6h10l-10 6h10M9 15h6l-6 4h6"/></symbol>
+    <symbol id="r-queue" viewBox="0 0 24 24"><path d="M4 6h16M4 11h16M4 16h8M14 13 17 16 14 19z"/></symbol>
+    <symbol id="r-focus" viewBox="0 0 24 24"><path d="M7 4h10l3 3v10l-3 3H7l-3-3V7zM12 8v4l3 3"/></symbol>
+    <symbol id="r-done" viewBox="0 0 24 24"><path d="M4 13 9 18 20 7"/></symbol>
+    <symbol id="r-offline" viewBox="0 0 24 24"><path d="M4 20h1M4 15h5v5M4 10h10v10M4 4 20 20"/></symbol>
+    <symbol id="r-share" viewBox="0 0 24 24"><path d="M17 3h4v4h-4zM17 17h4v4h-4zM3 10h4v4H3zM7 11 17 6M7 13l10 5"/></symbol>
+    <symbol id="r-delete" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7v13h12V7M10 11v5M14 11v5"/></symbol>
+    <symbol id="r-add" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="r-external" viewBox="0 0 24 24"><path d="M13 4h7v7M20 4 11 13M17 13v7H4V7h7"/></symbol>
+    <symbol id="r-settings" viewBox="0 0 24 24"><path d="M4 8h16M4 16h16M8 5h3v6H8zM14 13h3v6h-3z"/></symbol>
+    <symbol id="r-contrast" viewBox="0 0 24 24"><path d="M7 4h10l3 3v10l-3 3H7l-3-3V7zM12 4v16M12 8l3-3M12 12l5-5M12 16l5-5M12 20l4-4"/></symbol>
+    <symbol id="r-close" viewBox="0 0 24 24"><path d="M6 6 18 18M18 6 6 18"/></symbol>
+    <symbol id="r-chev" viewBox="0 0 24 24"><path d="M9 5 16 12 9 19"/></symbol>
+
+    <!-- BAR. The waveform is the alphabet. Every glyph that can be
+         built from evenly spaced vertical bars is, and the ones that
+         cannot borrow the same 2.4 weight and round terminal so the
+         set still looks cut from the clip. -->
+    <symbol id="w-home" viewBox="0 0 24 24"><path d="M4 12 12 5.5 20 12M6.5 13.5V20M17.5 13.5V20M12 20v-4.5"/></symbol>
+    <symbol id="w-wave" viewBox="0 0 24 24"><path d="M4 10v4M8 6.5v11M12 3.5v17M16 6.5v11M20 10v4"/></symbol>
+    <symbol id="w-saved" viewBox="0 0 24 24"><path d="M7 5.5h10M7 5.5v14l5-4.5 5 4.5v-14"/></symbol>
+    <symbol id="w-folder" viewBox="0 0 24 24"><path d="M4 8.5V19.5h16V8.5H11L9 6.5H4z"/></symbol>
+    <symbol id="w-feed" viewBox="0 0 24 24"><path d="M5 19.5v-1.5M10 19.5v-5M15 19.5v-9M20 19.5v-13"/></symbol>
+    <symbol id="w-search" viewBox="0 0 24 24"><path d="M10.5 4.5a6 6 0 1 0 0 12 6 6 0 0 0 0-12M15 15l4.5 4.5"/></symbol>
+    <symbol id="w-play" viewBox="0 0 24 24"><path d="M8.5 5.5 18.5 12 8.5 18.5z"/></symbol>
+    <symbol id="w-pause" viewBox="0 0 24 24"><path d="M9 5v14M15 5v14"/></symbol>
+    <symbol id="w-skip" viewBox="0 0 24 24"><path d="M6 6 14 12 6 18zM18 5.5v13"/></symbol>
+    <symbol id="w-back" viewBox="0 0 24 24"><path d="M18 6 10 12 18 18zM6 5.5v13"/></symbol>
+    <symbol id="w-speed" viewBox="0 0 24 24"><path d="M6.5 6.5 12 12l-5.5 5.5M13 6.5 18.5 12 13 17.5"/></symbol>
+    <symbol id="w-sleep" viewBox="0 0 24 24"><path d="M19 15.5A8 8 0 0 1 8.5 5 8.6 8.6 0 1 0 19 15.5z"/></symbol>
+    <symbol id="w-queue" viewBox="0 0 24 24"><path d="M4.5 6.5h15M4.5 11.5h15M4.5 16.5h7M14.5 14.5 20 17.5l-5.5 3z"/></symbol>
+    <symbol id="w-focus" viewBox="0 0 24 24"><path d="M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16M12 8v4l3 2"/></symbol>
+    <symbol id="w-done" viewBox="0 0 24 24"><path d="M5 12.5 9.5 17 19 7"/></symbol>
+    <symbol id="w-offline" viewBox="0 0 24 24"><path d="M5 19.5v-1.5M10 19.5v-5M15 19.5v-9M20 19.5v-13M4 20 20 4"/></symbol>
+    <symbol id="w-share" viewBox="0 0 24 24"><path d="M12 4.5v11M12 4.5 8.5 8M12 4.5 15.5 8M5.5 13v6.5h13V13"/></symbol>
+    <symbol id="w-delete" viewBox="0 0 24 24"><path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7v12.5h11V7M10 11v5M14 11v5"/></symbol>
+    <symbol id="w-add" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="w-external" viewBox="0 0 24 24"><path d="M14 4.5h5.5V10M19.5 4.5 11.5 12.5M16.5 14v5.5H4.5V7.5H10"/></symbol>
+    <symbol id="w-settings" viewBox="0 0 24 24"><path d="M4.5 8h15M4.5 16h15M9 5v6M15 13v6"/></symbol>
+    <symbol id="w-contrast" viewBox="0 0 24 24"><path d="M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16M12 5.5v13M15 8.5v7M18 11v2"/></symbol>
+    <symbol id="w-close" viewBox="0 0 24 24"><path d="M6.5 6.5 17.5 17.5M17.5 6.5 6.5 17.5"/></symbol>
+    <symbol id="w-chev" viewBox="0 0 24 24"><path d="M9.5 5.5 16 12l-6.5 6.5"/></symbol>
+
+    <!-- ARC. Nothing closes on a hard vertex: every corner is a
+         quarter-circle of the same radius, and the door, the speed
+         gauge and the play triangle are all struck from arcs. The
+         soft pole of the three. -->
+    <symbol id="o-home" viewBox="0 0 24 24"><path d="M4 12.5 10.2 6.4a2.6 2.6 0 0 1 3.6 0L20 12.5M6.5 11v6.5a2.5 2.5 0 0 0 2.5 2.5h6a2.5 2.5 0 0 0 2.5-2.5V11M10 20v-3.5a2 2 0 0 1 4 0V20"/></symbol>
+    <symbol id="o-wave" viewBox="0 0 24 24"><path d="M4 11v2M8 7.5v9M12 4.5v15M16 7.5v9M20 11v2"/></symbol>
+    <symbol id="o-saved" viewBox="0 0 24 24"><path d="M7 6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v12.7a1 1 0 0 1-1.6.8L12 16l-4.4 3.5a1 1 0 0 1-1.6-.8z"/></symbol>
+    <symbol id="o-folder" viewBox="0 0 24 24"><path d="M3.5 8.5a2 2 0 0 1 2-2h3.2a2 2 0 0 1 1.5.7l1 1.1a2 2 0 0 0 1.5.7h5.8a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/></symbol>
+    <symbol id="o-feed" viewBox="0 0 24 24"><path d="M5 19.4a.6.6 0 1 0 .01 0M5 13.5A6.5 6.5 0 0 1 11.5 20M5 7.5A12.5 12.5 0 0 1 17.5 20"/></symbol>
+    <symbol id="o-search" viewBox="0 0 24 24"><path d="M10.5 17a6.5 6.5 0 1 1 0-13 6.5 6.5 0 0 1 0 13M15.3 15.3 20 20"/></symbol>
+    <symbol id="o-play" viewBox="0 0 24 24"><path d="M8.5 5.6a1 1 0 0 1 1.5-.9l8 6.4a1 1 0 0 1 0 1.8l-8 6.4a1 1 0 0 1-1.5-.9z"/></symbol>
+    <symbol id="o-pause" viewBox="0 0 24 24"><path d="M9 5.5v13M15 5.5v13"/></symbol>
+    <symbol id="o-skip" viewBox="0 0 24 24"><path d="M6.5 6.4a1 1 0 0 1 1.5-.9l6.5 5.6a1 1 0 0 1 0 1.8L8 18.5a1 1 0 0 1-1.5-.9zM18.5 6v12"/></symbol>
+    <symbol id="o-back" viewBox="0 0 24 24"><path d="M17.5 6.4a1 1 0 0 0-1.5-.9l-6.5 5.6a1 1 0 0 0 0 1.8l6.5 5.6a1 1 0 0 0 1.5-.9zM5.5 6v12"/></symbol>
+    <symbol id="o-speed" viewBox="0 0 24 24"><path d="M4.5 17a8.5 8.5 0 1 1 15 0M12 12.5 16 9"/></symbol>
+    <symbol id="o-sleep" viewBox="0 0 24 24"><path d="M19.5 14.8A8.2 8.2 0 0 1 9.2 4.5 8.8 8.8 0 1 0 19.5 14.8z"/></symbol>
+    <symbol id="o-queue" viewBox="0 0 24 24"><path d="M4.5 7.5h15M4.5 12h15M4.5 16.5h6.5M14.5 15.2a1 1 0 0 1 1.5-.9l3.5 2.3a1 1 0 0 1 0 1.7l-3.5 2.3a1 1 0 0 1-1.5-.9z"/></symbol>
+    <symbol id="o-focus" viewBox="0 0 24 24"><path d="M12 4a8 8 0 1 1 0 16 8 8 0 0 1 0-16M12 8.2V12l2.8 1.8"/></symbol>
+    <symbol id="o-done" viewBox="0 0 24 24"><path d="M5 12.6 9.4 17 19 7.4"/></symbol>
+    <symbol id="o-offline" viewBox="0 0 24 24"><path d="M5 19.4a.6.6 0 1 0 .01 0M8.4 13.6A6.5 6.5 0 0 1 11.5 20M5 7.5a12.5 12.5 0 0 1 6.4 2.6M4.5 4.5 19.5 19.5"/></symbol>
+    <symbol id="o-share" viewBox="0 0 24 24"><path d="M17.5 4a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5M6.5 9.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5M17.5 15a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5M8.8 10.8 15.2 7.6M8.8 13.4l6.4 3.2"/></symbol>
+    <symbol id="o-delete" viewBox="0 0 24 24"><path d="M4.5 7h15M9.5 7V5.5a1.5 1.5 0 0 1 1.5-1.5h2a1.5 1.5 0 0 1 1.5 1.5V7M6.5 7v11a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2V7M10 11v5M14 11v5"/></symbol>
+    <symbol id="o-add" viewBox="0 0 24 24"><path d="M12 5.5v13M5.5 12h13"/></symbol>
+    <symbol id="o-external" viewBox="0 0 24 24"><path d="M14 4.5h5.5V10M19.5 4.5 12 12M17 13.5V18a2 2 0 0 1-2 2H6.5a2 2 0 0 1-2-2V9.5a2 2 0 0 1 2-2H11"/></symbol>
+    <symbol id="o-settings" viewBox="0 0 24 24"><path d="M4.5 8h4M13.5 8h6M4.5 16h6M15.5 16h4M11 5.4a2.6 2.6 0 1 1 0 5.2 2.6 2.6 0 0 1 0-5.2M13 13.4a2.6 2.6 0 1 1 0 5.2 2.6 2.6 0 0 1 0-5.2"/></symbol>
+    <symbol id="o-contrast" viewBox="0 0 24 24"><path d="M12 4a8 8 0 1 1 0 16 8 8 0 0 1 0-16M12 5.6a6.4 6.4 0 0 1 0 12.8z"/></symbol>
+    <symbol id="o-close" viewBox="0 0 24 24"><path d="M7 7 17 17M17 7 7 17"/></symbol>
+    <symbol id="o-chev" viewBox="0 0 24 24"><path d="M9.5 5.5 16 12l-6.5 6.5"/></symbol>
+  </defs>
+</svg>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <p class="kicker">Blogmark · design review</p>
+    <h1>Amplitude vs Bindery</h1>
+    <p class="standfirst">
+      Two complete directions for the app, built to be chosen between. Both are
+      minimalist without going inert, both replace the current three-language
+      icon set with one system, and both give their single colour
+      <strong>exactly one job</strong> &mdash; which is the direct answer to the
+      thing most wrong with the app today.
+    </p>
+  </header>
+
+  <div class="palettebar" role="group" aria-label="Accent palette">
+    <span class="pb-label">Palette</span>
+
+    <button type="button" class="pb" data-set="signature" aria-pressed="true">
+      <span class="duo"><span style="background:#7ed0e3"></span><span style="background:#6f9384"></span></span>
+      Signature
+    </button>
+
+    <button type="button" class="pb" data-set="terracotta" aria-pressed="false">
+      <span class="duo"><span style="background:#c6684a"></span><span style="background:#c6684a"></span></span>
+      Terracotta &mdash; today&rsquo;s app
+    </button>
+
+    <button type="button" class="pb" data-set="phosphor" aria-pressed="false">
+      <span class="duo"><span style="background:#3fe06b"></span><span style="background:#3fe06b"></span></span>
+      Phosphor &mdash; terminal green
+    </button>
+
+    <button type="button" class="pb" data-set="mono" aria-pressed="false">
+      <span class="duo"><span style="background:#ffffff"></span><span style="background:#e4e4e4"></span></span>
+      Monochrome
+    </button>
+  </div>
+
+  <!-- ---------------------------------------------------------- -->
+  <section>
+    <h2>Why</h2>
+    <p class="section-title">The problem isn&rsquo;t taste, it&rsquo;s that there is no system</p>
+    <p class="section-note">
+      Reading the screens alongside the theme layer, the visual faults all trace
+      back to one cause: the design exists as repeated code rather than as
+      shared components. There is no card composable, no chip, no button
+      &mdash; so every screen re-invents them slightly differently.
+    </p>
+
+    <ul class="faults">
+      <li><b>Everything is a card, so nothing is</b>Home gives all four sections the identical rect, fill, hairline and orange eyebrow. No hierarchy, nowhere to land.</li>
+      <li><b>The accent stopped meaning anything</b>Four orange eyebrows down one screen, plus orange links, bookmarks and dots. An accent on everything is just body colour.</li>
+      <li><b>Three icon languages at once</b>Fine outline strokes, a filled triangle for play, and literal glyph stand-ins (<code>&lt;&gt;</code>, <code>&#9834;</code>) that read as placeholders.</li>
+      <li><b>Metadata is a run-on</b><code>2026-08-22 · 1:22 · summary · codeword · 682 words</code> &mdash; five facts at equal weight above the fold of every row.</li>
+      <li><b>Monochrome is subtraction</b>It&rsquo;s the colour theme with the orange deleted, which is precisely why it reads as boring. It has no idea of its own.</li>
+      <li><b>The card recipe is copy-pasted nine times</b>Across <code>DashboardTab</code>, <code>FollowingSection</code>, <code>ReaderTab</code>, <code>SettingsScreen</code> and <code>LinksTab</code>. Six near-identical chips live in six files.</li>
+      <li><b>The type scale is bypassed 44 times</b>Nine ad-hoc inline sizes in circulation. <code>12.5.sp</code> appears eight times &mdash; a token nobody named.</li>
+      <li><b>The launcher mark is a speck</b>The artwork fills only ~15% of its 108dp canvas, so the fanned stack collapses to a blob at launcher size.</li>
+      <li><b>Focus is a word in a void</b>An outsized wordmark centred on an otherwise black screen, with three low-contrast orange pills beneath it and no timer in sight until it runs.</li>
+      <li><b>Empty states sit dead centre</b>A 92&thinsp;dp badge a third of the way down, then 60% blank &mdash; and centred, which quietly breaks the project&rsquo;s own lower-third rule.</li>
+      <li><b>Cards nested inside cards</b>Following is a bordered card full of bordered post cards, so borders double up and the row of tiles is sliced off at the screen edge.</li>
+      <li><b>The floating bar does two jobs</b>Three navigation tabs, a divider, then a theme toggle &mdash; a preference living inside a navigation component, justified by a hairline.</li>
+    </ul>
+  </section>
+
+  <!-- ---------------------------------------------------------- -->
+  <section>
+    <h2>The two directions</h2>
+    <p class="section-title">One hue, one meaning &mdash; twice over</p>
+    <p class="section-note">
+      Each direction picks a different true thing about the app and lets it
+      drive everything else. Both are dark-only, so the phone frames below keep
+      their own palettes whatever theme you are reading this page in.
+    </p>
+    <p class="section-note">
+      Use the <b>palette control at the top</b> to re-tint both directions at
+      once &mdash; including back to the terracotta the app ships today, so you
+      can see each proposal wearing the current colour. Only the colour
+      variables change; no structure moves. That is deliberately the test: a
+      direction that only works in one hue is a paint job, not a system.
+    </p>
+
+    <div class="compare">
+
+      <!-- ============== AMPLITUDE ============== -->
+      <div class="v-amp">
+        <div class="col-head">
+          <p class="name">Amplitude</p>
+          <p class="thesis">Colour appears only where there is sound.</p>
+        </div>
+
+        <table class="spec">
+          <tr><th>Idea</th><td>The app&rsquo;s genuinely unusual trait is that it reads text aloud. So the interface is greyscale, and the one hue is spent entirely on audio &mdash; playing state, position, level. Colour can never drift into decoration because there is only one place it is allowed to go.</td></tr>
+          <tr><th>Type</th><td><b>Jost</b> for display and UI &mdash; a 1920s geometric with real character, used at light weights. <b>Inconsolata</b> for every number and label.</td></tr>
+          <tr><th>Device</th><td>The waveform is <em>data</em>: bar heights are the clip, filled bars are the position. It is never an ornament.</td></tr>
+          <tr><th>Icons</th><td>1.75 stroke, butt caps, miter joins &mdash; drawn with a rule. Play becomes a stroked triangle so it finally joins the family.</td></tr>
+        </table>
+
+        <ul class="swatches" data-swatches="a">
+          <li><span class="chip-dot" style="background:var(--a-bg)"></span><span data-var="--a-bg"></span> ground</li>
+          <li><span class="chip-dot" style="background:var(--a-raise)"></span><span data-var="--a-raise"></span> raised</li>
+          <li><span class="chip-dot" style="background:var(--a-ink)"></span><span data-var="--a-ink"></span> ink</li>
+          <li><span class="chip-dot" style="background:var(--a-mute)"></span><span data-var="--a-mute"></span> muted</li>
+          <li><span class="chip-dot" style="background:var(--a-line)"></span><span data-var="--a-line"></span> rule</li>
+          <li><span class="chip-dot" style="background:var(--a-sound)"></span><span data-var="--a-sound"></span> <b>sound</b></li>
+        </ul>
+      </div>
+
+      <!-- ============== BINDERY ============== -->
+      <div class="v-bin">
+        <div class="col-head">
+          <p class="name">Bindery</p>
+          <p class="thesis">Read things recede. The one colour means done.</p>
+        </div>
+
+        <table class="spec">
+          <tr><th>Idea</th><td>The other true thing: this is a shelf. Items arrive, wait, get read, and leave. So state is made physically legible &mdash; unread items hold full contrast and weight, read items dim and go italic. Verdigris marks completion and nothing else.</td></tr>
+          <tr><th>Type</th><td><b>Source Serif 4</b>, drawn for extended reading, for every title. <b>Karla</b> for UI. <b>No monospace at all</b> &mdash; metadata is Karla with tabular figures.</td></tr>
+          <tr><th>Device</th><td>Rules, not boxes. Section labels sit above a hairline; a firmer rule marks a real break. Recession does the sorting.</td></tr>
+          <tr><th>Icons</th><td>1.5 stroke, round caps <em>and</em> joins throughout &mdash; drawn with a pen. Again no filled exceptions.</td></tr>
+        </table>
+
+        <ul class="swatches" data-swatches="b">
+          <li><span class="chip-dot" style="background:var(--b-bg)"></span><span data-var="--b-bg"></span> ground</li>
+          <li><span class="chip-dot" style="background:var(--b-raise)"></span><span data-var="--b-raise"></span> raised</li>
+          <li><span class="chip-dot" style="background:var(--b-ink)"></span><span data-var="--b-ink"></span> ink</li>
+          <li><span class="chip-dot" style="background:var(--b-mute)"></span><span data-var="--b-mute"></span> muted</li>
+          <li><span class="chip-dot" style="background:var(--b-line)"></span><span data-var="--b-line"></span> rule</li>
+          <li><span class="chip-dot" style="background:var(--b-done)"></span><span data-var="--b-done"></span> <b>done</b></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ---------------------------------------------------------- -->
+  <section>
+    <h2>Screen &mdash; Readback</h2>
+    <p class="section-title">The signature screen</p>
+    <p class="section-note">
+      This is where each idea is most visible, so it goes first. Compare against
+      the current build, where every row carries a title, a five-part metadata
+      run-on, three lines of summary and a link &mdash; four items and the
+      screen is full.
+    </p>
+
+    <div class="compare">
+
+      <div class="v-amp frame-block">
+        <p class="frame-cap">Amplitude</p>
+        <div class="phone">
+          <div class="screen">
+            <div class="statusbar"><span>4:19</span><span class="bars"><i></i><i></i><i></i><i></i></span></div>
+            <div class="canvas">
+              <div class="pillrow">
+                <span class="pill sel">Newest</span>
+                <span class="pill">Oldest</span>
+                <span class="pill">Folder</span>
+              </div>
+
+              <div class="row">
+                <div style="display:flex;gap:10px;align-items:flex-start">
+                  <span class="sourcechip">S</span>
+                  <div style="flex:1;min-width:0">
+                    <h4>Gesture Handler&rsquo;s Touchable: Button We Wish We Had Sooner</h4>
+                    <div class="meta"><span>1:22</span><span>682w</span></div>
+                  </div>
+                </div>
+                <div class="wave" style="margin-top:9px">
+                  <i style="height:5px"></i><i style="height:9px"></i><i style="height:13px"></i><i style="height:7px"></i><i style="height:11px"></i><i style="height:15px"></i><i style="height:8px"></i><i style="height:12px"></i><i style="height:6px"></i><i style="height:10px"></i><i style="height:14px"></i><i style="height:7px"></i><i style="height:11px"></i><i style="height:5px"></i><i style="height:9px"></i><i style="height:13px"></i><i style="height:6px"></i><i style="height:10px"></i>
+                </div>
+              </div>
+
+              <div class="row">
+                <div style="display:flex;gap:10px;align-items:flex-start">
+                  <span class="sourcechip" style="border-color:var(--a-sound);color:var(--a-sound)">A</span>
+                  <div style="flex:1;min-width:0">
+                    <h4 class="playing">Claude Code now supports artifacts</h4>
+                    <div class="meta"><span class="playing">0:41 / 1:31</span><span>538w</span></div>
+                  </div>
+                  <svg class="i playing" style="font-size:15px;margin-top:2px"><use href="#g-pause"/></svg>
+                </div>
+                <div class="wave part" style="margin-top:9px">
+                  <i class="p" style="height:6px"></i><i class="p" style="height:11px"></i><i class="p" style="height:15px"></i><i class="p" style="height:8px"></i><i class="p" style="height:12px"></i><i class="p" style="height:14px"></i><i class="p" style="height:7px"></i><i style="height:10px"></i><i style="height:13px"></i><i style="height:6px"></i><i style="height:9px"></i><i style="height:15px"></i><i style="height:8px"></i><i style="height:11px"></i><i style="height:5px"></i><i style="height:12px"></i><i style="height:7px"></i><i style="height:10px"></i>
+                </div>
+              </div>
+
+              <div class="row">
+                <div style="display:flex;gap:10px;align-items:flex-start">
+                  <span class="sourcechip">N</span>
+                  <div style="flex:1;min-width:0">
+                    <h4>A Tale of Two Flink Autoscalers</h4>
+                    <div class="meta"><span>1:37</span><span>2020w</span></div>
+                  </div>
+                </div>
+                <div class="wave" style="margin-top:9px">
+                  <i style="height:8px"></i><i style="height:12px"></i><i style="height:6px"></i><i style="height:14px"></i><i style="height:9px"></i><i style="height:11px"></i><i style="height:15px"></i><i style="height:7px"></i><i style="height:10px"></i><i style="height:13px"></i><i style="height:5px"></i><i style="height:12px"></i><i style="height:8px"></i><i style="height:14px"></i><i style="height:6px"></i><i style="height:11px"></i><i style="height:9px"></i><i style="height:7px"></i>
+                </div>
+              </div>
+
+              <div class="row">
+                <div style="display:flex;gap:10px;align-items:flex-start">
+                  <span class="sourcechip">A</span>
+                  <div style="flex:1;min-width:0">
+                    <h4>Tinder cuts app cold starts by 47% with R8</h4>
+                    <div class="meta"><span>1:25</span><span>797w</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="navbar">
+              <span class="nb"><svg class="i"><use href="#g-home"/></svg></span>
+              <span class="nb sel"><svg class="i"><use href="#g-wave"/></svg></span>
+              <span class="nb"><svg class="i"><use href="#g-book"/></svg></span>
+            </div>
+          </div>
+        </div>
+        <p class="rationale">
+          Two facts per row instead of five, and the third fact &mdash; how long
+          this actually is &mdash; is <b>drawn rather than written</b>. The
+          playing row is the only coloured thing on screen.
+        </p>
+      </div>
+
+      <div class="v-bin frame-block">
+        <p class="frame-cap">Bindery</p>
+        <div class="phone">
+          <div class="screen">
+            <div class="statusbar"><span>4:19</span><span class="bars"><i></i><i></i><i></i><i></i></span></div>
+            <div class="canvas">
+              <div class="pillrow">
+                <span class="pill sel">Newest</span>
+                <span class="pill">Oldest</span>
+                <span class="pill">Change folder</span>
+              </div>
+
+              <p class="eyebrow">Today</p>
+              <div class="rule firm"></div>
+
+              <div class="row">
+                <h4>Gesture Handler&rsquo;s Touchable: Button We Wish We Had Sooner</h4>
+                <div class="meta"><span>1:22</span><span>682 words</span><span>swmansion</span></div>
+              </div>
+              <div class="rule"></div>
+
+              <div class="row">
+                <h4>Claude Code now supports artifacts</h4>
+                <div class="meta"><span>1:31</span><span>538 words</span><span>anthropic</span></div>
+              </div>
+              <div class="rule"></div>
+
+              <div class="row">
+                <h4>A Tale of Two Flink Autoscalers</h4>
+                <div class="meta"><span>1:37</span><span>2020 words</span><span>netflix</span></div>
+              </div>
+              <div class="rule"></div>
+
+              <p class="eyebrow" style="margin-top:16px">Finished</p>
+              <div class="rule firm"></div>
+
+              <div class="row done">
+                <h4>Tinder cuts app cold starts by 47% with R8</h4>
+                <div class="meta">
+                  <svg class="i done-tick" style="font-size:11px"><use href="#g-check"/></svg>
+                  <span>1:25</span><span>797 words</span>
+                </div>
+              </div>
+              <div class="rule"></div>
+
+              <div class="row done">
+                <h4>Preparing your app for broader memory limits</h4>
+                <div class="meta">
+                  <svg class="i done-tick" style="font-size:11px"><use href="#g-check"/></svg>
+                  <span>2:04</span><span>1140 words</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="navbar">
+              <span class="nb"><svg class="i"><use href="#g-home"/></svg></span>
+              <span class="nb sel"><svg class="i"><use href="#g-wave"/></svg></span>
+              <span class="nb"><svg class="i"><use href="#g-book"/></svg></span>
+            </div>
+          </div>
+        </div>
+        <p class="rationale">
+          No boxes at all &mdash; rules and rhythm carry the structure, and the
+          <b>firm rule</b> marks a genuine break where the hairline marks a
+          row. Finished items sink: lighter weight, italic, verdigris tick.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ---------------------------------------------------------- -->
+  <section>
+    <h2>Screen &mdash; Home</h2>
+    <p class="section-title">Four sections that no longer look identical</p>
+    <p class="section-note">
+      The current dashboard stacks four equally-weighted cards, one of which
+      contains more cards. Both directions drop the nesting entirely and let
+      each section earn its own weight.
+    </p>
+
+    <div class="compare">
+
+      <div class="v-amp frame-block">
+        <p class="frame-cap">Amplitude</p>
+        <div class="phone">
+          <div class="screen">
+            <div class="statusbar"><span>4:19</span><span class="bars"><i></i><i></i><i></i><i></i></span></div>
+            <div class="canvas">
+              <div class="greet">
+                <h3>Hello, MKS</h3>
+                <svg class="i"><use href="#g-set"/></svg>
+              </div>
+
+              <p class="eyebrow">Continue</p>
+              <div class="row">
+                <h4 class="playing">Gesture Handler&rsquo;s Touchable</h4>
+                <div class="meta" style="margin-bottom:8px"><span class="playing">0:38 / 1:22</span></div>
+                <div class="wave part">
+                  <i class="p" style="height:7px"></i><i class="p" style="height:12px"></i><i class="p" style="height:15px"></i><i class="p" style="height:9px"></i><i class="p" style="height:13px"></i><i class="p" style="height:6px"></i><i class="p" style="height:11px"></i><i style="height:14px"></i><i style="height:8px"></i><i style="height:12px"></i><i style="height:5px"></i><i style="height:10px"></i><i style="height:15px"></i><i style="height:7px"></i><i style="height:11px"></i><i style="height:9px"></i><i style="height:13px"></i><i style="height:6px"></i>
+                </div>
+              </div>
+
+              <p class="eyebrow">Up next</p>
+              <div class="row">
+                <div style="display:flex;gap:10px;align-items:flex-start">
+                  <span class="sourcechip">S</span>
+                  <div style="flex:1;min-width:0">
+                    <h4>When Can LLMs Replace Humans in A/B Tests?</h4>
+                    <div class="meta"><span>engineering.atspotify.com</span></div>
+                  </div>
+                </div>
+              </div>
+
+              <p class="eyebrow">Focus</p>
+              <div class="row">
+                <div class="pillrow" style="margin:0">
+                  <span class="pill">15 min</span>
+                  <span class="pill">25 min</span>
+                  <span class="pill">30 min</span>
+                </div>
+              </div>
+
+              <p class="eyebrow">Following</p>
+              <div class="row" style="border:0">
+                <div class="meta" style="flex-direction:column;gap:7px">
+                  <span>android-developers.googleblog.com &nbsp;<span style="color:var(--a-ink)">4 new</span></span>
+                  <span>swmansion.com &nbsp;<span style="color:var(--a-ink)">2 new</span></span>
+                  <span>engineering.atspotify.com &nbsp;&mdash;</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="navbar">
+              <span class="nb sel"><svg class="i"><use href="#g-home"/></svg></span>
+              <span class="nb"><svg class="i"><use href="#g-wave"/></svg></span>
+              <span class="nb"><svg class="i"><use href="#g-book"/></svg></span>
+            </div>
+          </div>
+        </div>
+        <p class="rationale">
+          Following becomes a <b>digest, not a carousel</b> &mdash; three lines
+          telling you what changed, instead of a nested card of clipped tiles.
+          The theme toggle leaves the nav bar and moves into Settings.
+        </p>
+      </div>
+
+      <div class="v-bin frame-block">
+        <p class="frame-cap">Bindery</p>
+        <div class="phone">
+          <div class="screen">
+            <div class="statusbar"><span>4:19</span><span class="bars"><i></i><i></i><i></i><i></i></span></div>
+            <div class="canvas">
+              <div class="greet">
+                <h3>Good evening, MKS</h3>
+                <svg class="i"><use href="#g-set"/></svg>
+              </div>
+
+              <p class="eyebrow">Continue listening</p>
+              <div class="rule firm"></div>
+              <div class="row">
+                <h4>Gesture Handler&rsquo;s Touchable: Button We Wish We Had Sooner</h4>
+                <div class="meta"><span>0:38 of 1:22</span></div>
+              </div>
+
+              <p class="eyebrow" style="margin-top:18px">From your shelf</p>
+              <div class="rule firm"></div>
+              <div class="row">
+                <h4>When Can LLMs Replace Humans in A/B Tests?</h4>
+                <div class="meta"><span>engineering.atspotify.com</span></div>
+              </div>
+
+              <p class="eyebrow" style="margin-top:18px">Focus</p>
+              <div class="rule firm"></div>
+              <div class="pillrow" style="margin-top:12px">
+                <span class="pill sel">15 min</span>
+                <span class="pill">25 min</span>
+                <span class="pill">30 min</span>
+              </div>
+
+              <p class="eyebrow" style="margin-top:18px">Following</p>
+              <div class="rule firm"></div>
+              <div class="meta" style="flex-direction:column;gap:8px;margin-top:11px">
+                <span>android&#8209;developers &nbsp;<span style="color:var(--b-ink)">4 new</span></span>
+                <span>swmansion &nbsp;<span style="color:var(--b-ink)">2 new</span></span>
+                <span>atspotify &nbsp;&mdash;</span>
+              </div>
+            </div>
+
+            <div class="navbar">
+              <span class="nb sel"><svg class="i"><use href="#g-home"/></svg></span>
+              <span class="nb"><svg class="i"><use href="#g-wave"/></svg></span>
+              <span class="nb"><svg class="i"><use href="#g-book"/></svg></span>
+            </div>
+          </div>
+        </div>
+        <p class="rationale">
+          Every section opens the same way &mdash; label, firm rule, content
+          &mdash; so the page has one repeating cadence instead of four
+          competing boxes. The serif does the work the orange used to.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ---------------------------------------------------------- -->
+  <section>
+    <h2>Screen &mdash; Saved</h2>
+    <p class="section-title">Unread and read, told apart without a heading</p>
+
+    <div class="compare">
+
+      <div class="v-amp frame-block">
+        <p class="frame-cap">Amplitude</p>
+        <div class="phone">
+          <div class="screen">
+            <div class="statusbar"><span>4:19</span><span class="bars"><i></i><i></i><i></i><i></i></span></div>
+            <div class="canvas">
+              <div class="pill" style="width:100%;text-align:left;margin-bottom:18px;padding:9px 12px;color:var(--a-faint)">Paste a link</div>
+
+              <p class="eyebrow">Unread &middot; 1</p>
+              <div class="row">
+                <div style="display:flex;gap:10px;align-items:flex-start">
+                  <span class="sourcechip">S</span>
+                  <div style="flex:1;min-width:0">
+                    <h4>When Can LLMs Replace Humans in A/B Tests?</h4>
+                    <div class="meta"><span>atspotify</span><span>7m ago</span></div>
+                  </div>
+                </div>
+              </div>
+
+              <p class="eyebrow">Read &middot; 4</p>
+              <div class="row" style="opacity:0.5">
+                <div style="display:flex;gap:10px;align-items:flex-start">
+                  <span class="sourcechip">S</span>
+                  <div style="flex:1;min-width:0">
+                    <h4>Missing layer in live video streaming APIs</h4>
+                    <div class="meta"><span>swmansion</span><span>2m ago</span></div>
+                  </div>
+                  <svg class="i" style="font-size:13px;margin-top:2px"><use href="#g-check"/></svg>
+                </div>
+              </div>
+              <div class="row" style="opacity:0.5">
+                <div style="display:flex;gap:10px;align-items:flex-start">
+                  <span class="sourcechip">S</span>
+                  <div style="flex:1;min-width:0">
+                    <h4>React Native Gesture Handler&rsquo;s Touchable</h4>
+                    <div class="meta"><span>swmansion</span><span>6m ago</span></div>
+                  </div>
+                  <svg class="i" style="font-size:13px;margin-top:2px"><use href="#g-check"/></svg>
+                </div>
+              </div>
+              <div class="row" style="opacity:0.5">
+                <div style="display:flex;gap:10px;align-items:flex-start">
+                  <span class="sourcechip">S</span>
+                  <div style="flex:1;min-width:0">
+                    <h4>We Built the Same App in KMP and React Native</h4>
+                    <div class="meta"><span>swmansion</span><span>6m ago</span></div>
+                  </div>
+                  <svg class="i" style="font-size:13px;margin-top:2px"><use href="#g-check"/></svg>
+                </div>
+              </div>
+              <div class="row" style="opacity:0.5">
+                <div style="display:flex;gap:10px;align-items:flex-start">
+                  <span class="sourcechip">A</span>
+                  <div style="flex:1;min-width:0">
+                    <h4>Preparing your app for broader memory limits</h4>
+                    <div class="meta"><span>android-developers</span></div>
+                  </div>
+                  <svg class="i" style="font-size:13px;margin-top:2px"><use href="#g-check"/></svg>
+                </div>
+              </div>
+            </div>
+
+            <div class="navbar">
+              <span class="nb"><svg class="i"><use href="#g-home"/></svg></span>
+              <span class="nb"><svg class="i"><use href="#g-wave"/></svg></span>
+              <span class="nb sel"><svg class="i"><use href="#g-book"/></svg></span>
+            </div>
+          </div>
+        </div>
+        <p class="rationale">
+          The favicon stand-ins go. In their place a <b>monogram chip</b> set in
+          the variant&rsquo;s own face &mdash; honest about being a letter rather
+          than pretending to be a logo, and it scales to any host.
+        </p>
+      </div>
+
+      <div class="v-bin frame-block">
+        <p class="frame-cap">Bindery</p>
+        <div class="phone">
+          <div class="screen">
+            <div class="statusbar"><span>4:19</span><span class="bars"><i></i><i></i><i></i><i></i></span></div>
+            <div class="canvas">
+              <div style="border:1px solid var(--b-line);border-radius:4px;padding:10px 13px;margin-bottom:20px;color:var(--b-faint);font-size:13px">Paste a link</div>
+
+              <p class="eyebrow">To read</p>
+              <div class="rule firm"></div>
+              <div class="row">
+                <h4>When Can LLMs Replace Humans in A/B Tests?</h4>
+                <div class="meta"><span>atspotify</span><span>7m ago</span></div>
+              </div>
+
+              <p class="eyebrow" style="margin-top:20px">Finished &middot; 4</p>
+              <div class="rule firm"></div>
+
+              <div class="row done">
+                <h4>Missing layer in live video streaming APIs</h4>
+                <div class="meta">
+                  <svg class="i done-tick" style="font-size:11px"><use href="#g-check"/></svg>
+                  <span>swmansion</span>
+                </div>
+              </div>
+              <div class="rule"></div>
+              <div class="row done">
+                <h4>React Native Gesture Handler&rsquo;s Touchable</h4>
+                <div class="meta">
+                  <svg class="i done-tick" style="font-size:11px"><use href="#g-check"/></svg>
+                  <span>swmansion</span>
+                </div>
+              </div>
+              <div class="rule"></div>
+              <div class="row done">
+                <h4>We Built the Same App in KMP and React Native</h4>
+                <div class="meta">
+                  <svg class="i done-tick" style="font-size:11px"><use href="#g-check"/></svg>
+                  <span>swmansion</span>
+                </div>
+              </div>
+              <div class="rule"></div>
+              <div class="row done">
+                <h4>Preparing your app for broader memory limits</h4>
+                <div class="meta">
+                  <svg class="i done-tick" style="font-size:11px"><use href="#g-check"/></svg>
+                  <span>android&#8209;developers</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="navbar">
+              <span class="nb"><svg class="i"><use href="#g-home"/></svg></span>
+              <span class="nb"><svg class="i"><use href="#g-wave"/></svg></span>
+              <span class="nb sel"><svg class="i"><use href="#g-book"/></svg></span>
+            </div>
+          </div>
+        </div>
+        <p class="rationale">
+          No monogram chips here at all &mdash; the serif title carries enough
+          weight on its own, and dropping them buys back the full line width.
+          <b>Recession alone</b> separates read from unread.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ---------------------------------------------------------- -->
+  <section id="focusrow">
+    <h2>Focus &amp; empty states</h2>
+    <p class="section-title">The screens with nothing on them</p>
+    <p class="section-note">
+      Focus is currently a very large word floating in the middle of an
+      otherwise black screen, and the two full empty states put a 92&thinsp;dp
+      badge at a third of the way down and then leave 60% of the display blank.
+      Both also sit dead centre, which quietly breaks the project&rsquo;s own
+      rule that everything reachable lives in the lower third. These are the
+      easiest screens to get wrong, because there is nothing to hide behind.
+    </p>
+
+    <div class="compare">
+
+      <div class="v-amp frame-block">
+        <p class="frame-cap">Amplitude &mdash; focus running</p>
+        <div class="phone">
+          <div class="screen">
+            <div class="statusbar"><span>4:51</span><span class="bars"><i></i><i></i><i></i><i></i></span></div>
+            <div class="canvas" style="justify-content:flex-end;padding-bottom:96px">
+              <p class="eyebrow">Focus &middot; 25 min</p>
+              <div style="font-family:var(--a-data);font-size:56px;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-0.02em;margin-bottom:18px">18:24</div>
+
+              <div class="wave part" style="height:26px;gap:2px;margin-bottom:24px">
+                <i class="p" style="height:9px"></i><i class="p" style="height:16px"></i><i class="p" style="height:22px"></i><i class="p" style="height:12px"></i><i class="p" style="height:19px"></i><i class="p" style="height:26px"></i><i class="p" style="height:14px"></i><i style="height:20px"></i><i style="height:10px"></i><i style="height:17px"></i><i style="height:24px"></i><i style="height:13px"></i><i style="height:18px"></i><i style="height:8px"></i><i style="height:15px"></i><i style="height:21px"></i><i style="height:11px"></i><i style="height:16px"></i><i style="height:23px"></i><i style="height:9px"></i>
+              </div>
+
+              <div class="pillrow" style="margin:0">
+                <span class="pill sel">Pause</span>
+                <span class="pill">Reset</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="rationale">
+          The timer is a meter, drawn with the same bars as everything else
+          &mdash; <b>elapsed is filled, remaining is not</b>, so one visual
+          language covers audio and time alike. Controls sit in the thumb zone
+          rather than the middle of the screen.
+        </p>
+      </div>
+
+      <div class="v-bin frame-block">
+        <p class="frame-cap">Bindery &mdash; focus running</p>
+        <div class="phone">
+          <div class="screen">
+            <div class="statusbar"><span>4:51</span><span class="bars"><i></i><i></i><i></i><i></i></span></div>
+            <div class="canvas" style="justify-content:flex-end;padding-bottom:96px">
+              <p class="eyebrow">Focus</p>
+              <div class="rule firm"></div>
+              <div style="font-family:var(--b-serif);font-size:58px;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-0.03em;margin:14px 0 6px">18:24</div>
+              <div class="meta" style="margin-bottom:22px"><span>of 25 minutes</span></div>
+
+              <div style="height:2px;background:var(--b-line);margin-bottom:26px;position:relative">
+                <div style="position:absolute;inset:0 34% 0 0;background:var(--b-mute)"></div>
+              </div>
+
+              <div class="pillrow" style="margin:0">
+                <span class="pill sel">Pause</span>
+                <span class="pill">Reset</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="rationale">
+          A serif numeral large enough to read across a desk, and a
+          <b>rule that fills as the session runs</b> &mdash; the same rule that
+          divides every other screen, given one more job. Nothing is centred.
+        </p>
+      </div>
+    </div>
+
+    <div class="compare" style="margin-top:36px">
+
+      <div class="v-amp frame-block">
+        <p class="frame-cap">Amplitude &mdash; nothing saved</p>
+        <div class="phone">
+          <div class="screen">
+            <div class="statusbar"><span>4:51</span><span class="bars"><i></i><i></i><i></i><i></i></span></div>
+            <div class="canvas" style="justify-content:flex-end;padding-bottom:96px">
+              <div class="pill" style="width:100%;text-align:left;margin-bottom:26px;padding:9px 12px;color:var(--a-faint)">Paste a link</div>
+
+              <div class="wave" style="height:16px;margin-bottom:16px">
+                <i style="height:1px"></i><i style="height:1px"></i><i style="height:1px"></i><i style="height:1px"></i><i style="height:1px"></i><i style="height:1px"></i><i style="height:1px"></i><i style="height:1px"></i><i style="height:1px"></i><i style="height:1px"></i><i style="height:1px"></i><i style="height:1px"></i><i style="height:1px"></i><i style="height:1px"></i><i style="height:1px"></i><i style="height:1px"></i><i style="height:1px"></i><i style="height:1px"></i><i style="height:1px"></i><i style="height:1px"></i>
+              </div>
+
+              <h4 style="margin:0 0 6px;font-size:15px;font-weight:400">Nothing saved yet</h4>
+              <p style="margin:0;font-family:var(--a-ui);font-size:13px;line-height:1.6;color:var(--a-mute)">Share an article to Blogmark from any app, or paste its address above.</p>
+            </div>
+            <div class="navbar">
+              <span class="nb"><svg class="i"><use href="#g-home"/></svg></span>
+              <span class="nb"><svg class="i"><use href="#g-wave"/></svg></span>
+              <span class="nb sel"><svg class="i"><use href="#g-book"/></svg></span>
+            </div>
+          </div>
+        </div>
+        <p class="rationale">
+          The badge goes. In its place a <b>flat line</b> &mdash; the same
+          waveform every other row uses, at zero. It means &ldquo;no signal&rdquo;
+          literally rather than decorating the absence with an icon.
+        </p>
+      </div>
+
+      <div class="v-bin frame-block">
+        <p class="frame-cap">Bindery &mdash; nothing saved</p>
+        <div class="phone">
+          <div class="screen">
+            <div class="statusbar"><span>4:51</span><span class="bars"><i></i><i></i><i></i><i></i></span></div>
+            <div class="canvas" style="justify-content:flex-end;padding-bottom:96px">
+              <div style="border:1px solid var(--b-line);border-radius:4px;padding:10px 13px;margin-bottom:28px;color:var(--b-faint);font-size:13px">Paste a link</div>
+
+              <p class="eyebrow">To read</p>
+              <div class="rule firm"></div>
+              <div style="height:1px;background:var(--b-line);margin:26px 0 10px"></div>
+              <div style="height:1px;background:var(--b-line);margin:0 0 10px;width:72%"></div>
+              <div style="height:1px;background:var(--b-line);margin:0 0 22px;width:48%"></div>
+
+              <h4 style="margin:0 0 6px;font-family:var(--b-serif);font-size:17px;font-weight:600">The shelf is empty</h4>
+              <p style="margin:0;font-size:13px;line-height:1.6;color:var(--b-mute);font-family:var(--b-ui)">Share an article from any app, or paste its address above.</p>
+            </div>
+            <div class="navbar">
+              <span class="nb"><svg class="i"><use href="#g-home"/></svg></span>
+              <span class="nb"><svg class="i"><use href="#g-wave"/></svg></span>
+              <span class="nb sel"><svg class="i"><use href="#g-book"/></svg></span>
+            </div>
+          </div>
+        </div>
+        <p class="rationale">
+          <b>Three empty rules</b> where three titles would be &mdash; the shelf
+          drawn with nothing on it. It shows the shape of what is missing, which
+          an icon in a circle never does.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ---------------------------------------------------------- -->
+  <section id="ondevice">
+    <h2>Proposed &mdash; on-device summary</h2>
+    <p class="section-title">The one feature the app is actually missing</p>
+    <p class="section-note">
+      Readback items arrive with a summary already written, because
+      <a href="https://github.com/MKS-01/readback">readback</a> wrote one before
+      the library was ever synced &mdash; that tab is a read-only import and
+      stays one. <b>Everything else in the app has no summary at all</b>: saved
+      links and followed-feed posts carry a title and whatever description the
+      page&rsquo;s metadata happened to offer. That asymmetry shows on every
+      screen. Gemini Nano closes it for every article the app knows about, and
+      closes it <em>on the device</em> &mdash; which is the only way it could be
+      closed without contradicting the app&rsquo;s own promise that there is no
+      account and nothing leaves the phone.
+    </p>
+    <p class="section-note">
+      The design problem it creates is more interesting than the plumbing. Each
+      direction has just committed to one colour meaning one thing &mdash; so a
+      new feature must not arrive carrying a colour of its own. Both frames
+      below hold the line, and are better for it.
+    </p>
+
+    <div class="compare">
+
+      <div class="v-amp frame-block">
+        <p class="frame-cap">Amplitude &mdash; generating</p>
+        <div class="phone">
+          <div class="screen">
+            <div class="statusbar"><span>4:51</span><span class="bars"><i></i><i></i><i></i><i></i></span></div>
+            <div class="canvas">
+              <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:16px">
+                <span class="sourcechip">N</span>
+                <div style="flex:1;min-width:0">
+                  <h4 style="margin:0 0 5px;font-size:15px;line-height:1.3">A Tale of Two Flink Autoscalers</h4>
+                  <div class="meta"><span>netflix</span><span>2020w</span></div>
+                </div>
+              </div>
+
+              <p class="eyebrow">Summary &middot; on device</p>
+
+              <div style="font-family:var(--a-ui);font-size:13px;line-height:1.6;color:var(--a-ink)">
+                <p style="margin:0 0 9px;display:flex;gap:8px"><span style="color:var(--a-faint);font-family:var(--a-data)">&mdash;</span><span>Netflix runs two Flink autoscalers side by side and is consolidating on one.</span></p>
+                <p style="margin:0 0 9px;display:flex;gap:8px"><span style="color:var(--a-faint);font-family:var(--a-data)">&mdash;</span><span>The custom scaler predates the open-source one and duplicates most of its logic.</span></p>
+                <p style="margin:0;display:flex;gap:8px"><span style="color:var(--a-faint);font-family:var(--a-data)">&mdash;</span><span style="color:var(--a-mute)">Migration is staged per job, starting with<span class="caret"></span></span></p>
+              </div>
+
+              <div style="height:1px;background:var(--a-line);margin:18px 0 10px;position:relative">
+                <div style="position:absolute;inset:0 26% 0 0;background:var(--a-mute)"></div>
+              </div>
+              <div class="meta"><span>Generating &middot; nothing leaves the device</span></div>
+            </div>
+          </div>
+        </div>
+        <p class="rationale">
+          The summary streams in <b>ink, not cyan</b> &mdash; text is not sound,
+          so it gets no colour. The progress rule is muted grey for the same
+          reason. Cyan returns only on the Listen action this unlocks, because
+          that genuinely is sound.
+        </p>
+      </div>
+
+      <div class="v-bin frame-block">
+        <p class="frame-cap">Bindery &mdash; summarised</p>
+        <div class="phone">
+          <div class="screen">
+            <div class="statusbar"><span>4:51</span><span class="bars"><i></i><i></i><i></i><i></i></span></div>
+            <div class="canvas">
+              <p class="eyebrow">From your shelf</p>
+              <div class="rule firm"></div>
+              <div class="row" style="margin-bottom:12px">
+                <h4>A Tale of Two Flink Autoscalers</h4>
+                <div class="meta"><span>netflix</span><span>2020 words</span></div>
+              </div>
+
+              <div style="padding-left:13px;border-left:1px solid var(--b-line);margin-bottom:18px">
+                <p style="margin:0 0 9px;font-family:var(--b-serif);font-style:italic;font-size:13.5px;line-height:1.52;color:var(--b-mute)">Netflix runs two Flink autoscalers side by side and is consolidating on one.</p>
+                <p style="margin:0 0 9px;font-family:var(--b-serif);font-style:italic;font-size:13.5px;line-height:1.52;color:var(--b-mute)">The custom scaler predates the open-source one and duplicates most of its logic.</p>
+                <p style="margin:0;font-family:var(--b-serif);font-style:italic;font-size:13.5px;line-height:1.52;color:var(--b-mute)">Migration is staged per job, starting with the lowest-throughput streams.</p>
+              </div>
+
+              <div class="meta" style="margin-bottom:20px"><span>Summarised on this device</span></div>
+
+              <div class="pillrow" style="margin:0">
+                <span class="pill sel">Listen</span>
+                <span class="pill">Read original</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="rationale">
+          The summary is set as <b>marginalia</b> &mdash; indented behind a
+          rule, in the reading serif, italic. A note written in the margin of
+          the page, which is exactly what it is. No colour needed, so verdigris
+          still only ever means finished.
+        </p>
+      </div>
+    </div>
+
+    <div class="feasible">
+      <p class="feasible-head">What it would actually take</p>
+      <table class="spec spec-wide">
+        <tr>
+          <th>API</th>
+          <td>ML Kit GenAI Summarization &mdash; <code>com.google.mlkit:genai-summarization</code>. <code>Summarizer</code> + <code>SummarizerOptions</code> with <code>InputType.ARTICLE</code> and <code>OutputType.THREE_BULLET</code>, which is the same shape Pixel Recorder used for its three-bullet transcript summaries. <code>runInference(request) { newText -&gt; }</code> streams, which is what makes the generating state above worth designing.</td>
+        </tr>
+        <tr>
+          <th>Where</th>
+          <td><b>Android only</b>, so it lives in <code>androidMain</code> behind an <code>expect</code>/<code>actual</code> &mdash; the pattern the repo already uses for <code>rememberReadRepository</code> and <code>ReaderSourcePicker</code>. Desktop, iOS and Wasm get a no-op actual and simply never show the affordance.</td>
+        </tr>
+        <tr>
+          <th>The catch</th>
+          <td>This is the real work, and it is not the model. Blogmark stores a <b>URL and its metadata, never the article body</b> &mdash; for saved links and feed posts alike &mdash; and the summariser needs at least 400 characters of clean prose, ideally 300+ words. So extraction comes first, and it is the piece worth designing carefully: feed entries sometimes ship full content in the RSS payload and need no fetch at all, while a bare saved link needs fetch plus readability. The HTTP client already exists for feed sync and title backfill; the extractor does not.</td>
+        </tr>
+        <tr>
+          <th>Limits</th>
+          <td>About 4000 tokens in, roughly 3000 English words &mdash; the 2020-word Flink piece fits, longer ones need <code>setLongInputAutoTruncationEnabled()</code>. English, Japanese and Korean only.</td>
+        </tr>
+        <tr>
+          <th>Device gate</th>
+          <td>Needs AICore and a supported Tensor, Snapdragon or Dimensity part, API 26+, locked bootloader. <code>checkFeatureStatus()</code> returns <code>UNAVAILABLE</code> / <code>DOWNLOADABLE</code> / <code>DOWNLOADING</code> / <code>AVAILABLE</code>. On an unsupported phone the button should <b>not exist</b> rather than exist and fail &mdash; and the first run needs a download state, since the LoRA adapter is fetched on demand.</td>
+        </tr>
+        <tr>
+          <th>Why it fits</th>
+          <td>The app already says there is no account and nothing leaves the device. An on-device summariser is the only kind that keeps that true, so this is a feature the product&rsquo;s existing promise argues <em>for</em> rather than merely tolerates.</td>
+        </tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- ---------------------------------------------------------- -->
+  <section>
+    <h2>Monochrome</h2>
+    <p class="section-title">A second design, not the first one with the colour deleted</p>
+    <p class="section-note">
+      Today the mono theme is the dark theme minus the orange, which is why it
+      falls flat. Each direction here loses its hue and keeps its idea, because
+      each idea was never carried by hue alone.
+    </p>
+
+    <div class="compare">
+
+      <div class="v-amp mono frame-block">
+        <p class="frame-cap">Amplitude &mdash; mono</p>
+        <div class="phone">
+          <div class="screen">
+            <div class="statusbar"><span>4:19</span><span class="bars"><i></i><i></i><i></i><i></i></span></div>
+            <div class="canvas">
+              <div class="pillrow">
+                <span class="pill sel">Newest</span>
+                <span class="pill">Oldest</span>
+                <span class="pill">Folder</span>
+              </div>
+              <div class="row">
+                <div style="display:flex;gap:10px;align-items:flex-start">
+                  <span class="sourcechip">S</span>
+                  <div style="flex:1;min-width:0">
+                    <h4>Gesture Handler&rsquo;s Touchable</h4>
+                    <div class="meta"><span>1:22</span><span>682w</span></div>
+                  </div>
+                </div>
+                <div class="wave" style="margin-top:9px">
+                  <i style="height:5px"></i><i style="height:9px"></i><i style="height:13px"></i><i style="height:7px"></i><i style="height:11px"></i><i style="height:15px"></i><i style="height:8px"></i><i style="height:12px"></i><i style="height:6px"></i><i style="height:10px"></i><i style="height:14px"></i><i style="height:7px"></i><i style="height:11px"></i><i style="height:5px"></i><i style="height:9px"></i><i style="height:13px"></i><i style="height:6px"></i><i style="height:10px"></i>
+                </div>
+              </div>
+              <div class="row">
+                <div style="display:flex;gap:10px;align-items:flex-start">
+                  <span class="sourcechip" style="border-color:#fff;color:#fff">A</span>
+                  <div style="flex:1;min-width:0">
+                    <h4 class="playing">Claude Code now supports artifacts</h4>
+                    <div class="meta"><span class="playing">0:41 / 1:31</span><span>538w</span></div>
+                  </div>
+                  <svg class="i playing" style="font-size:15px;margin-top:2px"><use href="#g-pause"/></svg>
+                </div>
+                <div class="wave part" style="margin-top:9px">
+                  <i class="p" style="height:6px"></i><i class="p" style="height:11px"></i><i class="p" style="height:15px"></i><i class="p" style="height:8px"></i><i class="p" style="height:12px"></i><i class="p" style="height:14px"></i><i class="p" style="height:7px"></i><i style="height:10px"></i><i style="height:13px"></i><i style="height:6px"></i><i style="height:9px"></i><i style="height:15px"></i><i style="height:8px"></i><i style="height:11px"></i><i style="height:5px"></i><i style="height:12px"></i><i style="height:7px"></i><i style="height:10px"></i>
+                </div>
+              </div>
+              <div class="row">
+                <div style="display:flex;gap:10px;align-items:flex-start">
+                  <span class="sourcechip">N</span>
+                  <div style="flex:1;min-width:0">
+                    <h4>A Tale of Two Flink Autoscalers</h4>
+                    <div class="meta"><span>1:37</span><span>2020w</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="navbar">
+              <span class="nb"><svg class="i"><use href="#g-home"/></svg></span>
+              <span class="nb sel"><svg class="i"><use href="#g-wave"/></svg></span>
+              <span class="nb"><svg class="i"><use href="#g-book"/></svg></span>
+            </div>
+          </div>
+        </div>
+        <p class="rationale">
+          The cyan becomes white and <b>level is carried by luminance</b>. Since
+          the interface was greyscale already, mono costs it almost nothing
+          &mdash; arguably it is the purer of the two.
+        </p>
+      </div>
+
+      <div class="v-bin mono frame-block">
+        <p class="frame-cap">Bindery &mdash; mono</p>
+        <div class="phone">
+          <div class="screen">
+            <div class="statusbar"><span>4:19</span><span class="bars"><i></i><i></i><i></i><i></i></span></div>
+            <div class="canvas">
+              <div class="pillrow">
+                <span class="pill sel">Newest</span>
+                <span class="pill">Oldest</span>
+                <span class="pill">Change folder</span>
+              </div>
+              <p class="eyebrow">Today</p>
+              <div class="rule firm"></div>
+              <div class="row">
+                <h4>Gesture Handler&rsquo;s Touchable: Button We Wish We Had Sooner</h4>
+                <div class="meta"><span>1:22</span><span>682 words</span></div>
+              </div>
+              <div class="rule"></div>
+              <div class="row">
+                <h4>Claude Code now supports artifacts</h4>
+                <div class="meta"><span>1:31</span><span>538 words</span></div>
+              </div>
+              <p class="eyebrow" style="margin-top:16px">Finished</p>
+              <div class="rule firm"></div>
+              <div class="row done">
+                <h4>Tinder cuts app cold starts by 47% with R8</h4>
+                <div class="meta">
+                  <svg class="i done-tick" style="font-size:11px"><use href="#g-check"/></svg>
+                  <span>1:25</span><span>797 words</span>
+                </div>
+              </div>
+              <div class="rule"></div>
+              <div class="row done">
+                <h4>Preparing your app for broader memory limits</h4>
+                <div class="meta">
+                  <svg class="i done-tick" style="font-size:11px"><use href="#g-check"/></svg>
+                  <span>2:04</span><span>1140 words</span>
+                </div>
+              </div>
+            </div>
+            <div class="navbar">
+              <span class="nb"><svg class="i"><use href="#g-home"/></svg></span>
+              <span class="nb sel"><svg class="i"><use href="#g-wave"/></svg></span>
+              <span class="nb"><svg class="i"><use href="#g-book"/></svg></span>
+            </div>
+          </div>
+        </div>
+        <p class="rationale">
+          Verdigris goes to paper-white, and <b>done is still legible</b>
+          because it was always italic, lighter and dimmer as well as green.
+          The rules keep the hierarchy exactly as it was.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ---------------------------------------------------------- -->
+  <section>
+    <h2>Brand</h2>
+    <p class="section-title">A mark that survives 48&thinsp;px</p>
+    <p class="section-note">
+      The current mark&rsquo;s fault is scale, not concept: the artwork occupies
+      about 15% of its canvas. Both proposals fill roughly 70% and fold
+      <em>save</em> and <em>listen</em> into a single silhouette, so the icon
+      says what the app does.
+    </p>
+
+    <div class="compare">
+
+      <div class="v-amp">
+        <p class="frame-cap">Amplitude &mdash; waveform bookmark</p>
+        <div class="brandrow">
+          <div>
+            <svg class="appicon" width="132" height="132" viewBox="0 0 108 108" aria-label="Amplitude app icon">
+              <rect width="108" height="108" fill="#0e0f11"/>
+              <rect x="22" y="40" width="9" height="28" rx="4.5" fill="#7ed0e3" opacity="0.45"/>
+              <rect x="37" y="30" width="9" height="48" rx="4.5" fill="#7ed0e3" opacity="0.7"/>
+              <path d="M52 24h20a3 3 0 0 1 3 3v57l-13-10-13 10V27a3 3 0 0 1 3-3z" fill="#7ed0e3"/>
+              <rect x="81" y="36" width="9" height="36" rx="4.5" fill="#7ed0e3" opacity="0.55"/>
+            </svg>
+            <p class="brand-label">132</p>
+          </div>
+          <div>
+            <svg class="appicon s48" width="48" height="48" viewBox="0 0 108 108">
+              <rect width="108" height="108" fill="#0e0f11"/>
+              <rect x="22" y="40" width="9" height="28" rx="4.5" fill="#7ed0e3" opacity="0.45"/>
+              <rect x="37" y="30" width="9" height="48" rx="4.5" fill="#7ed0e3" opacity="0.7"/>
+              <path d="M52 24h20a3 3 0 0 1 3 3v57l-13-10-13 10V27a3 3 0 0 1 3-3z" fill="#7ed0e3"/>
+              <rect x="81" y="36" width="9" height="36" rx="4.5" fill="#7ed0e3" opacity="0.55"/>
+            </svg>
+            <p class="brand-label">48</p>
+          </div>
+          <div>
+            <svg class="appicon s24" width="24" height="24" viewBox="0 0 108 108">
+              <rect width="108" height="108" fill="#0e0f11"/>
+              <rect x="22" y="40" width="9" height="28" rx="4.5" fill="#7ed0e3" opacity="0.45"/>
+              <rect x="37" y="30" width="9" height="48" rx="4.5" fill="#7ed0e3" opacity="0.7"/>
+              <path d="M52 24h20a3 3 0 0 1 3 3v57l-13-10-13 10V27a3 3 0 0 1 3-3z" fill="#7ed0e3"/>
+              <rect x="81" y="36" width="9" height="36" rx="4.5" fill="#7ed0e3" opacity="0.55"/>
+            </svg>
+            <p class="brand-label">24</p>
+          </div>
+          <div>
+            <div class="splash" style="background:#0e0f11">
+              <svg width="74" height="74" viewBox="0 0 108 108">
+                <rect x="22" y="40" width="9" height="28" rx="4.5" fill="#7ed0e3" opacity="0.45"/>
+                <rect x="37" y="30" width="9" height="48" rx="4.5" fill="#7ed0e3" opacity="0.7"/>
+                <path d="M52 24h20a3 3 0 0 1 3 3v57l-13-10-13 10V27a3 3 0 0 1 3-3z" fill="#7ed0e3"/>
+                <rect x="81" y="36" width="9" height="36" rx="4.5" fill="#7ed0e3" opacity="0.55"/>
+              </svg>
+            </div>
+            <p class="brand-label">splash</p>
+          </div>
+        </div>
+        <p class="rationale">
+          A level meter whose tallest bar is a bookmark &mdash; the notch reads
+          as both a ribbon tail and a peak. <b>Splash:</b> the outer bars settle
+          to rest as the app boots, so the launch animation is the app&rsquo;s
+          own idea rather than a logo fading in.
+        </p>
+      </div>
+
+      <div class="v-bin">
+        <p class="frame-cap">Bindery &mdash; ribbon and play</p>
+        <div class="brandrow">
+          <div>
+            <svg class="appicon" width="132" height="132" viewBox="0 0 108 108" aria-label="Bindery app icon">
+              <rect width="108" height="108" fill="#15120f"/>
+              <path d="M30 20h48a4 4 0 0 1 4 4v64L54 70 26 88V24a4 4 0 0 1 4-4z" fill="#eae3d8"/>
+              <path d="M45 38 68 51 45 64z" fill="#15120f"/>
+              <path d="M26 88 54 70l28 18" fill="none" stroke="#6f9384" stroke-width="3.5" stroke-linejoin="round"/>
+            </svg>
+            <p class="brand-label">132</p>
+          </div>
+          <div>
+            <svg class="appicon s48" width="48" height="48" viewBox="0 0 108 108">
+              <rect width="108" height="108" fill="#15120f"/>
+              <path d="M30 20h48a4 4 0 0 1 4 4v64L54 70 26 88V24a4 4 0 0 1 4-4z" fill="#eae3d8"/>
+              <path d="M45 38 68 51 45 64z" fill="#15120f"/>
+              <path d="M26 88 54 70l28 18" fill="none" stroke="#6f9384" stroke-width="3.5" stroke-linejoin="round"/>
+            </svg>
+            <p class="brand-label">48</p>
+          </div>
+          <div>
+            <svg class="appicon s24" width="24" height="24" viewBox="0 0 108 108">
+              <rect width="108" height="108" fill="#15120f"/>
+              <path d="M30 20h48a4 4 0 0 1 4 4v64L54 70 26 88V24a4 4 0 0 1 4-4z" fill="#eae3d8"/>
+              <path d="M45 38 68 51 45 64z" fill="#15120f"/>
+              <path d="M26 88 54 70l28 18" fill="none" stroke="#6f9384" stroke-width="3.5" stroke-linejoin="round"/>
+            </svg>
+            <p class="brand-label">24</p>
+          </div>
+          <div>
+            <div class="splash" style="background:#15120f">
+              <svg width="74" height="74" viewBox="0 0 108 108">
+                <path d="M30 20h48a4 4 0 0 1 4 4v64L54 70 26 88V24a4 4 0 0 1 4-4z" fill="#eae3d8"/>
+                <path d="M45 38 68 51 45 64z" fill="#15120f"/>
+                <path d="M26 88 54 70l28 18" fill="none" stroke="#6f9384" stroke-width="3.5" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <p class="brand-label">splash</p>
+          </div>
+        </div>
+        <p class="rationale">
+          A solid paper ribbon with the play triangle <b>cut out of it</b>, and
+          the verdigris drawn along the fold. <b>Splash:</b> a hairline rule
+          draws itself left to right beneath the mark, the same rule that
+          structures every screen.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ---------------------------------------------------------- -->
+  <section>
+    <h2>Icon set</h2>
+    <p class="section-title">Same geometry, two different hands</p>
+    <p class="section-note">
+      Both walls below are drawn from one shared set of paths &mdash; only the
+      stroke width, cap and join differ. That is the discipline missing today,
+      where ten of seventeen stroked icons set a line join, two set neither cap
+      nor join, and <code>Play</code>/<code>Pause</code> are filled while
+      everything else is stroked. Amplitude&rsquo;s hand is not settled yet
+      &mdash; <a href="#hands">three candidates</a> are drawn out below.
+    </p>
+
+    <div class="compare">
+      <div class="v-amp" style="color:var(--text)">
+        <p class="frame-cap">Amplitude &mdash; 1.75 stroke, butt cap, miter join</p>
+        <div class="iconwall">
+          <figure><svg class="i"><use href="#g-home"/></svg><figcaption>home</figcaption></figure>
+          <figure><svg class="i"><use href="#g-wave"/></svg><figcaption>readback</figcaption></figure>
+          <figure><svg class="i"><use href="#g-book"/></svg><figcaption>saved</figcaption></figure>
+          <figure><svg class="i"><use href="#g-play"/></svg><figcaption>play</figcaption></figure>
+          <figure><svg class="i"><use href="#g-pause"/></svg><figcaption>pause</figcaption></figure>
+          <figure><svg class="i"><use href="#g-clock"/></svg><figcaption>focus</figcaption></figure>
+          <figure><svg class="i"><use href="#g-folder"/></svg><figcaption>folder</figcaption></figure>
+          <figure><svg class="i"><use href="#g-feed"/></svg><figcaption>feed</figcaption></figure>
+          <figure><svg class="i"><use href="#g-check"/></svg><figcaption>done</figcaption></figure>
+          <figure><svg class="i"><use href="#g-ext"/></svg><figcaption>external</figcaption></figure>
+          <figure><svg class="i"><use href="#g-set"/></svg><figcaption>settings</figcaption></figure>
+          <figure><svg class="i"><use href="#g-contrast"/></svg><figcaption>contrast</figcaption></figure>
+          <figure><svg class="i"><use href="#g-close"/></svg><figcaption>close</figcaption></figure>
+          <figure><svg class="i"><use href="#g-chev"/></svg><figcaption>chevron</figcaption></figure>
+        </div>
+      </div>
+
+      <div class="v-bin" style="color:var(--text)">
+        <p class="frame-cap">Bindery &mdash; 1.5 stroke, round cap and join</p>
+        <div class="iconwall">
+          <figure><svg class="i"><use href="#g-home"/></svg><figcaption>home</figcaption></figure>
+          <figure><svg class="i"><use href="#g-wave"/></svg><figcaption>readback</figcaption></figure>
+          <figure><svg class="i"><use href="#g-book"/></svg><figcaption>saved</figcaption></figure>
+          <figure><svg class="i"><use href="#g-play"/></svg><figcaption>play</figcaption></figure>
+          <figure><svg class="i"><use href="#g-pause"/></svg><figcaption>pause</figcaption></figure>
+          <figure><svg class="i"><use href="#g-clock"/></svg><figcaption>focus</figcaption></figure>
+          <figure><svg class="i"><use href="#g-folder"/></svg><figcaption>folder</figcaption></figure>
+          <figure><svg class="i"><use href="#g-feed"/></svg><figcaption>feed</figcaption></figure>
+          <figure><svg class="i"><use href="#g-check"/></svg><figcaption>done</figcaption></figure>
+          <figure><svg class="i"><use href="#g-ext"/></svg><figcaption>external</figcaption></figure>
+          <figure><svg class="i"><use href="#g-set"/></svg><figcaption>settings</figcaption></figure>
+          <figure><svg class="i"><use href="#g-contrast"/></svg><figcaption>contrast</figcaption></figure>
+          <figure><svg class="i"><use href="#g-close"/></svg><figcaption>close</figcaption></figure>
+          <figure><svg class="i"><use href="#g-chev"/></svg><figcaption>chevron</figcaption></figure>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ---------------------------------------------------------- -->
+  <section id="hands">
+    <h2>Amplitude &mdash; three hands</h2>
+    <p class="section-title">One geometry, three ways of holding the pen</p>
+    <p class="section-note">
+      Bindery&rsquo;s hand is settled &mdash; 1.5, round cap and join, to match a
+      serif that has no hard terminals. Amplitude is the one still open, because
+      its icons sit next to a waveform and have to agree with it. All three walls
+      below draw the <em>same fourteen shapes</em>; only the instrument changes.
+      Each is repeated at 17&nbsp;px in the real nav bar, which is the only size
+      that actually decides this. Fourteen glyphs is enough to judge a pen
+      &mdash; the full 24-glyph list, and three sets that change the
+      <em>drawings</em> rather than the instrument, are
+      <a href="#alphabets">below</a>.
+    </p>
+
+    <div class="hands">
+      <div class="v-amp hand-col" style="color:var(--text)">
+        <p class="frame-cap">Line &mdash; 1.75, butt cap, miter join</p>
+        <div class="iconwall">
+            <figure><svg class="i"><use href="#g-home"/></svg><figcaption>home</figcaption></figure>
+            <figure><svg class="i"><use href="#g-wave"/></svg><figcaption>readback</figcaption></figure>
+            <figure><svg class="i"><use href="#g-book"/></svg><figcaption>saved</figcaption></figure>
+            <figure><svg class="i"><use href="#g-play"/></svg><figcaption>play</figcaption></figure>
+            <figure><svg class="i"><use href="#g-pause"/></svg><figcaption>pause</figcaption></figure>
+            <figure><svg class="i"><use href="#g-clock"/></svg><figcaption>focus</figcaption></figure>
+            <figure><svg class="i"><use href="#g-folder"/></svg><figcaption>folder</figcaption></figure>
+            <figure><svg class="i"><use href="#g-feed"/></svg><figcaption>feed</figcaption></figure>
+            <figure><svg class="i"><use href="#g-check"/></svg><figcaption>done</figcaption></figure>
+            <figure><svg class="i"><use href="#g-ext"/></svg><figcaption>external</figcaption></figure>
+            <figure><svg class="i"><use href="#g-set"/></svg><figcaption>settings</figcaption></figure>
+            <figure><svg class="i"><use href="#g-contrast"/></svg><figcaption>contrast</figcaption></figure>
+            <figure><svg class="i"><use href="#g-close"/></svg><figcaption>close</figcaption></figure>
+            <figure><svg class="i"><use href="#g-chev"/></svg><figcaption>chevron</figcaption></figure>
+        </div>
+          <div class="navstrip">
+            <span class="nb"><svg class="i"><use href="#g-home"/></svg></span>
+            <span class="nb sel"><svg class="i"><use href="#g-wave"/></svg></span>
+            <span class="nb"><svg class="i"><use href="#g-book"/></svg></span>
+          </div>
+        <p class="hand-note">The default hand, and the one the rest of this document is drawn in. Butt caps and mitred joins give it the same squared-off ending as the waveform bars, so a nav icon and a clip share a terminal shape. Weakest at 17&nbsp;px: the clock and the settings dials thin out against a dark ground.</p>
+      </div>
+
+      <div class="v-amp hand-col hand-solid" style="color:var(--text)">
+        <p class="frame-cap">Solid &mdash; filled silhouette, no stroke</p>
+        <div class="iconwall">
+            <figure><svg class="i"><use href="#s-home"/></svg><figcaption>home</figcaption></figure>
+            <figure><svg class="i"><use href="#s-wave"/></svg><figcaption>readback</figcaption></figure>
+            <figure><svg class="i"><use href="#s-book"/></svg><figcaption>saved</figcaption></figure>
+            <figure><svg class="i"><use href="#s-play"/></svg><figcaption>play</figcaption></figure>
+            <figure><svg class="i"><use href="#s-pause"/></svg><figcaption>pause</figcaption></figure>
+            <figure><svg class="i"><use href="#s-clock"/></svg><figcaption>focus</figcaption></figure>
+            <figure><svg class="i"><use href="#s-folder"/></svg><figcaption>folder</figcaption></figure>
+            <figure><svg class="i"><use href="#s-feed"/></svg><figcaption>feed</figcaption></figure>
+            <figure><svg class="i"><use href="#s-check"/></svg><figcaption>done</figcaption></figure>
+            <figure><svg class="i"><use href="#s-ext"/></svg><figcaption>external</figcaption></figure>
+            <figure><svg class="i"><use href="#s-set"/></svg><figcaption>settings</figcaption></figure>
+            <figure><svg class="i"><use href="#s-contrast"/></svg><figcaption>contrast</figcaption></figure>
+            <figure><svg class="i"><use href="#s-close"/></svg><figcaption>close</figcaption></figure>
+            <figure><svg class="i"><use href="#s-chev"/></svg><figcaption>chevron</figcaption></figure>
+        </div>
+          <div class="navstrip">
+            <span class="nb"><svg class="i"><use href="#s-home"/></svg></span>
+            <span class="nb sel"><svg class="i"><use href="#s-wave"/></svg></span>
+            <span class="nb"><svg class="i"><use href="#s-book"/></svg></span>
+          </div>
+        <p class="hand-note">No line width to get wrong. Counters &mdash; the door, the clock hands, the crescent in <em>contrast</em> &mdash; are punched out with <code>evenodd</code> rather than drawn, so every glyph stays one closed shape. Holds its weight at nav size better than either stroked hand, but it is heavier than the type, and Amplitude&rsquo;s whole argument is that the chrome should sit under the text.</p>
+      </div>
+
+      <div class="v-amp hand-col hand-seg" style="color:var(--text)">
+        <p class="frame-cap">Segment &mdash; broken strokes, gap at every junction</p>
+        <div class="iconwall">
+            <figure><svg class="i"><use href="#m-home"/></svg><figcaption>home</figcaption></figure>
+            <figure><svg class="i"><use href="#m-wave"/></svg><figcaption>readback</figcaption></figure>
+            <figure><svg class="i"><use href="#m-book"/></svg><figcaption>saved</figcaption></figure>
+            <figure><svg class="i"><use href="#m-play"/></svg><figcaption>play</figcaption></figure>
+            <figure><svg class="i"><use href="#m-pause"/></svg><figcaption>pause</figcaption></figure>
+            <figure><svg class="i"><use href="#m-clock"/></svg><figcaption>focus</figcaption></figure>
+            <figure><svg class="i"><use href="#m-folder"/></svg><figcaption>folder</figcaption></figure>
+            <figure><svg class="i"><use href="#m-feed"/></svg><figcaption>feed</figcaption></figure>
+            <figure><svg class="i"><use href="#m-check"/></svg><figcaption>done</figcaption></figure>
+            <figure><svg class="i"><use href="#m-ext"/></svg><figcaption>external</figcaption></figure>
+            <figure><svg class="i"><use href="#m-set"/></svg><figcaption>settings</figcaption></figure>
+            <figure><svg class="i"><use href="#m-contrast"/></svg><figcaption>contrast</figcaption></figure>
+            <figure><svg class="i"><use href="#m-close"/></svg><figcaption>close</figcaption></figure>
+            <figure><svg class="i"><use href="#m-chev"/></svg><figcaption>chevron</figcaption></figure>
+        </div>
+          <div class="navstrip">
+            <span class="nb"><svg class="i"><use href="#m-home"/></svg></span>
+            <span class="nb sel"><svg class="i"><use href="#m-wave"/></svg></span>
+            <span class="nb"><svg class="i"><use href="#m-book"/></svg></span>
+          </div>
+        <p class="hand-note">Corners are never closed: each glyph is assembled from separate strokes with a deliberate gap where they would meet. That makes the icon set built from the same vocabulary as the waveform &mdash; discrete bars with air between them &mdash; rather than merely sitting beside it. The risk is legibility: <em>folder</em> and <em>external</em> are close to the point where the gaps stop reading as style and start reading as a rendering bug.</p>
+      </div>
+
+    </div>
+
+    <p class="section-note">
+      <b>Where this lands:</b> segment, with line as the fallback. Solid is the
+      most legible of the three and the least Amplitude &mdash; it competes with
+      the type for weight, and the variant&rsquo;s one rule is that nothing
+      outshouts the words except sound. Segment earns its place by being the only
+      hand that is <em>derived</em> from the waveform rather than compatible with
+      it; if the gaps prove fragile on a real device at 17&nbsp;px, line is a
+      one-line CSS revert, not a redraw.
+    </p>
+  </section>
+
+  <!-- ---------------------------------------------------------- -->
+  <section id="alphabets">
+    <h2>Amplitude &mdash; three alphabets</h2>
+    <p class="section-title">Three different drawings, not three pens over one</p>
+    <p class="section-note">
+      The section above changes the <em>instrument</em> and keeps the shapes.
+      This one changes the shapes. Each set below is generated by a single
+      construction rule &mdash; stated beside it, and checkable against every
+      glyph &mdash; and each covers the full <b>24-glyph list</b> the app
+      actually needs rather than the fourteen a pen study needed: transport
+      (skip, back, speed, sleep), library (search, queue, share, delete, add)
+      and state (offline) are all new here. Both bars beneath each wall are at
+      17&nbsp;px, the real size.
+    </p>
+
+    <div class="v-amp alpha alpha-rule" style="color:var(--text)">
+      <div class="alpha-main">
+        <p class="frame-cap">Rule &mdash; Horizontal, vertical, 45&deg;. Nothing else.</p>
+        <div class="iconwall">
+            <figure><svg class="i"><use href="#r-home"/></svg><figcaption>home</figcaption></figure>
+            <figure><svg class="i"><use href="#r-wave"/></svg><figcaption>readback</figcaption></figure>
+            <figure><svg class="i"><use href="#r-saved"/></svg><figcaption>saved</figcaption></figure>
+            <figure><svg class="i"><use href="#r-folder"/></svg><figcaption>folder</figcaption></figure>
+            <figure><svg class="i"><use href="#r-feed"/></svg><figcaption>feed</figcaption></figure>
+            <figure><svg class="i"><use href="#r-search"/></svg><figcaption>search</figcaption></figure>
+            <figure><svg class="i"><use href="#r-play"/></svg><figcaption>play</figcaption></figure>
+            <figure><svg class="i"><use href="#r-pause"/></svg><figcaption>pause</figcaption></figure>
+            <figure><svg class="i"><use href="#r-skip"/></svg><figcaption>skip</figcaption></figure>
+            <figure><svg class="i"><use href="#r-back"/></svg><figcaption>back</figcaption></figure>
+            <figure><svg class="i"><use href="#r-speed"/></svg><figcaption>speed</figcaption></figure>
+            <figure><svg class="i"><use href="#r-sleep"/></svg><figcaption>sleep</figcaption></figure>
+            <figure><svg class="i"><use href="#r-queue"/></svg><figcaption>queue</figcaption></figure>
+            <figure><svg class="i"><use href="#r-focus"/></svg><figcaption>focus</figcaption></figure>
+            <figure><svg class="i"><use href="#r-done"/></svg><figcaption>done</figcaption></figure>
+            <figure><svg class="i"><use href="#r-offline"/></svg><figcaption>offline</figcaption></figure>
+            <figure><svg class="i"><use href="#r-share"/></svg><figcaption>share</figcaption></figure>
+            <figure><svg class="i"><use href="#r-delete"/></svg><figcaption>delete</figcaption></figure>
+            <figure><svg class="i"><use href="#r-add"/></svg><figcaption>add</figcaption></figure>
+            <figure><svg class="i"><use href="#r-external"/></svg><figcaption>external</figcaption></figure>
+            <figure><svg class="i"><use href="#r-settings"/></svg><figcaption>settings</figcaption></figure>
+            <figure><svg class="i"><use href="#r-contrast"/></svg><figcaption>contrast</figcaption></figure>
+            <figure><svg class="i"><use href="#r-close"/></svg><figcaption>close</figcaption></figure>
+            <figure><svg class="i"><use href="#r-chev"/></svg><figcaption>chevron</figcaption></figure>
+        </div>
+        <div class="alpha-strips">
+            <div class="navstrip">
+              <span class="nb"><svg class="i"><use href="#r-home"/></svg></span>
+              <span class="nb sel"><svg class="i"><use href="#r-wave"/></svg></span>
+              <span class="nb"><svg class="i"><use href="#r-saved"/></svg></span>
+            </div>
+            <div class="navstrip">
+              <span class="nb"><svg class="i"><use href="#r-back"/></svg></span>
+              <span class="nb sel"><svg class="i"><use href="#r-play"/></svg></span>
+              <span class="nb"><svg class="i"><use href="#r-skip"/></svg></span>
+              <span class="nb"><svg class="i"><use href="#r-speed"/></svg></span>
+              <span class="nb"><svg class="i"><use href="#r-sleep"/></svg></span>
+            </div>
+        </div>
+      </div>
+      <div class="alpha-side">
+        <p class="alpha-rulebox"><b>The rule:</b> no curve exists in this set. Circles are octagons, the clock is a facet, <em>contrast</em> shades with hatching instead of a fill, and <em>feed</em> is three nested right-angle brackets rather than three arcs. Amplitude&rsquo;s ground is graphite and its face is Jost &mdash; a geometric sans built from the same three angles &mdash; so the set reads as an instrument panel, which is what a playback app drawing real waveform data actually is.</p>
+        <p class="alpha-cost">COST &nbsp;<b>feed</b> and <b>offline</b> lose the radio metaphor entirely; the octagons need a device check &mdash; at 17&nbsp;px they may just read as badly-drawn circles.</p>
+      </div>
+    </div>
+
+    <div class="v-amp alpha alpha-bar" style="color:var(--text)">
+      <div class="alpha-main">
+        <p class="frame-cap">Bar &mdash; The waveform is the alphabet.</p>
+        <div class="iconwall">
+            <figure><svg class="i"><use href="#w-home"/></svg><figcaption>home</figcaption></figure>
+            <figure><svg class="i"><use href="#w-wave"/></svg><figcaption>readback</figcaption></figure>
+            <figure><svg class="i"><use href="#w-saved"/></svg><figcaption>saved</figcaption></figure>
+            <figure><svg class="i"><use href="#w-folder"/></svg><figcaption>folder</figcaption></figure>
+            <figure><svg class="i"><use href="#w-feed"/></svg><figcaption>feed</figcaption></figure>
+            <figure><svg class="i"><use href="#w-search"/></svg><figcaption>search</figcaption></figure>
+            <figure><svg class="i"><use href="#w-play"/></svg><figcaption>play</figcaption></figure>
+            <figure><svg class="i"><use href="#w-pause"/></svg><figcaption>pause</figcaption></figure>
+            <figure><svg class="i"><use href="#w-skip"/></svg><figcaption>skip</figcaption></figure>
+            <figure><svg class="i"><use href="#w-back"/></svg><figcaption>back</figcaption></figure>
+            <figure><svg class="i"><use href="#w-speed"/></svg><figcaption>speed</figcaption></figure>
+            <figure><svg class="i"><use href="#w-sleep"/></svg><figcaption>sleep</figcaption></figure>
+            <figure><svg class="i"><use href="#w-queue"/></svg><figcaption>queue</figcaption></figure>
+            <figure><svg class="i"><use href="#w-focus"/></svg><figcaption>focus</figcaption></figure>
+            <figure><svg class="i"><use href="#w-done"/></svg><figcaption>done</figcaption></figure>
+            <figure><svg class="i"><use href="#w-offline"/></svg><figcaption>offline</figcaption></figure>
+            <figure><svg class="i"><use href="#w-share"/></svg><figcaption>share</figcaption></figure>
+            <figure><svg class="i"><use href="#w-delete"/></svg><figcaption>delete</figcaption></figure>
+            <figure><svg class="i"><use href="#w-add"/></svg><figcaption>add</figcaption></figure>
+            <figure><svg class="i"><use href="#w-external"/></svg><figcaption>external</figcaption></figure>
+            <figure><svg class="i"><use href="#w-settings"/></svg><figcaption>settings</figcaption></figure>
+            <figure><svg class="i"><use href="#w-contrast"/></svg><figcaption>contrast</figcaption></figure>
+            <figure><svg class="i"><use href="#w-close"/></svg><figcaption>close</figcaption></figure>
+            <figure><svg class="i"><use href="#w-chev"/></svg><figcaption>chevron</figcaption></figure>
+        </div>
+        <div class="alpha-strips">
+            <div class="navstrip">
+              <span class="nb"><svg class="i"><use href="#w-home"/></svg></span>
+              <span class="nb sel"><svg class="i"><use href="#w-wave"/></svg></span>
+              <span class="nb"><svg class="i"><use href="#w-saved"/></svg></span>
+            </div>
+            <div class="navstrip">
+              <span class="nb"><svg class="i"><use href="#w-back"/></svg></span>
+              <span class="nb sel"><svg class="i"><use href="#w-play"/></svg></span>
+              <span class="nb"><svg class="i"><use href="#w-skip"/></svg></span>
+              <span class="nb"><svg class="i"><use href="#w-speed"/></svg></span>
+              <span class="nb"><svg class="i"><use href="#w-sleep"/></svg></span>
+            </div>
+        </div>
+      </div>
+      <div class="alpha-side">
+        <p class="alpha-rulebox"><b>The rule:</b> anything that can be built from evenly spaced vertical bars is &mdash; <em>readback</em>, <em>feed</em>, <em>offline</em>, <em>settings</em> (the sliders <em>are</em> bars), and the shading on <em>contrast</em>. What cannot be built that way borrows the same 2.4 weight and round terminal so the set still looks cut from the same clip. This is the only one of the three that could not belong to any other app.</p>
+        <p class="alpha-cost">COST &nbsp;heaviest of the three &mdash; it competes with the type, which is the same objection that sank Solid. <b>feed</b> and <b>offline</b> are one slash apart, which is the point but puts real weight on the slash.</p>
+      </div>
+    </div>
+
+    <div class="v-amp alpha alpha-arc" style="color:var(--text)">
+      <div class="alpha-main">
+        <p class="frame-cap">Arc &mdash; Every corner is a quarter-circle.</p>
+        <div class="iconwall">
+            <figure><svg class="i"><use href="#o-home"/></svg><figcaption>home</figcaption></figure>
+            <figure><svg class="i"><use href="#o-wave"/></svg><figcaption>readback</figcaption></figure>
+            <figure><svg class="i"><use href="#o-saved"/></svg><figcaption>saved</figcaption></figure>
+            <figure><svg class="i"><use href="#o-folder"/></svg><figcaption>folder</figcaption></figure>
+            <figure><svg class="i"><use href="#o-feed"/></svg><figcaption>feed</figcaption></figure>
+            <figure><svg class="i"><use href="#o-search"/></svg><figcaption>search</figcaption></figure>
+            <figure><svg class="i"><use href="#o-play"/></svg><figcaption>play</figcaption></figure>
+            <figure><svg class="i"><use href="#o-pause"/></svg><figcaption>pause</figcaption></figure>
+            <figure><svg class="i"><use href="#o-skip"/></svg><figcaption>skip</figcaption></figure>
+            <figure><svg class="i"><use href="#o-back"/></svg><figcaption>back</figcaption></figure>
+            <figure><svg class="i"><use href="#o-speed"/></svg><figcaption>speed</figcaption></figure>
+            <figure><svg class="i"><use href="#o-sleep"/></svg><figcaption>sleep</figcaption></figure>
+            <figure><svg class="i"><use href="#o-queue"/></svg><figcaption>queue</figcaption></figure>
+            <figure><svg class="i"><use href="#o-focus"/></svg><figcaption>focus</figcaption></figure>
+            <figure><svg class="i"><use href="#o-done"/></svg><figcaption>done</figcaption></figure>
+            <figure><svg class="i"><use href="#o-offline"/></svg><figcaption>offline</figcaption></figure>
+            <figure><svg class="i"><use href="#o-share"/></svg><figcaption>share</figcaption></figure>
+            <figure><svg class="i"><use href="#o-delete"/></svg><figcaption>delete</figcaption></figure>
+            <figure><svg class="i"><use href="#o-add"/></svg><figcaption>add</figcaption></figure>
+            <figure><svg class="i"><use href="#o-external"/></svg><figcaption>external</figcaption></figure>
+            <figure><svg class="i"><use href="#o-settings"/></svg><figcaption>settings</figcaption></figure>
+            <figure><svg class="i"><use href="#o-contrast"/></svg><figcaption>contrast</figcaption></figure>
+            <figure><svg class="i"><use href="#o-close"/></svg><figcaption>close</figcaption></figure>
+            <figure><svg class="i"><use href="#o-chev"/></svg><figcaption>chevron</figcaption></figure>
+        </div>
+        <div class="alpha-strips">
+            <div class="navstrip">
+              <span class="nb"><svg class="i"><use href="#o-home"/></svg></span>
+              <span class="nb sel"><svg class="i"><use href="#o-wave"/></svg></span>
+              <span class="nb"><svg class="i"><use href="#o-saved"/></svg></span>
+            </div>
+            <div class="navstrip">
+              <span class="nb"><svg class="i"><use href="#o-back"/></svg></span>
+              <span class="nb sel"><svg class="i"><use href="#o-play"/></svg></span>
+              <span class="nb"><svg class="i"><use href="#o-skip"/></svg></span>
+              <span class="nb"><svg class="i"><use href="#o-speed"/></svg></span>
+              <span class="nb"><svg class="i"><use href="#o-sleep"/></svg></span>
+            </div>
+        </div>
+      </div>
+      <div class="alpha-side">
+        <p class="alpha-rulebox"><b>The rule:</b> nothing closes on a hard vertex. Same corner radius throughout, so the door of <em>home</em> is an arch, the play triangle has rounded points, and <em>speed</em> is a gauge sweep rather than a chevron pair. The soft pole, and the one a stranger would read fastest cold.</p>
+        <p class="alpha-cost">COST &nbsp;the least distinctive. Drawn well, but it is the set every app already ships &mdash; nothing about it says <b>this</b> app.</p>
+      </div>
+    </div>
+
+    <p class="section-note" style="margin-top:8px">
+      <b>Where this lands:</b> Bar, and it is not close &mdash; it is the only
+      set derived from the thing the app is <em>for</em>, and Amplitude&rsquo;s
+      whole argument is that the waveform is the interface. But it inherits
+      Solid&rsquo;s problem, so it wants the lighter end of its weight range
+      before it ships. Rule is the interesting second: it fights the waveform
+      rather than echoing it, which is a legitimate different answer. Arc is
+      here as the control &mdash; if neither of the other two survives a device
+      check this is what is left, and it is fine, and fine is the whole
+      objection to it.
+    </p>
+  </section>
+
+  <!-- ---------------------------------------------------------- -->
+  <section>
+    <h2>Type</h2>
+    <p class="section-title">A scale with names, so nothing gets invented inline</p>
+    <p class="section-note">
+      Nine ad-hoc sizes circulate in the app today. Each direction below is
+      five roles and no more &mdash; enough that no screen ever needs to reach
+      for a number that isn&rsquo;t here.
+    </p>
+
+    <div class="compare">
+
+      <div class="v-amp">
+        <p class="frame-cap">Amplitude &mdash; Jost + Inconsolata</p>
+        <div class="specimen">
+          <div>
+            <div class="lbl">Display &middot; Jost 300 &middot; 26/1.15</div>
+            <div style="font-family:'Jost',sans-serif;font-weight:300;font-size:26px;line-height:1.15;letter-spacing:0.005em">Hear it read back</div>
+          </div>
+          <div>
+            <div class="lbl">Title &middot; Jost 400 &middot; 16/1.3</div>
+            <div style="font-family:'Jost',sans-serif;font-weight:400;font-size:16px;line-height:1.3">A Tale of Two Flink Autoscalers</div>
+          </div>
+          <div>
+            <div class="lbl">Body &middot; Jost 400 &middot; 14/1.55</div>
+            <div style="font-family:'Jost',sans-serif;font-weight:400;font-size:14px;line-height:1.55;color:var(--muted)">Netflix currently runs two different autoscalers for Apache Flink, and they are actively moving toward replacing the custom one.</div>
+          </div>
+          <div>
+            <div class="lbl">Label &middot; Inconsolata 500 &middot; 10/0.16em</div>
+            <div style="font-family:'Inconsolata',monospace;font-weight:500;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--faint)">Continue &middot; Up next &middot; Following</div>
+          </div>
+          <div>
+            <div class="lbl">Data &middot; Inconsolata 400 &middot; 10.5 tabular</div>
+            <div style="font-family:'Inconsolata',monospace;font-size:10.5px;font-variant-numeric:tabular-nums;color:var(--muted)">1:22&nbsp;&nbsp;682w&nbsp;&nbsp;&middot;&nbsp;&nbsp;1:37&nbsp;&nbsp;2020w</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="v-bin">
+        <p class="frame-cap">Bindery &mdash; Source Serif 4 + Karla</p>
+        <div class="specimen">
+          <div>
+            <div class="lbl">Display &middot; Source Serif 4 italic &middot; 26/1.15</div>
+            <div style="font-family:'Source Serif 4',Georgia,serif;font-style:italic;font-size:26px;line-height:1.15;letter-spacing:-0.01em">Good evening, MKS</div>
+          </div>
+          <div>
+            <div class="lbl">Title &middot; Source Serif 4 600 &middot; 17/1.26</div>
+            <div style="font-family:'Source Serif 4',Georgia,serif;font-weight:600;font-size:17px;line-height:1.26">A Tale of Two Flink Autoscalers</div>
+          </div>
+          <div>
+            <div class="lbl">Body &middot; Source Serif 4 400 &middot; 15/1.6</div>
+            <div style="font-family:'Source Serif 4',Georgia,serif;font-size:15px;line-height:1.6;color:var(--muted)">Netflix currently runs two different autoscalers for Apache Flink, and they are actively moving toward replacing the custom one.</div>
+          </div>
+          <div>
+            <div class="lbl">Label &middot; Karla 700 &middot; 10/0.19em</div>
+            <div style="font-family:'Karla',sans-serif;font-weight:700;font-size:10px;letter-spacing:0.19em;text-transform:uppercase;color:var(--faint)">Today &middot; Finished &middot; From your shelf</div>
+          </div>
+          <div>
+            <div class="lbl">Data &middot; Karla 500 &middot; 10.5 tabular, no mono</div>
+            <div style="font-family:'Karla',sans-serif;font-weight:500;font-size:10.5px;letter-spacing:0.07em;text-transform:uppercase;font-variant-numeric:tabular-nums;color:var(--muted)">1:22 &middot; 682 words &nbsp;&nbsp; 1:37 &middot; 2020 words</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ---------------------------------------------------------- -->
+  <section>
+    <h2>If you pick one</h2>
+    <p class="section-title">The follow-on work is the same either way</p>
+    <p class="section-note">
+      Whichever direction wins, the structural fixes underneath it are
+      identical &mdash; and they are the reason the drift happened in the
+      first place.
+    </p>
+
+    <ol class="followups">
+      <li><b>Extract the four missing components</b> into <code>ui/common/</code> &mdash; <code>SectionCard</code> (or its rule-based replacement), <code>Chip</code>, <code>PillField</code>, <code>IconButton</code>. That removes nine copies of the card recipe and six near-identical chips.</li>
+      <li><b>Name the orphan sizes into the scale.</b> Nine ad-hoc values disappear into five roles; <code>12.5.sp</code> in particular is used eight times and has simply never been given a name.</li>
+      <li><b>Settle the mono question.</b> Amplitude needs no bundled mono at all if the data face is Inconsolata; Bindery needs none by design. Either way <code>Mono&nbsp;=&nbsp;FontFamily.Monospace</code> goes, and with it the per-platform metadata typeface.</li>
+      <li><b>Fill the unset colour slots.</b> Only about 15 of ~30 <code>ColorScheme</code> entries are defined, so the rest are still Material baseline purple. Also worth fixing: <code>surfaceVariant</code> is currently darker than <code>background</code>, inverting elevation.</li>
+      <li><b>Reconcile the three grounds.</b> The app uses <code>#101010</code>, the web shell <code>#0c0f14</code> and the in-app browser pure <code>#000000</code>. One token, three places.</li>
+      <li><b>Redraw the launcher artwork to fill its canvas</b> and regenerate the adaptive icon, the iOS 1024 slot, the web favicon and the splash from the same source.</li>
+      <li><b>Article extraction is the prerequisite for on-device summary</b>, not the model. Nothing ships until saved links and feed posts carry readable body text; the ML Kit call itself is a few dozen lines behind an <code>expect</code>/<code>actual</code>. Worth checking the RSS payload for full content before fetching anything.</li>
+      <li><b>Tidy the strays</b> &mdash; the dead <code>Layout</code> token object, the unused <code>CodeStyle</code>, the <code>AlgoTypography</code> name, the orphan <code>Blogmark.icns</code>, the raw <code>tween</code> values in the tab transition, and the one <code>Icons.AutoMirrored.Filled.OpenInNew</code> that slipped past the icon rule.</li>
+    </ol>
+  </section>
+
+  <footer>
+    Blogmark design review &middot; two directions, one page &middot; screens
+    redrawn from the build of 2026-08-23
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  var bar = document.querySelector('.palettebar');
+  if (!bar) return;
+
+  var buttons = Array.prototype.slice.call(bar.querySelectorAll('.pb'));
+
+  // Each swatch label reads its own custom property back off the DOM, so
+  // the hex values stay honest whichever palette is showing rather than
+  // being duplicated in the markup.
+  function refreshSwatches() {
+    document.querySelectorAll('[data-swatches]').forEach(function (list) {
+      var scope = list.closest('.v-amp, .v-bin') || list;
+      var styles = getComputedStyle(scope);
+      list.querySelectorAll('[data-var]').forEach(function (el) {
+        var value = styles.getPropertyValue(el.getAttribute('data-var')).trim();
+        el.textContent = value ? value.toUpperCase() : '';
+      });
+    });
+  }
+
+  function select(name) {
+    if (name === 'signature') {
+      document.documentElement.removeAttribute('data-palette');
+    } else {
+      document.documentElement.setAttribute('data-palette', name);
+    }
+    buttons.forEach(function (b) {
+      b.setAttribute('aria-pressed', String(b.dataset.set === name));
+    });
+    // custom properties resolve after the attribute lands
+    requestAnimationFrame(refreshSwatches);
+  }
+
+  buttons.forEach(function (b) {
+    b.addEventListener('click', function () { select(b.dataset.set); });
+  });
+
+  refreshSwatches();
+  document.fonts && document.fonts.ready.then(refreshSwatches);
+})();
+</script>
