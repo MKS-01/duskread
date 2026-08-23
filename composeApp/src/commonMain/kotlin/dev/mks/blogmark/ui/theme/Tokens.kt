@@ -33,14 +33,19 @@ object Layout {
 
 /** Corner radii, largest to smallest. */
 object Radius {
-    /** Dashboard and list cards. */
-    val Card = 20.dp
+    /**
+     * Dashboard and list cards. 14dp rather than the 20dp this used to be —
+     * the app draws its own data (waveforms, meters, a stroked icon set) and
+     * a heavily rounded card reads as a generic Material surface sitting on
+     * top of it rather than a panel drawn in the same instrument-panel hand.
+     */
+    val Card = 14.dp
 
     /** Panels inside a card — origin note, code block, complexity table. */
-    val Panel = 14.dp
+    val Panel = 12.dp
 
     /** Inline surfaces: reference rows, list-pane rows. */
-    val Inline = 12.dp
+    val Inline = 10.dp
 
     /** Chips, and the floating bar itself. */
     val Pill = 999.dp

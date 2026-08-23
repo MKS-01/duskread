@@ -38,7 +38,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -52,8 +51,9 @@ import dev.mks.blogmark.links.discoverFeedUrl
 import dev.mks.blogmark.links.looksLikeUrl
 import dev.mks.blogmark.links.normaliseUrl
 import dev.mks.blogmark.links.syncFeeds
-import dev.mks.blogmark.links.topicIcon
 import dev.mks.blogmark.ui.common.CompactEmptyState
+import dev.mks.blogmark.ui.common.EyebrowHeader
+import dev.mks.blogmark.ui.common.MonogramBadge
 import dev.mks.blogmark.ui.common.ToastRequest
 import dev.mks.blogmark.ui.rememberUrlOpener
 import dev.mks.blogmark.ui.theme.BlogmarkIcons
@@ -138,18 +138,17 @@ fun FollowingSection(
             .border(Stroke.Hairline, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(Radius.Card))
             .padding(16.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = "FOLLOWING",
-                style = SectionLabel,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.weight(1f),
-            )
-            if (feedLibrary.feeds.isNotEmpty()) {
-                FollowingAction(if (syncing) "Syncing…" else "Sync now", onClick = ::sync)
-            }
-            FollowingAction(if (managing) "Done" else "Manage") { managing = !managing }
-        }
+        EyebrowHeader(
+            text = "FOLLOWING",
+            trailing = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (feedLibrary.feeds.isNotEmpty()) {
+                        FollowingAction(if (syncing) "Syncing…" else "Sync now", onClick = ::sync)
+                    }
+                    FollowingAction(if (managing) "Done" else "Manage") { managing = !managing }
+                }
+            },
+        )
 
         AnimatedVisibility(managing) {
             FeedManagePanel(
@@ -222,20 +221,12 @@ private fun TopicRow(feed: Feed, posts: List<FeedPost>, linkLibrary: LinkLibrary
 
     Column(Modifier.padding(top = 14.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 8.dp)) {
-            Box(
-                Modifier
-                    .size(24.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceContainer),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = topicIcon(feed.host),
-                    contentDescription = null,
-                    modifier = Modifier.size(13.dp),
-                    tint = MaterialTheme.colorScheme.primary,
-                )
-            }
+            MonogramBadge(
+                host = feed.host,
+                size = 24.dp,
+                background = MaterialTheme.colorScheme.surfaceContainer,
+                contentColor = MaterialTheme.colorScheme.primary,
+            )
             Spacer(Modifier.width(8.dp))
             Text(
                 text = feed.host,
@@ -250,7 +241,6 @@ private fun TopicRow(feed: Feed, posts: List<FeedPost>, linkLibrary: LinkLibrary
                 PostCard(
                     post = post,
                     host = feed.host,
-                    icon = topicIcon(feed.host),
                     saved = linkLibrary.isSaved(post.url),
                     onToggleSave = {
                         val wasSaved = linkLibrary.isSaved(post.url)
@@ -269,14 +259,14 @@ private fun TopicRow(feed: Feed, posts: List<FeedPost>, linkLibrary: LinkLibrary
 }
 
 /**
- * One post: a corner of colour from the topic's own icon so the card isn't
- * bare type on a flat surface, the headline, the host it came from, and the
- * bookmark that's the only way it ever reaches the Saved tab. No thumbnail —
- * that would mean an image fetch per post on top of the feed fetch itself,
- * for a badge [topicIcon] already gives for free.
+ * One post: a monogram in a corner of colour so the card isn't bare type on
+ * a flat surface, the headline, the host it came from, and the bookmark
+ * that's the only way it ever reaches the Saved tab. No thumbnail — that
+ * would mean an image fetch per post on top of the feed fetch itself, for a
+ * badge [MonogramBadge] already gives for free.
  */
 @Composable
-private fun PostCard(post: FeedPost, host: String, icon: ImageVector, saved: Boolean, onToggleSave: () -> Unit) {
+private fun PostCard(post: FeedPost, host: String, saved: Boolean, onToggleSave: () -> Unit) {
     val open = rememberUrlOpener()
 
     Column(
@@ -290,20 +280,7 @@ private fun PostCard(post: FeedPost, host: String, icon: ImageVector, saved: Boo
             .padding(12.dp),
     ) {
         Row(verticalAlignment = Alignment.Top) {
-            Box(
-                Modifier
-                    .size(28.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primaryContainer),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    modifier = Modifier.size(14.dp),
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                )
-            }
+            MonogramBadge(host = host, size = 28.dp)
             Spacer(Modifier.weight(1f))
             // Tinted rather than swapped for a filled glyph, the same way a
             // saved link's "mark read" button changes colour instead of

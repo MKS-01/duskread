@@ -56,8 +56,9 @@ import dev.mks.blogmark.links.createHttpClient
 import dev.mks.blogmark.links.fetchLinkMetadata
 import dev.mks.blogmark.links.looksLikeUrl
 import dev.mks.blogmark.links.savedAgo
-import dev.mks.blogmark.links.topicIcon
 import dev.mks.blogmark.ui.common.EmptyState
+import dev.mks.blogmark.ui.common.EyebrowHeader
+import dev.mks.blogmark.ui.common.MonogramBadge
 import dev.mks.blogmark.ui.common.ToastRequest
 import dev.mks.blogmark.ui.rememberUrlOpener
 import dev.mks.blogmark.ui.theme.BlogmarkIcons
@@ -172,11 +173,10 @@ fun LinksTab(
             // than saved, so the section reads as a history.
             if (read.isNotEmpty()) {
                 item("read-head") {
-                    Text(
+                    EyebrowHeader(
                         text = "READ · ${read.size}",
-                        style = SectionLabel,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(start = 4.dp, top = 18.dp, bottom = 2.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = 4.dp, end = 4.dp, top = 18.dp),
                     )
                 }
 
@@ -401,21 +401,12 @@ private fun LinkCardFace(
             .clickable(onClick = onOpen)
             .padding(start = 14.dp, end = 8.dp, top = 12.dp, bottom = 8.dp),
     ) {
-        Box(
-            Modifier
-                .padding(top = 1.dp)
-                .size(30.dp)
-                .clip(CircleShape)
-                .background(if (link.read) scheme.surfaceContainerHigh else scheme.primaryContainer),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = topicIcon(link.host),
-                contentDescription = null,
-                modifier = Modifier.size(15.dp),
-                tint = if (link.read) scheme.onSurfaceVariant else scheme.onPrimaryContainer,
-            )
-        }
+        MonogramBadge(
+            host = link.host,
+            modifier = Modifier.padding(top = 1.dp),
+            background = if (link.read) scheme.surfaceContainerHigh else scheme.primaryContainer,
+            contentColor = if (link.read) scheme.onSurfaceVariant else scheme.onPrimaryContainer,
+        )
         Spacer(Modifier.width(12.dp))
 
         Column(Modifier.weight(1f)) {

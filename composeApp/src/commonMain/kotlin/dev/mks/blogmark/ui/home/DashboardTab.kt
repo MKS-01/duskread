@@ -56,12 +56,14 @@ import dev.mks.blogmark.reader.ReadSort
 import dev.mks.blogmark.reader.ReaderSource
 import dev.mks.blogmark.reader.rememberReadRepository
 import dev.mks.blogmark.ui.common.CompactEmptyState
+import dev.mks.blogmark.ui.common.EyebrowHeader
 import dev.mks.blogmark.ui.common.ToastRequest
 import dev.mks.blogmark.ui.reader.formatDuration
 import dev.mks.blogmark.ui.rememberUrlOpener
 import dev.mks.blogmark.ui.theme.BlogmarkIcons
+import dev.mks.blogmark.ui.theme.CodeStyle
+import dev.mks.blogmark.ui.theme.Mono
 import dev.mks.blogmark.ui.theme.Radius
-import dev.mks.blogmark.ui.theme.SectionLabel
 import dev.mks.blogmark.ui.theme.Space
 import dev.mks.blogmark.ui.theme.Stroke
 import io.ktor.client.HttpClient
@@ -193,26 +195,15 @@ private fun FocusCard(onOpen: () -> Unit, modifier: Modifier = Modifier) {
             .clickable(onClick = onOpen)
             .padding(16.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            // A bare glyph, not a badge — matching the eyebrow icon on
-            // [ReadbackOfDayCard] rather than standing out from it.
-            Icon(
-                imageVector = if (!state.idle && state.running) BlogmarkIcons.Pause else BlogmarkIcons.Play,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp),
-                tint = MaterialTheme.colorScheme.primary,
-            )
-            Spacer(Modifier.width(8.dp))
-            Text(
-                text = "FOCUS",
-                style = SectionLabel,
-                color = MaterialTheme.colorScheme.primary,
-            )
-        }
-        Spacer(Modifier.height(6.dp))
+        EyebrowHeader(
+            text = "FOCUS",
+            icon = if (!state.idle && state.running) BlogmarkIcons.Pause else BlogmarkIcons.Play,
+        )
         Text(
             text = if (state.idle) "Start a session" else state.clockLabel,
-            style = MaterialTheme.typography.titleMedium,
+            style = if (state.idle) MaterialTheme.typography.titleMedium else CodeStyle,
+            fontSize = if (state.idle) MaterialTheme.typography.titleMedium.fontSize else 22.sp,
+            fontWeight = if (state.idle) null else FontWeight.Medium,
             color = MaterialTheme.colorScheme.onSurface,
         )
 
@@ -293,21 +284,7 @@ private fun ReadbackOfDayCard(onOpen: () -> Unit, modifier: Modifier = Modifier)
             .clickable(onClick = onOpen)
             .padding(16.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                imageVector = BlogmarkIcons.Waveform,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp),
-                tint = MaterialTheme.colorScheme.primary,
-            )
-            Spacer(Modifier.width(8.dp))
-            Text(
-                text = "TODAY'S READBACK",
-                style = SectionLabel,
-                color = MaterialTheme.colorScheme.primary,
-            )
-        }
-        Spacer(Modifier.height(6.dp))
+        EyebrowHeader(text = "TODAY'S READBACK", icon = BlogmarkIcons.Waveform)
 
         val item = latest
         when {
@@ -353,6 +330,7 @@ private fun ReadbackOfDayCard(onOpen: () -> Unit, modifier: Modifier = Modifier)
                 Spacer(Modifier.height(8.dp))
                 Text(
                     text = formatDuration(item.durationSec),
+                    fontFamily = Mono,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -392,33 +370,31 @@ private fun SavedPickCard(links: LinkLibrary, onOpenSaved: () -> Unit, modifier:
             }
             .padding(16.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = "FROM SAVED",
-                style = SectionLabel,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.weight(1f),
-            )
-            if (unread.size > 1) {
-                Box(
-                    Modifier
-                        .size(26.dp)
-                        .clip(CircleShape)
-                        .clickable {
-                            pick = unread.filterNot { it.id == pick?.id }.random()
-                        },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        imageVector = BlogmarkIcons.Shuffle,
-                        contentDescription = "Show a different pick",
-                        modifier = Modifier.size(15.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+        EyebrowHeader(
+            text = "FROM SAVED",
+            trailing = if (unread.size > 1) {
+                {
+                    Box(
+                        Modifier
+                            .size(26.dp)
+                            .clip(CircleShape)
+                            .clickable {
+                                pick = unread.filterNot { it.id == pick?.id }.random()
+                            },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            imageVector = BlogmarkIcons.Shuffle,
+                            contentDescription = "Show a different pick",
+                            modifier = Modifier.size(15.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
-            }
-        }
-        Spacer(Modifier.height(10.dp))
+            } else {
+                null
+            },
+        )
 
         val found = pick
         if (found == null) {
@@ -469,6 +445,7 @@ private fun SavedPickCard(links: LinkLibrary, onOpenSaved: () -> Unit, modifier:
             Spacer(Modifier.height(8.dp))
             Text(
                 text = found.host,
+                fontFamily = Mono,
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.primary,

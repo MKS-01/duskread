@@ -10,18 +10,22 @@ import androidx.compose.ui.unit.dp
 /*
  * Hand-drawn icons, as vector paths rather than the Material set.
  *
- * Two reasons. They are stroked at a consistent 1.7 units where Material's are
- * filled, which sits better against the thin type and hairline borders used
- * everywhere else. And they can mean something specific to this app — the
- * Learn icon is the same stepped motif as the launcher mark, so the app's one
- * visual idea appears in three places rather than none.
+ * The construction rule is "Bar": anything that can be built from evenly
+ * spaced vertical bars is — Readback, Feed, Settings' sliders, the shading on
+ * Contrast — because the waveform is the one visual idea this app actually
+ * has, and an icon set drawn from it agrees with the data on screen rather
+ * than merely sitting next to it. What cannot be built that way (Target,
+ * Shuffle, the folder shapes) borrows the same 2.4 weight and round terminal
+ * so the set still looks cut from the same clip. Nothing is filled — Play and
+ * Pause used to be the one exception, which is the kind of inconsistency this
+ * hand exists to remove.
  *
  * `Icon` tints the whole vector, so the stroke colour below is only a
  * placeholder.
  */
 private object IconStroke {
     val Colour = SolidColor(androidx.compose.ui.graphics.Color.Black)
-    const val Width = 1.7f
+    const val Width = 2.4f
 }
 
 private fun icon(name: String, block: androidx.compose.ui.graphics.vector.ImageVector.Builder.() -> Unit) = ImageVector.Builder(
@@ -32,39 +36,45 @@ private fun icon(name: String, block: androidx.compose.ui.graphics.vector.ImageV
     viewportHeight = 24f,
 ).apply(block).build()
 
+/** Every path in this set draws with this stroke; nothing here is filled. */
+private fun ImageVector.Builder.stroked(pathBuilder: androidx.compose.ui.graphics.vector.PathBuilder.() -> Unit) {
+    path(
+        stroke = IconStroke.Colour,
+        strokeLineWidth = IconStroke.Width,
+        strokeLineCap = StrokeCap.Round,
+        strokeLineJoin = StrokeJoin.Round,
+        pathBuilder = pathBuilder,
+    )
+}
+
 object BlogmarkIcons {
 
-    /** Home: a roofline over a floor. */
+    /** Home: a roofline over a floor, the floor split at the door like a waveform's centre line. */
     val Home: ImageVector by lazy {
         icon("Home") {
-            path(
-                stroke = IconStroke.Colour,
-                strokeLineWidth = IconStroke.Width,
-                strokeLineCap = StrokeCap.Round,
-                strokeLineJoin = StrokeJoin.Round,
-            ) {
-                moveTo(4f, 11.5f)
-                lineTo(12f, 4.5f)
-                lineTo(20f, 11.5f)
-                moveTo(6.2f, 10f)
-                lineTo(6.2f, 19.5f)
-                lineTo(17.8f, 19.5f)
-                lineTo(17.8f, 10f)
+            stroked {
+                moveTo(4f, 12f)
+                lineTo(12f, 5.5f)
+                lineTo(20f, 12f)
+                moveTo(6.5f, 13.5f)
+                lineTo(6.5f, 20f)
+                moveTo(17.5f, 13.5f)
+                lineTo(17.5f, 20f)
+                moveTo(12f, 20f)
+                lineTo(12f, 15.5f)
             }
         }
     }
 
     /**
      * Practice: a target. Questions are aimed at something specific — the one
-     * insight that unlocks them — which a lightning bolt does not say.
+     * insight that unlocks them — which a lightning bolt does not say. Rings
+     * rather than bars because a target has no bar-built equivalent; it keeps
+     * the set's weight and round terminal instead.
      */
     val Target: ImageVector by lazy {
         icon("Target") {
-            path(
-                stroke = IconStroke.Colour,
-                strokeLineWidth = IconStroke.Width,
-                strokeLineCap = StrokeCap.Round,
-            ) {
+            stroked {
                 // Outer ring.
                 moveTo(3.6f, 12f)
                 arcToRelative(8.4f, 8.4f, 0f, true, true, 16.8f, 0f)
@@ -75,11 +85,10 @@ object BlogmarkIcons {
                 arcToRelative(3.4f, 3.4f, 0f, true, true, 6.8f, 0f)
                 arcToRelative(3.4f, 3.4f, 0f, true, true, -6.8f, 0f)
                 close()
-            }
-            path(fill = IconStroke.Colour) {
-                moveTo(10.7f, 12f)
-                arcToRelative(1.3f, 1.3f, 0f, true, true, 2.6f, 0f)
-                arcToRelative(1.3f, 1.3f, 0f, true, true, -2.6f, 0f)
+                // Centre, stroked rather than filled, to match the rest of the set.
+                moveTo(11.3f, 12f)
+                arcToRelative(0.7f, 0.7f, 0f, true, true, 1.4f, 0f)
+                arcToRelative(0.7f, 0.7f, 0f, true, true, -1.4f, 0f)
                 close()
             }
         }
@@ -88,12 +97,7 @@ object BlogmarkIcons {
     /** Clock face with hands at ten-past-ten — for picking or showing a session duration. */
     val Clock: ImageVector by lazy {
         icon("Clock") {
-            path(
-                stroke = IconStroke.Colour,
-                strokeLineWidth = IconStroke.Width,
-                strokeLineCap = StrokeCap.Round,
-                strokeLineJoin = StrokeJoin.Round,
-            ) {
+            stroked {
                 moveTo(3.6f, 12f)
                 arcToRelative(8.4f, 8.4f, 0f, true, true, 16.8f, 0f)
                 arcToRelative(8.4f, 8.4f, 0f, true, true, -16.8f, 0f)
@@ -108,15 +112,10 @@ object BlogmarkIcons {
     /** A right chevron, for a row that opens something — same weight as [Back], not Material's filled arrow. */
     val Chevron: ImageVector by lazy {
         icon("Chevron") {
-            path(
-                stroke = IconStroke.Colour,
-                strokeLineWidth = IconStroke.Width,
-                strokeLineCap = StrokeCap.Round,
-                strokeLineJoin = StrokeJoin.Round,
-            ) {
-                moveTo(9f, 5f)
+            stroked {
+                moveTo(9.5f, 5.5f)
                 lineTo(16f, 12f)
-                lineTo(9f, 19f)
+                lineTo(9.5f, 18.5f)
             }
         }
     }
@@ -124,12 +123,7 @@ object BlogmarkIcons {
     /** Back. Same weight as the rest, which Material's arrow is not. */
     val Back: ImageVector by lazy {
         icon("Back") {
-            path(
-                stroke = IconStroke.Colour,
-                strokeLineWidth = IconStroke.Width,
-                strokeLineCap = StrokeCap.Round,
-                strokeLineJoin = StrokeJoin.Round,
-            ) {
+            stroked {
                 moveTo(19.5f, 12f)
                 lineTo(4.5f, 12f)
                 moveTo(11f, 5f)
@@ -142,11 +136,7 @@ object BlogmarkIcons {
     /** A small cross for clearing the field. */
     val Close: ImageVector by lazy {
         icon("Close") {
-            path(
-                stroke = IconStroke.Colour,
-                strokeLineWidth = IconStroke.Width,
-                strokeLineCap = StrokeCap.Round,
-            ) {
+            stroked {
                 moveTo(6.5f, 6.5f)
                 lineTo(17.5f, 17.5f)
                 moveTo(17.5f, 6.5f)
@@ -155,32 +145,26 @@ object BlogmarkIcons {
         }
     }
 
-    /** Play, for starting or resuming a focus session — filled, not stroked, to read as a button. */
+    /** Play, for starting or resuming a focus session — stroked, like everything else in this set. */
     val Play: ImageVector by lazy {
         icon("Play") {
-            path(fill = IconStroke.Colour) {
-                moveTo(8f, 5.5f)
-                lineTo(19f, 12f)
-                lineTo(8f, 18.5f)
+            stroked {
+                moveTo(8.5f, 5.5f)
+                lineTo(18.5f, 12f)
+                lineTo(8.5f, 18.5f)
                 close()
             }
         }
     }
 
-    /** Pause, for a focus session in progress. */
+    /** Pause, for a focus session in progress — two bars, the same construction as [Waveform]. */
     val Pause: ImageVector by lazy {
         icon("Pause") {
-            path(fill = IconStroke.Colour) {
-                moveTo(6.5f, 5.5f)
-                lineTo(10.5f, 5.5f)
-                lineTo(10.5f, 18.5f)
-                lineTo(6.5f, 18.5f)
-                close()
-                moveTo(13.5f, 5.5f)
-                lineTo(17.5f, 5.5f)
-                lineTo(17.5f, 18.5f)
-                lineTo(13.5f, 18.5f)
-                close()
+            stroked {
+                moveTo(9f, 5f)
+                lineTo(9f, 19f)
+                moveTo(15f, 5f)
+                lineTo(15f, 19f)
             }
         }
     }
@@ -188,12 +172,7 @@ object BlogmarkIcons {
     /** Re-roll a random pick — two crossing paths, each ending in an arrow. */
     val Shuffle: ImageVector by lazy {
         icon("Shuffle") {
-            path(
-                stroke = IconStroke.Colour,
-                strokeLineWidth = IconStroke.Width,
-                strokeLineCap = StrokeCap.Round,
-                strokeLineJoin = StrokeJoin.Round,
-            ) {
+            stroked {
                 moveTo(5f, 7f)
                 lineTo(19f, 17f)
                 moveTo(19f, 17f)
@@ -211,24 +190,20 @@ object BlogmarkIcons {
         }
     }
 
-    /** Reader: a small waveform — bars of varying height, like a played-back recording. */
+    /** Reader: the waveform itself — bars of varying height, like a played-back recording. */
     val Waveform: ImageVector by lazy {
         icon("Waveform") {
-            path(
-                stroke = IconStroke.Colour,
-                strokeLineWidth = IconStroke.Width,
-                strokeLineCap = StrokeCap.Round,
-            ) {
-                moveTo(4.5f, 10f)
-                lineTo(4.5f, 14f)
-                moveTo(8.5f, 8f)
-                lineTo(8.5f, 16f)
-                moveTo(12.5f, 5f)
-                lineTo(12.5f, 19f)
-                moveTo(16.5f, 8f)
-                lineTo(16.5f, 16f)
-                moveTo(20.5f, 10f)
-                lineTo(20.5f, 14f)
+            stroked {
+                moveTo(4f, 10f)
+                lineTo(4f, 14f)
+                moveTo(8f, 6.5f)
+                lineTo(8f, 17.5f)
+                moveTo(12f, 3.5f)
+                lineTo(12f, 20.5f)
+                moveTo(16f, 6.5f)
+                lineTo(16f, 17.5f)
+                moveTo(20f, 10f)
+                lineTo(20f, 14f)
             }
         }
     }
@@ -236,12 +211,7 @@ object BlogmarkIcons {
     /** A plain folder, no connect badge — for switching an already-linked folder, not pairing a new one. */
     val Folder: ImageVector by lazy {
         icon("Folder") {
-            path(
-                stroke = IconStroke.Colour,
-                strokeLineWidth = IconStroke.Width,
-                strokeLineCap = StrokeCap.Round,
-                strokeLineJoin = StrokeJoin.Round,
-            ) {
+            stroked {
                 moveTo(3f, 6f)
                 lineTo(9.5f, 6f)
                 lineTo(11.5f, 8.5f)
@@ -259,12 +229,7 @@ object BlogmarkIcons {
      */
     val FolderConnect: ImageVector by lazy {
         icon("FolderConnect") {
-            path(
-                stroke = IconStroke.Colour,
-                strokeLineWidth = IconStroke.Width,
-                strokeLineCap = StrokeCap.Round,
-                strokeLineJoin = StrokeJoin.Round,
-            ) {
+            stroked {
                 moveTo(2.5f, 7.5f)
                 lineTo(8.5f, 7.5f)
                 lineTo(10.5f, 10f)
@@ -273,11 +238,7 @@ object BlogmarkIcons {
                 lineTo(2.5f, 17f)
                 close()
             }
-            path(
-                stroke = IconStroke.Colour,
-                strokeLineWidth = IconStroke.Width,
-                strokeLineCap = StrokeCap.Round,
-            ) {
+            stroked {
                 // Small "connect" badge, bottom right.
                 moveTo(17f, 14.8f)
                 arcToRelative(3.2f, 3.2f, 0f, true, true, 6.4f, 0f)
@@ -294,12 +255,7 @@ object BlogmarkIcons {
     /** Outbound link, for the web fallbacks in search. */
     val External: ImageVector by lazy {
         icon("External") {
-            path(
-                stroke = IconStroke.Colour,
-                strokeLineWidth = IconStroke.Width,
-                strokeLineCap = StrokeCap.Round,
-                strokeLineJoin = StrokeJoin.Round,
-            ) {
+            stroked {
                 moveTo(13.5f, 4.5f)
                 lineTo(19.5f, 4.5f)
                 lineTo(19.5f, 10.5f)
@@ -327,43 +283,33 @@ object BlogmarkIcons {
      */
     val Bookmark: ImageVector by lazy {
         icon("Bookmark") {
-            path(
-                stroke = IconStroke.Colour,
-                strokeLineWidth = IconStroke.Width,
-                strokeLineCap = StrokeCap.Round,
-                strokeLineJoin = StrokeJoin.Round,
-            ) {
-                moveTo(6.5f, 4.5f)
-                lineTo(17.5f, 4.5f)
-                arcToRelative(1f, 1f, 0f, false, true, 1f, 1f)
-                lineTo(18.5f, 20f)
-                lineTo(12f, 15.6f)
-                lineTo(5.5f, 20f)
-                lineTo(5.5f, 5.5f)
-                arcToRelative(1f, 1f, 0f, false, true, 1f, -1f)
+            stroked {
+                moveTo(7f, 19.5f)
+                lineTo(7f, 5.5f)
+                lineTo(17f, 5.5f)
+                lineTo(17f, 19.5f)
+                lineTo(12f, 15f)
                 close()
             }
         }
     }
 
-    /** RSS: a dot with two broadcast arcs — for following a blog's feed. */
+    /**
+     * Feed: ascending bars, like a signal getting stronger — the RSS dot and
+     * broadcast arcs redrawn in the set's own vocabulary rather than
+     * borrowed from a glyph everyone else already uses.
+     */
     val Feed: ImageVector by lazy {
         icon("Feed") {
-            path(fill = IconStroke.Colour) {
-                moveTo(6.5f, 15.5f)
-                arcToRelative(2.2f, 2.2f, 0f, true, true, 0f, 4.4f)
-                arcToRelative(2.2f, 2.2f, 0f, true, true, 0f, -4.4f)
-                close()
-            }
-            path(
-                stroke = IconStroke.Colour,
-                strokeLineWidth = IconStroke.Width,
-                strokeLineCap = StrokeCap.Round,
-            ) {
-                moveTo(5f, 10.2f)
-                arcToRelative(8.8f, 8.8f, 0f, false, true, 8.8f, 8.8f)
-                moveTo(5f, 5f)
-                arcToRelative(14f, 14f, 0f, false, true, 14f, 14f)
+            stroked {
+                moveTo(5f, 19.5f)
+                lineTo(5f, 18f)
+                moveTo(10f, 19.5f)
+                lineTo(10f, 14.5f)
+                moveTo(15f, 19.5f)
+                lineTo(15f, 10.5f)
+                moveTo(20f, 19.5f)
+                lineTo(20f, 6.5f)
             }
         }
     }
@@ -371,79 +317,55 @@ object BlogmarkIcons {
     /** A tick, for marking a saved link read. */
     val Check: ImageVector by lazy {
         icon("Check") {
-            path(
-                stroke = IconStroke.Colour,
-                strokeLineWidth = IconStroke.Width,
-                strokeLineCap = StrokeCap.Round,
-                strokeLineJoin = StrokeJoin.Round,
-            ) {
+            stroked {
                 moveTo(5f, 12.5f)
-                lineTo(10f, 17.5f)
-                lineTo(19f, 6.5f)
+                lineTo(9.5f, 17f)
+                lineTo(19f, 7f)
             }
         }
     }
 
     /**
-     * Settings: three sliders, each with a knob at a different point along
-     * its track — not a gear, which reads as "mechanism" when what this app
-     * calls Settings is really the reading list's backup controls.
+     * Settings: three tracks, each with a knob drawn as a crossing bar rather
+     * than a filled dot — the sliders *are* bars, the same construction as
+     * [Waveform] and [Feed].
      */
     val Settings: ImageVector by lazy {
         icon("Settings") {
-            path(
-                stroke = IconStroke.Colour,
-                strokeLineWidth = IconStroke.Width,
-                strokeLineCap = StrokeCap.Round,
-            ) {
-                moveTo(4f, 6.5f)
-                lineTo(20f, 6.5f)
-                moveTo(4f, 12f)
-                lineTo(20f, 12f)
-                moveTo(4f, 17.5f)
-                lineTo(20f, 17.5f)
-            }
-            path(fill = IconStroke.Colour) {
-                moveTo(8f, 6.5f)
-                arcToRelative(2f, 2f, 0f, true, true, 4f, 0f)
-                arcToRelative(2f, 2f, 0f, true, true, -4f, 0f)
-                close()
-                moveTo(13f, 12f)
-                arcToRelative(2f, 2f, 0f, true, true, 4f, 0f)
-                arcToRelative(2f, 2f, 0f, true, true, -4f, 0f)
-                close()
-                moveTo(6.5f, 17.5f)
-                arcToRelative(2f, 2f, 0f, true, true, 4f, 0f)
-                arcToRelative(2f, 2f, 0f, true, true, -4f, 0f)
-                close()
+            stroked {
+                moveTo(4.5f, 8f)
+                lineTo(19.5f, 8f)
+                moveTo(4.5f, 16f)
+                lineTo(19.5f, 16f)
+                moveTo(9f, 5f)
+                lineTo(9f, 11f)
+                moveTo(15f, 13f)
+                lineTo(15f, 19f)
             }
         }
     }
 
     /**
-     * Contrast: a circle with one half filled.
+     * Contrast: a ring with bars fanning inward, standing in for a half-fill.
      *
      * The theme toggle swaps colour for greyscale, not light for dark, so the
-     * usual sun/moon pair would say the wrong thing — this is the same circle
-     * either way, differing only in how much of it is ink.
+     * usual sun/moon pair would say the wrong thing — this reads as one dial
+     * either way, differing only in how much of it is shaded, and the shading
+     * is drawn the same way the waveform is: bars, not a flat fill.
      */
     val Contrast: ImageVector by lazy {
         icon("Contrast") {
-            path(
-                stroke = IconStroke.Colour,
-                strokeLineWidth = IconStroke.Width,
-            ) {
+            stroked {
                 moveTo(3.6f, 12f)
                 arcToRelative(8.4f, 8.4f, 0f, true, true, 16.8f, 0f)
                 arcToRelative(8.4f, 8.4f, 0f, true, true, -16.8f, 0f)
                 close()
-            }
-            // The filled half, drawn as its own closed semicircle so the ring
-            // above stays an even stroke all the way round.
-            path(fill = IconStroke.Colour) {
-                moveTo(12f, 3.6f)
-                arcToRelative(8.4f, 8.4f, 0f, false, true, 0f, 16.8f)
-                close()
+                moveTo(12f, 5.5f)
+                lineTo(12f, 18.5f)
+                moveTo(15f, 8.5f)
+                lineTo(15f, 15.5f)
+                moveTo(18f, 11f)
+                lineTo(18f, 13f)
             }
         }
     }

@@ -33,6 +33,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
@@ -67,6 +68,12 @@ fun InAppBrowserScreen(url: String, onClose: () -> Unit, modifier: Modifier = Mo
         webView?.takeIf { it.canGoBack() }?.goBack() ?: onClose()
     }
 
+    // Read once, outside the WebView factory: that lambda runs a single time
+    // on first composition, so a value it captures is frozen at whatever the
+    // theme was then. Fine here — this screen closes and reopens across a
+    // theme change, it never lives through one.
+    val ground = MaterialTheme.colorScheme.background.toArgb()
+
     Surface(modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(Modifier.fillMaxSize()) {
             BrowserToolbar(
@@ -89,7 +96,11 @@ fun InAppBrowserScreen(url: String, onClose: () -> Unit, modifier: Modifier = Mo
                         darken(settings)
                         // A light flash while the WebView inflates and before the
                         // page paints would undo the whole point of forcing dark.
-                        setBackgroundColor(android.graphics.Color.BLACK)
+                        // The app's own ground, not a hardcoded black — this used to
+                        // be pure black while the app itself sits on #101010, which
+                        // is the kind of seam that makes an embedded browser feel
+                        // like a different app wearing this one's toolbar.
+                        setBackgroundColor(ground)
                         settings.javaScriptEnabled = true
                         settings.domStorageEnabled = true
                         webChromeClient = object : WebChromeClient() {

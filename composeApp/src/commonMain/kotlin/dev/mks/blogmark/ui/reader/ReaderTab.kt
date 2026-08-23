@@ -20,8 +20,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -55,6 +53,7 @@ import dev.mks.blogmark.reader.ReaderSourcePicker
 import dev.mks.blogmark.ui.common.EmptyState
 import dev.mks.blogmark.ui.rememberUrlOpener
 import dev.mks.blogmark.ui.theme.BlogmarkIcons
+import dev.mks.blogmark.ui.theme.Mono
 import dev.mks.blogmark.ui.theme.Radius
 import dev.mks.blogmark.ui.theme.Stroke
 import kotlinx.coroutines.launch
@@ -242,6 +241,7 @@ private fun ReadCard(
         Spacer(Modifier.height(6.dp))
         Text(
             text = "${item.createdAt.take(10)} · ${formatDuration(item.durationSec)} · ${item.mode} · ${item.voice} · ${item.wordCount} words",
+            fontFamily = Mono,
             fontSize = 11.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -293,7 +293,7 @@ private fun ReadCard(
             )
             Spacer(Modifier.width(4.dp))
             Icon(
-                imageVector = Icons.AutoMirrored.Filled.OpenInNew,
+                imageVector = BlogmarkIcons.External,
                 contentDescription = null,
                 modifier = Modifier.size(12.dp),
                 tint = MaterialTheme.colorScheme.primary,

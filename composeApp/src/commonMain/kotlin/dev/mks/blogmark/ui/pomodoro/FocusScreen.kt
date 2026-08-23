@@ -9,7 +9,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -29,11 +31,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.mks.blogmark.pomodoro.PickableMinutes
+import dev.mks.blogmark.pomodoro.PomodoroState
 import dev.mks.blogmark.pomodoro.clockLabel
 import dev.mks.blogmark.pomodoro.rememberPomodoroController
 import dev.mks.blogmark.ui.PlatformBackHandler
+import dev.mks.blogmark.ui.common.WaveformMeter
 import dev.mks.blogmark.ui.theme.BlogmarkIcons
+import dev.mks.blogmark.ui.theme.CodeStyle
 import dev.mks.blogmark.ui.theme.Radius
+import dev.mks.blogmark.ui.theme.SectionLabel
 import dev.mks.blogmark.ui.theme.Stroke
 
 /**
@@ -41,6 +47,11 @@ import dev.mks.blogmark.ui.theme.Stroke
  * corner chip, for whenever the point is to actually stare at the clock. The
  * chip and this screen read the same [dev.mks.blogmark.pomodoro.PomodoroController],
  * so closing this never stops a running session — it only stops looking at it.
+ *
+ * Bottom-anchored rather than centred: the close button aside, everything a
+ * thumb can reach lives in the lower third, same as the floating bar it sits
+ * above. Centring the clock looked considered on a design file and useless on
+ * a phone held one-handed.
  */
 @Composable
 fun FocusScreen(onClose: () -> Unit, modifier: Modifier = Modifier) {
@@ -70,17 +81,41 @@ fun FocusScreen(onClose: () -> Unit, modifier: Modifier = Modifier) {
             }
 
             Column(
-                Modifier.align(Alignment.Center).padding(horizontal = 32.dp),
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .navigationBarsPadding()
+                    .padding(horizontal = 32.dp, vertical = 56.dp)
+                    .fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
-                    text = if (state.idle) "Focus" else state.clockLabel,
-                    fontSize = 76.sp,
-                    fontWeight = FontWeight.Bold,
+                    text = if (state.idle) "Focus" else "Focus · ${state.totalSeconds / 60} min",
+                    style = SectionLabel,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+
+                Spacer(Modifier.height(10.dp))
+
+                Text(
+                    text = if (state.idle) "Pick a length" else state.clockLabel,
+                    style = CodeStyle,
+                    fontSize = 52.sp,
+                    fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onBackground,
                 )
 
-                Spacer(Modifier.height(36.dp))
+                if (!state.idle) {
+                    Spacer(Modifier.height(20.dp))
+                    // Elapsed is filled, remaining is not — the same construction
+                    // as the readback progress, so one visual language covers
+                    // audio and time alike.
+                    WaveformMeter(
+                        progress = state.elapsedFraction,
+                        modifier = Modifier.fillMaxWidth().height(26.dp),
+                    )
+                }
+
+                Spacer(Modifier.height(28.dp))
 
                 if (state.idle) {
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -102,6 +137,14 @@ fun FocusScreen(onClose: () -> Unit, modifier: Modifier = Modifier) {
         }
     }
 }
+
+/** How much of the chosen session has elapsed, for the meter — 0 while idle. */
+private val PomodoroState.elapsedFraction: Float
+    get() = if (idle) {
+        0f
+    } else {
+        (1f - remainingSeconds.toFloat() / totalSeconds.toFloat()).coerceIn(0f, 1f)
+    }
 
 @Composable
 private fun FocusOption(text: String, onClick: () -> Unit, primary: Boolean = false) {
