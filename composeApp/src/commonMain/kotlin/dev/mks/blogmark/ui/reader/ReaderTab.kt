@@ -46,7 +46,10 @@ import dev.mks.blogmark.reader.ReadSort
 import dev.mks.blogmark.reader.ReaderSource
 import dev.mks.blogmark.reader.ReaderSourcePicker
 import dev.mks.blogmark.ui.common.EmptyState
-import dev.mks.blogmark.ui.common.MonogramBadge
+import dev.mks.blogmark.ui.common.ListRowBody
+import dev.mks.blogmark.ui.common.ListRowDivider
+import dev.mks.blogmark.ui.common.RowMeta
+import dev.mks.blogmark.ui.common.RowTone
 import dev.mks.blogmark.ui.common.WaveformMeter
 import dev.mks.blogmark.ui.rememberUrlOpener
 import dev.mks.blogmark.ui.theme.BlogmarkIcons
@@ -247,50 +250,15 @@ private fun ReadRow(
     val playing = playback != null
 
     Column(Modifier.fillMaxWidth()) {
-        Column(Modifier.fillMaxWidth().clickable(onClick = onTap)) {
-            Row(verticalAlignment = Alignment.Top) {
-                MonogramBadge(
-                    host = hostOf(item.sourceUrl),
-                    size = 22.dp,
-                    // The playing row is the only coloured thing on screen,
-                    // chip border included — the mockup tints it with the row.
-                    borderColor = if (playing) scheme.primary else scheme.outlineVariant,
-                    contentColor = if (playing) scheme.primary else scheme.onSurfaceVariant,
-                )
-                Spacer(Modifier.width(10.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(
-                        text = item.title,
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontSize = 14.sp,
-                        lineHeight = 19.sp,
-                        fontWeight = FontWeight.Normal,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        color = if (playing) scheme.primary else scheme.onSurface,
-                    )
-                    Spacer(Modifier.height(5.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Text(
-                            text = if (playback != null && playback.durationSec > 0f) {
-                                "${formatDuration(playback.positionSec.toDouble())} / ${formatDuration(playback.durationSec.toDouble())}"
-                            } else {
-                                formatDuration(item.durationSec)
-                            },
-                            fontFamily = Mono,
-                            fontSize = 10.5.sp,
-                            color = if (playing) scheme.primary else scheme.onSurfaceVariant,
-                        )
-                        Text(
-                            text = "${item.wordCount}w",
-                            fontFamily = Mono,
-                            fontSize = 10.5.sp,
-                            color = scheme.onSurfaceVariant,
-                        )
-                    }
-                }
+        ListRowBody(
+            host = hostOf(item.sourceUrl),
+            title = item.title,
+            onClick = onTap,
+            // The playing row is the only coloured thing on screen — title,
+            // duration and the sourcechip's border all follow it.
+            tone = if (playing) RowTone.Accent else RowTone.Normal,
+            trailing = {
                 if (playing) {
-                    Spacer(Modifier.width(8.dp))
                     Icon(
                         imageVector = if (playback?.playing == true) BlogmarkIcons.Pause else BlogmarkIcons.Play,
                         contentDescription = null,
@@ -298,18 +266,36 @@ private fun ReadRow(
                         tint = scheme.primary,
                     )
                 }
-            }
-            Spacer(Modifier.height(9.dp))
-            WaveformMeter(
-                progress = if (playback != null && playback.durationSec > 0f) {
-                    (playback.positionSec / playback.durationSec).coerceIn(0f, 1f)
+            },
+            content = {
+                Spacer(Modifier.height(9.dp))
+                WaveformMeter(
+                    progress = if (playback != null && playback.durationSec > 0f) {
+                        (playback.positionSec / playback.durationSec).coerceIn(0f, 1f)
+                    } else {
+                        0f
+                    },
+                    modifier = Modifier.height(15.dp),
+                    seed = item.id.hashCode(),
+                )
+            },
+        ) {
+            RowMeta(
+                text = if (playback != null && playback.durationSec > 0f) {
+                    "${formatDuration(playback.positionSec.toDouble())} / ${formatDuration(playback.durationSec.toDouble())}"
                 } else {
-                    0f
+                    formatDuration(item.durationSec)
                 },
-                modifier = Modifier.height(15.dp),
-                seed = item.id.hashCode(),
+                accent = playing,
             )
+            // The word count stays muted even on the playing row: the accent
+            // has to mean "this one is playing", and a second coloured fact
+            // that has nothing to do with playback dilutes it.
+            RowMeta("${item.wordCount}w")
         }
+
+        // Outside the row's own tap target, deliberately: the row is "play
+        // this read", this is "go to where it came from".
         Spacer(Modifier.height(9.dp))
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -325,20 +311,11 @@ private fun ReadRow(
                 tint = scheme.onSurfaceVariant,
             )
             Spacer(Modifier.width(5.dp))
-            Text(
-                text = hostOf(item.sourceUrl),
-                fontFamily = Mono,
-                fontSize = 10.5.sp,
-                color = scheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+            RowMeta(hostOf(item.sourceUrl))
         }
-        Spacer(Modifier.height(6.dp))
-        if (!last) {
-            Box(Modifier.fillMaxWidth().height(1.dp).background(scheme.outlineVariant))
-            Spacer(Modifier.height(15.dp))
-        }
+        // 6, not the divider's usual 15: the source row above carries 4dp of
+        // its own padding, and the gap that matters is the optical one.
+        ListRowDivider(last, topSpacing = 6.dp)
     }
 }
 

@@ -134,6 +134,34 @@ The mockup's bar carries icons and nothing else, and at the row pitch it
 moirés into a hatch across the pill while any coarser pitch collides with the
 play control. The remaining-time readout already answers "how much is left".
 
+## One row, three screens (this pass)
+
+Saved, Readback and a followed blog's topics had each grown their own copy of
+the flat row — same 22dp sourcechip, same 14/19 title, same 10.5sp mono meta,
+same 15dp-hairline-15dp divider — written out three times. The differences
+between them are real and stay real; the skeleton was never one of them, and
+three copies of a number is three chances for one to drift.
+
+- [x] `ui/common/ListRow.kt` holds the skeleton and every metric in it:
+      `ListRow` for the normal case, `ListRowBody` + `ListRowDivider` for
+      Saved, whose swipe-to-remove box needs the hairline to stay put while
+      the row slides out from over it, and `RowMeta` for one fact on the meta
+      line
+- [x] `RowTone` names the three states a row can be in — `Normal`, `Accent`
+      for the one playing read, `Faded` for a read link. Mutually exclusive,
+      so an enum rather than two booleans
+- [x] What stays per-screen: how many facts the meta carries (Readback's two,
+      everyone else's one), what sits at the right end (bookmark / tick /
+      play glyph), and Readback's waveform, which goes in through the row's
+      `content` slot
+- [x] Verified on device against all three: Saved unread and read, Readback
+      idle and playing, the topics list and the digest preview
+
+Not folded in: Home's "FROM SAVED" pick. It looks like a row but is one
+per screen at a larger title and carries no hairline — a feature line, not a
+list row, and forcing it through the same component would have meant a knob
+that exists for one caller.
+
 ## Brand — app icon and splash (this pass)
 
 The mockup's Brand section had never been built. The launcher icon was still

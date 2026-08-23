@@ -54,7 +54,11 @@ import dev.mks.blogmark.links.savedAgo
 import dev.mks.blogmark.ui.common.AppTextField
 import dev.mks.blogmark.ui.common.EmptyState
 import dev.mks.blogmark.ui.common.EyebrowHeader
+import dev.mks.blogmark.ui.common.ListRowBody
+import dev.mks.blogmark.ui.common.ListRowDivider
 import dev.mks.blogmark.ui.common.MonogramBadge
+import dev.mks.blogmark.ui.common.RowMeta
+import dev.mks.blogmark.ui.common.RowTone
 import dev.mks.blogmark.ui.common.ToastRequest
 import dev.mks.blogmark.ui.rememberUrlOpener
 import dev.mks.blogmark.ui.theme.BlogmarkIcons
@@ -320,68 +324,51 @@ private fun LinkRow(
     )
 
     Column(Modifier.fillMaxWidth()) {
+        // The body and the divider are placed separately, rather than using
+        // `ListRow` whole, so the hairline stays put while the row slides out
+        // from over it — see `ListRowBody`.
         SwipeToDismissBox(
             state = dismiss,
             enableDismissFromStartToEnd = false,
             backgroundContent = { RemoveBackground(dismiss.progress) },
         ) {
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .background(scheme.background)
-                    .alpha(if (link.read) 0.5f else 1f)
-                    .clickable(onClick = onOpen),
-                verticalAlignment = Alignment.Top,
+            ListRowBody(
+                host = link.host,
+                title = link.title,
+                onClick = onOpen,
+                // The box slides the row over its own background, so the row
+                // needs one of its own — without it the remove background
+                // shows through the gaps between the words.
+                modifier = Modifier.background(scheme.background),
+                tone = if (link.read) RowTone.Faded else RowTone.Normal,
+                trailing = {
+                    // Only a read row carries the tick — matching the unread
+                    // row above it exactly, sourcechip and two facts, nothing
+                    // more. Still tappable, so marking something read is
+                    // reversible without having to reopen it.
+                    if (link.read) {
+                        Icon(
+                            imageVector = BlogmarkIcons.Check,
+                            contentDescription = "Mark unread",
+                            modifier = Modifier
+                                .size(26.dp)
+                                .clickable(onClick = onToggleRead)
+                                .padding(6.dp),
+                            tint = scheme.onSurfaceVariant,
+                        )
+                    }
+                },
             ) {
-                MonogramBadge(host = link.host, size = 22.dp)
-                Spacer(Modifier.width(10.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(
-                        text = link.title,
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontSize = 14.sp,
-                        lineHeight = 19.sp,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        color = scheme.onSurface,
-                    )
-                    Spacer(Modifier.height(5.dp))
-                    Text(
-                        text = when {
-                            !link.fetched -> "reading the page…"
-                            link.readAt != null && link.readAt > 0L -> "${link.host} · ${savedAgo(link.readAt)}"
-                            else -> "${link.host} · ${savedAgo(link.savedAt)}"
-                        },
-                        fontFamily = Mono,
-                        fontSize = 10.5.sp,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        color = scheme.onSurfaceVariant,
-                    )
-                }
-                // Only a read row carries the tick — matching the unread row
-                // above it exactly, sourcechip and two facts, nothing more.
-                // Still tappable, so marking something read is reversible
-                // without having to reopen it.
-                if (link.read) {
-                    Spacer(Modifier.width(8.dp))
-                    Icon(
-                        imageVector = BlogmarkIcons.Check,
-                        contentDescription = "Mark unread",
-                        modifier = Modifier
-                            .size(26.dp)
-                            .clickable(onClick = onToggleRead)
-                            .padding(6.dp),
-                        tint = scheme.onSurfaceVariant,
-                    )
-                }
+                RowMeta(
+                    text = when {
+                        !link.fetched -> "reading the page…"
+                        link.readAt != null && link.readAt > 0L -> "${link.host} · ${savedAgo(link.readAt)}"
+                        else -> "${link.host} · ${savedAgo(link.savedAt)}"
+                    },
+                )
             }
         }
-        Spacer(Modifier.height(15.dp))
-        if (!last) {
-            Box(Modifier.fillMaxWidth().height(1.dp).background(scheme.outlineVariant))
-            Spacer(Modifier.height(15.dp))
-        }
+        ListRowDivider(last)
     }
 }
 
