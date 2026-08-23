@@ -41,10 +41,11 @@ object Radius {
      */
     val Card = 14.dp
 
-    /** Panels inside a card — origin note, code block, complexity table. */
-    val Panel = 12.dp
-
-    /** Inline surfaces: reference rows, list-pane rows. */
+    /**
+     * Everything that sits inside or below a card: the filled call-to-action,
+     * text fields, dashboard and list rows, the timer's state chips. One step
+     * tighter than [Card] so a row never competes with the panel holding it.
+     */
     val Inline = 10.dp
 
     /**

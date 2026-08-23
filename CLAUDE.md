@@ -2,18 +2,28 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-Blogmark — a Compose Multiplatform study app: DSA topics with steppable
-animated visualisations, code in Kotlin and Go, and interview questions.
-Read mostly on an Android phone.
+Blogmark — a Compose Multiplatform reading app: save a link, follow a blog's
+RSS feed, and hear posts read back as audio, with a focus timer around it all.
+Used mostly on an Android phone, one-handed, so everything sits in the lower
+third of the screen.
+
+The four things the app does, and where each lives:
+
+- **Saved links** — `links/` (`LinkLibrary`, `SavedLink`, `LinkMetadata`:
+  a pasted or shared URL is usable immediately and backfills its real title)
+- **Feeds** — `links/` (`Feed`, `FeedLibrary`, `FeedSync`, `FeedPostCache`)
+- **Readback** — `reader/` (`Reader`, `AudioPlayer`). Integration with the
+  separate [readback](https://github.com/MKS-01/readback) project is
+  **read-only**: the app reads what a sync step puts on the device and never
+  writes to `library.db`.
+- **Focus timer** — `pomodoro/`
 
 **This is a personal learning and exploration project.** Trying an unfamiliar
-API, library or tool is in scope and does not need justifying. What does not
-relax: content accuracy (see `/add-topic` — verify origins, never guess dates)
-and the rule that no topic ships without a visualisation.
+API, library or tool is in scope and does not need justifying.
 
-Architecture and content authoring are already documented — read `README.md`
-for how the app is put together, and the `/add-topic` skill for writing a
-topic. Do not restate them here.
+`README.md` describes how the app is put together — do not restate it here.
+The files in `docs/` predate the current app and describe a DSA-study version
+of this repo that no longer exists; do not treat them as current.
 
 ## Build and verify
 
@@ -78,8 +88,8 @@ after that it's incremental.
 ```
 
 Several rules are switched off in `.editorconfig` because they fight
-deliberate layout — argument-list wrapping (scene definitions group related
-arguments per line), multiline if/else bracing, blank lines between
+deliberate layout — argument-list wrapping (related arguments are grouped
+per line), multiline if/else bracing, blank lines between
 when-conditions, filename-matches-declaration, and property naming. **Do not
 re-enable them to "fix" a violation**; if lint objects to hand-tuned
 formatting, the rule is wrong, not the code. Two PascalCase factories carry
@@ -96,8 +106,8 @@ aggregate task would be `:composeApp:allTests`. Do not invent test commands.
   comment explaining why the thing exists or why it is designed that way, never
   a restatement of the signature. Inline `//` comments justify a choice or flag
   a hazard. Match this density — it is the house style, not decoration.
-- **British spelling in prose and comments** (visualisation, colour, amortised,
-  normalised); identifiers stay American (`color`, `VizPalette`).
+- **British spelling in prose and comments** (colour, behaviour, amortised,
+  normalised); identifiers stay American (`color`, `AudioPlayer`).
 - **Private file-level constants are PascalCase**, not `SCREAMING_SNAKE_CASE`:
   `private const val MotionMs = 320`, `private val TwoPaneBreakpoint = 720.dp`.
 - Imports are always explicit; no wildcards, even for long Compose blocks.
@@ -109,17 +119,19 @@ Use `ui/theme/BlogmarkIcons.kt`, not `Icons.Filled.*` — the set is stroked to 
 the type weight, and mixing in a filled Material glyph is immediately visible.
 Add new ones there as vector paths.
 
-## Colour
+## Colour and design tokens
 
-Three sources, and mixing them up is the usual mistake:
+All colour comes from `MaterialTheme.colorScheme`, defined in
+`ui/theme/Theme.kt`. There are two schemes and the app swaps between them at
+runtime: **Paper Black** (near-black ground, warm-white ink, a single
+terracotta accent) and **Ink**, the same layout with the hue drained out —
+lightness, weight and spacing are the only things left to separate elements.
+So never hard-code a `Color(0x…)` in a screen: a literal survives the swap to
+Ink and immediately looks wrong.
 
-- `MaterialTheme.colorScheme` — chrome, surfaces, text
-- `LocalVizPalette.current` — whenever a colour *means* something (algorithm
-  state via `Tone`, level/difficulty chips, pitfall bullets)
-- `LocalCodePalette.current` — syntax highlighting
-
-Tone meanings are fixed project-wide and must not be repurposed; `/add-topic`
-lists them.
+Sizes that carry a decision — reading gutters, corner radii, the bar
+clearance — live in `ui/theme/Tokens.kt`. Optical one-off nudges stay inline;
+naming one implies a system that is not there.
 
 ## The Android skills in `.claude/skills/`
 
