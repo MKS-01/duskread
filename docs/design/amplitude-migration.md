@@ -133,3 +133,49 @@ The meter and the source cell were both built as the wrong *kind* of object.
 The mockup's bar carries icons and nothing else, and at the row pitch it
 moirés into a hatch across the pill while any coarser pitch collides with the
 play control. The remaining-time readout already answers "how much is left".
+
+## Where this stands (end of the waveform pass)
+
+Everything ticked above is committed and pushed. What follows is the open
+list, so the next session starts from a state rather than from a re-reading
+of the diff.
+
+### Verified on device
+Readback idle, Readback playing, Home, Saved, Readback's empty state.
+ktlint, desktop compile and Android compile all clean. There are no tests, so
+screenshots are the only verification that exists here.
+
+### Changed but not yet seen running
+- [ ] Onboarding — `TimerArt` and `WaveformArt` both took the new geometry;
+      needs a fresh install to actually look at
+- [ ] Focus running — the meter is 20 bars ≈ 78dp now, proportion unchecked
+      against the mockup's
+- [ ] Monochrome palette — untouched in principle (the off-state bar is an
+      alpha over the meta tone, so it follows the scheme), but not eyeballed
+
+### Known divergences still in the code
+- [ ] Saved's "From clipboard" suggestion is a filled `surfaceContainer` box
+      (`LinksTab.kt:269`), and there is a `primaryContainer` fill at `:395`.
+      The mockup's paste row is a bordered pill
+- [ ] Following's post carousel cards and feed-management list are still
+      boxed (`FollowingSection.kt:309, 379, 436`). The last pass called these
+      deliberate secondary surfaces — worth confirming rather than leaving
+      implicit
+- [ ] Settings still has five `CircleShape` chrome uses
+      (`SettingsScreen.kt:75, 143, 326, 376`), never re-checked against the
+      flat language
+- [ ] The nav bar's selected item is a filled circle; the mockup's `.nb.sel`
+      is a rounded-rect raise
+
+### Decisions parked (not bugs)
+- [ ] Waveform scale. 18 bars is 61.5dp — 17% of a 393dp screen, where the
+      mockup's is 23% of its 320px frame. 24 bars would match the proportion;
+      the literal count was kept because the current look was approved
+- [ ] Three cut features awaiting a call: the read-along highlighted excerpt
+      and the "Read original" row (cut in the flat-row pass), and the
+      floating bar's ambient waveform (cut in this one)
+
+### Build coverage
+- [ ] iOS and Wasm have not been compiled across this entire migration — a
+      cold Kotlin/Native build is ten minutes plus, so it was deliberately
+      skipped, but one run should happen before the migration is called done
