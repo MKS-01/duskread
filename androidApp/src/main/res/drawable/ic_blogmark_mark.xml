@@ -11,14 +11,21 @@
     speck at launcher size. This fills roughly 70%.
 
     Terracotta, not the mockup's cyan — the migration kept two palettes,
-    terracotta and monochrome, and never adopted the "signature" accent. The
-    three bars step down in alpha off the bookmark, so the accent is one colour
-    at four weights and not four colours.
+    terracotta and monochrome, and never adopted the "signature" accent.
+
+    One weight throughout, where the mockup steps the bars down in alpha off
+    the bookmark. That gradient is a nice idea on a 132px brand plate and a bad
+    one on a launcher tile: over this near-black ground a bar held at 45% is
+    barely separable from the ground itself, so the mark lost its outer half at
+    the size it is actually seen. Solid, the four heights still carry the
+    meter.
 
     Geometry is the mockup's own, shifted 2 units left so the mark centres on
     the canvas, and held inside the 66-unit safe zone by the outer group's
-    scale. Both consumers crop: a launcher masks the outer third of an adaptive
-    icon, and the Android 12+ splash shows the inner two thirds of its icon.
+    scale — both consumers crop, a launcher masking the outer third of an
+    adaptive icon and the Android 12+ splash showing the inner two thirds of
+    its icon. This is the splash's size; the launcher takes it in further
+    still, through ic_launcher_foreground.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
@@ -43,7 +50,6 @@
             android:pivotX="24.5"
             android:pivotY="54">
             <path
-                android:fillAlpha="0.45"
                 android:fillColor="#C6684A"
                 android:pathData="M20,44.5 a4.5,4.5 0 0 1 9,0 v19 a4.5,4.5 0 0 1 -9,0 z" />
         </group>
@@ -53,7 +59,6 @@
             android:pivotX="39.5"
             android:pivotY="54">
             <path
-                android:fillAlpha="0.7"
                 android:fillColor="#C6684A"
                 android:pathData="M35,34.5 a4.5,4.5 0 0 1 9,0 v39 a4.5,4.5 0 0 1 -9,0 z" />
         </group>
@@ -68,7 +73,6 @@
             android:pivotX="83.5"
             android:pivotY="54">
             <path
-                android:fillAlpha="0.55"
                 android:fillColor="#C6684A"
                 android:pathData="M79,40.5 a4.5,4.5 0 0 1 9,0 v27 a4.5,4.5 0 0 1 -9,0 z" />
         </group>

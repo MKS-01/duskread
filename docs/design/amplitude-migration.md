@@ -145,15 +145,28 @@ a speck at 48px.
       meter whose tallest bar is a bookmark, so the notch reads as both a
       ribbon tail and a peak. Fills roughly 70% of the canvas and folds *save*
       and *listen* into one silhouette
-- [x] Terracotta, not the mockup's cyan — one accent at four alpha weights
-      (0.45 / 0.7 / 1.0 / 0.55), keeping the two-palette rule
+- [x] Terracotta, not the mockup's cyan, keeping the two-palette rule — and
+      solid, where the mockup steps the bars down in alpha (0.45 / 0.7 / 1.0 /
+      0.55). That gradient works on a 132px brand plate and fails on a
+      launcher tile: over this near-black ground a bar at 45% barely separates
+      from the ground, so the mark lost its outer half at the size it is
+      actually seen. The four heights carry the meter without it
 - [x] Geometry is the mockup's own, shifted 2 units left to centre it on the
       canvas and scaled 0.85 about the centre so nothing leaves the 66-unit
       safe zone a launcher mask and the splash icon both crop to
+- [x] The launcher takes it in further still — `ic_launcher_foreground` is a
+      13% `<inset>` around the same drawable. The safe zone is the most a mark
+      may be, not the most it should be, and an icon running to the edge of
+      its mask reads as cramped beside home-screen icons that all sit in more
+      air than the mask requires. The splash has a whole screen and keeps the
+      full size, so the two genuinely differ — one geometry, wrapped, not a
+      second copy free to drift
 - [x] One drawable, three consumers: the adaptive foreground now references
       `ic_blogmark_mark` directly rather than duplicating its path data, and
-      `ic_launcher_foreground.xml` is deleted. Only the monochrome layer is
-      separate, because a themed icon needs one opaque colour
+      no path data is duplicated anywhere. Only the monochrome layer is
+      separate, because a themed icon needs one opaque colour; it carries the
+      inset as a matching 0.74 scale so themed and colour icons sit in the
+      same air
 - [x] **Splash animates**, as the mockup's rationale specifies: the outer bars
       settle to rest while the app boots, staggered left-to-right the way the
       app's own waveforms fill. `ic_blogmark_splash.xml` is an
