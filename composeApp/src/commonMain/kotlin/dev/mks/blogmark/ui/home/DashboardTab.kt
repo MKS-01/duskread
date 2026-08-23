@@ -22,12 +22,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,6 +47,7 @@ import androidx.compose.ui.unit.sp
 import dev.mks.blogmark.links.FeedLibrary
 import dev.mks.blogmark.links.FeedPostCache
 import dev.mks.blogmark.links.LinkLibrary
+import dev.mks.blogmark.links.syncFeeds
 import dev.mks.blogmark.pomodoro.PickableMinutes
 import dev.mks.blogmark.pomodoro.clockLabel
 import dev.mks.blogmark.pomodoro.rememberPomodoroController
@@ -52,6 +55,8 @@ import dev.mks.blogmark.reader.ReadItem
 import dev.mks.blogmark.reader.ReadSort
 import dev.mks.blogmark.reader.ReaderSource
 import dev.mks.blogmark.reader.rememberReadRepository
+import dev.mks.blogmark.ui.common.CompactEmptyState
+import dev.mks.blogmark.ui.common.ToastRequest
 import dev.mks.blogmark.ui.reader.formatDuration
 import dev.mks.blogmark.ui.rememberUrlOpener
 import dev.mks.blogmark.ui.theme.BlogmarkIcons
@@ -60,13 +65,15 @@ import dev.mks.blogmark.ui.theme.SectionLabel
 import dev.mks.blogmark.ui.theme.Space
 import dev.mks.blogmark.ui.theme.Stroke
 import io.ktor.client.HttpClient
+import kotlinx.coroutines.launch
 import androidx.compose.ui.graphics.drawscope.Stroke as DrawStroke
 
 /**
  * Home: a dashboard rather than a list. Two doors into the app's actual
  * content — something saved to read, something already turned into audio —
- * lead the screen, with the focus timer ahead of both because it is the one
- * habit worth reaching for before picking either.
+ * lead the screen, ahead of the focus timer: the content pick is what answers
+ * "what am I opening this for", and the timer is only useful once that's
+ * decided.
  */
 @Composable
 fun DashboardTab(
@@ -78,74 +85,96 @@ fun DashboardTab(
     feedPosts: FeedPostCache,
     feedClient: HttpClient,
     greeting: String?,
-    mono: Boolean,
-    onToggleTheme: () -> Unit,
+    onOpenSettings: () -> Unit,
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
 ) {
-    LazyColumn(
-        modifier = modifier.fillMaxWidth(),
-        contentPadding = contentPadding,
-        verticalArrangement = Arrangement.spacedBy(Space.CardGap),
+    val scope = rememberCoroutineScope()
+    var refreshing by remember { mutableStateOf(false) }
+
+    PullToRefreshBox(
+        isRefreshing = refreshing,
+        onRefresh = {
+            // The one thing on this screen that can go stale without the
+            // reader doing anything — saved links and the readback library
+            // are both re-read reactively the moment their own tab opens,
+            // but nobody re-fetches a followed blog until Sync now is
+            // tapped. This is the same call that button makes.
+            if (feeds.feeds.isEmpty()) return@PullToRefreshBox
+            scope.launch {
+                refreshing = true
+                val synced = syncFeeds(feedClient, feeds.feeds, feedPosts)
+                ToastRequest.show(
+                    when {
+                        synced == 0 -> "Couldn't reach any feed."
+                        synced == feeds.feeds.size -> "Synced $synced feed${if (synced == 1) "" else "s"}."
+                        else -> "Synced $synced of ${feeds.feeds.size} feeds."
+                    },
+                )
+                refreshing = false
+            }
+        },
+        modifier = modifier.fillMaxSize(),
     ) {
-        item("head") {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    // The greeting only appears if a name was given — no
-                    // "Hello, there" fallback, which reads worse than nothing.
+        LazyColumn(
+            modifier = Modifier.fillMaxWidth(),
+            contentPadding = contentPadding,
+            verticalArrangement = Arrangement.spacedBy(Space.CardGap),
+        ) {
+            // The greeting only appears if a name was given — no "Hello, there"
+            // fallback, which reads worse than nothing — but the row itself
+            // always shows, since Settings needs somewhere to live either way.
+            item("head") {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     greeting?.let {
                         Text(
                             text = it,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.primary,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            modifier = Modifier.weight(1f),
+                        )
+                    } ?: Spacer(Modifier.weight(1f))
+                    Box(
+                        Modifier
+                            .size(38.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.surfaceContainer)
+                            .clickable(onClick = onOpenSettings),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            imageVector = BlogmarkIcons.Settings,
+                            contentDescription = "Settings",
+                            modifier = Modifier.size(17.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
-                    Text(
-                        text = "Blogmark",
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = MaterialTheme.colorScheme.onBackground,
-                    )
-                }
-                Box(
-                    Modifier
-                        .size(38.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.surfaceContainer)
-                        .clickable(onClick = onToggleTheme),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        imageVector = BlogmarkIcons.Contrast,
-                        contentDescription = if (mono) "Switch to the colour theme" else "Switch to the monochrome theme",
-                        modifier = Modifier.size(18.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
                 }
             }
-        }
 
-        // Leads the screen — the focus timer is the habit this app wants
-        // reached for every time it opens, ahead of any specific content pick.
-        item("focus") {
-            FocusCard(onOpen = onOpenFocus, modifier = Modifier.padding(top = 6.dp))
-        }
+            // Leads the screen — a specific thing to read, ahead of the general
+            // habit prompt below it.
+            item("saved-pick") {
+                SavedPickCard(links = links, onOpenSaved = onOpenSaved, modifier = Modifier.padding(top = 6.dp))
+            }
 
-        item("saved-pick") {
-            SavedPickCard(links = links, onOpenSaved = onOpenSaved)
-        }
+            item("readback") {
+                ReadbackOfDayCard(onOpen = onOpenReadback)
+            }
 
-        item("readback") {
-            ReadbackOfDayCard(onOpen = onOpenReadback)
-        }
+            item("focus") {
+                FocusCard(onOpen = onOpenFocus)
+            }
 
-        item("following") {
-            FollowingSection(
-                feedLibrary = feeds,
-                postCache = feedPosts,
-                linkLibrary = links,
-                client = feedClient,
-                modifier = Modifier.padding(top = 4.dp),
-            )
+            item("following") {
+                FollowingSection(
+                    feedLibrary = feeds,
+                    postCache = feedPosts,
+                    linkLibrary = links,
+                    client = feedClient,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
         }
     }
 }
@@ -165,24 +194,15 @@ private fun FocusCard(onOpen: () -> Unit, modifier: Modifier = Modifier) {
             .padding(16.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            // A badge rather than a bare glyph — this card now leads the
-            // screen, and the other lead-in eyebrows (theme toggle, Reader's
-            // empty state) all give their icon a filled circle of its own.
-            Box(
-                Modifier
-                    .size(30.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primaryContainer),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = if (!state.idle && state.running) BlogmarkIcons.Pause else BlogmarkIcons.Play,
-                    contentDescription = null,
-                    modifier = Modifier.size(15.dp),
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                )
-            }
-            Spacer(Modifier.width(10.dp))
+            // A bare glyph, not a badge — matching the eyebrow icon on
+            // [ReadbackOfDayCard] rather than standing out from it.
+            Icon(
+                imageVector = if (!state.idle && state.running) BlogmarkIcons.Pause else BlogmarkIcons.Play,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+                tint = MaterialTheme.colorScheme.primary,
+            )
+            Spacer(Modifier.width(8.dp))
             Text(
                 text = "FOCUS",
                 style = SectionLabel,
@@ -192,7 +212,7 @@ private fun FocusCard(onOpen: () -> Unit, modifier: Modifier = Modifier) {
         Spacer(Modifier.height(6.dp))
         Text(
             text = if (state.idle) "Start a session" else state.clockLabel,
-            style = MaterialTheme.typography.titleLarge,
+            style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurface,
         )
 
@@ -203,11 +223,11 @@ private fun FocusCard(onOpen: () -> Unit, modifier: Modifier = Modifier) {
             Spacer(Modifier.height(4.dp))
             Text(
                 text = "One read, no distractions, until the timer runs out.",
-                fontSize = 13.5.sp,
-                lineHeight = 19.sp,
+                fontSize = 12.5.sp,
+                lineHeight = 18.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 PickableMinutes.forEach { minutes ->
                     QuickStartChip(text = "$minutes min") { controller.start(minutes) }
@@ -402,21 +422,14 @@ private fun SavedPickCard(links: LinkLibrary, onOpenSaved: () -> Unit, modifier:
 
         val found = pick
         if (found == null) {
-            Text(
-                text = if (links.links.isEmpty()) "Nothing saved yet" else "All caught up",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            Spacer(Modifier.height(4.dp))
-            Text(
-                text = if (links.links.isEmpty()) {
+            CompactEmptyState(
+                icon = if (links.links.isEmpty()) BlogmarkIcons.Bookmark else BlogmarkIcons.Check,
+                title = if (links.links.isEmpty()) "Nothing saved yet" else "All caught up",
+                message = if (links.links.isEmpty()) {
                     "Share an article to Blogmark, or paste its address in the Saved tab."
                 } else {
                     "Every saved link has been read — tap to see them."
                 },
-                fontSize = 12.5.sp,
-                lineHeight = 18.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         } else {
             // No cover image comes with a saved link, unlike a bundled read —

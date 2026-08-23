@@ -8,29 +8,61 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import blogmark.composeapp.generated.resources.Res
+import blogmark.composeapp.generated.resources.space_grotesk_bold
+import blogmark.composeapp.generated.resources.space_grotesk_medium
+import blogmark.composeapp.generated.resources.space_grotesk_regular
+import blogmark.composeapp.generated.resources.space_grotesk_semibold
+import org.jetbrains.compose.resources.Font
+
+/**
+ * Space Grotesk, everywhere — a geometric grotesk with a slightly technical
+ * edge that sits well against the stroked [BlogmarkIcons] and the DSA/study
+ * subject matter, rather than the platform system font this app shipped with
+ * before. Four static weights (not the variable font) because static weights
+ * are what render correctly on every target Compose Multiplatform reaches
+ * here, including Wasm. SIL Open Font License; files under
+ * `composeResources/font/`.
+ */
+@Composable
+fun BlogmarkFontFamily(): FontFamily = FontFamily(
+    Font(Res.font.space_grotesk_regular, FontWeight.Normal),
+    Font(Res.font.space_grotesk_medium, FontWeight.Medium),
+    Font(Res.font.space_grotesk_semibold, FontWeight.SemiBold),
+    Font(Res.font.space_grotesk_bold, FontWeight.Bold),
+)
 
 /**
  * Tuned for reading long-form notes on a phone: slightly larger body text and
- * looser line height than the Material defaults.
+ * looser line height than the Material defaults, set in [BlogmarkFontFamily]
+ * rather than the platform default.
  */
 @Suppress("ktlint:standard:function-naming")
-fun AlgoTypography(): Typography {
+fun AlgoTypography(fontFamily: FontFamily): Typography {
     val base = Typography()
-    return base.copy(
-        headlineMedium = base.headlineMedium.copy(
+    fun TextStyle.styled() = copy(fontFamily = fontFamily)
+    return Typography(
+        displayLarge = base.displayLarge.styled(),
+        displayMedium = base.displayMedium.styled(),
+        displaySmall = base.displaySmall.styled(),
+        headlineLarge = base.headlineLarge.styled(),
+        headlineMedium = base.headlineMedium.styled().copy(
             fontWeight = FontWeight.SemiBold,
             letterSpacing = (-0.5).sp,
         ),
-        headlineSmall = base.headlineSmall.copy(
+        headlineSmall = base.headlineSmall.styled().copy(
             fontWeight = FontWeight.SemiBold,
             letterSpacing = (-0.3).sp,
         ),
-        titleMedium = base.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-        titleSmall = base.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-        bodyLarge = base.bodyLarge.copy(fontSize = 15.5.sp, lineHeight = 25.sp),
-        bodyMedium = base.bodyMedium.copy(fontSize = 14.5.sp, lineHeight = 22.sp),
-        labelLarge = base.labelLarge.copy(fontWeight = FontWeight.SemiBold),
-        labelSmall = base.labelSmall.copy(
+        titleLarge = base.titleLarge.styled(),
+        titleMedium = base.titleMedium.styled().copy(fontWeight = FontWeight.SemiBold),
+        titleSmall = base.titleSmall.styled().copy(fontWeight = FontWeight.SemiBold),
+        bodyLarge = base.bodyLarge.styled().copy(fontSize = 15.5.sp, lineHeight = 25.sp),
+        bodyMedium = base.bodyMedium.styled().copy(fontSize = 14.5.sp, lineHeight = 22.sp),
+        bodySmall = base.bodySmall.styled(),
+        labelLarge = base.labelLarge.styled().copy(fontWeight = FontWeight.SemiBold),
+        labelMedium = base.labelMedium.styled(),
+        labelSmall = base.labelSmall.styled().copy(
             fontWeight = FontWeight.Bold,
             letterSpacing = 0.8.sp,
         ),

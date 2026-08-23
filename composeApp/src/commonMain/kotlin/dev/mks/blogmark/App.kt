@@ -16,6 +16,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import dev.mks.blogmark.data.rememberUserPrefs
+import dev.mks.blogmark.ui.PlatformOverlay
 import dev.mks.blogmark.ui.home.HomeScreen
 import dev.mks.blogmark.ui.home.HomeTab
 import dev.mks.blogmark.ui.onboarding.Onboarding
@@ -49,7 +50,7 @@ fun App() {
             Box(Modifier.fillMaxSize()) {
                 HomeScreen(
                     onOpenFocus = { focusMode = true },
-                    greeting = prefs.name?.let { "Hello, $it" },
+                    prefs = prefs,
                     mono = mono,
                     onToggleTheme = { mono = !mono },
                     tab = homeTab,
@@ -66,6 +67,10 @@ fun App() {
                 ) {
                     FocusScreen(onClose = { focusMode = false })
                 }
+
+                // Android's embedded reader browser; a no-op everywhere else.
+                // See `PlatformOverlay`.
+                PlatformOverlay()
             }
         }
     }

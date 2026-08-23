@@ -77,7 +77,7 @@ fun BlogmarkTheme(
 ) {
     MaterialTheme(
         colorScheme = if (mono) MonoScheme else DarkScheme,
-        typography = AlgoTypography(),
+        typography = AlgoTypography(BlogmarkFontFamily()),
         content = content,
     )
 }

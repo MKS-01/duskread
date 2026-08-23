@@ -346,6 +346,28 @@ object BlogmarkIcons {
         }
     }
 
+    /** RSS: a dot with two broadcast arcs — for following a blog's feed. */
+    val Feed: ImageVector by lazy {
+        icon("Feed") {
+            path(fill = IconStroke.Colour) {
+                moveTo(6.5f, 15.5f)
+                arcToRelative(2.2f, 2.2f, 0f, true, true, 0f, 4.4f)
+                arcToRelative(2.2f, 2.2f, 0f, true, true, 0f, -4.4f)
+                close()
+            }
+            path(
+                stroke = IconStroke.Colour,
+                strokeLineWidth = IconStroke.Width,
+                strokeLineCap = StrokeCap.Round,
+            ) {
+                moveTo(5f, 10.2f)
+                arcToRelative(8.8f, 8.8f, 0f, false, true, 8.8f, 8.8f)
+                moveTo(5f, 5f)
+                arcToRelative(14f, 14f, 0f, false, true, 14f, 14f)
+            }
+        }
+    }
+
     /** A tick, for marking a saved link read. */
     val Check: ImageVector by lazy {
         icon("Check") {
@@ -358,6 +380,42 @@ object BlogmarkIcons {
                 moveTo(5f, 12.5f)
                 lineTo(10f, 17.5f)
                 lineTo(19f, 6.5f)
+            }
+        }
+    }
+
+    /**
+     * Settings: three sliders, each with a knob at a different point along
+     * its track — not a gear, which reads as "mechanism" when what this app
+     * calls Settings is really the reading list's backup controls.
+     */
+    val Settings: ImageVector by lazy {
+        icon("Settings") {
+            path(
+                stroke = IconStroke.Colour,
+                strokeLineWidth = IconStroke.Width,
+                strokeLineCap = StrokeCap.Round,
+            ) {
+                moveTo(4f, 6.5f)
+                lineTo(20f, 6.5f)
+                moveTo(4f, 12f)
+                lineTo(20f, 12f)
+                moveTo(4f, 17.5f)
+                lineTo(20f, 17.5f)
+            }
+            path(fill = IconStroke.Colour) {
+                moveTo(8f, 6.5f)
+                arcToRelative(2f, 2f, 0f, true, true, 4f, 0f)
+                arcToRelative(2f, 2f, 0f, true, true, -4f, 0f)
+                close()
+                moveTo(13f, 12f)
+                arcToRelative(2f, 2f, 0f, true, true, 4f, 0f)
+                arcToRelative(2f, 2f, 0f, true, true, -4f, 0f)
+                close()
+                moveTo(6.5f, 17.5f)
+                arcToRelative(2f, 2f, 0f, true, true, 4f, 0f)
+                arcToRelative(2f, 2f, 0f, true, true, -4f, 0f)
+                close()
             }
         }
     }

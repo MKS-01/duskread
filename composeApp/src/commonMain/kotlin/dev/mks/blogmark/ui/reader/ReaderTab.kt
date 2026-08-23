@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -25,21 +26,21 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
@@ -51,10 +52,12 @@ import dev.mks.blogmark.reader.ReadRepository
 import dev.mks.blogmark.reader.ReadSort
 import dev.mks.blogmark.reader.ReaderSource
 import dev.mks.blogmark.reader.ReaderSourcePicker
+import dev.mks.blogmark.ui.common.EmptyState
 import dev.mks.blogmark.ui.rememberUrlOpener
 import dev.mks.blogmark.ui.theme.BlogmarkIcons
 import dev.mks.blogmark.ui.theme.Radius
 import dev.mks.blogmark.ui.theme.Stroke
+import kotlinx.coroutines.launch
 
 /**
  * Past reads from readback (github.com/MKS-01/readback) — a personal
@@ -78,167 +81,111 @@ fun ReaderTab(
     var sort by remember { mutableStateOf(ReadSort.NEWEST) }
     var items by remember { mutableStateOf<List<ReadItem>?>(null) }
 
-    LaunchedEffect(source, query, sort) {
+    val scope = rememberCoroutineScope()
+    var refreshing by remember { mutableStateOf(false) }
+
+    suspend fun reload() {
         items = if (source == ReaderSource.READY) repository.listReads(query, sort) else emptyList()
     }
 
-    LazyColumn(
-        modifier = modifier.fillMaxWidth(),
-        contentPadding = contentPadding,
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        item("head") {
-            Column(Modifier.padding(bottom = 4.dp)) {
-                Text(
-                    text = "Readback",
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = MaterialTheme.colorScheme.onBackground,
-                )
-                Text(
-                    text = "Past reads, synced onto this device.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+    LaunchedEffect(source, query, sort) { reload() }
+
+    PullToRefreshBox(
+        isRefreshing = refreshing,
+        onRefresh = {
+            // A manual re-list rather than waiting on `source`/`query`/`sort`
+            // to change — the one thing that can go stale on its own is the
+            // readback folder growing new reads on disk, which none of those
+            // three notice by themselves.
+            scope.launch {
+                refreshing = true
+                reload()
+                refreshing = false
             }
-        }
+        },
+        modifier = modifier.fillMaxSize(),
+    ) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = contentPadding,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            // No now-playing bar in the list any more — the transport is a face of
+            // the floating nav bar in HomeScreen, where it survives both scrolling
+            // this list and leaving the tab entirely. See `FloatingBar`.
 
-        // No now-playing bar in the list any more — the transport is a face of
-        // the floating nav bar in HomeScreen, where it survives both scrolling
-        // this list and leaving the tab entirely. See `FloatingBar`.
+            if (source == ReaderSource.NOT_CONFIGURED) {
+                item("picker") {
+                    // Fills the rest of the viewport below the header so the empty
+                    // state centres in the space actually available, rather than
+                    // sitting pinned under the header the way a plain list item would.
+                    Box(Modifier.fillMaxWidth().fillParentMaxHeight(0.85f), contentAlignment = Alignment.Center) {
+                        EmptyState(
+                            icon = BlogmarkIcons.FolderConnect,
+                            title = "Connect your library",
+                            message = "Choose the readback-audio-db folder synced onto this device — the main " +
+                                "folder itself, not one of the folders inside it.",
+                        ) {
+                            ReaderSourcePicker(repository)
+                        }
+                    }
+                }
+                return@LazyColumn
+            }
 
-        if (source == ReaderSource.NOT_CONFIGURED) {
-            item("picker") {
-                // Fills the rest of the viewport below the header so the empty
-                // state centres in the space actually available, rather than
-                // sitting pinned under the header the way a plain list item would.
-                Box(Modifier.fillMaxWidth().fillParentMaxHeight(0.85f), contentAlignment = Alignment.Center) {
-                    ReaderEmptyState(
-                        icon = BlogmarkIcons.FolderConnect,
-                        title = "Connect your library",
-                        message = "Choose the readback-audio-db folder synced onto this device — the main " +
-                            "folder itself, not one of the folders inside it.",
-                    ) {
-                        ReaderSourcePicker(repository)
+            item("controls") {
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                        .padding(bottom = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(7.dp),
+                    // The icon chip from ReaderSourcePicker is taller than the
+                    // plain-text sort chips beside it — without this they default
+                    // to top-aligned instead of sharing a centre line.
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    SortChip("Newest", sort == ReadSort.NEWEST) { sort = ReadSort.NEWEST }
+                    SortChip("Oldest", sort == ReadSort.OLDEST) { sort = ReadSort.OLDEST }
+                    ReaderSourcePicker(repository, compact = true)
+                }
+            }
+
+            val loaded = items
+            if (loaded == null) {
+                item("loading") {
+                    Box(Modifier.fillMaxWidth().padding(vertical = 24.dp), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                }
+            } else if (loaded.isEmpty()) {
+                item("empty") {
+                    // Fills the rest of the viewport below the header and sort
+                    // controls so the empty state centres in the space actually
+                    // left over, rather than sitting pinned under those controls
+                    // the way a plain list item would.
+                    Box(Modifier.fillMaxWidth().fillParentMaxHeight(0.75f), contentAlignment = Alignment.Center) {
+                        EmptyState(
+                            icon = BlogmarkIcons.Waveform,
+                            title = "Nothing here yet",
+                            message = "Generate a read with the readback CLI, sync it onto this device, " +
+                                "and it will show up here.",
+                        )
+                    }
+                }
+            } else {
+                loaded.forEach { read ->
+                    item(read.id) {
+                        ReadCard(
+                            item = read,
+                            playback = if (playback.item?.id == read.id) playback else null,
+                            onTap = {
+                                if (playback.item?.id == read.id) player.togglePlayPause() else player.play(read)
+                            },
+                        )
                     }
                 }
             }
-            return@LazyColumn
-        }
-
-        item("controls") {
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState())
-                    .padding(bottom = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(7.dp),
-                // The icon chip from ReaderSourcePicker is taller than the
-                // plain-text sort chips beside it — without this they default
-                // to top-aligned instead of sharing a centre line.
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                SortChip("Newest", sort == ReadSort.NEWEST) { sort = ReadSort.NEWEST }
-                SortChip("Oldest", sort == ReadSort.OLDEST) { sort = ReadSort.OLDEST }
-                ReaderSourcePicker(repository, compact = true)
-            }
-        }
-
-        val loaded = items
-        if (loaded == null) {
-            item("loading") {
-                Box(Modifier.fillMaxWidth().padding(vertical = 24.dp), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
-            }
-        } else if (loaded.isEmpty()) {
-            item("empty") {
-                ReaderEmptyState(
-                    icon = BlogmarkIcons.Waveform,
-                    title = "Nothing here yet",
-                    message = "Generate a read with the readback CLI, sync it onto this device, " +
-                        "and it will show up here.",
-                )
-            }
-        } else {
-            loaded.forEach { read ->
-                item(read.id) {
-                    ReadCard(
-                        item = read,
-                        playback = if (playback.item?.id == read.id) playback else null,
-                        onTap = {
-                            if (playback.item?.id == read.id) player.togglePlayPause() else player.play(read)
-                        },
-                    )
-                }
-            }
-        }
-    }
-}
-
-/**
- * A centered illustration for a state with nothing else on screen yet —
- * built from the same hand-drawn [BlogmarkIcons] vocabulary as the rest of the
- * app rather than a third-party illustration pack, which would clash with
- * it the same way a filled Material icon does.
- */
-@Composable
-private fun ReaderEmptyState(
-    icon: ImageVector,
-    title: String,
-    message: String,
-    content: (@Composable () -> Unit)? = null,
-) {
-    Column(
-        Modifier.fillMaxWidth().padding(vertical = 20.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        ReaderEmptyIcon(icon)
-        Spacer(Modifier.height(18.dp))
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onBackground,
-            textAlign = TextAlign.Center,
-        )
-        Spacer(Modifier.height(6.dp))
-        Text(
-            text = message,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 12.dp),
-        )
-        content?.let {
-            Spacer(Modifier.height(20.dp))
-            it()
-        }
-    }
-}
-
-/** Two layered rings around the icon — plainer, and it reads as decoration rather than a real badge. */
-@Composable
-private fun ReaderEmptyIcon(icon: ImageVector) {
-    Box(Modifier.size(92.dp), contentAlignment = Alignment.Center) {
-        Box(
-            Modifier
-                .matchParentSize()
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.07f)),
-        )
-        Box(
-            Modifier
-                .size(64.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.13f))
-                .border(Stroke.Hairline, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f), CircleShape),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(30.dp),
-                tint = MaterialTheme.colorScheme.primary,
-            )
         }
     }
 }

@@ -1,10 +1,12 @@
 package dev.mks.blogmark.ui.home
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
@@ -18,13 +20,16 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
+import dev.mks.blogmark.data.UserPrefs
 import dev.mks.blogmark.links.SharedLinkRequest
 import dev.mks.blogmark.links.createHttpClient
 import dev.mks.blogmark.links.rememberFeedLibrary
@@ -32,8 +37,12 @@ import dev.mks.blogmark.links.rememberFeedPostCache
 import dev.mks.blogmark.links.rememberLinkLibrary
 import dev.mks.blogmark.reader.rememberAudioPlayer
 import dev.mks.blogmark.reader.rememberReadRepository
+import dev.mks.blogmark.ui.common.ToastHost
+import dev.mks.blogmark.ui.common.ToastRequest
 import dev.mks.blogmark.ui.links.LinksTab
 import dev.mks.blogmark.ui.reader.ReaderTab
+import dev.mks.blogmark.ui.settings.SettingsScreen
+import dev.mks.blogmark.ui.theme.Motion
 
 /**
  * Home: tabs and a floating bar.
@@ -44,7 +53,7 @@ import dev.mks.blogmark.ui.reader.ReaderTab
 @Composable
 fun HomeScreen(
     onOpenFocus: () -> Unit,
-    greeting: String?,
+    prefs: UserPrefs,
     mono: Boolean,
     onToggleTheme: () -> Unit,
     tab: HomeTab,
@@ -82,6 +91,7 @@ fun HomeScreen(
     LaunchedEffect(sharedUrl) {
         sharedUrl?.let {
             links.save(it)
+            ToastRequest.show("Saved")
             SharedLinkRequest.consume()
         }
     }
@@ -98,10 +108,14 @@ fun HomeScreen(
     // was docked above the bar; now that the transport lives inside the bar,
     // the bar is the same height whether anything is playing or not, and the
     // padding no longer has to animate underneath a scrolling list.
+    //
+    // `top` is more generous than it used to be: with no per-tab title left
+    // above the first card, that clearance is the only thing keeping content
+    // off the status bar.
     val listPadding = PaddingValues(
         start = 16.dp,
         end = 16.dp,
-        top = 12.dp,
+        top = 24.dp,
         bottom = 104.dp,
     )
 
@@ -109,6 +123,12 @@ fun HomeScreen(
     // between them — each tab owns its own scroll position, but the bar is one
     // object and should not pop back open just because you changed lists.
     val collapse = rememberBarCollapse()
+
+    // Owned here rather than in `App.kt`, unlike Focus mode: Settings needs
+    // `links`, which already lives at this level, and threading a whole
+    // `LinkLibrary` up to `App.kt` and back down would exist only to move
+    // this one flag up alongside it.
+    var showSettings by remember { mutableStateOf(false) }
 
     Box(modifier.fillMaxSize()) {
         AnimatedContent(
@@ -128,7 +148,7 @@ fun HomeScreen(
         ) { current ->
             when (current) {
                 HomeTab.HOME -> DashboardTab(
-                    greeting = greeting,
+                    greeting = prefs.name?.let { "Hello, $it" },
                     links = links,
                     feeds = feeds,
                     feedPosts = feedPosts,
@@ -136,8 +156,7 @@ fun HomeScreen(
                     onOpenFocus = onOpenFocus,
                     onOpenSaved = { onTabChange(HomeTab.SAVED) },
                     onOpenReadback = { onTabChange(HomeTab.READBACK) },
-                    mono = mono,
-                    onToggleTheme = onToggleTheme,
+                    onOpenSettings = { showSettings = true },
                     contentPadding = listPadding,
                 )
 
@@ -172,11 +191,34 @@ fun HomeScreen(
             onTogglePlay = { player.togglePlayPause() },
             onSeek = { player.seekTo(it) },
             onStop = { player.stop() },
+            mono = mono,
+            onToggleTheme = onToggleTheme,
             collapse = collapse,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding()
                 .padding(bottom = 14.dp, start = 16.dp, end = 16.dp),
         )
+
+        // Top, not bottom: the floating bar already owns the bottom of the
+        // screen, and a toast landing there would either sit on top of it or
+        // shove it aside for two seconds every time a link is saved.
+        ToastHost(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .statusBarsPadding()
+                .padding(top = 12.dp),
+        )
+
+        // Same overlay shape as Focus mode in `App.kt`: a full-screen
+        // destination on top of everything else, reached from a door in the
+        // Saved tab rather than a fourth stop on the floating bar.
+        AnimatedVisibility(
+            visible = showSettings,
+            enter = fadeIn(tween(Motion.PushIn)) + slideInVertically(tween(Motion.PushIn)) { it / 8 },
+            exit = fadeOut(tween(Motion.PopFade)),
+        ) {
+            SettingsScreen(library = links, prefs = prefs, onClose = { showSettings = false })
+        }
     }
 }

@@ -155,6 +155,8 @@ fun FloatingBar(
     onTogglePlay: () -> Unit,
     onSeek: (Float) -> Unit,
     onStop: () -> Unit,
+    mono: Boolean,
+    onToggleTheme: () -> Unit,
     collapse: BarCollapse,
     modifier: Modifier = Modifier,
 ) {
@@ -233,6 +235,8 @@ fun FloatingBar(
                         onSelect(it)
                         peekingTabs = false
                     },
+                    mono = mono,
+                    onToggleTheme = onToggleTheme,
                 )
 
                 BarFace.PLAYER -> PlayerFace(
@@ -258,8 +262,15 @@ fun FloatingBar(
     }
 }
 
+/**
+ * The theme toggle rides at the trailing end, behind [BarDivider] — it isn't
+ * a destination like the three tabs before it, so it doesn't get to look like
+ * one. This is also the only place it lives now: reachable from every tab
+ * rather than stranded at the top of Home alone, in keeping with this bar's
+ * whole reason for existing.
+ */
 @Composable
-private fun TabsFace(selected: HomeTab, onSelect: (HomeTab) -> Unit) {
+private fun TabsFace(selected: HomeTab, onSelect: (HomeTab) -> Unit, mono: Boolean, onToggleTheme: () -> Unit) {
     Row(
         Modifier.padding(horizontal = 7.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -268,6 +279,12 @@ private fun TabsFace(selected: HomeTab, onSelect: (HomeTab) -> Unit) {
         HomeTab.entries.forEach { tab ->
             BarButton(tab.icon, tab.label, active = tab == selected) { onSelect(tab) }
         }
+        BarDivider()
+        BarButton(
+            icon = BlogmarkIcons.Contrast,
+            label = if (mono) "Switch to the colour theme" else "Switch to the monochrome theme",
+            onClick = onToggleTheme,
+        )
     }
 }
 

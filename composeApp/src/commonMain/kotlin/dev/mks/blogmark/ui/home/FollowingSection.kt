@@ -39,7 +39,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.layout
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -54,6 +53,8 @@ import dev.mks.blogmark.links.looksLikeUrl
 import dev.mks.blogmark.links.normaliseUrl
 import dev.mks.blogmark.links.syncFeeds
 import dev.mks.blogmark.links.topicIcon
+import dev.mks.blogmark.ui.common.CompactEmptyState
+import dev.mks.blogmark.ui.common.ToastRequest
 import dev.mks.blogmark.ui.rememberUrlOpener
 import dev.mks.blogmark.ui.theme.BlogmarkIcons
 import dev.mks.blogmark.ui.theme.Mono
@@ -129,7 +130,14 @@ fun FollowingSection(
 
     val topics = feedLibrary.feeds.filter { postCache.postsByFeed[it.id].orEmpty().isNotEmpty() }
 
-    Column(modifier.fillMaxWidth()) {
+    Column(
+        modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(Radius.Card))
+            .background(MaterialTheme.colorScheme.surface)
+            .border(Stroke.Hairline, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(Radius.Card))
+            .padding(16.dp),
+    ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = "FOLLOWING",
@@ -167,16 +175,15 @@ fun FollowingSection(
         }
 
         if (topics.isEmpty() && !managing) {
-            Text(
-                text = if (feedLibrary.feeds.isEmpty()) {
+            CompactEmptyState(
+                icon = BlogmarkIcons.Feed,
+                title = if (feedLibrary.feeds.isEmpty()) "Follow a blog" else "Nothing synced yet",
+                message = if (feedLibrary.feeds.isEmpty()) {
                     "Follow a blog's RSS or Atom feed to see its posts here."
                 } else {
-                    "Nothing synced yet — tap Sync now."
+                    "Tap Sync now to pull in its latest posts."
                 },
-                fontSize = 12.5.sp,
-                lineHeight = 18.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 8.dp, start = 2.dp),
+                modifier = Modifier.padding(top = 10.dp),
             )
         }
 
@@ -245,14 +252,18 @@ private fun TopicRow(feed: Feed, posts: List<FeedPost>, linkLibrary: LinkLibrary
                     host = feed.host,
                     icon = topicIcon(feed.host),
                     saved = linkLibrary.isSaved(post.url),
-                    onToggleSave = { linkLibrary.toggleSaved(post.url, post.title) },
+                    onToggleSave = {
+                        val wasSaved = linkLibrary.isSaved(post.url)
+                        linkLibrary.toggleSaved(post.url, post.title)
+                        ToastRequest.show(if (wasSaved) "Removed" else "Saved")
+                    },
                 )
             }
         }
 
         if (posts.size > 1) {
             Spacer(Modifier.height(8.dp))
-            ScrollProgress(listState, itemCount = posts.size, modifier = Modifier.align(Alignment.CenterHorizontally))
+            ScrollDots(listState, itemCount = posts.size, modifier = Modifier.align(Alignment.CenterHorizontally))
         }
     }
 }
@@ -332,36 +343,39 @@ private fun PostCard(post: FeedPost, host: String, icon: ImageVector, saved: Boo
     }
 }
 
-/** A short scrubber, centred under the row, standing in for its scroll position. */
+/**
+ * A page dot per post, centred under the row — not the continuous
+ * thumb-in-track bar this used to be. That read as a progress bar for
+ * something loading, which nothing here is; a handful of posts is closer to
+ * a paged carousel than a scrollbar, and a dot per item says "which one am I
+ * on" without borrowing a loading indicator's shape to say it.
+ *
+ * Pinned to one small total width rather than one fixed dot size: a feed can
+ * carry up to 15 posts (see `EntriesPerFeed`), and 15 full-size dots would
+ * span wider than the row of cards underneath them.
+ */
 @Composable
-private fun ScrollProgress(state: LazyListState, itemCount: Int, modifier: Modifier = Modifier) {
-    val progress = state.firstVisibleItemIndex.toFloat() / (itemCount - 1).coerceAtLeast(1)
-    val thumbWidth = (1f / itemCount).coerceAtLeast(0.3f)
+private fun ScrollDots(state: LazyListState, itemCount: Int, modifier: Modifier = Modifier) {
+    val current = state.firstVisibleItemIndex.coerceIn(0, itemCount - 1)
+    val gap = 3.dp
+    val dot = ((DotsWidth - gap * (itemCount - 1)) / itemCount).coerceIn(2.dp, 5.dp)
 
-    Box(
-        modifier
-            .width(72.dp)
-            .height(3.dp)
-            .clip(RoundedCornerShape(Radius.Pill))
-            .background(MaterialTheme.colorScheme.surfaceContainerHigh),
-    ) {
-        Box(
-            Modifier
-                .fillMaxWidth(thumbWidth)
-                .height(3.dp)
-                .clip(RoundedCornerShape(Radius.Pill))
-                .background(MaterialTheme.colorScheme.primary)
-                // Compose has no fractional-offset modifier of its own — this
-                // is `offset(x = parentWidth * fraction)` done by hand.
-                .layout { measurable, constraints ->
-                    val placeable = measurable.measure(constraints)
-                    layout(placeable.width, placeable.height) {
-                        placeable.place((constraints.maxWidth * progress * (1f - thumbWidth)).toInt(), 0)
-                    }
-                },
-        )
+    Row(modifier, horizontalArrangement = Arrangement.spacedBy(gap)) {
+        repeat(itemCount) { index ->
+            val active = index == current
+            Box(
+                Modifier
+                    .size(dot)
+                    .clip(CircleShape)
+                    .background(
+                        if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHigh,
+                    ),
+            )
+        }
     }
 }
+
+private val DotsWidth = 44.dp
 
 /** The feed address field, and the list of what's already followed. */
 @Composable

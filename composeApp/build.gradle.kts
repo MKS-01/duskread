@@ -71,8 +71,9 @@ kotlin {
             implementation(libs.ktor.client.okhttp)
             // Supplies BackHandler for the single-pane navigation.
             implementation(libs.androidx.activity.compose)
-            // Chrome Custom Tabs, for opening reference links in-app.
-            implementation(libs.androidx.browser)
+            // WebSettingsCompat.setAlgorithmicDarkeningAllowed for the embedded,
+            // force-darkened reader WebView that opens reference links in-app.
+            implementation(libs.androidx.webkit)
             // NotificationCompat, for the Pomodoro foreground-service notification.
             implementation(libs.androidx.core)
             // Navigating the SAF tree the Reader folder picker returns.

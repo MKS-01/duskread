@@ -135,6 +135,25 @@ class LinkLibrary(private val store: KeyValueStore) {
     }
 
     /**
+     * Pull-to-refresh: re-fetches every link, not just the ones that never
+     * finished. A title or description can change after the fact — this is
+     * the one deliberate way to notice, rather than waiting for a re-save.
+     *
+     * Flipping [SavedLink.fetched] back to false is enough on its own: the
+     * existing title/description stay put as the fallback shown while the
+     * refetch is in flight, and the same fetch loop that handles new links
+     * picks these back up because they're `!fetched` again.
+     *
+     * No [persist] here, unlike every other mutator — `fetched` flipping back
+     * to true (or not) as each fetch actually resolves is what's worth
+     * writing down; a refresh interrupted mid-flight should just resume as
+     * ordinary unfetched links next launch, not persist as a stalled one.
+     */
+    fun refreshAll() {
+        links = links.map { it.copy(fetched = false) }
+    }
+
+    /**
      * Marking read stamps the time rather than flipping a flag, and nothing
      * about it removes the link: a reading list that deletes what you finish
      * leaves you unable to answer "what was that article I read last week",
