@@ -35,9 +35,9 @@ fun EmptyState(
     Column(modifier.fillMaxWidth()) {
         WaveformMeter(
             progress = 0f,
-            modifier = Modifier.fillMaxWidth().height(14.dp),
-            barCount = 22,
-            dimColor = MaterialTheme.colorScheme.outlineVariant,
+            modifier = Modifier.height(16.dp),
+            barCount = 20,
+            flat = true,
         )
         Spacer(Modifier.height(16.dp))
         Text(

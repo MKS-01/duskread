@@ -264,9 +264,8 @@ private fun ReadbackSection(onOpen: () -> Unit, modifier: Modifier = Modifier) {
                 Spacer(Modifier.height(9.dp))
                 WaveformMeter(
                     progress = 0f,
-                    modifier = Modifier.fillMaxWidth().height(15.dp),
-                    barCount = 24,
-                    dimColor = MaterialTheme.colorScheme.outlineVariant,
+                    modifier = Modifier.height(15.dp),
+                    seed = item.id.hashCode(),
                 )
             }
         }
@@ -328,7 +327,7 @@ private fun SavedPickSection(links: LinkLibrary, onOpenSaved: () -> Unit, modifi
                     },
                 verticalAlignment = Alignment.Top,
             ) {
-                MonogramBadge(host = found.host, size = 22.dp, background = MaterialTheme.colorScheme.surfaceContainer)
+                MonogramBadge(host = found.host, size = 22.dp)
                 Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f)) {
                     Text(

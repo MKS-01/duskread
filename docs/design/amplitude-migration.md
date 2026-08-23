@@ -88,3 +88,48 @@ want either reinstated as a deliberate addition beyond the mockup.
 - [x] Every `BasicTextField`/`OutlinedTextField` in the app now goes through it: Saved's paste field, the feed-follow field, Settings' name field and import box, the desktop folder-path field, and the onboarding name field
 - [x] Settings screen rewritten flat (`EyebrowHeader` sections, no boxed cards) to match the rest of the app — it was the one screen still built the old way
 - [x] ktlint clean, desktop + Android compile clean, verified on-device (Settings, Import panel)
+
+## Waveform + sourcechip correction (this pass)
+
+The meter and the source cell were both built as the wrong *kind* of object.
+
+### `WaveformMeter`
+- [x] **Fixed size, not a full-width track.** The mockup's `.wave` is 18 bars
+      of 2px separated by 1.5px — a mark about a fifth of the row wide.
+      Stretched to fill the row it became ~200 bars at a 2px pitch: a hatch,
+      in which the height variation averages out and nothing reads as a
+      waveform. The component now has an intrinsic width and callers pass
+      only a height.
+- [x] Bars are **squared-off round rects (3dp radius)**, not round-capped
+      strokes — the same terminal shape as the icon set's butt caps
+- [x] **Whole bars only.** A bar is accent or it is dim; the lerped boundary
+      bar read as an anti-aliasing artefact at 2dp
+- [x] **Per-item silhouettes.** Heights come from a hash of (seed, index)
+      quantised onto the mockup's own eleven steps (5–15px in a 15px box),
+      with a nudge that stops neighbouring bars clumping. Every row in the
+      mockup has its own sequence; ours all drew the identical shape
+- [x] Off-state bar is the meta grey held back to 55%, which lands on the
+      mockup's `--a-wave-off` over this ground
+- [x] Empty states draw the meter `flat = true` — a line of dots at zero,
+      the "no signal" the mockup specifies. It had been drawing a full-height
+      wave, which said the opposite of what the empty state meant
+
+### `MonogramBadge` → the mockup's `.sourcechip`
+- [x] A **square** with a `Radius.Chip` (3dp) corner and a hairline border,
+      holding one mono capital — not a filled circle. A filled circle is an
+      avatar, and an avatar promises a person or a brand mark; this is a data
+      cell in the same hairline-and-mono vocabulary as the meta line beside it
+- [x] The playing row tints its chip border with the row, as the mockup does
+
+### Sweep
+- [x] Readback's Newest/Oldest chips were still filled Material surfaces
+      despite the previous pass's note — now bordered `.pill`s, selection
+      carried by border and text colour alone. `Radius.Chip` added and used
+      by the pills (all platforms) and the sourcechip
+- [x] ktlint clean, desktop + Android compile clean, verified on-device
+      (Readback idle, Readback playing, Home, Saved, empty state)
+
+**Cut, not carried forward:** the floating bar's ambient background waveform.
+The mockup's bar carries icons and nothing else, and at the row pitch it
+moirés into a hatch across the pill while any coarser pitch collides with the
+play control. The remaining-time readout already answers "how much is left".

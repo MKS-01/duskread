@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -25,6 +24,7 @@ import androidx.compose.ui.unit.sp
 import dev.mks.blogmark.data.KeyValueStore
 import dev.mks.blogmark.data.rememberKeyValueStore
 import dev.mks.blogmark.ui.common.AppTextField
+import dev.mks.blogmark.ui.common.PrimaryButton
 import dev.mks.blogmark.ui.theme.Mono
 import dev.mks.blogmark.ui.theme.Radius
 import dev.mks.blogmark.ui.theme.Stroke
@@ -146,10 +146,10 @@ actual fun ReaderSourcePicker(repository: ReadRepository, compact: Boolean) {
             letterSpacing = 0.4.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier
-                .clip(RoundedCornerShape(Radius.Inline))
-                .border(Stroke.Hairline, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(Radius.Inline))
+                .clip(RoundedCornerShape(Radius.Chip))
+                .border(Stroke.Hairline, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(Radius.Chip))
                 .clickable { expanded = true }
-                .padding(horizontal = 13.dp, vertical = 7.dp),
+                .padding(horizontal = 11.dp, vertical = 6.dp),
         )
         return
     }
@@ -167,13 +167,12 @@ actual fun ReaderSourcePicker(repository: ReadRepository, compact: Boolean) {
             onValueChange = { path = it },
             placeholder = "/path/to/readback-audio-db",
         )
-        Button(
+        PrimaryButton(
+            label = "Use this folder",
             onClick = {
                 desktopRepository.setFolder(File(path))
                 if (compact && desktopRepository.source.value == ReaderSource.READY) expanded = false
             },
-        ) {
-            Text("Use this folder")
-        }
+        )
     }
 }

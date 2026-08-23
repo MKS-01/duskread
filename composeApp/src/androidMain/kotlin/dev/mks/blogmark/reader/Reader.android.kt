@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,6 +31,7 @@ import androidx.compose.ui.unit.sp
 import androidx.documentfile.provider.DocumentFile
 import dev.mks.blogmark.data.KeyValueStore
 import dev.mks.blogmark.data.rememberKeyValueStore
+import dev.mks.blogmark.ui.common.PrimaryButton
 import dev.mks.blogmark.ui.theme.Mono
 import dev.mks.blogmark.ui.theme.Radius
 import dev.mks.blogmark.ui.theme.Stroke
@@ -191,10 +191,10 @@ actual fun ReaderSourcePicker(repository: ReadRepository, compact: Boolean) {
                 letterSpacing = 0.4.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier
-                    .clip(RoundedCornerShape(Radius.Inline))
-                    .border(Stroke.Hairline, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(Radius.Inline))
+                    .clip(RoundedCornerShape(Radius.Chip))
+                    .border(Stroke.Hairline, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(Radius.Chip))
                     .clickable { pickFolder.launch(null) }
-                    .padding(horizontal = 13.dp, vertical = 7.dp),
+                    .padding(horizontal = 11.dp, vertical = 6.dp),
             )
             error?.let { message ->
                 Text(
@@ -217,11 +217,6 @@ actual fun ReaderSourcePicker(repository: ReadRepository, compact: Boolean) {
                 textAlign = TextAlign.Center,
             )
         }
-        Button(
-            onClick = { pickFolder.launch(null) },
-            modifier = Modifier.clip(RoundedCornerShape(Radius.Pill)),
-        ) {
-            Text("Choose folder")
-        }
+        PrimaryButton(label = "Choose folder", onClick = { pickFolder.launch(null) })
     }
 }

@@ -3,7 +3,6 @@ package dev.mks.blogmark.ui.onboarding
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -41,9 +40,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import dev.mks.blogmark.reader.ReaderSourcePicker
 import dev.mks.blogmark.reader.rememberReadRepository
 import dev.mks.blogmark.ui.common.AppTextField
+import dev.mks.blogmark.ui.common.PrimaryButton
+import dev.mks.blogmark.ui.common.WaveformMeter
+import dev.mks.blogmark.ui.theme.CodeStyle
 import dev.mks.blogmark.ui.theme.Motion
 import dev.mks.blogmark.ui.theme.Radius
 import dev.mks.blogmark.ui.theme.SectionLabel
@@ -81,7 +84,7 @@ fun Onboarding(onDone: (name: String?) -> Unit) {
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier
-                        .clip(RoundedCornerShape(Radius.Pill))
+                        .clip(RoundedCornerShape(Radius.Inline))
                         .clickable { onDone(null) }
                         .padding(horizontal = 12.dp, vertical = 6.dp),
                 )
@@ -112,13 +115,14 @@ fun Onboarding(onDone: (name: String?) -> Unit) {
             Spacer(Modifier.weight(1f))
             PrimaryButton(
                 label = if (pager.currentPage == pageCount - 1) "Get started" else "Next",
-            ) {
-                if (pager.currentPage == pageCount - 1) {
-                    finish()
-                } else {
-                    scope.launch { pager.animateScrollToPage(pager.currentPage + 1) }
-                }
-            }
+                onClick = {
+                    if (pager.currentPage == pageCount - 1) {
+                        finish()
+                    } else {
+                        scope.launch { pager.animateScrollToPage(pager.currentPage + 1) }
+                    }
+                },
+            )
         }
     }
 }
@@ -298,21 +302,6 @@ private fun Dots(count: Int, current: Int) {
     }
 }
 
-@Composable
-private fun PrimaryButton(label: String, onClick: () -> Unit) {
-    Text(
-        text = label,
-        style = MaterialTheme.typography.labelLarge,
-        fontWeight = FontWeight.SemiBold,
-        color = MaterialTheme.colorScheme.onPrimary,
-        modifier = Modifier
-            .clip(RoundedCornerShape(Radius.Pill))
-            .background(MaterialTheme.colorScheme.primary)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 26.dp, vertical = 12.dp),
-    )
-}
-
 /* ----------------------------------------------------------------------------
  * Art. Built from the same primitives the visualiser uses, so the intro is
  * showing the real thing rather than a stock illustration of it.
@@ -343,37 +332,42 @@ private fun SavedArt() {
     }
 }
 
+/**
+ * The real Focus screen has no clock face any more — a mono countdown and a
+ * waveform meter, elapsed filled and remaining not. This used to show a
+ * circle-and-numeral clock that stopped matching the thing it was
+ * introducing; drawing the actual [WaveformMeter] here means the intro is
+ * showing the real screen rather than a stock idea of a timer.
+ */
 @Composable
 private fun TimerArt() {
-    Box(
-        Modifier
-            .size(88.dp)
-            .clip(CircleShape)
-            .border(3.dp, MaterialTheme.colorScheme.primary, CircleShape),
-        contentAlignment = Alignment.Center,
-    ) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
-            text = "25:00",
-            style = MaterialTheme.typography.titleMedium,
+            text = "18:24",
+            style = CodeStyle,
+            fontSize = 32.sp,
+            fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.onBackground,
+        )
+        Spacer(Modifier.height(14.dp))
+        WaveformMeter(
+            progress = 0.42f,
+            modifier = Modifier.height(22.dp),
+            barCount = 20,
+            barGap = 2.dp,
         )
     }
 }
 
+/** The same [WaveformMeter] every read row draws, at a fixed fraction — showing the real thing, not a stand-in for it. */
 @Composable
 private fun WaveformArt() {
-    Row(
-        verticalAlignment = Alignment.Bottom,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        listOf(18.dp, 40.dp, 26.dp, 50.dp, 22.dp, 34.dp).forEach { height ->
-            Box(
-                Modifier
-                    .width(8.dp)
-                    .height(height)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(MaterialTheme.colorScheme.primary),
-            )
-        }
-    }
+    WaveformMeter(
+        progress = 0.45f,
+        modifier = Modifier.height(40.dp),
+        barCount = 20,
+        seed = 7,
+        barWidth = 4.dp,
+        barGap = 4.dp,
+    )
 }

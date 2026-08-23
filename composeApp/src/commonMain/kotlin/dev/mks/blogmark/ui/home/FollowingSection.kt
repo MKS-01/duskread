@@ -1,6 +1,8 @@
 package dev.mks.blogmark.ui.home
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -35,6 +37,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
@@ -57,6 +60,7 @@ import dev.mks.blogmark.ui.common.ToastRequest
 import dev.mks.blogmark.ui.rememberUrlOpener
 import dev.mks.blogmark.ui.theme.BlogmarkIcons
 import dev.mks.blogmark.ui.theme.Mono
+import dev.mks.blogmark.ui.theme.Motion
 import dev.mks.blogmark.ui.theme.Radius
 import dev.mks.blogmark.ui.theme.SectionLabel
 import dev.mks.blogmark.ui.theme.Stroke
@@ -216,6 +220,11 @@ private fun FollowingAction(label: String, onClick: () -> Unit) {
  */
 @Composable
 private fun DigestLine(feed: Feed, newCount: Int, open: Boolean, onToggle: () -> Unit) {
+    // A right chevron is "expand" everywhere else in the app (Chevron, on a
+    // row that opens something); rotating it to point down is what says
+    // "this one is already open" without a second glyph to learn.
+    val rotation by animateFloatAsState(if (open) 90f else 0f, tween(Motion.Chip), label = "chevron")
+
     Row(
         Modifier
             .fillMaxWidth()
@@ -241,7 +250,7 @@ private fun DigestLine(feed: Feed, newCount: Int, open: Boolean, onToggle: () ->
         Icon(
             imageVector = BlogmarkIcons.Chevron,
             contentDescription = if (open) "Collapse" else "Expand",
-            modifier = Modifier.size(11.dp),
+            modifier = Modifier.size(11.dp).rotate(rotation),
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }

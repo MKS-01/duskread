@@ -52,7 +52,6 @@ import dev.chrisbanes.haze.HazeTint
 import dev.chrisbanes.haze.hazeEffect
 import dev.mks.blogmark.reader.PlaybackState
 import dev.mks.blogmark.reader.ReadItem
-import dev.mks.blogmark.ui.common.WaveformMeter
 import dev.mks.blogmark.ui.reader.formatDuration
 import dev.mks.blogmark.ui.theme.BlogmarkIcons
 import dev.mks.blogmark.ui.theme.Motion
@@ -206,24 +205,10 @@ fun FloatingBar(
             ),
         contentAlignment = Alignment.Center,
     ) {
-        // Progress as a faint waveform filling the pill from the left, not a
-        // track under the row — the same meter the Focus timer uses, so
-        // "how much of this is done" is drawn the same way everywhere it
-        // appears. Deliberately behind everything: this is an ambient cue
-        // you read at a glance, not a control you aim at, and it costs no
-        // height, which is the only reason the transport fits in a 56dp bar
-        // at all.
-        if (face == BarFace.PLAYER) {
-            val duration = playback.durationSec.takeIf { it > 0f } ?: 1f
-            WaveformMeter(
-                progress = (playback.positionSec / duration).coerceIn(0f, 1f),
-                modifier = Modifier.matchParentSize().padding(horizontal = 14.dp),
-                barCount = 48,
-                filledColor = scheme.primary.copy(alpha = 0.3f),
-                dimColor = scheme.onSurface.copy(alpha = 0.08f),
-                strokeWidth = 2.5f,
-            )
-        }
+        // No meter behind the transport. The mockup's floating bar carries
+        // icons and nothing else, and every pitch tried here either moirés
+        // into a hatch across the pill or collides with the play control —
+        // the remaining-time readout already answers "how much is left".
 
         AnimatedContent(
             targetState = face,

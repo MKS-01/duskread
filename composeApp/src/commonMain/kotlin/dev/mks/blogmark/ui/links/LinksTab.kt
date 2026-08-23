@@ -333,7 +333,7 @@ private fun LinkRow(
                     .clickable(onClick = onOpen),
                 verticalAlignment = Alignment.Top,
             ) {
-                MonogramBadge(host = link.host, size = 22.dp, background = scheme.surfaceContainer)
+                MonogramBadge(host = link.host, size = 22.dp)
                 Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f)) {
                     Text(

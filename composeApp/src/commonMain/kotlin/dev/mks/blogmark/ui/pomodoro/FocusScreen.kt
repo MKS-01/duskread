@@ -111,7 +111,9 @@ fun FocusScreen(onClose: () -> Unit, modifier: Modifier = Modifier) {
                     // audio and time alike.
                     WaveformMeter(
                         progress = state.elapsedFraction,
-                        modifier = Modifier.fillMaxWidth().height(26.dp),
+                        modifier = Modifier.height(26.dp),
+                        barCount = 20,
+                        barGap = 2.dp,
                     )
                 }
 

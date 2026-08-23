@@ -47,8 +47,13 @@ object Radius {
     /** Inline surfaces: reference rows, list-pane rows. */
     val Inline = 10.dp
 
-    /** Chips, and the floating bar itself. */
-    val Pill = 999.dp
+    /**
+     * The mockup's `.pill` and `.sourcechip`: 3dp, which at these sizes is a
+     * softened corner rather than a rounded one. Anything rounder turns a
+     * sort control into a Material chip and the source cell into an avatar,
+     * both of which fight the squared-off waveform they sit beside.
+     */
+    val Chip = 3.dp
 }
 
 /** Line weights. */

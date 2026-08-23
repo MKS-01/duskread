@@ -1,6 +1,7 @@
 package dev.mks.blogmark.ui.reader
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -52,6 +53,7 @@ import dev.mks.blogmark.ui.common.WaveformMeter
 import dev.mks.blogmark.ui.theme.BlogmarkIcons
 import dev.mks.blogmark.ui.theme.Mono
 import dev.mks.blogmark.ui.theme.Radius
+import dev.mks.blogmark.ui.theme.Stroke
 import kotlinx.coroutines.launch
 
 /**
@@ -186,10 +188,17 @@ private fun SortChip(label: String, active: Boolean, onClick: () -> Unit) {
         letterSpacing = 0.4.sp,
         color = if (active) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier
-            .clip(RoundedCornerShape(Radius.Inline))
-            .background(if (active) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.surfaceContainer)
+            .clip(RoundedCornerShape(Radius.Chip))
+            // Selection is carried by the border and the text alone. A filled
+            // chip is the only remaining Material surface on this screen, and
+            // next to a hairline sourcechip it reads as a different app.
+            .border(
+                Stroke.Hairline,
+                if (active) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.outlineVariant,
+                RoundedCornerShape(Radius.Chip),
+            )
             .clickable(onClick = onClick)
-            .padding(horizontal = 13.dp, vertical = 7.dp),
+            .padding(horizontal = 11.dp, vertical = 6.dp),
     )
 }
 
@@ -216,7 +225,9 @@ private fun ReadRow(
                 MonogramBadge(
                     host = hostOf(item.sourceUrl),
                     size = 22.dp,
-                    background = scheme.surfaceContainer,
+                    // The playing row is the only coloured thing on screen,
+                    // chip border included — the mockup tints it with the row.
+                    borderColor = if (playing) scheme.primary else scheme.outlineVariant,
                     contentColor = if (playing) scheme.primary else scheme.onSurfaceVariant,
                 )
                 Spacer(Modifier.width(10.dp))
@@ -268,9 +279,8 @@ private fun ReadRow(
                 } else {
                     0f
                 },
-                modifier = Modifier.fillMaxWidth().height(15.dp),
-                barCount = 26,
-                dimColor = scheme.outlineVariant,
+                modifier = Modifier.height(15.dp),
+                seed = item.id.hashCode(),
             )
         }
         Spacer(Modifier.height(15.dp))
