@@ -5,6 +5,7 @@ import androidx.compose.runtime.remember
 import platform.UIKit.UIActivityViewController
 import platform.UIKit.UIApplication
 import platform.UIKit.UIViewController
+import platform.UIKit.popoverPresentationController
 
 /**
  * One sheet, both jobs.
@@ -29,7 +30,10 @@ actual fun rememberExportSink(): ExportSink = remember {
                 applicationActivities = null,
             )
             // The popover anchor matters on iPad, where a sheet with no source
-            // view is a crash rather than a layout problem.
+            // view is a crash rather than a layout problem. The property is an
+            // Objective-C category on UIViewController, which Kotlin/Native
+            // maps to an extension rather than a member — hence the separate
+            // import, without which this does not resolve.
             val host = topViewController() ?: return
             sheet.popoverPresentationController?.sourceView = host.view
             host.presentViewController(sheet, animated = true, completion = null)
