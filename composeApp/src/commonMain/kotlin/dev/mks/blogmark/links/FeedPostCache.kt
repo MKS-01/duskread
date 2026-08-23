@@ -8,8 +8,24 @@ import androidx.compose.runtime.setValue
 import dev.mks.blogmark.data.KeyValueStore
 import dev.mks.blogmark.data.rememberKeyValueStore
 
-/** One post as it appeared in a feed the last time that feed synced. */
-data class FeedPost(val feedId: String, val url: String, val title: String)
+/**
+ * One post as it appeared in a feed the last time that feed synced.
+ *
+ * [content] is the publisher's own markup for the post, present only for the
+ * newest few entries of each feed and truncated even there — see `asPost` in
+ * `FeedSync.kt` for why. Null means "not cached", never "the post is empty";
+ * the reader fetches and extracts the page in that case.
+ */
+data class FeedPost(
+    val feedId: String,
+    val url: String,
+    val title: String,
+    val imageUrl: String? = null,
+    val content: String? = null,
+)
+
+/** The cached post for [url], if some followed feed carried it. */
+fun Map<String, List<FeedPost>>.postFor(url: String): FeedPost? = values.asSequence().flatten().firstOrNull { it.url == url }
 
 /**
  * What the last successful sync of each feed found, keyed by feed.
@@ -41,10 +57,15 @@ class FeedPostCache(private val store: KeyValueStore) {
     private fun load(): Map<String, List<FeedPost>> = store.getString(Key)?.split(RecordSeparator)?.mapNotNull(::decode)?.groupBy { it.feedId }.orEmpty()
 
     private fun encode(posts: List<FeedPost>): String = posts.joinToString(RecordSeparator.toString()) { post ->
-        listOf(post.feedId, post.url, post.title.clean()).joinToString(FieldSeparator.toString())
+        listOf(post.feedId, post.url, post.title.clean(), post.imageUrl.orEmpty(), post.content.orEmpty().clean())
+            .joinToString(FieldSeparator.toString())
     }
 
     private fun decode(record: String): FeedPost? {
+        // Still three, not five: records written before posts carried an image
+        // or a body decode as they always did rather than being dropped, so a
+        // reader who updates the app keeps their feed lists until the next sync
+        // fills the new fields in.
         val fields = record.split(FieldSeparator)
         if (fields.size < 3) return null
 
@@ -52,6 +73,8 @@ class FeedPostCache(private val store: KeyValueStore) {
             feedId = fields[0].ifBlank { return null },
             url = fields[1].ifBlank { return null },
             title = fields[2],
+            imageUrl = fields.getOrNull(3)?.takeIf { it.isNotBlank() },
+            content = fields.getOrNull(4)?.takeIf { it.isNotBlank() },
         )
     }
 

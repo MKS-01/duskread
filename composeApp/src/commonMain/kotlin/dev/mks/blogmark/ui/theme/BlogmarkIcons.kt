@@ -314,6 +314,27 @@ object BlogmarkIcons {
         }
     }
 
+    /**
+     * Reader: a column of text with a ragged last line.
+     *
+     * The one icon in the set that is horizontal rather than barred, and
+     * deliberately so — the thing it stands for *is* lines of text, and
+     * turning those on their side to satisfy the Bar rule would draw
+     * something that no longer says "article".
+     */
+    val Reader: ImageVector by lazy {
+        icon("Reader") {
+            stroked {
+                moveTo(5f, 7f)
+                lineTo(19f, 7f)
+                moveTo(5f, 12f)
+                lineTo(19f, 12f)
+                moveTo(5f, 17f)
+                lineTo(12.5f, 17f)
+            }
+        }
+    }
+
     /** A tick, for marking a saved link read. */
     val Check: ImageVector by lazy {
         icon("Check") {

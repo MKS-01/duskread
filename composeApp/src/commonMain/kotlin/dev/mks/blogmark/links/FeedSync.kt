@@ -6,8 +6,20 @@ import io.ktor.client.request.header
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpHeaders
 
-/** One post found in a feed — enough to save it as a link, nothing more. */
-data class FeedEntry(val url: String, val title: String?)
+/**
+ * One post as the feed describes it.
+ *
+ * [content] is the publisher's own markup for the post where the feed carries
+ * it — `<content:encoded>` on RSS, `<content>` on Atom. Plenty of feeds ship
+ * only a teaser there, so this is a candidate for the reader rather than a
+ * promise; [articleFromFeed] is what decides whether it is the whole post.
+ */
+data class FeedEntry(
+    val url: String,
+    val title: String?,
+    val content: String? = null,
+    val imageUrl: String? = null,
+)
 
 /**
  * Reads [url] as RSS or Atom and pulls out its entries.
@@ -39,7 +51,14 @@ fun parseFeed(xml: String): List<FeedEntry> {
         val url = RssLinkPattern.find(block)?.groupValues?.get(1)?.tidy() ?: block.atomEntryUrl()
         if (url.isNullOrBlank()) return@mapNotNull null
 
-        FeedEntry(url = url, title = FeedTitlePattern.find(block)?.groupValues?.get(1)?.tidy())
+        val content = ContentPatterns.firstNotNullOfOrNull { pattern -> pattern.find(block)?.groupValues?.get(1) }?.unescapeMarkup()
+
+        FeedEntry(
+            url = url,
+            title = FeedTitlePattern.find(block)?.groupValues?.get(1)?.tidy(),
+            content = content?.takeIf { it.isNotBlank() },
+            imageUrl = block.entryImage()?.let { resolveAgainst(url, it) },
+        )
     }
 }
 
@@ -52,6 +71,38 @@ fun parseFeed(xml: String): List<FeedEntry> {
  */
 private fun String.atomEntryUrl(): String? = AtomAlternateLinkPattern.firstNotNullOfOrNull { it.find(this)?.groupValues?.get(1)?.tidy() }
     ?: AtomAnyLinkPattern.find(this)?.groupValues?.get(1)?.tidy()
+
+/**
+ * A feed's own copy of the post, unwrapped.
+ *
+ * Two encodings, one meaning: a feed either wraps the post's HTML in CDATA,
+ * where it is already literal and must be left alone, or escapes it into the
+ * XML text, where every tag arrives as `&lt;p&gt;` and has to be turned back.
+ * Running the entity pass over CDATA content would corrupt any post that
+ * legitimately *displays* an escaped tag — a code sample about HTML — so the
+ * two cases stay separate rather than both being run through the same filter.
+ */
+private fun String.unescapeMarkup(): String {
+    CdataPattern.find(this)?.let { return it.groupValues[1] }
+
+    return replace("&lt;", "<")
+        .replace("&gt;", ">")
+        .replace("&quot;", "\"")
+        .replace("&#39;", "'")
+        .replace("&apos;", "'")
+        .replace("&#x27;", "'")
+        .replace("&nbsp;", " ")
+        .replace("&amp;", "&") // last: everything above may itself have been double-escaped through it
+}
+
+/**
+ * The post's picture as the feed states it, before falling back to the first
+ * one in the body. The three tags are three different generators' answers to
+ * the same question and no feed emits more than one of them.
+ */
+private fun String.entryImage(): String? = EntryImagePatterns.firstNotNullOfOrNull { pattern ->
+    pattern.find(this)?.groupValues?.get(1)?.trim()?.takeIf { it.isNotEmpty() }
+}
 
 /**
  * Resolves whatever the reader typed — a blog's homepage, or the feed
@@ -88,8 +139,12 @@ suspend fun discoverFeedUrl(client: HttpClient, rawUrl: String): String {
     return rawUrl
 }
 
-/** A `href` from a `<link>` tag, which publishers write both root-relative and absolute. */
-private fun resolveAgainst(pageUrl: String, href: String): String = when {
+/**
+ * A `href` from a `<link>` tag, which publishers write both root-relative and
+ * absolute. Internal rather than private: [extractArticle] resolves an
+ * article's own images and links against its page URL by the same three rules.
+ */
+internal fun resolveAgainst(pageUrl: String, href: String): String = when {
     href.startsWith("http://") || href.startsWith("https://") -> href
     href.startsWith("/") -> pageUrl.substringBefore("://") + "://" + pageUrl.substringAfter("://").substringBefore("/") + href
     else -> pageUrl.substringBeforeLast("/") + "/" + href
@@ -115,12 +170,48 @@ suspend fun syncFeeds(client: HttpClient, feeds: List<Feed>, cache: FeedPostCach
     for (feed in feeds) {
         val entries = runCatching { fetchFeed(client, feed.url) }.getOrNull()
         if (entries.isNullOrEmpty()) continue
-        cache.replace(feed.id, entries.take(EntriesPerFeed).map { entry -> FeedPost(feed.id, entry.url, entry.title ?: titleFromUrl(entry.url)) })
+        cache.replace(feed.id, entries.take(EntriesPerFeed).mapIndexed { index, entry -> entry.asPost(feed.id, index) })
         synced++
     }
 
     return synced
 }
+
+/**
+ * Full post bodies are cached only for the newest few entries, and truncated
+ * even then.
+ *
+ * The cache is one string in a key/value store that is read into memory whole
+ * at launch — fine for a list of titles, ruinous for fifteen full articles per
+ * feed across a dozen feeds. The newest handful is what anyone actually opens
+ * from a feed list, and everything past it simply falls through to fetching
+ * and extracting the page, which is the same path a saved link takes.
+ */
+private fun FeedEntry.asPost(feedId: String, index: Int): FeedPost = FeedPost(
+    feedId = feedId,
+    url = url,
+    title = title ?: titleFromUrl(url),
+    imageUrl = imageUrl,
+    content = content?.take(MaxCachedContentChars)?.takeIf { index < EntriesWithContent },
+)
+
+private val CdataPattern = Regex("""<!\[CDATA\[(.*?)]]>""", RegexOption.DOT_MATCHES_ALL)
+
+// `content:encoded` first: a feed that has both is using <description> for the
+// teaser and this for the post.
+private val ContentPatterns = listOf(
+    Regex("""<content:encoded[^>]*>(.*?)</content:encoded>""", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)),
+    Regex("""<content[^>]*>(.*?)</content>""", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)),
+    Regex("""<description[^>]*>(.*?)</description>""", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)),
+    Regex("""<summary[^>]*>(.*?)</summary>""", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)),
+)
+
+private val EntryImagePatterns = listOf(
+    Regex("""<media:thumbnail[^>]+url\s*=\s*["']([^"']+)["']""", RegexOption.IGNORE_CASE),
+    Regex("""<media:content[^>]+url\s*=\s*["']([^"']+)["']""", RegexOption.IGNORE_CASE),
+    Regex("""<enclosure[^>]+url\s*=\s*["']([^"']+)["'][^>]*type\s*=\s*["']image/""", RegexOption.IGNORE_CASE),
+    Regex("""<img[^>]+src\s*=\s*["']([^"']+)["']""", RegexOption.IGNORE_CASE),
+)
 
 private val ItemPattern = Regex("""<item[^>]*>(.*?)</item>""", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL))
 private val EntryPattern = Regex("""<entry[^>]*>(.*?)</entry>""", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL))
@@ -159,4 +250,8 @@ private val CommonFeedPaths = listOf("/feed", "/feed/", "/rss.xml", "/rss", "/at
 // A feed with a thousand-item archive should not flood the list on first
 // sync — the point of following a blog is what's new, not its backlog.
 private const val EntriesPerFeed = 15
+
+// See [asPost]: what the cache is allowed to hold.
+private const val EntriesWithContent = 6
+private const val MaxCachedContentChars = 24_000
 private const val MaxBytesScanned = 500_000

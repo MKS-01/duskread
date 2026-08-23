@@ -51,7 +51,7 @@ private fun String.titleTag(): String? = TitlePattern.find(this)?.groupValues?.g
  * A `<meta>` tag's content, matched in either attribute order — `name` and
  * `property` before `content` or after it, which real pages do both ways.
  */
-private fun String.metaContent(key: String): String? {
+internal fun String.metaContent(key: String): String? {
     val escaped = Regex.escape(key)
     val patterns = listOf(
         """<meta[^>]+(?:property|name)\s*=\s*["']$escaped["'][^>]*content\s*=\s*["']([^"']*)["']""",
