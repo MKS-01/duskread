@@ -65,6 +65,12 @@ enum class HomeTab(val label: String, val icon: ImageVector) {
 /** Every face of the bar is this tall; only the width changes between them. */
 private val BarHeight = 56.dp
 
+/** The visible scrub line at the foot of the player face. */
+private val SeekTrackHeight = 2.5.dp
+
+/** Its actual touch target — a 2.5dp line is not draggable with a thumb. */
+private val SeekTouchHeight = 20.dp
+
 /** How far a downward run has to travel before the bar gives up its width. */
 private val CollapseRun = 52.dp
 
@@ -246,6 +252,30 @@ fun FloatingBar(
                 )
             }
         }
+
+        // Position, shown rather than left to be discovered by dragging: the
+        // strip mirrors the same seek gesture that lives on the title above
+        // it, so scrubbing works from either and this line is never lying
+        // about where a drag on the title would land.
+        if (face == BarFace.PLAYER) {
+            val duration = playback.durationSec.takeIf { it > 0f } ?: 1f
+            val fraction = (playback.positionSec / duration).coerceIn(0f, 1f)
+            Box(
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .height(SeekTouchHeight)
+                    .pointerInput(duration) {
+                        detectHorizontalDragGestures { change, _ ->
+                            onSeek((change.position.x / size.width).coerceIn(0f, 1f) * duration)
+                        }
+                    },
+                contentAlignment = Alignment.BottomStart,
+            ) {
+                Box(Modifier.fillMaxWidth().height(SeekTrackHeight).background(scheme.onSurface.copy(alpha = 0.14f)))
+                Box(Modifier.fillMaxWidth(fraction).height(SeekTrackHeight).background(scheme.primary))
+            }
+        }
     }
 }
 
@@ -312,9 +342,9 @@ private fun PlayerFace(
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier
                 .weight(1f)
-                // Drag, not tap: a tap here would fire on every mis-aimed
-                // press at the pause button next to it, and scrubbing to a
-                // random position is a worse accident than doing nothing.
+                // The visible line along the pill's foot is the discoverable
+                // scrub target; this is the same gesture repeated over the
+                // title so a drag doesn't have to land in a 20dp-tall strip.
                 .pointerInput(duration) {
                     detectHorizontalDragGestures { change, _ ->
                         onSeek((change.position.x / size.width).coerceIn(0f, 1f) * duration)
