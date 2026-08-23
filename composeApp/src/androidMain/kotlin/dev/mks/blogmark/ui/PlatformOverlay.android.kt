@@ -13,7 +13,7 @@ import androidx.compose.runtime.remember
 import dev.mks.blogmark.ui.theme.Motion
 
 @Composable
-actual fun PlatformOverlay() {
+actual fun PlatformOverlay(mono: Boolean) {
     val requested by InAppBrowserRequest.url.collectAsState()
 
     // Held past the request going null so the close animation fades out the
@@ -27,6 +27,6 @@ actual fun PlatformOverlay() {
         enter = fadeIn(tween(Motion.PushIn)) + slideInVertically(tween(Motion.PushIn)) { it / 8 },
         exit = fadeOut(tween(Motion.PopFade)),
     ) {
-        shown.value?.let { url -> InAppBrowserScreen(url = url, onClose = InAppBrowserRequest::consume) }
+        shown.value?.let { url -> InAppBrowserScreen(url = url, mono = mono, onClose = InAppBrowserRequest::consume) }
     }
 }

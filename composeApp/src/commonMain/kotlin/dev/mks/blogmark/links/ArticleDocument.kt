@@ -15,6 +15,7 @@ data class ReaderPalette(
     val accent: String,
     val rule: String,
     val panel: String,
+    val mono: Boolean = false,
 )
 
 /**
@@ -60,7 +61,11 @@ fun articleDocument(article: Article, palette: ReaderPalette): String = """
   .lead { width: 100%; border-radius: 10px; margin: 0 0 24px; display: block; }
   p { margin: 0 0 18px; }
   a { color: ${palette.accent}; text-decoration: none; border-bottom: 1px solid ${palette.rule}; }
-  img { max-width: 100%; height: auto; border-radius: 10px; display: block; margin: 22px auto; }
+  /* Ink drains the hue out of the app's own chrome; a photo left in full
+     colour underneath it would be the one thing on the page still shouting
+     for attention. Matching it here is what makes the theme read as the
+     absence of colour rather than "everything but the pictures". */
+  img { max-width: 100%; height: auto; border-radius: 10px; display: block; margin: 22px auto;${if (palette.mono) " filter: grayscale(1);" else ""} }
   figure { margin: 22px 0; }
   figcaption { color: ${palette.muted}; font-size: 0.82rem; text-align: center; margin-top: 8px; }
   blockquote { margin: 22px 0; padding: 2px 0 2px 16px; border-left: 2px solid ${palette.accent}; color: ${palette.muted}; }

@@ -4,4 +4,4 @@ import androidx.compose.runtime.Composable
 
 /** [rememberUrlOpener] already presents its own `SFSafariViewController` sheet — nothing to overlay. */
 @Composable
-actual fun PlatformOverlay() = Unit
+actual fun PlatformOverlay(mono: Boolean) = Unit

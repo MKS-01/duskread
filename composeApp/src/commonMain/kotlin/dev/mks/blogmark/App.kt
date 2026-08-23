@@ -70,7 +70,7 @@ fun App() {
 
                 // Android's embedded reader browser; a no-op everywhere else.
                 // See `PlatformOverlay`.
-                PlatformOverlay()
+                PlatformOverlay(mono = mono)
             }
         }
     }
