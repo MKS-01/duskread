@@ -1,26 +1,17 @@
 <!--
-    The launch animation: the meter's outer bars settle to rest while the app
-    boots, so what the splash shows is the app's own idea arriving rather than
-    a logo fading in. The bookmark — the thing being measured — is already
-    there and does not move.
+    The launch animation: the one shape settles to rest while the app
+    boots, so what the splash shows is the app's own idea arriving rather
+    than a logo fading in.
 
-    This holds nothing open. `installSplashScreen` dismisses the window as soon
-    as there is a frame to draw, so on a warm start the animation is cut off
-    part-way through, which is the correct behaviour: the splash exists to
-    cover a wait, not to impose one.
+    This holds nothing open. `installSplashScreen` dismisses the window as
+    soon as there is a frame to draw, so on a warm start the animation is
+    cut off part-way through, which is the correct behaviour: the splash
+    exists to cover a wait, not to impose one.
 -->
 <animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:drawable="@drawable/ic_blogmark_mark">
 
     <target
-        android:name="bar_b"
-        android:animation="@animator/splash_bar_b" />
-
-    <target
-        android:name="bar_a"
-        android:animation="@animator/splash_bar_a" />
-
-    <target
-        android:name="bar_c"
-        android:animation="@animator/splash_bar_c" />
+        android:name="bar_main"
+        android:animation="@animator/splash_bar_main" />
 </animated-vector>

@@ -1,31 +1,25 @@
 <!--
-    The mark, as specified in the Brand section of
-    `docs/design/redesign-variants.html`: a level meter whose tallest bar is a
-    bookmark. The notch reads as both a ribbon tail and a peak, which is the
-    whole app in one silhouette — save a link, hear it read back — rather than
-    a bookmark that says nothing about the listening or a waveform that says
-    nothing about the saving.
+    The mark, exactly as drawn in the "Dusk bar" concept of
+    `docs/design-system/design-system.html` (rect x=40 y=24 w=28 h=64 rx=14
+    + circle cx=60 cy=32 r=16): one wide waveform bar — the house language
+    ("the waveform is the alphabet") kept rather than started over — with a
+    crescent bitten out of its top. Read and listen stay the bar; the app's
+    new name is the moon.
 
-    It replaces three fanned bookmark ribbons whose fault was scale rather than
-    concept: that artwork occupied about 15% of its canvas and dissolved into a
-    speck at launcher size. This fills roughly 70%.
+    The bite is a background-coloured circle painted over the bar, same
+    technique as the artifact's own SVG mockup — not a fillType="evenOdd"
+    subtraction. evenOdd was tried first and is wrong here: it doesn't
+    subtract, it computes even/odd crossing count, so any part of the bite
+    circle that falls *outside* the bar (most of it, at this radius) gets
+    filled back in as a second, disconnected blob instead of vanishing.
+    Painting over in the exact ground colour has no such failure mode — it's
+    just two opaque shapes in draw order — at the cost of only being correct
+    against a ground that really is this colour behind it, which is true
+    here (splash window and adaptive-icon background are both this hex).
 
-    Terracotta, not the mockup's cyan — the migration kept two palettes,
-    terracotta and monochrome, and never adopted the "signature" accent.
-
-    One weight throughout, where the mockup steps the bars down in alpha off
-    the bookmark. That gradient is a nice idea on a 132px brand plate and a bad
-    one on a launcher tile: over this near-black ground a bar held at 45% is
-    barely separable from the ground itself, so the mark lost its outer half at
-    the size it is actually seen. Solid, the four heights still carry the
-    meter.
-
-    Geometry is the mockup's own, shifted 2 units left so the mark centres on
-    the canvas, and held inside the 66-unit safe zone by the outer group's
-    scale — both consumers crop, a launcher masking the outer third of an
-    adaptive icon and the Android 12+ splash showing the inner two thirds of
-    its icon. This is the splash's size; the launcher takes it in further
-    still, through ic_launcher_foreground.
+    Same safe-zone handling as the mark it replaces: geometry lives inside
+    the outer group's 0.85 scale, which is what keeps it inside the
+    66-unit zone both the launcher mask and the Android 12+ splash crop to.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
@@ -40,41 +34,18 @@
         android:scaleX="0.85"
         android:scaleY="0.85">
 
-        <!--
-            Each bar is its own group so the splash can animate it. The pivot
-            is the row's centre line, which every bar is already centred on, so
-            a bar grows out of the middle rather than up off a baseline.
-        -->
+        <!-- One group, one shape — the whole mark settles together in the
+             splash, not bar by bar. -->
         <group
-            android:name="bar_a"
-            android:pivotX="24.5"
+            android:name="bar_main"
+            android:pivotX="54"
             android:pivotY="54">
             <path
                 android:fillColor="#C6684A"
-                android:pathData="M20,44.5 a4.5,4.5 0 0 1 9,0 v19 a4.5,4.5 0 0 1 -9,0 z" />
-        </group>
-
-        <group
-            android:name="bar_b"
-            android:pivotX="39.5"
-            android:pivotY="54">
+                android:pathData="M40,38 a14,14 0 0 1 28,0 v36 a14,14 0 0 1 -28,0 z" />
             <path
-                android:fillColor="#C6684A"
-                android:pathData="M35,34.5 a4.5,4.5 0 0 1 9,0 v39 a4.5,4.5 0 0 1 -9,0 z" />
-        </group>
-
-        <!-- The peak: a bookmark rather than a fourth bar. -->
-        <path
-            android:fillColor="#C6684A"
-            android:pathData="M50,24 h20 a3,3 0 0 1 3,3 v57 l-13,-10 l-13,10 V27 a3,3 0 0 1 3,-3 z" />
-
-        <group
-            android:name="bar_c"
-            android:pivotX="83.5"
-            android:pivotY="54">
-            <path
-                android:fillColor="#C6684A"
-                android:pathData="M79,40.5 a4.5,4.5 0 0 1 9,0 v27 a4.5,4.5 0 0 1 -9,0 z" />
+                android:fillColor="#101010"
+                android:pathData="M44,32 a16,16 0 0 1 32,0 a16,16 0 0 1 -32,0 z" />
         </group>
     </group>
 </vector>

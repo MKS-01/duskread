@@ -7,6 +7,17 @@
     size, so the themed icon sits in the same air as the colour one — a
     monochrome layer that ran wider would jump when the user turns themed
     icons on.
+
+    Unlike the colour mark, this can't paint the bite in a background hex —
+    the OS reads only this layer's alpha to build the tint mask, so there is
+    no "background colour" to erase to. The bite has to be a true alpha hole
+    (fillType="evenOdd"), and — the failure mode discovered building the
+    colour mark — evenOdd only produces a clean hole where the cut shape is
+    *fully contained* inside the base shape; any part that falls outside
+    gets filled back in as a second blob instead of vanishing. The colour
+    mark's own bite (r=16, centred outside the bar on two sides) would do
+    exactly that here, so this one is sized down to sit entirely inside the
+    bar instead — a smaller notch than the colour version, not a mistake.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
@@ -21,15 +32,7 @@
         android:scaleY="0.74">
         <path
             android:fillColor="#FFFFFFFF"
-            android:pathData="M20,44.5 a4.5,4.5 0 0 1 9,0 v19 a4.5,4.5 0 0 1 -9,0 z" />
-        <path
-            android:fillColor="#FFFFFFFF"
-            android:pathData="M35,34.5 a4.5,4.5 0 0 1 9,0 v39 a4.5,4.5 0 0 1 -9,0 z" />
-        <path
-            android:fillColor="#FFFFFFFF"
-            android:pathData="M50,24 h20 a3,3 0 0 1 3,3 v57 l-13,-10 l-13,10 V27 a3,3 0 0 1 3,-3 z" />
-        <path
-            android:fillColor="#FFFFFFFF"
-            android:pathData="M79,40.5 a4.5,4.5 0 0 1 9,0 v27 a4.5,4.5 0 0 1 -9,0 z" />
+            android:fillType="evenOdd"
+            android:pathData="M40,38 a14,14 0 0 1 28,0 v36 a14,14 0 0 1 -28,0 z M58,36 a9,9 0 0 1 18,0 a9,9 0 0 1 -18,0 z" />
     </group>
 </vector>

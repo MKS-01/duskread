@@ -1,20 +1,12 @@
 <!--
-    Ink's launch animation — the same bars-settling animation as
-    ic_blogmark_splash, driving ic_blogmark_mark_ink instead of the terracotta
-    mark, so the splash matches whichever scheme the reader last chose.
+    Ink's launch animation — the same settle animation as ic_blogmark_splash,
+    driving ic_blogmark_mark_ink instead of the terracotta mark, so the
+    splash matches whichever scheme the reader last chose.
 -->
 <animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:drawable="@drawable/ic_blogmark_mark_ink">
 
     <target
-        android:name="bar_b"
-        android:animation="@animator/splash_bar_b" />
-
-    <target
-        android:name="bar_a"
-        android:animation="@animator/splash_bar_a" />
-
-    <target
-        android:name="bar_c"
-        android:animation="@animator/splash_bar_c" />
+        android:name="bar_main"
+        android:animation="@animator/splash_bar_main" />
 </animated-vector>
