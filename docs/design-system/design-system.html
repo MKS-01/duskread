@@ -935,99 +935,30 @@ footer { margin-top: 56px; padding-top: 22px; border-top: 1px solid var(--line);
 
   <!-- ---------------------------------------------------------- -->
   <section>
-    <h2>Brand — six new mark concepts <span style="color:var(--faint);font-weight:400">(idea, not built)</span></h2>
+    <h2>Brand — five new mark concepts <span style="color:var(--faint);font-weight:400">(idea, not built)</span></h2>
     <p class="section-title">What the shipped mark doesn't say yet</p>
     <p class="section-note">
       The shipped mark folds <em>save</em> and <em>listen</em> into one
       silhouette. It says nothing about <b>Focus</b> — a named, core screen
       now, not an afterthought — and it's the only one of the app's four
-      facets missing from the brand. These six try different answers, not
+      facets missing from the brand. These five try different answers, not
       a single direction to converge on; primitives only (rects, circles,
-      exact triangles, stroked rings), so what's drawn here is exactly what
+      exact triangles), so what's drawn here is exactly what
       would render, no hand-fit curve that looks different at 24px than it
       does at 132.
     </p>
 
+    <p class="rationale" style="border:0;padding:0;max-width:66ch;margin-bottom:24px">
+      Every mark here, if built, needs the same second copy the shipped one
+      already has and none of these show: a flattened single-fill silhouette
+      for Android 13+'s themed-icon system (<code>ic_launcher_monochrome.xml</code>),
+      which the OS re-tints from the wallpaper regardless of source colour.
+      That's not a style choice being debated below — it's required
+      infrastructure any of these gets for free by following the same
+      pattern, independent of whether the primary icon stays terracotta.
+    </p>
+
     <div class="v-amp" style="color:var(--text)">
-      <div class="brandrow" style="margin-bottom:34px">
-        <div>
-          <svg class="appicon" width="88" height="88" viewBox="0 0 108 108" aria-label="Beacon concept, launcher size">
-            <rect width="108" height="108" fill="#101010"/>
-            <rect x="26" y="58" width="12" height="24" rx="6" fill="#c6684a"/>
-            <rect x="46" y="42" width="12" height="40" rx="6" fill="#c6684a"/>
-            <rect x="66" y="26" width="12" height="56" rx="6" fill="#c6684a"/>
-            <circle cx="78" cy="16" r="8" fill="#c6684a"/>
-          </svg>
-          <p class="brand-label">48</p>
-        </div>
-        <div>
-          <svg class="appicon" width="44" height="44" viewBox="0 0 108 108">
-            <rect width="108" height="108" fill="#101010"/>
-            <rect x="26" y="58" width="12" height="24" rx="6" fill="#c6684a"/>
-            <rect x="46" y="42" width="12" height="40" rx="6" fill="#c6684a"/>
-            <rect x="66" y="26" width="12" height="56" rx="6" fill="#c6684a"/>
-            <circle cx="78" cy="16" r="8" fill="#c6684a"/>
-          </svg>
-          <p class="brand-label">24</p>
-        </div>
-        <div>
-          <div class="splash" style="background:#101010">
-            <svg width="74" height="74" viewBox="0 0 108 108">
-              <rect x="26" y="58" width="12" height="24" rx="6" fill="#c6684a"/>
-              <rect x="46" y="42" width="12" height="40" rx="6" fill="#c6684a"/>
-              <rect x="66" y="26" width="12" height="56" rx="6" fill="#c6684a"/>
-              <circle cx="78" cy="16" r="8" fill="#c6684a"/>
-            </svg>
-          </div>
-          <p class="brand-label">splash</p>
-        </div>
-        <p class="rationale" style="flex:1 1 240px;align-self:center;border:0;padding:0">
-          <b>Beacon.</b> Three ascending bars, no bookmark notch at all — a
-          signal dot floats above the tallest one, like a ping registering.
-          The fewest distinct shapes of the three, which is the point:
-          testing whether dropping the notch entirely (rather than
-          reshaping it) is what actually survives down to 24px.
-        </p>
-      </div>
-
-      <div class="brandrow" style="margin-bottom:34px">
-        <div>
-          <svg class="appicon" width="88" height="88" viewBox="0 0 108 108" aria-label="Twin pillar concept, launcher size">
-            <rect width="108" height="108" fill="#101010"/>
-            <rect x="30" y="50" width="14" height="32" rx="7" fill="#c6684a"/>
-            <rect x="58" y="40" width="14" height="42" rx="7" fill="#c6684a"/>
-            <rect x="58" y="20" width="14" height="14" rx="7" fill="#c6684a"/>
-          </svg>
-          <p class="brand-label">48</p>
-        </div>
-        <div>
-          <svg class="appicon" width="44" height="44" viewBox="0 0 108 108">
-            <rect width="108" height="108" fill="#101010"/>
-            <rect x="30" y="50" width="14" height="32" rx="7" fill="#c6684a"/>
-            <rect x="58" y="40" width="14" height="42" rx="7" fill="#c6684a"/>
-            <rect x="58" y="20" width="14" height="14" rx="7" fill="#c6684a"/>
-          </svg>
-          <p class="brand-label">24</p>
-        </div>
-        <div>
-          <div class="splash" style="background:#101010">
-            <svg width="74" height="74" viewBox="0 0 108 108">
-              <rect x="30" y="50" width="14" height="32" rx="7" fill="#c6684a"/>
-              <rect x="58" y="40" width="14" height="42" rx="7" fill="#c6684a"/>
-              <rect x="58" y="20" width="14" height="14" rx="7" fill="#c6684a"/>
-            </svg>
-          </div>
-          <p class="brand-label">splash</p>
-        </div>
-        <p class="rationale" style="flex:1 1 240px;align-self:center;border:0;padding:0">
-          <b>Twin pillar.</b> Two bars only — the tall one broken by a gap
-          near its top, a ticket-stub notch read through negative space
-          rather than a shape cut into an outline. The most reduced of the
-          three; the risk is the gap reading as a rendering glitch rather
-          than a deliberate notch at the smallest sizes.
-        </p>
-      </div>
-
       <div class="brandrow">
         <div>
           <svg class="appicon" width="88" height="88" viewBox="0 0 108 108" aria-label="Focus frame concept, launcher size">
@@ -1114,7 +1045,7 @@ footer { margin-top: 56px; padding-top: 22px; border-top: 1px solid var(--line);
           <b>Dog-ear pulse.</b> The corner-fold every reading app already
           uses for "bookmarked," at full icon scale rather than tucked in a
           corner, with an audio pulse sitting where the fold's shadow would
-          fall. The most immediately legible of the six — a folded page
+          fall. The most immediately legible of the five — a folded page
           reads as "saved" without any learning — at the cost of being the
           least distinctive: this exact fold shape shows up everywhere.
         </p>
@@ -1122,83 +1053,117 @@ footer { margin-top: 56px; padding-top: 22px; border-top: 1px solid var(--line);
 
       <div class="brandrow" style="margin-bottom:34px">
         <div>
-          <svg class="appicon" width="88" height="88" viewBox="0 0 108 108" aria-label="Stacked list concept, launcher size">
+          <svg class="appicon" width="88" height="88" viewBox="0 0 108 108" aria-label="Two-note concept, launcher size">
             <rect width="108" height="108" fill="#101010"/>
-            <rect x="24" y="28" width="44" height="10" rx="5" fill="#c6684a"/>
-            <path d="M68 24 L86 33 L68 42 Z" fill="#c6684a"/>
-            <rect x="24" y="49" width="34" height="10" rx="5" fill="#c6684a"/>
-            <rect x="24" y="70" width="24" height="10" rx="5" fill="#c6684a"/>
+            <circle cx="42" cy="54" r="24" fill="#c6684a"/>
+            <circle cx="66" cy="54" r="24" fill="#c6684a"/>
           </svg>
           <p class="brand-label">48</p>
         </div>
         <div>
           <svg class="appicon" width="44" height="44" viewBox="0 0 108 108">
             <rect width="108" height="108" fill="#101010"/>
-            <rect x="24" y="28" width="44" height="10" rx="5" fill="#c6684a"/>
-            <path d="M68 24 L86 33 L68 42 Z" fill="#c6684a"/>
-            <rect x="24" y="49" width="34" height="10" rx="5" fill="#c6684a"/>
-            <rect x="24" y="70" width="24" height="10" rx="5" fill="#c6684a"/>
+            <circle cx="42" cy="54" r="24" fill="#c6684a"/>
+            <circle cx="66" cy="54" r="24" fill="#c6684a"/>
           </svg>
           <p class="brand-label">24</p>
         </div>
         <div>
           <div class="splash" style="background:#101010">
             <svg width="74" height="74" viewBox="0 0 108 108">
-              <rect x="24" y="28" width="44" height="10" rx="5" fill="#c6684a"/>
-              <path d="M68 24 L86 33 L68 42 Z" fill="#c6684a"/>
-              <rect x="24" y="49" width="34" height="10" rx="5" fill="#c6684a"/>
-              <rect x="24" y="70" width="24" height="10" rx="5" fill="#c6684a"/>
+              <circle cx="42" cy="54" r="24" fill="#c6684a"/>
+              <circle cx="66" cy="54" r="24" fill="#c6684a"/>
             </svg>
           </div>
           <p class="brand-label">splash</p>
         </div>
         <p class="rationale" style="flex:1 1 240px;align-self:center;border:0;padding:0">
-          <b>Stacked list.</b> Three descending bars read as a list of saved
-          items, not a waveform — a genuinely different grammar from every
-          other concept here, including the shipped mark, which all draw
-          vertical bars. The top item ends in a play wedge: the newest save
-          is also the one about to be heard.
+          <b>Two-note.</b> Two overlapping circles, nothing else — the
+          article and the read-back as one shape, not one representing the
+          other. The most abstract of the set on purpose: no notch, no
+          bracket, no bar to run out of room at 24px, but also the one that
+          says the least without the app name next to it.
+        </p>
+      </div>
+
+      <div class="brandrow" style="margin-bottom:34px">
+        <div>
+          <svg class="appicon" width="88" height="88" viewBox="0 0 108 108" aria-label="Underline flag concept, launcher size">
+            <rect width="108" height="108" fill="#101010"/>
+            <rect x="24" y="68" width="50" height="10" rx="5" fill="#c6684a"/>
+            <rect x="72" y="24" width="6" height="48" rx="3" fill="#c6684a"/>
+            <path d="M78 24 L78 42 L98 33 Z" fill="#c6684a"/>
+          </svg>
+          <p class="brand-label">48</p>
+        </div>
+        <div>
+          <svg class="appicon" width="44" height="44" viewBox="0 0 108 108">
+            <rect width="108" height="108" fill="#101010"/>
+            <rect x="24" y="68" width="50" height="10" rx="5" fill="#c6684a"/>
+            <rect x="72" y="24" width="6" height="48" rx="3" fill="#c6684a"/>
+            <path d="M78 24 L78 42 L98 33 Z" fill="#c6684a"/>
+          </svg>
+          <p class="brand-label">24</p>
+        </div>
+        <div>
+          <div class="splash" style="background:#101010">
+            <svg width="74" height="74" viewBox="0 0 108 108">
+              <rect x="24" y="68" width="50" height="10" rx="5" fill="#c6684a"/>
+              <rect x="72" y="24" width="6" height="48" rx="3" fill="#c6684a"/>
+              <path d="M78 24 L78 42 L98 33 Z" fill="#c6684a"/>
+            </svg>
+          </div>
+          <p class="brand-label">splash</p>
+        </div>
+        <p class="rationale" style="flex:1 1 240px;align-self:center;border:0;padding:0">
+          <b>Underline flag.</b> The line a careful reader draws under a
+          sentence worth keeping, with a small flag planted at its end
+          marking the place. Reads as "marginalia" more than "audio" or
+          "focus" — closest in spirit to the Marginalia/Underline naming
+          ideas below, and the concept most tied to a specific name rather
+          than standing on its own.
         </p>
       </div>
 
       <div class="brandrow">
         <div>
-          <svg class="appicon" width="88" height="88" viewBox="0 0 108 108" aria-label="Ring and pulse concept, launcher size">
+          <svg class="appicon" width="88" height="88" viewBox="0 0 108 108" aria-label="Ticket stub concept, launcher size">
             <rect width="108" height="108" fill="#101010"/>
-            <circle cx="54" cy="54" r="30" fill="none" stroke="#c6684a" stroke-width="10"/>
-            <circle cx="75.2" cy="32.8" r="9" fill="#c6684a"/>
+            <rect x="28" y="28" width="52" height="52" rx="14" fill="#c6684a"/>
+            <path d="M80 80 L80 58 L58 80 Z" fill="#101010"/>
           </svg>
           <p class="brand-label">48</p>
         </div>
         <div>
           <svg class="appicon" width="44" height="44" viewBox="0 0 108 108">
             <rect width="108" height="108" fill="#101010"/>
-            <circle cx="54" cy="54" r="30" fill="none" stroke="#c6684a" stroke-width="10"/>
-            <circle cx="75.2" cy="32.8" r="9" fill="#c6684a"/>
+            <rect x="28" y="28" width="52" height="52" rx="14" fill="#c6684a"/>
+            <path d="M80 80 L80 58 L58 80 Z" fill="#101010"/>
           </svg>
           <p class="brand-label">24</p>
         </div>
         <div>
           <div class="splash" style="background:#101010">
             <svg width="74" height="74" viewBox="0 0 108 108">
-              <circle cx="54" cy="54" r="30" fill="none" stroke="#c6684a" stroke-width="10"/>
-              <circle cx="75.2" cy="32.8" r="9" fill="#c6684a"/>
+              <rect x="28" y="28" width="52" height="52" rx="14" fill="#c6684a"/>
+              <path d="M80 80 L80 58 L58 80 Z" fill="#101010"/>
             </svg>
           </div>
           <p class="brand-label">splash</p>
         </div>
         <p class="rationale" style="flex:1 1 240px;align-self:center;border:0;padding:0">
-          <b>Ring &amp; pulse.</b> A complete dial, not brackets — closer to
-          an actual timer face — with one dot marking a position on it. Reads
-          as Focus (a session's progress around the ring) and Readback (how
-          far into a read you are) at once, which is either the cleanest
-          two-facet mark of the six or a dial that means two different
-          things depending which screen you saw it on first.
+          <b>Ticket stub.</b> A rounded card with one corner torn off — "the
+          saved item" as a physical object, the torn corner echoing
+          Dog-ear's fold without repeating its exact shape. The corner is cut
+          by painting a background-coloured triangle over the card rather
+          than a true path subtraction — exact and safe, but it only looks
+          right against a ground that's actually this near-black; a lighter
+          host surface would show the seam.
         </p>
       </div>
 
       <p class="rationale" style="margin-top:8px">
-        All six keep the shipped mark's actual constraints: solid fill
+        All five keep the shipped mark's actual constraints: solid fill
         (no alpha steps — they vanish against near-black at launcher size),
         the same terracotta, and an Ink pass exactly like the shipped
         mark's own (swap <code>#c6684a</code> for <code>#dcdcdc</code>,
@@ -1229,6 +1194,26 @@ footer { margin-top: 56px; padding-top: 22px; border-top: 1px solid var(--line);
         <li><b style="color:var(--text)">Alcove</b> — a quiet nook to read or listen in, not a rhythm word like Cadence/Tempo; leads with calm over motion.</li>
         <li><b style="color:var(--text)">Dogear</b> — literal, playful, and the one name here that already matches a mark concept above.</li>
         <li><b style="color:var(--text)">Stet</b> — the proofreader's "let it stand"; short, a little wry, and legible to the same audience that reads engineering blogs for fun.</li>
+      </ul>
+    </div>
+
+    <p class="frame-cap" style="margin-top:24px">More, by theme</p>
+    <div class="retired-note" style="max-width:66ch">
+      <p style="margin:0 0 10px">
+        Grouped this round around the app's actual facets rather than free
+        association — feeds, the new Summary idea, and the specific ask of
+        something easy on the eyes across a lot of screen time, which Ink
+        already exists for but the name has never tried to say.
+      </p>
+      <ul style="margin:0;padding-left:20px;line-height:1.7">
+        <li><b style="color:var(--text)">Digest</b> — what an RSS reader produces and what a summary is; the one name here that means both without straining.</li>
+        <li><b style="color:var(--text)">Abstract</b> — the summary at the top of a paper, which is exactly the audience reading tech-blog engineering posts.</li>
+        <li><b style="color:var(--text)">Précis</b> — a more formal word for the same idea as Digest/Abstract; distinct register, worth having as an option even if it reads stiffer.</li>
+        <li><b style="color:var(--text)">Rundown</b> — the casual version of the same idea; closer to how a reader would actually ask for "the short version" out loud.</li>
+        <li><b style="color:var(--text)">Byline</b> — every blog post has one; a plain, direct reference to "a collection of blogs" without a metaphor to explain.</li>
+        <li><b style="color:var(--text)">Quietfeed</b> — a collection of feeds, but the calm kind — leads with restraint rather than volume.</li>
+        <li><b style="color:var(--text)">Duskread</b> — evening, low-light reading; the most literal answer to "easy on the eyes over a lot of screen time."</li>
+        <li><b style="color:var(--text)">Lowlight</b> — the same eye-comfort brief as Duskread, plainer and shorter.</li>
       </ul>
     </div>
   </section>
