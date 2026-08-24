@@ -56,6 +56,7 @@ import dev.mks.blogmark.links.syncFeeds
 import dev.mks.blogmark.ui.common.AppTextField
 import dev.mks.blogmark.ui.common.CompactEmptyState
 import dev.mks.blogmark.ui.common.EyebrowHeader
+import dev.mks.blogmark.ui.common.HairlineDivider
 import dev.mks.blogmark.ui.common.MonogramBadge
 import dev.mks.blogmark.ui.common.ToastRequest
 import dev.mks.blogmark.ui.rememberUrlOpener
@@ -404,12 +405,7 @@ private fun FeedManagePanel(
                         )
                     }
                     if (index != feeds.lastIndex) {
-                        Box(
-                            Modifier
-                                .fillMaxWidth()
-                                .height(1.dp)
-                                .background(MaterialTheme.colorScheme.outlineVariant),
-                        )
+                        HairlineDivider()
                     }
                 }
             }

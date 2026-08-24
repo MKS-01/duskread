@@ -77,26 +77,53 @@ class ReaderPlaybackService : Service() {
         release()
         title = requestedTitle
 
-        player = MediaPlayer().apply {
-            setDataSource(this@ReaderPlaybackService, uri)
-            setOnPreparedListener { prepared ->
-                prepared.start()
-                session.setMetadata(
-                    MediaMetadataCompat.Builder()
-                        .putString(MediaMetadataCompat.METADATA_KEY_TITLE, title)
-                        .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, prepared.duration.toLong())
-                        .build(),
-                )
-                publish(playing = true, positionMs = 0, durationMs = prepared.duration)
-                startForeground(NotificationId, buildNotification(playing = true))
-                tick()
-            }
-            setOnCompletionListener { completed ->
-                progressJob?.cancel()
-                publish(playing = false, positionMs = completed.duration, durationMs = completed.duration)
-                stopForeground(STOP_FOREGROUND_DETACH)
-            }
-            prepareAsync()
+        // Android 12+ kills the process if startForeground() hasn't landed
+        // within a few seconds of startForegroundService() (called from
+        // AndroidAudioPlayer.play()). Preparing a MediaPlayer is async and can
+        // run past that window on a slow read, so the foreground state is
+        // claimed immediately with a placeholder notification and swapped for
+        // the real one once onPreparedListener fires below.
+        startForeground(NotificationId, buildNotification(playing = false))
+
+        val mediaPlayer = MediaPlayer()
+        mediaPlayer.setOnPreparedListener { prepared ->
+            prepared.start()
+            session.setMetadata(
+                MediaMetadataCompat.Builder()
+                    .putString(MediaMetadataCompat.METADATA_KEY_TITLE, title)
+                    .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, prepared.duration.toLong())
+                    .build(),
+            )
+            publish(playing = true, positionMs = 0, durationMs = prepared.duration)
+            startForeground(NotificationId, buildNotification(playing = true))
+            tick()
+        }
+        mediaPlayer.setOnCompletionListener { completed ->
+            progressJob?.cancel()
+            publish(playing = false, positionMs = completed.duration, durationMs = completed.duration)
+            stopForeground(STOP_FOREGROUND_DETACH)
+        }
+        // A stale/revoked URI or a corrupt file moves MediaPlayer into an
+        // error state that rejects every further call until reset — without
+        // this, the next resume()/pause()/seek() the notification or media
+        // session sends crashes with IllegalStateException instead of the
+        // read just failing to start.
+        mediaPlayer.setOnErrorListener { _, _, _ ->
+            stopAndRelease()
+            true
+        }
+
+        try {
+            // setDataSource can throw synchronously (IOException, a bad URI,
+            // a revoked permission) — a system boundary this app doesn't
+            // control the failure modes of, so it's caught broadly rather
+            // than enumerated.
+            mediaPlayer.setDataSource(this, uri)
+            player = mediaPlayer
+            mediaPlayer.prepareAsync()
+        } catch (e: Exception) {
+            mediaPlayer.release()
+            stopAndRelease()
         }
     }
 

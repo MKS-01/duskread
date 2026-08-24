@@ -48,6 +48,7 @@ import dev.mks.blogmark.reader.ReadItem
 import dev.mks.blogmark.reader.ReadSort
 import dev.mks.blogmark.reader.ReaderSource
 import dev.mks.blogmark.reader.rememberReadRepository
+import dev.mks.blogmark.ui.common.ChipSize
 import dev.mks.blogmark.ui.common.CompactEmptyState
 import dev.mks.blogmark.ui.common.EyebrowHeader
 import dev.mks.blogmark.ui.common.MonogramBadge
@@ -330,7 +331,7 @@ private fun SavedPickSection(links: LinkLibrary, onOpenSaved: () -> Unit, modifi
                     },
                 verticalAlignment = Alignment.Top,
             ) {
-                MonogramBadge(host = found.host, size = 22.dp)
+                MonogramBadge(host = found.host, size = ChipSize)
                 Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f)) {
                     Text(

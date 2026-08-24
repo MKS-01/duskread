@@ -156,9 +156,19 @@ fun ListRowBody(
 fun ListRowDivider(last: Boolean, topSpacing: Dp = 15.dp) {
     Spacer(Modifier.height(topSpacing))
     if (!last) {
-        Box(Modifier.fillMaxWidth().height(1.dp).background(MaterialTheme.colorScheme.outlineVariant))
+        HairlineDivider()
         Spacer(Modifier.height(15.dp))
     }
+}
+
+/**
+ * The 1dp hairline itself, with no baked-in spacing — callers that already
+ * own their own gaps (a row with vertical padding, say) want just the line,
+ * not [ListRowDivider]'s spacer pair on top of it.
+ */
+@Composable
+fun HairlineDivider(modifier: Modifier = Modifier) {
+    Box(modifier.fillMaxWidth().height(1.dp).background(MaterialTheme.colorScheme.outlineVariant))
 }
 
 /**
@@ -183,5 +193,6 @@ fun RowMeta(text: String, accent: Boolean = false, modifier: Modifier = Modifier
     )
 }
 
-private val ChipSize = 22.dp
+/** The host chip's footprint — shared with any row that places one outside [ListRow] itself. */
+val ChipSize = 22.dp
 private val ChipGap = 10.dp
