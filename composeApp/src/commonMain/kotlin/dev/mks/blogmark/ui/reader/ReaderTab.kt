@@ -176,22 +176,19 @@ fun ReaderTab(
 /** A small bordered pill — `.pill` in the mockup, not a filled chip. */
 @Composable
 private fun SortChip(label: String, active: Boolean, onClick: () -> Unit) {
+    val tone = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
     Text(
         text = label.uppercase(),
         fontFamily = Mono,
         fontSize = 11.sp,
         letterSpacing = 0.4.sp,
-        color = if (active) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+        color = tone,
         modifier = Modifier
             .clip(RoundedCornerShape(Radius.Chip))
             // Selection is carried by the border and the text alone. A filled
             // chip is the only remaining Material surface on this screen, and
             // next to a hairline sourcechip it reads as a different app.
-            .border(
-                Stroke.Hairline,
-                if (active) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.outlineVariant,
-                RoundedCornerShape(Radius.Chip),
-            )
+            .border(Stroke.Hairline, tone, RoundedCornerShape(Radius.Chip))
             .clickable(onClick = onClick)
             .padding(horizontal = 11.dp, vertical = 6.dp),
     )
@@ -308,7 +305,11 @@ private fun ReadRow(
                 imageVector = BlogmarkIcons.External,
                 contentDescription = null,
                 modifier = Modifier.size(11.dp),
-                tint = scheme.onSurfaceVariant,
+                // The one glyph on an otherwise-muted row that's allowed a
+                // permanent hint of the accent — it marks "this leaves the
+                // app" regardless of playback state, so it stays legible even
+                // when nothing on the row is playing.
+                tint = scheme.primary.copy(alpha = 0.75f),
             )
             Spacer(Modifier.width(5.dp))
             RowMeta(hostOf(item.sourceUrl))
