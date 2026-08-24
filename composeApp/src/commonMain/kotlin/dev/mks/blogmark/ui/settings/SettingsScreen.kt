@@ -60,7 +60,14 @@ import kotlinx.coroutines.delay
  * card — this used to be the one screen still built that way.
  */
 @Composable
-fun SettingsScreen(library: LinkLibrary, prefs: UserPrefs, onClose: () -> Unit, modifier: Modifier = Modifier) {
+fun SettingsScreen(
+    library: LinkLibrary,
+    prefs: UserPrefs,
+    mono: Boolean,
+    onToggleTheme: () -> Unit,
+    onClose: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     PlatformBackHandler(enabled = true, onBack = onClose)
 
     Surface(modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
@@ -100,6 +107,12 @@ fun SettingsScreen(library: LinkLibrary, prefs: UserPrefs, onClose: () -> Unit, 
                 EyebrowHeader(text = "PROFILE")
                 Spacer(Modifier.height(14.dp))
                 NameField(prefs)
+
+                Spacer(Modifier.height(28.dp))
+
+                EyebrowHeader(text = "APPEARANCE")
+                Spacer(Modifier.height(14.dp))
+                ThemeRow(mono = mono, onToggleTheme = onToggleTheme)
 
                 Spacer(Modifier.height(28.dp))
 
@@ -146,6 +159,39 @@ private fun NameField(prefs: UserPrefs) {
                     )
                 }
             },
+        )
+    }
+}
+
+/**
+ * The same toggle the tab bar's contrast button reaches, surfaced here too
+ * so the current scheme is somewhere a reader would think to check it rather
+ * than only discoverable by noticing the bar icon changed state. The detail
+ * line doubles as the current-state readout the row itself is titled after.
+ */
+@Composable
+private fun ThemeRow(mono: Boolean, onToggleTheme: () -> Unit) {
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onToggleTheme)
+            .padding(vertical = 8.dp),
+    ) {
+        Text(
+            text = if (mono) "Ink" else "Paper Black",
+            style = MaterialTheme.typography.titleSmall,
+            fontSize = 14.sp,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Text(
+            text = if (mono) {
+                "Colour drained out — tap to bring the terracotta accent back."
+            } else {
+                "The terracotta accent — tap to drop colour entirely."
+            },
+            fontSize = 11.5.sp,
+            lineHeight = 15.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }

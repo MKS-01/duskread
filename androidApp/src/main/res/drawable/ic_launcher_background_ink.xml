@@ -1,0 +1,15 @@
+<!--
+    Ink's adaptive icon background — flat fill in Ink's own ground colour
+    (MonoScheme.background), so the Ink launcher icon hands off to the Ink
+    splash without a seam, same as the Paper Black pair.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <path
+        android:fillColor="@color/splash_background_ink"
+        android:pathData="M0,0 h108 v108 h-108 z" />
+</vector>

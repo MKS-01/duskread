@@ -1,0 +1,51 @@
+<!--
+    Ink's copy of the mark: same geometry as ic_blogmark_mark, filled with
+    Ink's lightest ink (MonoScheme.primary, #DCDCDC) instead of terracotta —
+    the launcher icon and splash need to drop colour the same way the in-app
+    scheme does when a reader switches to Ink.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <group
+        android:name="mark"
+        android:pivotX="54"
+        android:pivotY="54"
+        android:scaleX="0.85"
+        android:scaleY="0.85">
+
+        <group
+            android:name="bar_a"
+            android:pivotX="24.5"
+            android:pivotY="54">
+            <path
+                android:fillColor="#DCDCDC"
+                android:pathData="M20,44.5 a4.5,4.5 0 0 1 9,0 v19 a4.5,4.5 0 0 1 -9,0 z" />
+        </group>
+
+        <group
+            android:name="bar_b"
+            android:pivotX="39.5"
+            android:pivotY="54">
+            <path
+                android:fillColor="#DCDCDC"
+                android:pathData="M35,34.5 a4.5,4.5 0 0 1 9,0 v39 a4.5,4.5 0 0 1 -9,0 z" />
+        </group>
+
+        <path
+            android:fillColor="#DCDCDC"
+            android:pathData="M50,24 h20 a3,3 0 0 1 3,3 v57 l-13,-10 l-13,10 V27 a3,3 0 0 1 3,-3 z" />
+
+        <group
+            android:name="bar_c"
+            android:pivotX="83.5"
+            android:pivotY="54">
+            <path
+                android:fillColor="#DCDCDC"
+                android:pathData="M79,40.5 a4.5,4.5 0 0 1 9,0 v27 a4.5,4.5 0 0 1 -9,0 z" />
+        </group>
+    </group>
+</vector>

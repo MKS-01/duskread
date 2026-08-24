@@ -282,7 +282,13 @@ fun HomeScreen(
             enter = fadeIn(tween(Motion.PushIn)) + slideInVertically(tween(Motion.PushIn)) { it / 8 },
             exit = fadeOut(tween(Motion.PopFade)),
         ) {
-            SettingsScreen(library = links, prefs = prefs, onClose = { showSettings = false })
+            SettingsScreen(
+                library = links,
+                prefs = prefs,
+                mono = mono,
+                onToggleTheme = onToggleTheme,
+                onClose = { showSettings = false },
+            )
         }
     }
 }

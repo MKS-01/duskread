@@ -1,0 +1,7 @@
+<!--
+    Ink's launcher foreground: the same 13% inset as ic_launcher_foreground,
+    wrapping ic_blogmark_mark_ink instead of the terracotta mark.
+-->
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/ic_blogmark_mark_ink"
+    android:inset="13%" />

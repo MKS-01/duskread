@@ -50,10 +50,6 @@
             android:launchMode="singleTask"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode|density|fontScale"
             android:windowSoftInputMode="adjustResize">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
 
             <!--
                 Share target: "Share -> Blogmark" from a browser or any app that
@@ -67,6 +63,48 @@
                 <data android:mimeType="text/plain" />
             </intent-filter>
         </activity>
+
+        <!--
+            The launcher entry point lives on these two aliases rather than on
+            MainActivity itself, because icon and splash theme both work at
+            the manifest/component level, not at runtime inside one activity:
+            an activity-alias can carry its own android:icon and android:theme
+            that override the target activity's for that particular launch.
+            Exactly one is enabled at a time — PlatformThemeIcon flips them
+            with PackageManager.setComponentEnabledSetting whenever the
+            in-app theme toggle changes, DONT_KILL_APP so it never disturbs
+            a running session. LauncherPaper starts enabled to match
+            UserPrefs' default (mono = false).
+        -->
+        <activity-alias
+            android:name="dev.mks.blogmark.android.LauncherPaper"
+            android:targetActivity="dev.mks.blogmark.android.MainActivity"
+            android:enabled="true"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher"
+            android:roundIcon="@mipmap/ic_launcher_round"
+            android:label="Blogmark"
+            android:theme="@style/Theme.Blogmark.Splash">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name="dev.mks.blogmark.android.LauncherInk"
+            android:targetActivity="dev.mks.blogmark.android.MainActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_ink"
+            android:roundIcon="@mipmap/ic_launcher_round_ink"
+            android:label="Blogmark"
+            android:theme="@style/Theme.Blogmark.Splash.Ink">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
 
         <!--
             No official foreground-service type fits a countdown timer, so this

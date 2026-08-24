@@ -22,6 +22,10 @@ class UserPrefs(private val store: KeyValueStore) {
     var introSeen: Boolean by mutableStateOf(store.getBoolean(KeyIntroSeen))
         private set
 
+    /** The monochrome ("Ink") scheme, kept across restarts until changed by hand. */
+    var mono: Boolean by mutableStateOf(store.getBoolean(KeyMono))
+        private set
+
     /** A blank name is stored as absent, so "skip" and "cleared" mean the same thing. */
     fun updateName(value: String?) {
         val cleaned = value?.trim()?.takeIf { it.isNotEmpty() }
@@ -34,6 +38,11 @@ class UserPrefs(private val store: KeyValueStore) {
         store.putBoolean(KeyIntroSeen, true)
     }
 
+    fun updateMono(value: Boolean) {
+        mono = value
+        store.putBoolean(KeyMono, value)
+    }
+
     /** Used by the "start over" affordance in settings, and by manual testing. */
     fun reset() {
         updateName(null)
@@ -44,6 +53,7 @@ class UserPrefs(private val store: KeyValueStore) {
     private companion object {
         const val KeyName = "user.name"
         const val KeyIntroSeen = "intro.seen"
+        const val KeyMono = "theme.mono"
     }
 }
 

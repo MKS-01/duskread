@@ -17,6 +17,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import dev.mks.blogmark.data.rememberUserPrefs
 import dev.mks.blogmark.ui.PlatformOverlay
+import dev.mks.blogmark.ui.PlatformThemeIcon
 import dev.mks.blogmark.ui.home.HomeScreen
 import dev.mks.blogmark.ui.home.HomeTab
 import dev.mks.blogmark.ui.onboarding.Onboarding
@@ -26,11 +27,13 @@ import dev.mks.blogmark.ui.theme.Motion
 
 @Composable
 fun App() {
-    // Both themes are dark; this picks the colourless one. Not persisted —
-    // it is a mood switch for the current sitting, not a setting.
-    var mono by remember { mutableStateOf(false) }
-
     val prefs = rememberUserPrefs()
+
+    // Both themes are dark; this picks the colourless one. Persisted through
+    // prefs so a reader who drops into Ink stays there until they switch back
+    // by hand, even across a process kill.
+    val mono = prefs.mono
+    PlatformThemeIcon(mono = mono)
 
     BlogmarkTheme(mono = mono) {
         Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
@@ -52,7 +55,7 @@ fun App() {
                     onOpenFocus = { focusMode = true },
                     prefs = prefs,
                     mono = mono,
-                    onToggleTheme = { mono = !mono },
+                    onToggleTheme = { prefs.updateMono(!mono) },
                     tab = homeTab,
                     onTabChange = { homeTab = it },
                 )
