@@ -111,6 +111,17 @@ fun ReaderTab(
             return@LazyColumn
         }
 
+        // The folder picker used to live at the end of the sort-chip row,
+        // where it read as a fourth destination on par with Newest/Oldest
+        // rather than the "change where the library comes from" setting it
+        // actually is. It gets the same top-right corner Home gives Settings
+        // instead — same idea, same weight, its own row.
+        item("head") {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                ReaderSourcePicker(repository, compact = true)
+            }
+        }
+
         item("controls") {
             Row(
                 Modifier
@@ -118,14 +129,10 @@ fun ReaderTab(
                     .horizontalScroll(rememberScrollState())
                     .padding(bottom = 20.dp),
                 horizontalArrangement = Arrangement.spacedBy(7.dp),
-                // The icon chip from ReaderSourcePicker is taller than the
-                // plain-text sort chips beside it — without this they default
-                // to top-aligned instead of sharing a centre line.
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 SortChip("Newest", sort == ReadSort.NEWEST) { sort = ReadSort.NEWEST }
                 SortChip("Oldest", sort == ReadSort.OLDEST) { sort = ReadSort.OLDEST }
-                ReaderSourcePicker(repository, compact = true)
             }
         }
 

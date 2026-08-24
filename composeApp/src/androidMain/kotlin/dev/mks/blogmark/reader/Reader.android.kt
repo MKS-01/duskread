@@ -6,14 +6,13 @@ import android.database.sqlite.SQLiteDatabase
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -26,14 +25,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.documentfile.provider.DocumentFile
 import dev.mks.blogmark.data.KeyValueStore
 import dev.mks.blogmark.data.rememberKeyValueStore
 import dev.mks.blogmark.ui.common.PrimaryButton
-import dev.mks.blogmark.ui.theme.Mono
-import dev.mks.blogmark.ui.theme.Radius
-import dev.mks.blogmark.ui.theme.Stroke
+import dev.mks.blogmark.ui.theme.BlogmarkIcons
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -188,28 +184,26 @@ actual fun ReaderSourcePicker(repository: ReadRepository, compact: Boolean) {
     }
 
     if (compact) {
-        Column {
-            // A bordered pill, the same `.pill` shape as the Newest/Oldest
-            // sort chips beside it — plain text, no icon, so the three read
-            // as one row of equal-weight controls rather than one of them
-            // standing out as a button.
-            Text(
-                text = "FOLDER",
-                fontFamily = Mono,
-                fontSize = 11.sp,
-                letterSpacing = 0.4.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+        Column(horizontalAlignment = Alignment.End) {
+            // A bare glyph, same weight as the Settings icon on Home — this
+            // is "change where the library comes from", not a destination on
+            // par with Newest/Oldest, so it no longer sits in that row.
+            Icon(
+                imageVector = BlogmarkIcons.FolderConnect,
+                contentDescription = "Choose folder",
                 modifier = Modifier
-                    .clip(RoundedCornerShape(Radius.Chip))
-                    .border(Stroke.Hairline, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(Radius.Chip))
+                    .size(34.dp)
+                    .clip(CircleShape)
                     .clickable { pickFolder.launch(null) }
-                    .padding(horizontal = 11.dp, vertical = 6.dp),
+                    .padding(9.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             error?.let { message ->
                 Text(
                     text = message,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.error,
+                    textAlign = TextAlign.End,
                     modifier = Modifier.padding(horizontal = 13.dp),
                 )
             }

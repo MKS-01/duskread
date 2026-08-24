@@ -1,14 +1,13 @@
 package dev.mks.blogmark.reader
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -20,14 +19,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import dev.mks.blogmark.data.KeyValueStore
 import dev.mks.blogmark.data.rememberKeyValueStore
 import dev.mks.blogmark.ui.common.AppTextField
 import dev.mks.blogmark.ui.common.PrimaryButton
-import dev.mks.blogmark.ui.theme.Mono
-import dev.mks.blogmark.ui.theme.Radius
-import dev.mks.blogmark.ui.theme.Stroke
+import dev.mks.blogmark.ui.theme.BlogmarkIcons
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -148,21 +144,18 @@ actual fun ReaderSourcePicker(repository: ReadRepository, compact: Boolean) {
     var path by remember { mutableStateOf(desktopRepository.currentPath()) }
 
     if (compact && !expanded) {
-        // A bordered pill, the same `.pill` shape as the Newest/Oldest sort
-        // chips beside it — plain text, no icon, so the three read as one
-        // row of equal-weight controls rather than one of them standing out
-        // as a button.
-        Text(
-            text = "FOLDER",
-            fontFamily = Mono,
-            fontSize = 11.sp,
-            letterSpacing = 0.4.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        // A bare glyph, same weight as the Settings icon on Home — this is
+        // "change where the library comes from", not a destination on par
+        // with Newest/Oldest, so it no longer sits in that row.
+        Icon(
+            imageVector = BlogmarkIcons.FolderConnect,
+            contentDescription = "Choose folder",
             modifier = Modifier
-                .clip(RoundedCornerShape(Radius.Chip))
-                .border(Stroke.Hairline, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(Radius.Chip))
+                .size(34.dp)
+                .clip(CircleShape)
                 .clickable { expanded = true }
-                .padding(horizontal = 11.dp, vertical = 6.dp),
+                .padding(9.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         return
     }
