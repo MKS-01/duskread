@@ -24,12 +24,21 @@ internal class DesktopAudioPlayer(private val repository: DesktopReadRepository,
         release()
         val file = repository.audioFile(item)?.takeIf { it.exists() } ?: return
 
-        val newClip = AudioSystem.getClip()
-        AudioSystem.getAudioInputStream(file).use { newClip.open(it) }
-        newClip.start()
-        clip = newClip
-        _state.value = PlaybackState(item = item, playing = true, durationSec = newClip.microsecondLength / 1_000_000f)
-        startProgressLoop()
+        // Called directly from a click handler, not a coroutine — an
+        // uncaught exception here crashes the whole app rather than just
+        // failing this one read. getClip()/getAudioInputStream()/open() can
+        // all throw: no audio device present, or a corrupt/partial WAV that
+        // passed the exists() check above but isn't actually valid audio.
+        try {
+            val newClip = AudioSystem.getClip()
+            AudioSystem.getAudioInputStream(file).use { newClip.open(it) }
+            newClip.start()
+            clip = newClip
+            _state.value = PlaybackState(item = item, playing = true, durationSec = newClip.microsecondLength / 1_000_000f)
+            startProgressLoop()
+        } catch (e: Exception) {
+            release()
+        }
     }
 
     override fun togglePlayPause() {

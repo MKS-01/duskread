@@ -3,7 +3,6 @@ package dev.mks.blogmark.reader
 import android.content.Context
 import android.content.Intent
 import android.database.sqlite.SQLiteDatabase
-import android.database.sqlite.SQLiteException
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -35,6 +34,7 @@ import dev.mks.blogmark.ui.common.PrimaryButton
 import dev.mks.blogmark.ui.theme.Mono
 import dev.mks.blogmark.ui.theme.Radius
 import dev.mks.blogmark.ui.theme.Stroke
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -105,24 +105,31 @@ internal class AndroidReadRepository(private val context: Context, private val s
         val dbDoc = tree.findFile(LibraryDbName) ?: return@withContext emptyList()
 
         val cacheFile = File(context.cacheDir, LibraryDbName)
-        context.contentResolver.openInputStream(dbDoc.uri)?.use { input ->
-            cacheFile.outputStream().use { output -> input.copyTo(output) }
-        } ?: return@withContext emptyList()
 
-        val orderBy = if (sort == ReadSort.NEWEST) "created_at DESC" else "created_at ASC"
-        val trimmed = query.trim()
-        val selection = if (trimmed.isEmpty()) {
-            null
-        } else {
-            "title LIKE ? OR summary LIKE ? OR excerpt LIKE ? OR source_url LIKE ?"
-        }
-        val args = if (trimmed.isEmpty()) null else Array(4) { "%$trimmed%" }
-
-        // A folder can pass the onFolderPicked check (library.db exists) and
-        // still not have synced a single read yet, in which case readback
-        // hasn't created the `reads` table at all — that's "no reads", not
-        // an error, so it degrades to an empty list rather than crashing.
+        // Everything past this point is a boundary this app doesn't control
+        // on the other side of: the SAF copy can fail mid-read (IOException),
+        // a folder can pass the onFolderPicked check and still not have
+        // synced a single read yet, in which case readback hasn't created
+        // the `reads` table at all (SQLiteException), and an older or newer
+        // readback build's schema can be missing a column this one expects
+        // (getColumnIndexOrThrow throws IllegalArgumentException, not
+        // SQLiteException). All of that degrades to "no reads" rather than
+        // crashing — this runs on every launch via the dashboard's readback
+        // card, so an uncaught exception here takes the whole app down with it.
         try {
+            context.contentResolver.openInputStream(dbDoc.uri)?.use { input ->
+                cacheFile.outputStream().use { output -> input.copyTo(output) }
+            } ?: return@withContext emptyList()
+
+            val orderBy = if (sort == ReadSort.NEWEST) "created_at DESC" else "created_at ASC"
+            val trimmed = query.trim()
+            val selection = if (trimmed.isEmpty()) {
+                null
+            } else {
+                "title LIKE ? OR summary LIKE ? OR excerpt LIKE ? OR source_url LIKE ?"
+            }
+            val args = if (trimmed.isEmpty()) null else Array(4) { "%$trimmed%" }
+
             SQLiteDatabase.openDatabase(cacheFile.path, null, SQLiteDatabase.OPEN_READONLY).use { db ->
                 db.query("reads", null, selection, args, null, null, orderBy).use { cursor ->
                     buildList {
@@ -146,7 +153,9 @@ internal class AndroidReadRepository(private val context: Context, private val s
                     }
                 }
             }
-        } catch (_: SQLiteException) {
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
             emptyList()
         }
     }

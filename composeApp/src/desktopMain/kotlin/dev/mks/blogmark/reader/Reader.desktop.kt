@@ -28,12 +28,14 @@ import dev.mks.blogmark.ui.common.PrimaryButton
 import dev.mks.blogmark.ui.theme.Mono
 import dev.mks.blogmark.ui.theme.Radius
 import dev.mks.blogmark.ui.theme.Stroke
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.sql.DriverManager
+import java.sql.SQLException
 
 private const val FolderPathKey = "reader_folder_path"
 private const val LibraryDbName = "library.db"
@@ -87,34 +89,45 @@ internal class DesktopReadRepository(private val store: KeyValueStore) : ReadRep
             append(" ORDER BY created_at $orderBy")
         }
 
-        DriverManager.getConnection("jdbc:sqlite:${dbFile.path}").use { conn ->
-            conn.prepareStatement(sql).use { stmt ->
-                if (trimmed.isNotEmpty()) {
-                    val like = "%$trimmed%"
-                    for (i in 1..4) stmt.setString(i, like)
-                }
-                stmt.executeQuery().use { rs ->
-                    buildList {
-                        while (rs.next()) {
-                            add(
-                                ReadItem(
-                                    id = rs.getString("id"),
-                                    title = rs.getString("title"),
-                                    summary = rs.getString("summary"),
-                                    excerpt = rs.getString("excerpt"),
-                                    sourceUrl = rs.getString("source_url"),
-                                    mode = rs.getString("mode"),
-                                    voice = rs.getString("voice"),
-                                    durationSec = rs.getDouble("duration_sec"),
-                                    wordCount = rs.getInt("word_count"),
-                                    audioFilename = rs.getString("audio_filename"),
-                                    createdAt = rs.getString("created_at"),
-                                ),
-                            )
+        // A stale connection, a mid-sync/half-written db, or an older or
+        // newer readback build's schema missing a column this one expects
+        // all throw SQLException here — a boundary this app doesn't control
+        // the other side of, so it degrades to "no reads" rather than
+        // crashing, same as the Android repository does.
+        try {
+            DriverManager.getConnection("jdbc:sqlite:${dbFile.path}").use { conn ->
+                conn.prepareStatement(sql).use { stmt ->
+                    if (trimmed.isNotEmpty()) {
+                        val like = "%$trimmed%"
+                        for (i in 1..4) stmt.setString(i, like)
+                    }
+                    stmt.executeQuery().use { rs ->
+                        buildList {
+                            while (rs.next()) {
+                                add(
+                                    ReadItem(
+                                        id = rs.getString("id"),
+                                        title = rs.getString("title"),
+                                        summary = rs.getString("summary"),
+                                        excerpt = rs.getString("excerpt"),
+                                        sourceUrl = rs.getString("source_url"),
+                                        mode = rs.getString("mode"),
+                                        voice = rs.getString("voice"),
+                                        durationSec = rs.getDouble("duration_sec"),
+                                        wordCount = rs.getInt("word_count"),
+                                        audioFilename = rs.getString("audio_filename"),
+                                        createdAt = rs.getString("created_at"),
+                                    ),
+                                )
+                            }
                         }
                     }
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: SQLException) {
+            emptyList()
         }
     }
 
