@@ -1,7 +1,8 @@
 <h1 align="center">DuskRead</h1>
 
 <p align="center">
-  <strong>Save a link. Follow a blog. Hear it read back. Stay focused.</strong>
+  <strong>One reading list. One voice reading it back. One timer keeping you on it —
+  on your phone, your desktop, or in a browser tab.</strong>
 </p>
 
 <p align="center">
@@ -19,19 +20,25 @@
 
 ---
 
-- **One dashboard, not a pile of tabs.** A focus timer, the next pick from
-  your reading list, today's Readback, and new posts from the blogs you
-  follow — all on one screen, nothing to dig for.
+- **One codebase, every screen you actually reach for.** Android, iOS,
+  desktop and web, all from a single Compose Multiplatform tree — built
+  phone-first (everything sits in the lower third of the screen, one
+  thumb), not phone-only.
 - **Never lose a link again.** Paste one in or share it from a browser and
   it's usable instantly; the real title fills in a second later on its own.
 - **Read with your ears, hands-free.** A synced
   [readback](https://github.com/MKS-01/readback) library plays right from
   the floating bar, so listening never means leaving what you're doing.
-- **Colour when you want it, grayscale when you don't.** One tap swaps the
-  whole app to a colourless theme for the days the terracotta accent is a
-  distraction rather than a help.
+- **A timer that actually interrupts you.** Fifteen, twenty-five, thirty,
+  or a length you type in yourself — and when it's done, it says so: a
+  vibration and a real notification, not a number quietly hitting zero
+  somewhere you weren't looking.
+- **Colour when you want it, dusk when you don't.** One tap drains the
+  whole app to greyscale for the reads that don't need the terracotta —
+  and the launcher icon and splash follow, not just the screen.
 
-Everything lives in the lower third of the screen — phone-first, one thumb.
+Home is one screen on purpose: today's pick from Saved, today's Readback,
+the timer, and what's new from the blogs you follow — nothing to dig for.
 
 ## Running it
 
