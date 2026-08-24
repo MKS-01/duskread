@@ -3,4 +3,8 @@
     <!-- Matches DarkScheme.background in ui/theme/Theme.kt, so the handover
          from the launch window to the first composed frame is invisible. -->
     <color name="splash_background">#FF101010</color>
+
+    <!-- Matches MonoScheme.background in ui/theme/Theme.kt, for the Ink
+         launcher icon and splash. -->
+    <color name="splash_background_ink">#FF161616</color>
 </resources>

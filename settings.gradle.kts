@@ -1,4 +1,4 @@
-rootProject.name = "Blogmark"
+rootProject.name = "DuskRead"
 
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 

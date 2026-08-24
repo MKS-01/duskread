@@ -1,9 +1,23 @@
 <!--
-    Themed-icon layer (Android 13+ Material You): the same fanned bookmark
-    stack as ic_launcher_foreground, flattened to one opaque colour for the
-    system to tint from the user's wallpaper palette. The three ribbons still
-    read as stacked through the stepped silhouette their corners leave behind
-    even with no colour difference between them.
+    Themed-icon layer (Android 13+ Material You): the same mark as
+    ic_duskread_mark, flattened to one opaque colour for the system to tint
+    from the wallpaper palette.
+
+    Scaled to match ic_launcher_foreground's inset rather than the mark's own
+    size, so the themed icon sits in the same air as the colour one — a
+    monochrome layer that ran wider would jump when the user turns themed
+    icons on.
+
+    Unlike the colour mark, this can't paint the bite in a background hex —
+    the OS reads only this layer's alpha to build the tint mask, so there is
+    no "background colour" to erase to. The bite has to be a true alpha hole
+    (fillType="evenOdd"), and — the failure mode discovered building the
+    colour mark — evenOdd only produces a clean hole where the cut shape is
+    *fully contained* inside the base shape; any part that falls outside
+    gets filled back in as a second blob instead of vanishing. The colour
+    mark's own bite (r=16, centred outside the bar on two sides) would do
+    exactly that here, so this one is sized down to sit entirely inside the
+    bar instead — a smaller notch than the colour version, not a mistake.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
@@ -11,18 +25,14 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <path
-        android:fillColor="#FFFFFFFF"
-        android:pathData="M52.92,36.98 Q52.92,35.33 54.57,35.33 L60.39,35.33 Q62.04,35.33 62.04,36.98
-                           L62.04,58.11 L57.48,54.44 L52.92,58.11 Z" />
-
-    <path
-        android:fillColor="#FFFFFFFF"
-        android:pathData="M49.44,40.2 Q49.44,38.18 51.41,38.18 L58.24,38.18 Q60.2,38.18 60.2,40.2
-                           L60.2,65.07 L54.82,60.77 L49.44,65.07 Z" />
-
-    <path
-        android:fillColor="#FFFFFFFF"
-        android:pathData="M45.96,43.31 Q45.96,41.03 48.24,41.03 L56.34,41.03 Q58.62,41.03 58.62,43.31
-                           L58.62,72.67 L52.29,67.61 L45.96,72.67 Z" />
+    <group
+        android:pivotX="54"
+        android:pivotY="54"
+        android:scaleX="0.74"
+        android:scaleY="0.74">
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:fillType="evenOdd"
+            android:pathData="M40,38 a14,14 0 0 1 28,0 v36 a14,14 0 0 1 -28,0 z M58,36 a9,9 0 0 1 18,0 a9,9 0 0 1 -18,0 z" />
+    </group>
 </vector>

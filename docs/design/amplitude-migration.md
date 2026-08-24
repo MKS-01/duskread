@@ -134,6 +134,91 @@ The mockup's bar carries icons and nothing else, and at the row pitch it
 moirés into a hatch across the pill while any coarser pitch collides with the
 play control. The remaining-time readout already answers "how much is left".
 
+## One row, three screens (this pass)
+
+Saved, Readback and a followed blog's topics had each grown their own copy of
+the flat row — same 22dp sourcechip, same 14/19 title, same 10.5sp mono meta,
+same 15dp-hairline-15dp divider — written out three times. The differences
+between them are real and stay real; the skeleton was never one of them, and
+three copies of a number is three chances for one to drift.
+
+- [x] `ui/common/ListRow.kt` holds the skeleton and every metric in it:
+      `ListRow` for the normal case, `ListRowBody` + `ListRowDivider` for
+      Saved, whose swipe-to-remove box needs the hairline to stay put while
+      the row slides out from over it, and `RowMeta` for one fact on the meta
+      line
+- [x] `RowTone` names the three states a row can be in — `Normal`, `Accent`
+      for the one playing read, `Faded` for a read link. Mutually exclusive,
+      so an enum rather than two booleans
+- [x] What stays per-screen: how many facts the meta carries (Readback's two,
+      everyone else's one), what sits at the right end (bookmark / tick /
+      play glyph), and Readback's waveform, which goes in through the row's
+      `content` slot
+- [x] Verified on device against all three: Saved unread and read, Readback
+      idle and playing, the topics list and the digest preview
+
+Not folded in: Home's "FROM SAVED" pick. It looks like a row but is one
+per screen at a larger title and carries no hairline — a feature line, not a
+list row, and forcing it through the same component would have meant a knob
+that exists for one caller.
+
+## Brand — app icon and splash (this pass)
+
+The mockup's Brand section had never been built. The launcher icon was still
+three fanned bookmark ribbons, whose fault the mockup names exactly: scale,
+not concept — the artwork occupied about 15% of its canvas and dissolved into
+a speck at 48px.
+
+- [x] `ic_blogmark_mark.xml` rebuilt to the mockup's Amplitude mark: a level
+      meter whose tallest bar is a bookmark, so the notch reads as both a
+      ribbon tail and a peak. Fills roughly 70% of the canvas and folds *save*
+      and *listen* into one silhouette
+- [x] Terracotta, not the mockup's cyan, keeping the two-palette rule — and
+      solid, where the mockup steps the bars down in alpha (0.45 / 0.7 / 1.0 /
+      0.55). That gradient works on a 132px brand plate and fails on a
+      launcher tile: over this near-black ground a bar at 45% barely separates
+      from the ground, so the mark lost its outer half at the size it is
+      actually seen. The four heights carry the meter without it
+- [x] Geometry is the mockup's own, shifted 2 units left to centre it on the
+      canvas and scaled 0.85 about the centre so nothing leaves the 66-unit
+      safe zone a launcher mask and the splash icon both crop to
+- [x] The launcher takes it in further still — `ic_launcher_foreground` is a
+      13% `<inset>` around the same drawable. The safe zone is the most a mark
+      may be, not the most it should be, and an icon running to the edge of
+      its mask reads as cramped beside home-screen icons that all sit in more
+      air than the mask requires. The splash has a whole screen and keeps the
+      full size, so the two genuinely differ — one geometry, wrapped, not a
+      second copy free to drift
+- [x] One drawable, three consumers: the adaptive foreground now references
+      `ic_blogmark_mark` directly rather than duplicating its path data, and
+      no path data is duplicated anywhere. Only the monochrome layer is
+      separate, because a themed icon needs one opaque colour; it carries the
+      inset as a matching 0.74 scale so themed and colour icons sit in the
+      same air
+- [x] **Splash animates**, as the mockup's rationale specifies: the outer bars
+      settle to rest while the app boots, staggered left-to-right the way the
+      app's own waveforms fill. `ic_blogmark_splash.xml` is an
+      `animated-vector` over the same mark; the bookmark does not move
+- [x] No delay added. `installSplashScreen` still dismisses the window on the
+      first frame, so a warm start cuts the settle off part-way through —
+      the splash covers a wait, it does not impose one
+- [x] iOS `AppIcon-1024.png` and the Wasm `favicon.png` regenerated from the
+      same geometry, full-bleed (neither platform crops the way an adaptive
+      icon does, so they skip the safe-zone scale)
+- [x] The Wasm page's body background was `#0c0f14`, a bluish near-black left
+      over from an earlier direction — now `#101010`, the app's own ground
+- [x] Verified on device: launcher icon under the circular mask, and the
+      splash caught mid-settle
+
+Open:
+
+- [ ] The splash was only ever seen on the emulator's modern API level. The
+      platform splash screen is API 31+; below that the androidx library
+      draws the icon itself, and whether it runs the AVD or shows the mark at
+      rest is unverified. Either is acceptable — the resting mark is the base
+      vector — but nobody has looked
+- [ ] Desktop has no icon at all (`nativeDistributions` sets no `iconFile`)
+
 ## Where this stands (end of the waveform pass)
 
 Everything ticked above is committed and pushed. What follows is the open

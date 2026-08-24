@@ -12,11 +12,11 @@ dependencies {
 }
 
 android {
-    namespace = "dev.mks.blogmark.android"
+    namespace = "dev.mks.duskread.android"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
     defaultConfig {
-        applicationId = "dev.mks.blogmark"
+        applicationId = "dev.mks.duskread"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Pre-adaptive-icon fallback for Ink (API 24-25 only; mipmap-anydpi-v26
+     wins from API 26 on), matching the flat layering of ic_launcher.xml. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@drawable/ic_launcher_background_ink" />
+    <item android:drawable="@drawable/ic_launcher_foreground_ink" />
+</layer-list>

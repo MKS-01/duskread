@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- For the Pomodoro timer's ongoing notification (API 33+ requires this at runtime too). -->
+    <!-- For the Pomodoro timer's ongoing notification (API 33+ requires this at runtime too)
+         and the vibration on its "session complete" channel. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.VIBRATE" />
 
     <!-- Saved links fetch the title of a pasted or shared page. -->
     <uses-permission android:name="android.permission.INTERNET" />
@@ -31,9 +33,9 @@
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
-        android:label="Blogmark"
+        android:label="DuskRead"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Blogmark.Splash">
+        android:theme="@style/Theme.DuskRead.Splash">
 
         <!--
             singleTask so a share reuses the running app instead of stacking a
@@ -45,18 +47,14 @@
             activity; onNewIntent is where a share now arrives.
         -->
         <activity
-            android:name="dev.mks.blogmark.android.MainActivity"
+            android:name="dev.mks.duskread.android.MainActivity"
             android:exported="true"
             android:launchMode="singleTask"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode|density|fontScale"
             android:windowSoftInputMode="adjustResize">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
 
             <!--
-                Share target: "Share -> Blogmark" from a browser or any app that
+                Share target: "Share -> DuskRead" from a browser or any app that
                 sends text. Chrome sends the page URL as EXTRA_TEXT, often with
                 the title in front of it, which is why the handler extracts the
                 link rather than storing the payload whole.
@@ -69,12 +67,54 @@
         </activity>
 
         <!--
+            The launcher entry point lives on these two aliases rather than on
+            MainActivity itself, because icon and splash theme both work at
+            the manifest/component level, not at runtime inside one activity:
+            an activity-alias can carry its own android:icon and android:theme
+            that override the target activity's for that particular launch.
+            Exactly one is enabled at a time — PlatformThemeIcon flips them
+            with PackageManager.setComponentEnabledSetting whenever the
+            in-app theme toggle changes, DONT_KILL_APP so it never disturbs
+            a running session. LauncherPaper starts enabled to match
+            UserPrefs' default (mono = false).
+        -->
+        <activity-alias
+            android:name="dev.mks.duskread.android.LauncherPaper"
+            android:targetActivity="dev.mks.duskread.android.MainActivity"
+            android:enabled="true"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher"
+            android:roundIcon="@mipmap/ic_launcher_round"
+            android:label="DuskRead"
+            android:theme="@style/Theme.DuskRead.Splash">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name="dev.mks.duskread.android.LauncherInk"
+            android:targetActivity="dev.mks.duskread.android.MainActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_ink"
+            android:roundIcon="@mipmap/ic_launcher_round_ink"
+            android:label="DuskRead"
+            android:theme="@style/Theme.DuskRead.Splash.Ink">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <!--
             No official foreground-service type fits a countdown timer, so this
             uses "specialUse" (API 34+) with the required justification below;
             harmless no-op on older versions where the type is not enforced.
         -->
         <service
-            android:name="dev.mks.blogmark.pomodoro.PomodoroService"
+            android:name="dev.mks.duskread.pomodoro.PomodoroService"
             android:exported="false"
             android:foregroundServiceType="specialUse">
             <property
@@ -84,7 +124,7 @@
 
         <!-- Reader playback: a real foreground-service type exists for this one. -->
         <service
-            android:name="dev.mks.blogmark.reader.ReaderPlaybackService"
+            android:name="dev.mks.duskread.reader.ReaderPlaybackService"
             android:exported="false"
             android:foregroundServiceType="mediaPlayback" />
     </application>

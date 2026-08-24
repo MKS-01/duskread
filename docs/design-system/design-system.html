@@ -1,0 +1,1196 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DuskRead design system</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Inconsolata:wght@400;500;600&family=Jost:wght@300;400;500;600&display=swap">
+
+<style>
+/* ============================================================
+   PAGE CHROME — documentation prose, not the app itself.
+   ============================================================ */
+
+:root {
+  --bg:        #fbfaf9;
+  --surface:   #f4f3f1;
+  --surface-2: #ecebe8;
+  --text:      #17181b;
+  --muted:     #6a6b73;
+  --faint:     #93949c;
+  --line:      #e2e1de;
+  --line-firm: #cfcecb;
+  --accent:    #3a5a8c;
+
+  --ui:   "Hanken Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --data: "Inconsolata", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --page: 1100px;
+  --radius: 10px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #131315; --surface: #191a1d; --surface-2: #212226;
+    --text: #ededef; --muted: #9a9aa4; --faint: #74747d;
+    --line: #2a2a2e; --line-firm: #3a3a40; --accent: #8aa8dd;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #131315; --surface: #191a1d; --surface-2: #212226;
+  --text: #ededef; --muted: #9a9aa4; --faint: #74747d;
+  --line: #2a2a2e; --line-firm: #3a3a40; --accent: #8aa8dd;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--ui);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap { max-width: var(--page); margin: 0 auto; padding: 0 24px 96px; }
+
+a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+
+.masthead { padding: 72px 0 40px; border-bottom: 1px solid var(--line); }
+
+.kicker {
+  font-family: var(--data);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0 0 14px;
+}
+
+h1 {
+  font-size: clamp(30px, 4.4vw, 44px);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+  margin: 0 0 18px;
+  text-wrap: balance;
+}
+
+.standfirst { font-size: 18px; line-height: 1.62; color: var(--muted); max-width: 66ch; margin: 0 0 14px; }
+.standfirst strong { color: var(--text); font-weight: 600; }
+
+.retired-note {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--muted);
+  max-width: 66ch;
+  margin: 0;
+  padding: 12px 16px;
+  border-left: 2px solid var(--line-firm);
+  background: var(--surface);
+}
+.retired-note code { font-family: var(--data); font-size: 0.92em; }
+
+section { padding: 56px 0 0; }
+
+h2 {
+  font-size: 13px;
+  font-family: var(--data);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--faint);
+  font-weight: 600;
+  margin: 0 0 6px;
+}
+
+.section-title { font-size: 24px; line-height: 1.22; letter-spacing: -0.015em; font-weight: 700; margin: 0 0 12px; text-wrap: balance; }
+.section-note { color: var(--muted); max-width: 68ch; margin: 0 0 26px; font-size: 15.5px; }
+.section-note code, li code {
+  font-family: var(--data); font-size: 0.92em; background: var(--surface-2);
+  padding: 1px 5px; border-radius: 4px;
+}
+
+.frame-row { display: flex; flex-wrap: wrap; gap: 40px; align-items: flex-start; }
+.frame-block { width: 100%; max-width: 320px; }
+.frame-cap {
+  font-family: var(--data); font-size: 11.5px; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--faint); margin: 0 0 10px;
+}
+.rationale {
+  font-size: 14px; line-height: 1.6; color: var(--muted); margin: 14px 0 0;
+  padding-left: 13px; border-left: 2px solid var(--line-firm); max-width: 46ch;
+}
+.rationale b { color: var(--text); font-weight: 600; }
+
+.spec { width: 100%; border-collapse: collapse; font-size: 14px; margin: 0 0 20px; max-width: 74ch; }
+.spec th, .spec td { text-align: left; padding: 8px 10px 8px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+.spec th {
+  width: 100px; font-weight: 600; color: var(--faint); font-family: var(--data);
+  font-size: 11.5px; letter-spacing: 0.09em; text-transform: uppercase; padding-top: 11px;
+}
+
+/* ============================================================
+   PHONE FRAME — the app's own dark scheme, real token values.
+   ============================================================ */
+
+.phone {
+  width: 100%; max-width: 320px; margin: 0 auto; aspect-ratio: 320 / 660;
+  border-radius: 30px; border: 1px solid var(--line-firm); padding: 7px;
+  background: var(--surface); box-shadow: 0 14px 34px rgb(0 0 0 / 0.14);
+}
+.screen { height: 100%; border-radius: 24px; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+.statusbar { display: flex; justify-content: space-between; align-items: center; padding: 9px 16px 4px; font-size: 11px; flex: none; }
+.statusbar .bars { display: flex; gap: 2px; align-items: flex-end; }
+.statusbar .bars i { width: 2.5px; border-radius: 1px; display: block; background: currentColor; }
+.statusbar .bars i:nth-child(1) { height: 4px; }
+.statusbar .bars i:nth-child(2) { height: 6px; }
+.statusbar .bars i:nth-child(3) { height: 8px; }
+.statusbar .bars i:nth-child(4) { height: 10px; }
+.canvas { flex: 1; overflow: hidden; padding: 14px 18px 76px; display: flex; flex-direction: column; min-height: 0; }
+.navbar {
+  position: absolute; left: 50%; transform: translateX(-50%); bottom: 14px;
+  display: flex; align-items: center; gap: 4px; padding: 7px 9px; border-radius: 999px;
+}
+.navbar .nb { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; }
+
+/* Concept only — the in-app-browser toolbar and a floating summary
+   panel, neither shipped, sketched in the same hairline-square /
+   floating-glass language as the icon buttons and nav bar above. */
+.toolbar { display: flex; align-items: center; gap: 4px; margin-bottom: 10px; }
+.toolbar .title { flex: 1; font-size: 13px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.iconbtn.active { color: var(--a-sound); border-color: var(--a-sound); }
+.spinner {
+  width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--a-line);
+  border-top-color: var(--a-sound); animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.summarycard {
+  position: absolute; left: 12px; right: 12px; bottom: 62px;
+  background: var(--a-raise); border: 1px solid var(--a-line); border-radius: 14px;
+  padding: 14px 16px 16px;
+}
+
+/* ============================================================
+   ICON SYSTEM — the shape actually shipped: 2.4 stroke, round
+   cap and join, built from the waveform's own vertical bars
+   wherever a glyph allows it. See DuskReadIcons.kt.
+   ============================================================ */
+
+.i { width: 1em; height: 1em; display: block; flex: none; }
+.i use, .i > * { fill: none; stroke: currentColor; }
+.v-amp .i { stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+
+.iconwall {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: 1px; background: var(--line); border: 1px solid var(--line);
+  border-radius: var(--radius); overflow: hidden; max-width: 760px;
+}
+.iconwall figure { margin: 0; padding: 15px 6px 10px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.iconwall .i { font-size: 24px; }
+.iconwall figcaption { font-family: var(--data); font-size: 9.5px; letter-spacing: 0.05em; color: var(--faint); text-transform: uppercase; }
+
+.navstrip {
+  display: inline-flex; align-items: center; gap: 4px; padding: 7px 9px;
+  border-radius: 999px; background: rgb(23 24 27 / 0.92); border: 1px solid var(--a-line); color: var(--a-faint);
+  margin: 18px 8px 0 0;
+}
+.navstrip .nb { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; }
+.navstrip .nb.sel { background: var(--a-raise); color: var(--a-ink); }
+.navstrip .i { font-size: 17px; }
+
+/* ============================================================
+   APP TOKENS — Paper Black, exactly as ui/theme/Theme.kt
+   defines DarkScheme (see the "In use today" table for values).
+   ============================================================ */
+
+.v-amp {
+  --a-bg:       #101010;
+  --a-raise:    #1a1a1a;
+  --a-ink:      #e8e6e2;
+  --a-mute:     #a3a19d;
+  --a-faint:    #6c6a67;
+  --a-line:     #242423;
+  --a-sound:    #c6684a;
+  --a-wave-off: rgb(163 161 157 / 0.55);
+
+  --a-ui:   "Jost", ui-sans-serif, system-ui, sans-serif;
+  --a-data: "Inconsolata", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.v-amp .screen { background: var(--a-bg); color: var(--a-ink); font-family: var(--a-ui); }
+.v-amp .statusbar { color: var(--a-mute); font-family: var(--a-data); }
+
+.v-amp .eyebrow {
+  font-family: var(--a-data); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--a-sound); display: flex; align-items: center; gap: 8px; margin: 0 0 9px;
+}
+.v-amp .eyebrow::after { content: ""; flex: 1; height: 1px; background: var(--a-line); }
+.v-amp .eyebrow.muted { color: var(--a-faint); }
+
+.v-amp .greet { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.v-amp .greet h3 { margin: 0; font-size: 19px; font-weight: 400; letter-spacing: 0.01em; }
+.v-amp .greet .i { font-size: 16px; color: var(--a-mute); }
+
+/* Settings / folder — a hairline square (Radius.Chip, 3px here at this
+   scale), not a bare glyph. Both icon buttons in the shipped app share
+   this shape now. */
+.v-amp .iconbtn {
+  width: 34px; height: 34px; display: grid; place-items: center;
+  border: 1px solid var(--a-line); border-radius: 3px; color: var(--a-mute); flex: none;
+}
+
+.v-amp .row { padding: 0 0 15px; margin-bottom: 15px; border-bottom: 1px solid var(--a-line); }
+.v-amp .row:last-child { border-bottom: 0; }
+.v-amp .row h4 { margin: 0 0 6px; font-size: 14px; line-height: 1.32; font-weight: 400; letter-spacing: 0.005em; }
+.v-amp .meta { font-family: var(--a-data); font-size: 10.5px; color: var(--a-faint); display: flex; gap: 12px; font-variant-numeric: tabular-nums; }
+
+.v-amp .wave { display: flex; align-items: center; gap: 1.5px; height: 15px; }
+.v-amp .wave i { width: 2px; border-radius: 1px; background: var(--a-wave-off); display: block; }
+.v-amp .wave.part i.p { background: var(--a-sound); }
+
+.v-amp .sourcechip {
+  width: 22px; height: 22px; border-radius: 3px; border: 1px solid var(--a-line);
+  display: grid; place-items: center; font-family: var(--a-data); font-size: 10px; color: var(--a-mute); flex: none;
+}
+
+.v-amp .pillrow { display: flex; gap: 6px; margin-bottom: 16px; }
+.v-amp .pill {
+  font-family: var(--a-data); font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 5px 11px; border-radius: 3px; border: 1px solid var(--a-line); color: var(--a-mute);
+}
+.v-amp .pill.sel { border-color: var(--a-sound); color: var(--a-sound); }
+
+.v-amp .navbar { background: rgb(23 24 27 / 0.92); border: 1px solid var(--a-line); color: var(--a-faint); }
+.v-amp .navbar .nb.sel { background: var(--a-raise); color: var(--a-ink); }
+.v-amp .navbar .i { font-size: 17px; }
+.v-amp .playing { color: var(--a-sound); }
+
+.v-amp .fieldbox {
+  border: 1px solid var(--a-line); border-radius: 10px; padding: 9px 12px;
+  color: var(--a-mute); font-family: var(--a-data); font-size: 12px; text-align: center; width: 96px;
+}
+
+/* ============================================================
+   MONOCHROME — Ink, exactly as ui/theme/Theme.kt defines
+   MonoScheme. The hue drops to nothing; level is luminance alone.
+   ============================================================ */
+
+.v-amp.mono {
+  --a-bg:       #161616;
+  --a-raise:    #202020;
+  --a-ink:      #dcdcdc;
+  --a-mute:     #9c9c9c;
+  --a-faint:    #6e6e6e;
+  --a-line:     #2b2b2b;
+  --a-sound:    #dcdcdc;
+  --a-wave-off: rgb(156 156 156 / 0.55);
+}
+
+/* ============================================================
+   BRAND
+   ============================================================ */
+
+.brandrow { display: flex; align-items: flex-end; gap: 22px; flex-wrap: wrap; margin-bottom: 18px; }
+.appicon { border-radius: 22.5%; display: block; flex: none; }
+.brand-label { font-family: var(--data); font-size: 10px; letter-spacing: 0.08em; color: var(--faint); text-align: center; margin-top: 6px; }
+.splash {
+  width: 100%; max-width: 210px; aspect-ratio: 9 / 16; border-radius: 14px;
+  border: 1px solid var(--line-firm); display: grid; place-items: center; position: relative; overflow: hidden;
+}
+
+/* ============================================================
+   TYPE SPECIMEN
+   ============================================================ */
+
+.specimen { border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; max-width: 640px; }
+.specimen > div { padding: 15px 18px; border-bottom: 1px solid var(--line); }
+.specimen > div:last-child { border-bottom: 0; }
+.specimen .lbl { font-family: var(--data); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint); margin-bottom: 5px; }
+
+/* ============================================================
+   STATUS LISTS — "In use today" / "Next"
+   ============================================================ */
+
+.status-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.status-list li { background: var(--bg); padding: 14px 18px; font-size: 14.5px; line-height: 1.55; color: var(--muted); }
+.status-list b { color: var(--text); font-weight: 600; }
+.status-list code { font-family: var(--data); font-size: 0.9em; background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
+
+footer { margin-top: 56px; padding-top: 22px; border-top: 1px solid var(--line); color: var(--faint); font-size: 13.5px; font-family: var(--data); }
+
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+
+<!-- ============================================================
+     ICON GEOMETRY
+     g-* : rough placeholder paths used only inside the phone-frame
+     screen mockups below, for layout reference — not the shipped
+     glyphs. w-* : the Bar hand, the icon set actually drawn in
+     DuskReadIcons.kt today (see the Icon set section).
+     ============================================================ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="g-home" viewBox="0 0 24 24"><path d="M4 10.2 12 4l8 6.2V19a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/></symbol>
+    <symbol id="g-book" viewBox="0 0 24 24"><path d="M6 4h12v16l-6-4.4L6 20z"/></symbol>
+    <symbol id="g-wave" viewBox="0 0 24 24"><path d="M3 12h1.6M7 8v8M11 4.5v15M15 8v8M19 11h2"/></symbol>
+    <symbol id="g-pause" viewBox="0 0 24 24"><path d="M8.5 5v14M15.5 5v14"/></symbol>
+    <symbol id="g-check" viewBox="0 0 24 24"><path d="M4.6 12.6 9.6 17.4 19.4 6.8"/></symbol>
+    <symbol id="g-set" viewBox="0 0 24 24"><path d="M4 7.5h16M4 16.5h16"/><circle cx="9.5" cy="7.5" r="2.3"/><circle cx="15" cy="16.5" r="2.3"/></symbol>
+    <symbol id="g-folder" viewBox="0 0 24 24"><path d="M3 6.5h6.2l1.8 2.4H21V18a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/></symbol>
+
+    <!-- BAR. The waveform is the alphabet: anything buildable from evenly
+         spaced vertical bars is; the rest borrows the same 2.4 weight and
+         round terminal so the set still looks cut from the same clip. -->
+    <symbol id="w-home" viewBox="0 0 24 24"><path d="M4 12 12 5.5 20 12M6.5 13.5V20M17.5 13.5V20M12 20v-4.5"/></symbol>
+    <symbol id="w-wave" viewBox="0 0 24 24"><path d="M4 10v4M8 6.5v11M12 3.5v17M16 6.5v11M20 10v4"/></symbol>
+    <symbol id="w-saved" viewBox="0 0 24 24"><path d="M7 5.5h10M7 5.5v14l5-4.5 5 4.5v-14"/></symbol>
+    <symbol id="w-folder" viewBox="0 0 24 24"><path d="M4 8.5V19.5h16V8.5H11L9 6.5H4z"/></symbol>
+    <symbol id="w-feed" viewBox="0 0 24 24"><path d="M5 19.5v-1.5M10 19.5v-5M15 19.5v-9M20 19.5v-13"/></symbol>
+    <symbol id="w-search" viewBox="0 0 24 24"><path d="M10.5 4.5a6 6 0 1 0 0 12 6 6 0 0 0 0-12M15 15l4.5 4.5"/></symbol>
+    <symbol id="w-play" viewBox="0 0 24 24"><path d="M8.5 5.5 18.5 12 8.5 18.5z"/></symbol>
+    <symbol id="w-pause" viewBox="0 0 24 24"><path d="M9 5v14M15 5v14"/></symbol>
+    <symbol id="w-skip" viewBox="0 0 24 24"><path d="M6 6 14 12 6 18zM18 5.5v13"/></symbol>
+    <symbol id="w-back" viewBox="0 0 24 24"><path d="M18 6 10 12 18 18zM6 5.5v13"/></symbol>
+    <symbol id="w-speed" viewBox="0 0 24 24"><path d="M6.5 6.5 12 12l-5.5 5.5M13 6.5 18.5 12 13 17.5"/></symbol>
+    <symbol id="w-sleep" viewBox="0 0 24 24"><path d="M19 15.5A8 8 0 0 1 8.5 5 8.6 8.6 0 1 0 19 15.5z"/></symbol>
+    <symbol id="w-queue" viewBox="0 0 24 24"><path d="M4.5 6.5h15M4.5 11.5h15M4.5 16.5h7M14.5 14.5 20 17.5l-5.5 3z"/></symbol>
+    <symbol id="w-focus" viewBox="0 0 24 24"><path d="M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16M12 8v4l3 2"/></symbol>
+    <symbol id="w-done" viewBox="0 0 24 24"><path d="M5 12.5 9.5 17 19 7"/></symbol>
+    <symbol id="w-offline" viewBox="0 0 24 24"><path d="M5 19.5v-1.5M10 19.5v-5M15 19.5v-9M20 19.5v-13M4 20 20 4"/></symbol>
+    <symbol id="w-share" viewBox="0 0 24 24"><path d="M12 4.5v11M12 4.5 8.5 8M12 4.5 15.5 8M5.5 13v6.5h13V13"/></symbol>
+    <symbol id="w-delete" viewBox="0 0 24 24"><path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7v12.5h11V7M10 11v5M14 11v5"/></symbol>
+    <symbol id="w-add" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="w-external" viewBox="0 0 24 24"><path d="M14 4.5h5.5V10M19.5 4.5 11.5 12.5M16.5 14v5.5H4.5V7.5H10"/></symbol>
+    <symbol id="w-settings" viewBox="0 0 24 24"><path d="M4.5 8h15M4.5 16h15M9 5v6M15 13v6"/></symbol>
+    <symbol id="w-contrast" viewBox="0 0 24 24"><path d="M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16M12 5.5v13M15 8.5v7M18 11v2"/></symbol>
+    <symbol id="w-close" viewBox="0 0 24 24"><path d="M6.5 6.5 17.5 17.5M17.5 6.5 6.5 17.5"/></symbol>
+    <symbol id="w-chev" viewBox="0 0 24 24"><path d="M9.5 5.5 16 12l-6.5 6.5"/></symbol>
+
+    <!-- Concept icons for the article-summary idea below — not in
+         DuskReadIcons.kt yet, drawn to the same Bar-hand spec so the
+         wireframe reads as this app rather than a foreign mockup. -->
+    <symbol id="w-summary" viewBox="0 0 24 24"><path d="M4 7h16M4 12h11M4 17h6"/></symbol>
+    <symbol id="w-reader" viewBox="0 0 24 24"><path d="M4.5 6h6.5v13h-6.5zM19.5 6h-6.5v13h6.5z"/></symbol>
+  </defs>
+</svg>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <p class="kicker">DuskRead · design system</p>
+    <h1>Amplitude</h1>
+    <p class="standfirst">
+      Greyscale interface, one hue, and that hue means exactly one thing:
+      <strong>there is sound here</strong>. This page documents the design
+      language as it actually ships today — real tokens, real layouts, real
+      icon set — plus what's genuinely still open.
+    </p>
+    <p class="retired-note">
+      This replaces <code>docs/design/redesign-variants.html</code>, which
+      compared Amplitude against a second direction ("Bindery") to decide
+      between them. That decision is made — Amplitude shipped — so the
+      comparison page is retired. Screen-by-screen migration history lives
+      in <code>docs/design/amplitude-migration.md</code>.
+    </p>
+  </header>
+
+  <!-- ---------------------------------------------------------- -->
+  <section>
+    <h2>Screen — Readback</h2>
+    <p class="section-title">The signature screen</p>
+    <p class="section-note">
+      Two facts per row, not five — the third fact, how long this actually
+      is, is drawn as a waveform rather than written out. The playing row is
+      the only coloured thing on screen: title, position and its waveform's
+      filled fraction all switch to the accent, everything else stays grey.
+    </p>
+
+    <div class="frame-row">
+      <div class="v-amp frame-block">
+        <p class="frame-cap">Readback — idle, one row playing</p>
+        <div class="phone">
+          <div class="screen">
+            <div class="statusbar"><span>4:19</span><span class="bars"><i></i><i></i><i></i><i></i></span></div>
+            <div class="canvas">
+              <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+                <span class="iconbtn"><svg class="i" style="font-size:16px"><use href="#g-folder"/></svg></span>
+              </div>
+              <div class="pillrow">
+                <span class="pill sel">Newest</span>
+                <span class="pill">Oldest</span>
+              </div>
+
+              <div class="row">
+                <div style="display:flex;gap:10px;align-items:flex-start">
+                  <span class="sourcechip">S</span>
+                  <div style="flex:1;min-width:0">
+                    <h4>Gesture Handler&rsquo;s Touchable: Button We Wish We Had Sooner</h4>
+                    <div class="meta"><span>1:22</span><span>682w</span></div>
+                  </div>
+                </div>
+                <div class="wave" style="margin-top:9px">
+                  <i style="height:5px"></i><i style="height:9px"></i><i style="height:13px"></i><i style="height:7px"></i><i style="height:11px"></i><i style="height:15px"></i><i style="height:8px"></i><i style="height:12px"></i><i style="height:6px"></i><i style="height:10px"></i><i style="height:14px"></i><i style="height:7px"></i><i style="height:11px"></i><i style="height:5px"></i><i style="height:9px"></i><i style="height:13px"></i><i style="height:6px"></i><i style="height:10px"></i>
+                </div>
+              </div>
+
+              <div class="row">
+                <div style="display:flex;gap:10px;align-items:flex-start">
+                  <span class="sourcechip" style="border-color:var(--a-sound);color:var(--a-sound)">A</span>
+                  <div style="flex:1;min-width:0">
+                    <h4 class="playing">Claude Code now supports artifacts</h4>
+                    <div class="meta"><span class="playing">0:41 / 1:31</span><span>538w</span></div>
+                  </div>
+                  <svg class="i playing" style="font-size:15px;margin-top:2px"><use href="#g-pause"/></svg>
+                </div>
+                <div class="wave part" style="margin-top:9px">
+                  <i class="p" style="height:6px"></i><i class="p" style="height:11px"></i><i class="p" style="height:15px"></i><i class="p" style="height:8px"></i><i class="p" style="height:12px"></i><i class="p" style="height:14px"></i><i class="p" style="height:7px"></i><i style="height:10px"></i><i style="height:13px"></i><i style="height:6px"></i><i style="height:9px"></i><i style="height:15px"></i><i style="height:8px"></i><i style="height:11px"></i><i style="height:5px"></i><i style="height:12px"></i><i style="height:7px"></i><i style="height:10px"></i>
+                </div>
+              </div>
+            </div>
+
+            <div class="navbar">
+              <span class="nb"><svg class="i"><use href="#g-home"/></svg></span>
+              <span class="nb sel"><svg class="i"><use href="#g-wave"/></svg></span>
+              <span class="nb"><svg class="i"><use href="#g-book"/></svg></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p class="rationale">
+        <b>Newest/Oldest</b> takes the accent when selected — plain white
+        used to read as no selection at all. Every row's <b>external-link
+        glyph</b> under the source line carries a permanent, muted hint of
+        the accent, marking it as a link regardless of playback state. The
+        <b>folder picker</b> moved out of that row entirely, into the
+        screen's own top-right corner — same bordered-square weight as
+        Home's Settings icon, reached because it changes where the whole
+        library comes from, not because it's a sort option.
+      </p>
+    </div>
+  </section>
+
+  <!-- ---------------------------------------------------------- -->
+  <section>
+    <h2>Screen — Home</h2>
+    <p class="section-title">Four sections, none of them a card</p>
+    <p class="section-note">
+      Sections sit flush on the background, separated by their own bottom
+      hairline — no card boxes anywhere. Following is a digest line per
+      feed, not a nested carousel of tiles.
+    </p>
+
+    <div class="frame-row">
+      <div class="v-amp frame-block">
+        <p class="frame-cap">Home</p>
+        <div class="phone">
+          <div class="screen">
+            <div class="statusbar"><span>4:19</span><span class="bars"><i></i><i></i><i></i><i></i></span></div>
+            <div class="canvas">
+              <div class="greet">
+                <h3>Hello, MKS</h3>
+                <span class="iconbtn"><svg class="i" style="font-size:16px"><use href="#g-set"/></svg></span>
+              </div>
+
+              <p class="eyebrow">From saved</p>
+              <div class="row">
+                <div style="display:flex;gap:10px;align-items:flex-start">
+                  <span class="sourcechip">S</span>
+                  <div style="flex:1;min-width:0">
+                    <h4>When Can LLMs Replace Humans in A/B Tests?</h4>
+                    <div class="meta"><span>engineering.atspotify.com</span></div>
+                  </div>
+                </div>
+              </div>
+
+              <p class="eyebrow">Today&rsquo;s readback</p>
+              <div class="row">
+                <h4 class="playing">Gesture Handler&rsquo;s Touchable</h4>
+                <div class="meta" style="margin-bottom:8px"><span class="playing">0:38 / 1:22</span></div>
+                <div class="wave part">
+                  <i class="p" style="height:7px"></i><i class="p" style="height:12px"></i><i class="p" style="height:15px"></i><i class="p" style="height:9px"></i><i class="p" style="height:13px"></i><i class="p" style="height:6px"></i><i class="p" style="height:11px"></i><i style="height:14px"></i><i style="height:8px"></i><i style="height:12px"></i><i style="height:5px"></i><i style="height:10px"></i><i style="height:15px"></i><i style="height:7px"></i><i style="height:11px"></i><i style="height:9px"></i><i style="height:13px"></i><i style="height:6px"></i>
+                </div>
+              </div>
+
+              <p class="eyebrow">Focus</p>
+              <div class="row" style="border:0">
+                <div class="pillrow" style="margin:0">
+                  <span class="pill">15 min</span>
+                  <span class="pill">25 min</span>
+                  <span class="pill">30 min</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="navbar">
+              <span class="nb sel"><svg class="i"><use href="#g-home"/></svg></span>
+              <span class="nb"><svg class="i"><use href="#g-wave"/></svg></span>
+              <span class="nb"><svg class="i"><use href="#g-book"/></svg></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p class="rationale">
+        Every eyebrow (<b>From saved</b>, <b>Today's readback</b>,
+        <b>Focus</b>, <b>Following</b>) is accent-coloured by default —
+        that's the one deliberate exception to "colour only means playing":
+        a section label naming what it holds, not a state. Settings is a
+        bordered square now, matching the folder icon on Readback.
+      </p>
+    </div>
+  </section>
+
+  <!-- ---------------------------------------------------------- -->
+  <section>
+    <h2>Screen — Saved</h2>
+    <p class="section-title">Unread and read, told apart without a heading</p>
+    <p class="section-note">
+      A read link recedes rather than being struck through: one alpha over
+      the whole row, plus a trailing tick. Unread rows carry no trailing
+      icon at all.
+    </p>
+
+    <div class="frame-row">
+      <div class="v-amp frame-block">
+        <p class="frame-cap">Saved</p>
+        <div class="phone">
+          <div class="screen">
+            <div class="statusbar"><span>4:19</span><span class="bars"><i></i><i></i><i></i><i></i></span></div>
+            <div class="canvas">
+              <div class="fieldbox" style="width:100%;text-align:left;margin-bottom:18px">Paste a link</div>
+
+              <p class="eyebrow">Unread · 1</p>
+              <div class="row">
+                <div style="display:flex;gap:10px;align-items:flex-start">
+                  <span class="sourcechip">S</span>
+                  <div style="flex:1;min-width:0">
+                    <h4>When Can LLMs Replace Humans in A/B Tests?</h4>
+                    <div class="meta"><span>atspotify</span><span>7m ago</span></div>
+                  </div>
+                </div>
+              </div>
+
+              <p class="eyebrow muted">Read · 4</p>
+              <div class="row" style="opacity:0.5">
+                <div style="display:flex;gap:10px;align-items:flex-start">
+                  <span class="sourcechip">S</span>
+                  <div style="flex:1;min-width:0">
+                    <h4>Missing layer in live video streaming APIs</h4>
+                    <div class="meta"><span>swmansion</span><span>2m ago</span></div>
+                  </div>
+                  <svg class="i" style="font-size:13px;margin-top:2px"><use href="#g-check"/></svg>
+                </div>
+              </div>
+            </div>
+
+            <div class="navbar">
+              <span class="nb"><svg class="i"><use href="#g-home"/></svg></span>
+              <span class="nb"><svg class="i"><use href="#g-wave"/></svg></span>
+              <span class="nb sel"><svg class="i"><use href="#g-book"/></svg></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p class="rationale">
+        <b>Read</b>'s eyebrow is the one that stays muted rather than
+        accented — a lower-priority section under an unread list, the
+        exception <code>EyebrowHeader</code>'s <code>tint</code> parameter
+        exists for.
+      </p>
+    </div>
+  </section>
+
+  <!-- ---------------------------------------------------------- -->
+  <section id="focusrow">
+    <h2>Focus</h2>
+    <p class="section-title">A meter, not a word in a void</p>
+    <p class="section-note">
+      Bottom-anchored, in the thumb zone — not centred. The timer is drawn
+      with the same bars as every waveform: elapsed is filled, remaining is
+      not, so one visual language covers audio and time alike.
+    </p>
+
+    <div class="frame-row">
+      <div class="v-amp frame-block">
+        <p class="frame-cap">Focus — running</p>
+        <div class="phone">
+          <div class="screen">
+            <div class="statusbar"><span>4:51</span><span class="bars"><i></i><i></i><i></i><i></i></span></div>
+            <div class="canvas" style="justify-content:flex-end;padding-bottom:96px">
+              <p class="eyebrow">Focus · 25 min</p>
+              <div style="font-family:var(--a-data);font-size:56px;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-0.02em;margin-bottom:18px">18:24</div>
+              <div class="wave part" style="height:26px;gap:2px;margin-bottom:24px">
+                <i class="p" style="height:9px"></i><i class="p" style="height:16px"></i><i class="p" style="height:22px"></i><i class="p" style="height:12px"></i><i class="p" style="height:19px"></i><i class="p" style="height:26px"></i><i class="p" style="height:14px"></i><i style="height:20px"></i><i style="height:10px"></i><i style="height:17px"></i><i style="height:24px"></i><i style="height:13px"></i><i style="height:18px"></i><i style="height:8px"></i><i style="height:15px"></i><i style="height:21px"></i><i style="height:11px"></i><i style="height:16px"></i><i style="height:23px"></i><i style="height:9px"></i>
+              </div>
+              <div class="pillrow" style="margin:0">
+                <span class="pill sel">Pause</span>
+                <span class="pill">Reset</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="v-amp frame-block">
+        <p class="frame-cap">Focus — idle</p>
+        <div class="phone">
+          <div class="screen">
+            <div class="statusbar"><span>4:51</span><span class="bars"><i></i><i></i><i></i><i></i></span></div>
+            <div class="canvas" style="justify-content:flex-end;padding-bottom:96px">
+              <p class="eyebrow">Focus</p>
+              <div style="font-family:var(--a-ui);font-weight:400;font-size:22px;line-height:1.2;margin-bottom:22px">Pick a length</div>
+              <div class="pillrow" style="margin:0">
+                <span class="pill">15 min</span>
+                <span class="pill">25 min</span>
+                <span class="pill">30 min</span>
+                <span class="pill">Custom</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="rationale" style="max-width:60ch">
+      A fourth <b>Custom</b> chip opens a bare minute-count field
+      (digits only) with Start/Cancel — the standard three presets stay as
+      they were. The idle prompt uses the app's normal headline text style,
+      not the clock's 52sp digit face it briefly borrowed. A finished
+      session now alerts through its own high-importance notification
+      channel with a vibration pattern — the per-second countdown's channel
+      has to stay silent, so completion needed a second one.
+    </p>
+  </section>
+
+  <!-- ---------------------------------------------------------- -->
+  <section id="summary-concept">
+    <h2>Screen — Article summary <span style="color:var(--a-faint);font-weight:400">(concept, not built)</span></h2>
+    <p class="section-title">On-device, from the reader — not the list</p>
+    <p class="section-note">
+      A local-model summary, generated from the text <code>InAppBrowserScreen</code>
+      already extracts into <code>Article.text</code> once a reader view opens —
+      see <code>links/Article.kt</code> and <code>links/ArticleDocument.kt</code>.
+      Nothing here is built yet; this is the idea worked into a shape that
+      fits what already exists, so it doesn't get lost between now and
+      whenever it does get built.
+    </p>
+
+    <div class="frame-row">
+      <div class="v-amp frame-block">
+        <p class="frame-cap">Reader — idle</p>
+        <div class="phone">
+          <div class="screen">
+            <div class="statusbar"><span>4:19</span><span class="bars"><i></i><i></i><i></i><i></i></span></div>
+            <div class="canvas">
+              <div class="toolbar">
+                <span class="iconbtn" style="border:0"><svg class="i" style="font-size:16px"><use href="#w-back"/></svg></span>
+                <span class="title">A Tale of Two Flink Autoscalers</span>
+                <span class="iconbtn active"><svg class="i" style="font-size:15px"><use href="#w-reader"/></svg></span>
+                <span class="iconbtn"><svg class="i" style="font-size:15px"><use href="#w-summary"/></svg></span>
+                <span class="iconbtn"><svg class="i" style="font-size:15px"><use href="#w-external"/></svg></span>
+              </div>
+              <div style="font-size:13px;line-height:1.6;color:var(--a-mute)">
+                Netflix currently runs two different autoscalers for Apache
+                Flink, and they are actively moving toward replacing the
+                custom one with the open-source Kubernetes-native
+                autoscaler&hellip;
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="v-amp frame-block">
+        <p class="frame-cap">Summarising</p>
+        <div class="phone">
+          <div class="screen">
+            <div class="statusbar"><span>4:19</span><span class="bars"><i></i><i></i><i></i><i></i></span></div>
+            <div class="canvas">
+              <div class="toolbar">
+                <span class="iconbtn" style="border:0"><svg class="i" style="font-size:16px"><use href="#w-back"/></svg></span>
+                <span class="title">A Tale of Two Flink Autoscalers</span>
+                <span class="iconbtn active"><svg class="i" style="font-size:15px"><use href="#w-reader"/></svg></span>
+                <span class="iconbtn active"><span class="spinner"></span></span>
+                <span class="iconbtn"><svg class="i" style="font-size:15px"><use href="#w-external"/></svg></span>
+              </div>
+              <div style="font-size:13px;line-height:1.6;color:var(--a-mute)">
+                Netflix currently runs two different autoscalers for Apache
+                Flink, and they are actively moving toward replacing the
+                custom one with the open-source Kubernetes-native
+                autoscaler&hellip;
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="v-amp frame-block">
+        <p class="frame-cap">Summary, floating</p>
+        <div class="phone">
+          <div class="screen">
+            <div class="statusbar"><span>4:19</span><span class="bars"><i></i><i></i><i></i><i></i></span></div>
+            <div class="canvas">
+              <div class="toolbar">
+                <span class="iconbtn" style="border:0"><svg class="i" style="font-size:16px"><use href="#w-back"/></svg></span>
+                <span class="title">A Tale of Two Flink Autoscalers</span>
+                <span class="iconbtn active"><svg class="i" style="font-size:15px"><use href="#w-reader"/></svg></span>
+                <span class="iconbtn active"><svg class="i" style="font-size:15px"><use href="#w-summary"/></svg></span>
+                <span class="iconbtn"><svg class="i" style="font-size:15px"><use href="#w-external"/></svg></span>
+              </div>
+              <div style="font-size:13px;line-height:1.6;color:var(--a-mute);filter:blur(1.5px);opacity:0.5">
+                Netflix currently runs two different autoscalers for Apache
+                Flink, and they are actively moving toward replacing the
+                custom one with the open-source Kubernetes-native
+                autoscaler&hellip;
+              </div>
+            </div>
+            <div class="summarycard">
+              <div style="display:flex;align-items:center;margin-bottom:8px;font-family:var(--a-data);font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--a-sound)">
+                Summary
+                <svg class="i" style="font-size:13px;margin-left:auto;color:var(--a-faint)"><use href="#w-close"/></svg>
+              </div>
+              <div style="font-size:12.5px;line-height:1.55;color:var(--a-ink)">
+                Netflix runs two Flink autoscalers today and is consolidating
+                on the open-source, Kubernetes-native one — the custom
+                version is being retired once feature parity closes the
+                remaining gap.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="rationale">
+      <b>Reader toolbar, not the list.</b> A summary needs
+      <code>Article.text</code>, which only exists after extraction — running
+      that (and a local-model pass) for every row in Saved or Readback would
+      mean summarising links nobody opens. The button lives beside the
+      existing Reader-view toggle, hidden (not disabled) until extraction has
+      produced text, matching that toggle's own rule.<br><br>
+      <b>Inline spinner, not a blocking screen.</b> The article is already
+      readable while the model runs — the icon swaps for a small spinner in
+      the same 34px slot, nothing else on screen changes.<br><br>
+      <b>Floating, not full-screen.</b> Same instinct as the toast and the nav
+      bar: a panel that sits <em>over</em> the reader rather than replacing
+      it, dismissible with the corner close glyph or a tap outside, so
+      checking the summary never costs your scroll position in the actual
+      article.<br><br>
+      <b>The model:</b> ML Kit's on-device GenAI Summarization API,
+      Android-only, behind an <code>expect</code>/<code>actual</code> the way
+      <code>ReadRepository</code> and <code>AudioPlayer</code> already are —
+      other platforms would hide the button the same way Readback's folder
+      picker differs per platform today. The prerequisite,
+      <code>Article.text</code>, already exists; nothing about extraction is
+      new work.
+    </p>
+  </section>
+
+  <!-- ---------------------------------------------------------- -->
+  <section>
+    <h2>Monochrome</h2>
+    <p class="section-title">Ink — a second design, not the first one with the colour deleted</p>
+    <p class="section-note">
+      The hue drops to nothing and level is carried by luminance alone —
+      the interface was already greyscale, so the idea survives intact.
+      Reachable from the tab bar's contrast toggle or Settings; the choice
+      persists across restarts and flips the Android launcher icon and
+      splash to match.
+    </p>
+
+    <div class="frame-row">
+      <div class="v-amp mono frame-block">
+        <p class="frame-cap">Readback — Ink</p>
+        <div class="phone">
+          <div class="screen">
+            <div class="statusbar"><span>4:19</span><span class="bars"><i></i><i></i><i></i><i></i></span></div>
+            <div class="canvas">
+              <div class="pillrow">
+                <span class="pill sel">Newest</span>
+                <span class="pill">Oldest</span>
+              </div>
+              <div class="row">
+                <div style="display:flex;gap:10px;align-items:flex-start">
+                  <span class="sourcechip">S</span>
+                  <div style="flex:1;min-width:0">
+                    <h4>Gesture Handler&rsquo;s Touchable</h4>
+                    <div class="meta"><span>1:22</span><span>682w</span></div>
+                  </div>
+                </div>
+                <div class="wave" style="margin-top:9px">
+                  <i style="height:5px"></i><i style="height:9px"></i><i style="height:13px"></i><i style="height:7px"></i><i style="height:11px"></i><i style="height:15px"></i><i style="height:8px"></i><i style="height:12px"></i><i style="height:6px"></i><i style="height:10px"></i><i style="height:14px"></i><i style="height:7px"></i><i style="height:11px"></i><i style="height:5px"></i><i style="height:9px"></i><i style="height:13px"></i><i style="height:6px"></i><i style="height:10px"></i>
+                </div>
+              </div>
+              <div class="row">
+                <div style="display:flex;gap:10px;align-items:flex-start">
+                  <span class="sourcechip" style="border-color:var(--a-sound);color:var(--a-sound)">A</span>
+                  <div style="flex:1;min-width:0">
+                    <h4 class="playing">Claude Code now supports artifacts</h4>
+                    <div class="meta"><span class="playing">0:41 / 1:31</span><span>538w</span></div>
+                  </div>
+                  <svg class="i playing" style="font-size:15px;margin-top:2px"><use href="#g-pause"/></svg>
+                </div>
+                <div class="wave part" style="margin-top:9px">
+                  <i class="p" style="height:6px"></i><i class="p" style="height:11px"></i><i class="p" style="height:15px"></i><i class="p" style="height:8px"></i><i class="p" style="height:12px"></i><i class="p" style="height:14px"></i><i class="p" style="height:7px"></i><i style="height:10px"></i><i style="height:13px"></i><i style="height:6px"></i><i style="height:9px"></i><i style="height:15px"></i><i style="height:8px"></i><i style="height:11px"></i><i style="height:5px"></i><i style="height:12px"></i><i style="height:7px"></i><i style="height:10px"></i>
+                </div>
+              </div>
+            </div>
+            <div class="navbar">
+              <span class="nb"><svg class="i"><use href="#g-home"/></svg></span>
+              <span class="nb sel"><svg class="i"><use href="#g-wave"/></svg></span>
+              <span class="nb"><svg class="i"><use href="#g-book"/></svg></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p class="rationale">
+        Everything that read as terracotta above — the selected pill, the
+        playing row, its chip border — becomes white. Nothing changes shape
+        or position, only hue disappears.
+      </p>
+    </div>
+  </section>
+
+  <!-- ---------------------------------------------------------- -->
+  <section>
+    <h2>Brand</h2>
+    <p class="section-title">Dusk bar — one shape, a crescent bitten out</p>
+    <p class="section-note">
+      The house language ("the waveform is the alphabet") kept rather than
+      started over, with the app's new name folded in: one wide bar — read,
+      listen — with a crescent bitten from its top, for dusk. Replaces the
+      level-meter-with-a-bookmark mark this section showed under the
+      Blogmark name; that mark and two other DuskRead concepts (Horizon,
+      Crescent) are below, kept for the record rather than deleted.
+    </p>
+
+    <div class="v-amp" style="color:var(--text)">
+      <div class="brandrow">
+        <div>
+          <svg class="appicon" width="132" height="132" viewBox="0 0 108 108" aria-label="DuskRead app icon">
+            <rect width="108" height="108" fill="#101010"/>
+            <rect x="40" y="24" width="28" height="64" rx="14" fill="#c6684a"/>
+            <circle cx="60" cy="32" r="16" fill="#101010"/>
+          </svg>
+          <p class="brand-label">132</p>
+        </div>
+        <div>
+          <svg class="appicon" width="48" height="48" viewBox="0 0 108 108">
+            <rect width="108" height="108" fill="#101010"/>
+            <rect x="40" y="24" width="28" height="64" rx="14" fill="#c6684a"/>
+            <circle cx="60" cy="32" r="16" fill="#101010"/>
+          </svg>
+          <p class="brand-label">48</p>
+        </div>
+        <div>
+          <svg class="appicon" width="24" height="24" viewBox="0 0 108 108">
+            <rect width="108" height="108" fill="#101010"/>
+            <rect x="40" y="24" width="28" height="64" rx="14" fill="#c6684a"/>
+            <circle cx="60" cy="32" r="16" fill="#101010"/>
+          </svg>
+          <p class="brand-label">24</p>
+        </div>
+        <div>
+          <div class="splash" style="background:#101010">
+            <svg width="74" height="74" viewBox="0 0 108 108">
+              <rect x="40" y="24" width="28" height="64" rx="14" fill="#c6684a"/>
+              <circle cx="60" cy="32" r="16" fill="#101010"/>
+            </svg>
+          </div>
+          <p class="brand-label">splash</p>
+        </div>
+        <div>
+          <div class="splash" style="background:#161616">
+            <svg width="74" height="74" viewBox="0 0 108 108">
+              <rect x="40" y="24" width="28" height="64" rx="14" fill="#dcdcdc"/>
+              <circle cx="60" cy="32" r="16" fill="#161616"/>
+            </svg>
+          </div>
+          <p class="brand-label">splash · ink</p>
+        </div>
+      </div>
+      <p class="rationale">
+        The bite is painted as an opaque circle in the exact ground colour,
+        drawn after the bar — not a <code>fillType="evenOdd"</code>
+        subtraction, which was tried first and is wrong for a cut shape that
+        extends outside the base shape: evenOdd fills that outside part back
+        in as a second, disconnected blob instead of letting it vanish. The
+        one place the ground-colour trick can't apply — the Android 13+
+        themed-icon layer, which reads only alpha, no colour — keeps a true
+        evenOdd hole instead, sized down to sit fully inside the bar so the
+        same bug can't recur there. The mark still settles into place on
+        boot the same way the one before it did, and an Ink-coloured
+        launcher icon and splash still swap in automatically via the same
+        pair of Android activity-aliases.
+      </p>
+    </div>
+  </section>
+
+  <!-- ---------------------------------------------------------- -->
+  <section>
+    <h2>Brand — rejected DuskRead concepts</h2>
+    <p class="section-title">Two other marks tried against the name</p>
+    <p class="section-note">
+      Three marks were drawn against DuskRead once the name itself was
+      settled (replacing an earlier round explored against the Blogmark
+      name, before DuskRead existed as a concept). <b>Dusk bar</b> is the
+      one that shipped — see the Brand section above. <b>Horizon</b> and
+      <b>Crescent</b>, below, are the two that didn't, kept for the record
+      rather than deleted. Primitives only (circles, rects, one
+      ground-colour overlay technique), same reasoning as the shipped mark:
+      what's drawn here is exactly what would render at any size, nothing
+      hand-fit.
+    </p>
+
+    <p class="rationale" style="border:0;padding:0;max-width:66ch;margin-bottom:24px">
+      Same infrastructure note as before, still true regardless of which
+      mark or name: whichever ships still needs the flattened single-fill
+      silhouette Android 13+'s themed-icon system expects
+      (<code>ic_launcher_monochrome.xml</code>), which the OS re-tints from
+      the wallpaper. Not a per-concept decision.
+    </p>
+
+    <div class="v-amp" style="color:var(--text)">
+      <div class="brandrow" style="margin-bottom:34px">
+        <div>
+          <svg class="appicon" width="88" height="88" viewBox="0 0 108 108" aria-label="Horizon concept, launcher size">
+            <rect width="108" height="108" fill="#101010"/>
+            <circle cx="54" cy="58" r="24" fill="#c6684a"/>
+            <rect x="0" y="68" width="108" height="40" fill="#101010"/>
+            <rect x="16" y="64" width="76" height="8" rx="4" fill="#c6684a"/>
+          </svg>
+          <p class="brand-label">48</p>
+        </div>
+        <div>
+          <svg class="appicon" width="44" height="44" viewBox="0 0 108 108">
+            <rect width="108" height="108" fill="#101010"/>
+            <circle cx="54" cy="58" r="24" fill="#c6684a"/>
+            <rect x="0" y="68" width="108" height="40" fill="#101010"/>
+            <rect x="16" y="64" width="76" height="8" rx="4" fill="#c6684a"/>
+          </svg>
+          <p class="brand-label">24</p>
+        </div>
+        <div>
+          <div class="splash" style="background:#101010">
+            <svg width="74" height="74" viewBox="0 0 108 108">
+              <circle cx="54" cy="58" r="24" fill="#c6684a"/>
+              <rect x="0" y="68" width="108" height="40" fill="#101010"/>
+              <rect x="16" y="64" width="76" height="8" rx="4" fill="#c6684a"/>
+            </svg>
+          </div>
+          <p class="brand-label">splash</p>
+        </div>
+        <p class="rationale" style="flex:1 1 240px;align-self:center;border:0;padding:0">
+          <b>Horizon.</b> A sun (or moon) sitting exactly on a line — the
+          most literal reading of "dusk" of the three, and the one that
+          says least about "read" or "listen" on its own. The horizon bar
+          is drawn last, over a background-coloured rect that erases the
+          lower half of the circle — exact, no arc math to get wrong.
+        </p>
+      </div>
+
+      <div class="brandrow" style="margin-bottom:34px">
+        <div>
+          <svg class="appicon" width="88" height="88" viewBox="0 0 108 108" aria-label="Crescent concept, launcher size">
+            <rect width="108" height="108" fill="#101010"/>
+            <circle cx="50" cy="54" r="26" fill="#c6684a"/>
+            <circle cx="62" cy="44" r="24" fill="#101010"/>
+          </svg>
+          <p class="brand-label">48</p>
+        </div>
+        <div>
+          <svg class="appicon" width="44" height="44" viewBox="0 0 108 108">
+            <rect width="108" height="108" fill="#101010"/>
+            <circle cx="50" cy="54" r="26" fill="#c6684a"/>
+            <circle cx="62" cy="44" r="24" fill="#101010"/>
+          </svg>
+          <p class="brand-label">24</p>
+        </div>
+        <div>
+          <div class="splash" style="background:#101010">
+            <svg width="74" height="74" viewBox="0 0 108 108">
+              <circle cx="50" cy="54" r="26" fill="#c6684a"/>
+              <circle cx="62" cy="44" r="24" fill="#101010"/>
+            </svg>
+          </div>
+          <p class="brand-label">splash</p>
+        </div>
+        <p class="rationale" style="flex:1 1 240px;align-self:center;border:0;padding:0">
+          <b>Crescent.</b> One circle, one background-coloured circle
+          biting into it — the purest "dusk" reference of the three and the
+          simplest shape in the whole exploration so far. It says nothing
+          about reading or audio at all; the name would have to carry that
+          half of the meaning entirely on its own.
+        </p>
+      </div>
+
+    </div>
+
+    <p class="frame-cap" style="margin-top:34px">Name</p>
+    <div class="retired-note" style="max-width:66ch">
+      <p style="margin:0">
+        <b style="color:var(--text)">DuskRead</b> — shipped: the package,
+        every renamed identifier (<code>DuskReadIcons</code>,
+        <code>DuskReadTheme</code>, …), the manifest label, and the app
+        store/window titles across all four platforms all read DuskRead
+        now. Every other name suggested earlier (Cadence, Tempo,
+        Marginalia, Waypoint, Longform, Aloud, Cairn, Alcove, Dogear, Stet,
+        Digest, Abstract, Précis, Rundown, Byline, Quietfeed, Lowlight) is
+        retired — kept in git history, not repeated here.
+      </p>
+    </div>
+  </section>
+
+
+  <!-- ---------------------------------------------------------- -->
+  <section>
+    <h2>Icon set</h2>
+    <p class="section-title">Bar — the waveform is the alphabet</p>
+    <p class="section-note">
+      One stroke spec throughout: 2.4 weight, round cap and join. Every
+      glyph that can be built from evenly spaced vertical bars is —
+      <code>readback</code>, <code>feed</code>, <code>offline</code>,
+      <code>settings</code> (the sliders <em>are</em> bars) — and the rest
+      borrows the same weight and terminal so the set still looks cut from
+      one clip. This is the mockup's original demo wall, kept as the stroke
+      reference — it is <b>not</b> a mirror of <code>ui/theme/DuskReadIcons.kt</code>.
+      The shipped set is 20 icons and diverges both ways: <code>search</code>,
+      <code>share</code>, <code>sleep</code>, <code>speed</code>,
+      <code>skip</code>, <code>queue</code>, <code>offline</code>,
+      <code>add</code> and <code>delete</code> below were never built (no
+      playback-speed, sleep-timer, search or share feature exists), while the
+      code has several this wall doesn't show — <code>Target</code>,
+      <code>Clock</code>, <code>Shuffle</code>, <code>FolderConnect</code>,
+      <code>BookmarkFilled</code>, <code>Reader</code>, <code>Check</code>.
+    </p>
+
+    <div class="v-amp" style="color:var(--text)">
+      <div class="iconwall">
+        <figure><svg class="i"><use href="#w-home"/></svg><figcaption>home</figcaption></figure>
+        <figure><svg class="i"><use href="#w-wave"/></svg><figcaption>readback</figcaption></figure>
+        <figure><svg class="i"><use href="#w-saved"/></svg><figcaption>saved</figcaption></figure>
+        <figure><svg class="i"><use href="#w-folder"/></svg><figcaption>folder</figcaption></figure>
+        <figure><svg class="i"><use href="#w-feed"/></svg><figcaption>feed</figcaption></figure>
+        <figure><svg class="i"><use href="#w-search"/></svg><figcaption>search</figcaption></figure>
+        <figure><svg class="i"><use href="#w-play"/></svg><figcaption>play</figcaption></figure>
+        <figure><svg class="i"><use href="#w-pause"/></svg><figcaption>pause</figcaption></figure>
+        <figure><svg class="i"><use href="#w-skip"/></svg><figcaption>skip</figcaption></figure>
+        <figure><svg class="i"><use href="#w-back"/></svg><figcaption>back</figcaption></figure>
+        <figure><svg class="i"><use href="#w-speed"/></svg><figcaption>speed</figcaption></figure>
+        <figure><svg class="i"><use href="#w-sleep"/></svg><figcaption>sleep</figcaption></figure>
+        <figure><svg class="i"><use href="#w-queue"/></svg><figcaption>queue</figcaption></figure>
+        <figure><svg class="i"><use href="#w-focus"/></svg><figcaption>focus</figcaption></figure>
+        <figure><svg class="i"><use href="#w-done"/></svg><figcaption>done</figcaption></figure>
+        <figure><svg class="i"><use href="#w-offline"/></svg><figcaption>offline</figcaption></figure>
+        <figure><svg class="i"><use href="#w-share"/></svg><figcaption>share</figcaption></figure>
+        <figure><svg class="i"><use href="#w-delete"/></svg><figcaption>delete</figcaption></figure>
+        <figure><svg class="i"><use href="#w-add"/></svg><figcaption>add</figcaption></figure>
+        <figure><svg class="i"><use href="#w-external"/></svg><figcaption>external</figcaption></figure>
+        <figure><svg class="i"><use href="#w-settings"/></svg><figcaption>settings</figcaption></figure>
+        <figure><svg class="i"><use href="#w-contrast"/></svg><figcaption>contrast</figcaption></figure>
+        <figure><svg class="i"><use href="#w-close"/></svg><figcaption>close</figcaption></figure>
+        <figure><svg class="i"><use href="#w-chev"/></svg><figcaption>chevron</figcaption></figure>
+      </div>
+
+      <div>
+        <div class="navstrip">
+          <span class="nb"><svg class="i"><use href="#w-home"/></svg></span>
+          <span class="nb sel"><svg class="i"><use href="#w-wave"/></svg></span>
+          <span class="nb"><svg class="i"><use href="#w-saved"/></svg></span>
+        </div>
+        <div class="navstrip">
+          <span class="nb"><svg class="i"><use href="#w-back"/></svg></span>
+          <span class="nb sel"><svg class="i"><use href="#w-play"/></svg></span>
+          <span class="nb"><svg class="i"><use href="#w-skip"/></svg></span>
+          <span class="nb"><svg class="i"><use href="#w-speed"/></svg></span>
+          <span class="nb"><svg class="i"><use href="#w-sleep"/></svg></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ---------------------------------------------------------- -->
+  <section>
+    <h2>Type</h2>
+    <p class="section-title">Jost + Inconsolata, five roles</p>
+    <p class="section-note">
+      Jost for display and UI — a 1920s geometric with real character, used
+      at light weights. Inconsolata for every number and label, so data
+      never has to borrow the platform's default mono.
+    </p>
+
+    <div class="v-amp specimen" style="color:var(--text)">
+      <div>
+        <div class="lbl">Display · Jost 300 · 26/1.15</div>
+        <div style="font-family:'Jost',sans-serif;font-weight:300;font-size:26px;line-height:1.15;letter-spacing:0.005em">Hear it read back</div>
+      </div>
+      <div>
+        <div class="lbl">Title · Jost 400 · 16/1.3</div>
+        <div style="font-family:'Jost',sans-serif;font-weight:400;font-size:16px;line-height:1.3">A Tale of Two Flink Autoscalers</div>
+      </div>
+      <div>
+        <div class="lbl">Body · Jost 400 · 14/1.55</div>
+        <div style="font-family:'Jost',sans-serif;font-weight:400;font-size:14px;line-height:1.55;color:var(--muted)">Netflix currently runs two different autoscalers for Apache Flink, and they are actively moving toward replacing the custom one.</div>
+      </div>
+      <div>
+        <div class="lbl">Label · Inconsolata 500 · 10/0.16em</div>
+        <div style="font-family:'Inconsolata',monospace;font-weight:500;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--faint)">From saved · Today&rsquo;s readback · Following</div>
+      </div>
+      <div>
+        <div class="lbl">Data · Inconsolata 400 · 10.5 tabular</div>
+        <div style="font-family:'Inconsolata',monospace;font-size:10.5px;font-variant-numeric:tabular-nums;color:var(--muted)">1:22&nbsp;&nbsp;682w&nbsp;&nbsp;&middot;&nbsp;&nbsp;1:37&nbsp;&nbsp;2020w</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ---------------------------------------------------------- -->
+  <section>
+    <h2>In use today</h2>
+    <p class="section-title">What's actually shipped</p>
+    <p class="section-note">
+      Cross-checked against the current codebase, not carried forward from
+      the old migration notes unverified.
+    </p>
+
+    <ul class="status-list">
+      <li><b>No card boxes anywhere.</b> Home, Readback, Saved, Following and Settings all sit flush on the background, separated by a bottom hairline (<code>ui/common/ListRow.kt</code>). The Following post carousel and feed-management list, once boxed, are flat now too.</li>
+      <li><b>One shared row skeleton.</b> <code>ListRow</code>/<code>ListRowBody</code>/<code>ListRowDivider</code> hold the sourcechip-title-meta shape everywhere it appears, instead of three hand-rolled copies. <code>RowTone</code> (<code>Normal</code>/<code>Accent</code>/<code>Faded</code>) names the states a row can be in.</li>
+      <li><b>Two colour schemes, real tokens.</b> <code>ui/theme/Theme.kt</code>'s <code>DarkScheme</code> (Paper Black, terracotta <code>#C6684A</code>) and <code>MonoScheme</code> (Ink) — both dark, mono is the same layout with hue drained to luminance alone.</li>
+      <li><b>Ink persists and reaches the launcher.</b> The toggle (tab bar or Settings) is saved via <code>UserPrefs</code> and survives restarts; on Android it also flips a pair of activity-aliases (<code>LauncherPaper</code>/<code>LauncherInk</code>) so the home-screen icon and splash match.</li>
+      <li><b>Radius.Chip (3dp)</b> is the shared corner for anything hairline-bordered and squared-off: sort chips, the sourcechip, and — as of this pass — the Settings and folder icon buttons, both now bordered squares rather than bare glyphs.</li>
+      <li><b>Jost + Inconsolata</b> throughout, replacing Space Grotesk and each platform's default mono.</li>
+      <li><b><code>DuskReadIcons.kt</code></b> holds 20 stroked vector icons in the Bar hand (2.4 weight, round cap/join) — see the Icon set section above.</li>
+      <li><b>The floating nav bar</b> carries three tabs, the transport when something's playing, and the Ink toggle behind a divider.</li>
+      <li><b><code>AppTextField</code></b> is the one text-field shape in the app — hairline border, <code>Radius.Inline</code> (10dp), never a pill — used by every field: Saved's paste field, the feed-follow field, Settings, the desktop folder path, onboarding, and Focus's new custom-length entry.</li>
+      <li><b>Launcher icon and splash</b> fill ~70% of their canvas, solid rather than alpha-stepped, animating the outer bars to rest on boot.</li>
+    </ul>
+  </section>
+
+  <!-- ---------------------------------------------------------- -->
+  <section>
+    <h2>Next</h2>
+    <p class="section-title">Genuinely still open</p>
+    <p class="section-note">
+      Re-verified against the current code — some items the old migration
+      notes flagged (Readback's sort pills being filled surfaces, Following
+      still boxed) are already fixed and dropped from this list.
+    </p>
+
+    <ul class="status-list">
+      <li><b>Saved's "From clipboard" suggestion and one paste-row fill</b> are still filled <code>surfaceContainer</code>/<code>primaryContainer</code> boxes (<code>LinksTab.kt</code>) rather than a bordered pill.</li>
+      <li><b>Desktop has no app icon</b> — <code>compose.desktop.application.nativeDistributions</code> sets no <code>iconFile</code>.</li>
+      <li><b>iOS and Wasm haven't been compiled</b> across this whole design pass — a cold Kotlin/Native build is ten-plus minutes, so it's deliberately been skipped; one run should happen before calling any of this settled on those platforms.</li>
+      <li><b>Cut features awaiting a call, not a bug:</b> the read-along highlighted-excerpt view and the "Read original" external-link row (both real, both cut when Readback went to two-facts-and-a-waveform), and the floating bar's ambient background waveform (moirés into a hatch at the row pitch).</li>
+      <li><b>Article summary</b> — see the <a href="#summary-concept">Screen — Article summary</a> section above for the worked-out idea (entry point, loading state, floating result). Not started; the extraction prerequisite (<code>Article.text</code>) already exists.</li>
+    </ul>
+  </section>
+
+  <footer>
+    DuskRead design system · Amplitude, as shipped · replaces redesign-variants.html
+  </footer>
+
+</div>
