@@ -34,6 +34,14 @@ import kotlinx.coroutines.launch
 class ReaderPlaybackService : Service() {
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var player: MediaPlayer? = null
+
+    // [player] is assigned before prepareAsync() completes, so the error
+    // listener can catch an async failure — which leaves a window where
+    // start()/pause()/seekTo() would otherwise land on a MediaPlayer still in
+    // its Initialized/Preparing state and throw IllegalStateException. This
+    // tracks the one further thing callers actually need to know: whether
+    // onPreparedListener has fired for the *current* player yet.
+    private var ready = false
     private var progressJob: Job? = null
     private lateinit var session: MediaSessionCompat
     private var title: String = ""
@@ -86,7 +94,16 @@ class ReaderPlaybackService : Service() {
         startForeground(NotificationId, buildNotification(playing = false))
 
         val mediaPlayer = MediaPlayer()
+        // A second ActionPlay can arrive (a fast switch to a different read)
+        // while this instance is still preparing. start() releases it and
+        // moves player on to a new instance, but a callback already in
+        // flight on the looper isn't guaranteed to be dropped by that —
+        // every listener below re-checks it's still the current player
+        // before touching anything, so a late callback from a superseded
+        // track is a no-op instead of a call into a released MediaPlayer.
         mediaPlayer.setOnPreparedListener { prepared ->
+            if (player !== mediaPlayer) return@setOnPreparedListener
+            ready = true
             prepared.start()
             session.setMetadata(
                 MediaMetadataCompat.Builder()
@@ -99,6 +116,7 @@ class ReaderPlaybackService : Service() {
             tick()
         }
         mediaPlayer.setOnCompletionListener { completed ->
+            if (player !== mediaPlayer) return@setOnCompletionListener
             progressJob?.cancel()
             publish(playing = false, positionMs = completed.duration, durationMs = completed.duration)
             stopForeground(STOP_FOREGROUND_DETACH)
@@ -109,7 +127,7 @@ class ReaderPlaybackService : Service() {
         // session sends crashes with IllegalStateException instead of the
         // read just failing to start.
         mediaPlayer.setOnErrorListener { _, _, _ ->
-            stopAndRelease()
+            if (player === mediaPlayer) stopAndRelease()
             true
         }
 
@@ -127,8 +145,14 @@ class ReaderPlaybackService : Service() {
         }
     }
 
+    // Guarded by [ready] rather than just a null check on [player]: the
+    // notification's toggle button (and the media session's transport
+    // controls) are reachable the instant playback is requested, but
+    // start()/pause()/seekTo() throw IllegalStateException if called before
+    // onPreparedListener has actually fired for this player.
     private fun resume() {
         val current = player ?: return
+        if (!ready) return
         current.start()
         publish(playing = true, positionMs = current.currentPosition, durationMs = current.duration)
         startForeground(NotificationId, buildNotification(playing = true))
@@ -137,6 +161,7 @@ class ReaderPlaybackService : Service() {
 
     private fun pause() {
         val current = player ?: return
+        if (!ready) return
         current.pause()
         progressJob?.cancel()
         publish(playing = false, positionMs = current.currentPosition, durationMs = current.duration)
@@ -145,6 +170,7 @@ class ReaderPlaybackService : Service() {
 
     private fun seek(positionMs: Long) {
         val current = player ?: return
+        if (!ready) return
         current.seekTo(positionMs.toInt())
         publish(playing = current.isPlaying, positionMs = positionMs.toInt(), durationMs = current.duration)
     }
@@ -170,6 +196,7 @@ class ReaderPlaybackService : Service() {
         progressJob?.cancel()
         player?.release()
         player = null
+        ready = false
         ReaderPlaybackClock.set(PlaybackState())
     }
 
