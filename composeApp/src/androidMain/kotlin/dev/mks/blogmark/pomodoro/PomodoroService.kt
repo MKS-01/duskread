@@ -95,19 +95,20 @@ class PomodoroService : Service() {
     }
 
     private fun buildNotification(state: PomodoroState, done: Boolean = false): Notification {
-        ensureChannel()
+        ensureChannels()
 
         val minutes = state.remainingSeconds / 60
         val seconds = state.remainingSeconds % 60
         val text = if (done) "Session complete" else "%d:%02d remaining".format(minutes, seconds)
 
-        val builder = NotificationCompat.Builder(this, ChannelId)
+        val builder = NotificationCompat.Builder(this, if (done) DoneChannelId else ChannelId)
             .setContentTitle("Focus session")
             .setContentText(text)
             .setSmallIcon(android.R.drawable.ic_menu_recent_history)
             .setOnlyAlertOnce(true)
             .setOngoing(!done)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setAutoCancel(done)
+            .setPriority(if (done) NotificationCompat.PRIORITY_HIGH else NotificationCompat.PRIORITY_LOW)
             .setContentIntent(contentIntent())
 
         if (!done) {
@@ -146,12 +147,26 @@ class PomodoroService : Service() {
         )
     }
 
-    private fun ensureChannel() {
+    /**
+     * Two channels, not one: the ticking countdown updates once a second and
+     * has to stay silent (IMPORTANCE_LOW, no vibration) or it would buzz the
+     * reader's pocket all session long. "Session complete" is the one moment
+     * that should actually interrupt them, and a channel's importance can't
+     * be changed after creation — so it gets its own HIGH-importance channel
+     * with vibration built in rather than a one-off manual vibrate() call.
+     */
+    private fun ensureChannels() {
         val manager = getSystemService(NotificationManager::class.java) ?: return
         if (manager.getNotificationChannel(ChannelId) == null) {
             manager.createNotificationChannel(
                 NotificationChannel(ChannelId, "Focus timer", NotificationManager.IMPORTANCE_LOW),
             )
+        }
+        if (manager.getNotificationChannel(DoneChannelId) == null) {
+            val channel = NotificationChannel(DoneChannelId, "Focus session complete", NotificationManager.IMPORTANCE_HIGH)
+            channel.enableVibration(true)
+            channel.vibrationPattern = DoneVibrationPattern
+            manager.createNotificationChannel(channel)
         }
     }
 
@@ -167,6 +182,8 @@ class PomodoroService : Service() {
         const val ExtraMinutes = "minutes"
         private const val DefaultMinutes = 25
         private const val ChannelId = "pomodoro"
+        private const val DoneChannelId = "pomodoro_done"
         private const val NotificationId = 1001
+        private val DoneVibrationPattern = longArrayOf(0, 400, 200, 400)
     }
 }

@@ -15,8 +15,11 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -24,10 +27,16 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.mks.blogmark.pomodoro.PickableMinutes
@@ -35,6 +44,7 @@ import dev.mks.blogmark.pomodoro.PomodoroState
 import dev.mks.blogmark.pomodoro.clockLabel
 import dev.mks.blogmark.pomodoro.rememberPomodoroController
 import dev.mks.blogmark.ui.PlatformBackHandler
+import dev.mks.blogmark.ui.common.AppTextField
 import dev.mks.blogmark.ui.common.EyebrowHeader
 import dev.mks.blogmark.ui.common.WaveformMeter
 import dev.mks.blogmark.ui.theme.BlogmarkIcons
@@ -58,6 +68,7 @@ import dev.mks.blogmark.ui.theme.Stroke
 fun FocusScreen(onClose: () -> Unit, modifier: Modifier = Modifier) {
     val controller = rememberPomodoroController()
     val state by controller.state.collectAsState()
+    var customLength by remember { mutableStateOf(false) }
 
     PlatformBackHandler(enabled = true, onBack = onClose)
 
@@ -96,13 +107,21 @@ fun FocusScreen(onClose: () -> Unit, modifier: Modifier = Modifier) {
 
                 Spacer(Modifier.height(10.dp))
 
-                Text(
-                    text = if (state.idle) "Pick a length" else state.clockLabel,
-                    style = CodeStyle,
-                    fontSize = 52.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onBackground,
-                )
+                if (state.idle) {
+                    Text(
+                        text = "Pick a length",
+                        color = MaterialTheme.colorScheme.onBackground,
+                        style = MaterialTheme.typography.headlineSmall,
+                    )
+                } else {
+                    Text(
+                        text = state.clockLabel,
+                        style = CodeStyle,
+                        fontSize = 52.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onBackground,
+                    )
+                }
 
                 if (!state.idle) {
                     Spacer(Modifier.height(20.dp))
@@ -120,9 +139,17 @@ fun FocusScreen(onClose: () -> Unit, modifier: Modifier = Modifier) {
                 Spacer(Modifier.height(28.dp))
 
                 if (state.idle) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        PickableMinutes.forEach { minutes ->
-                            FocusOption(text = "$minutes min", onClick = { controller.start(minutes) })
+                    if (customLength) {
+                        CustomLengthEntry(
+                            onStart = { minutes -> controller.start(minutes) },
+                            onCancel = { customLength = false },
+                        )
+                    } else {
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            PickableMinutes.forEach { minutes ->
+                                FocusOption(text = "$minutes min", onClick = { controller.start(minutes) })
+                            }
+                            FocusOption(text = "Custom", onClick = { customLength = true })
                         }
                     }
                 } else {
@@ -132,10 +159,46 @@ fun FocusScreen(onClose: () -> Unit, modifier: Modifier = Modifier) {
                             primary = true,
                             onClick = { if (state.running) controller.pause() else controller.resume() },
                         )
-                        FocusOption(text = "Reset", onClick = { controller.reset() })
+                        FocusOption(
+                            text = "Reset",
+                            onClick = {
+                                controller.reset()
+                                customLength = false
+                            },
+                        )
                     }
                 }
             }
+        }
+    }
+}
+
+/**
+ * What "Custom" on the length picker opens into: a bare minute count rather
+ * than a full duration picker, since every other length in this app is
+ * already just a number of minutes. Digits only, capped at 3 characters —
+ * plenty for anything a focus session would reasonably run to.
+ */
+@Composable
+private fun CustomLengthEntry(onStart: (Int) -> Unit, onCancel: () -> Unit) {
+    var text by remember { mutableStateOf("") }
+    val minutes = text.toIntOrNull()
+
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        AppTextField(
+            value = text,
+            onValueChange = { new -> if (new.length <= 3 && new.all(Char::isDigit)) text = new },
+            placeholder = "MIN",
+            modifier = Modifier.width(96.dp),
+            mono = true,
+            textAlign = TextAlign.Center,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(onDone = { minutes?.takeIf { it > 0 }?.let(onStart) }),
+        )
+        Spacer(Modifier.height(14.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            FocusOption(text = "Start", primary = true, onClick = { minutes?.takeIf { it > 0 }?.let(onStart) })
+            FocusOption(text = "Cancel", onClick = onCancel)
         }
     }
 }
