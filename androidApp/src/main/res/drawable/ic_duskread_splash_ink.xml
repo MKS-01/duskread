@@ -1,0 +1,12 @@
+<!--
+    Ink's launch animation — the same settle animation as ic_duskread_splash,
+    driving ic_duskread_mark_ink instead of the terracotta mark, so the
+    splash matches whichever scheme the reader last chose.
+-->
+<animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/ic_duskread_mark_ink">
+
+    <target
+        android:name="bar_main"
+        android:animation="@animator/splash_bar_main" />
+</animated-vector>

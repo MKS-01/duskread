@@ -1,6 +1,6 @@
 name: iosApp
 options:
-  bundleIdPrefix: dev.mks.blogmark
+  bundleIdPrefix: dev.mks.duskread
 settings:
   base:
     IPHONEOS_DEPLOYMENT_TARGET: "15.0"
@@ -11,7 +11,7 @@ targets:
     sources: [iosApp]
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: dev.mks.blogmark
+        PRODUCT_BUNDLE_IDENTIFIER: dev.mks.duskread
         PRODUCT_NAME: iosApp
         INFOPLIST_FILE: iosApp/Info.plist
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon

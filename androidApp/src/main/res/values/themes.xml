@@ -7,23 +7,23 @@
         than cover it.
 
         The icon animates (the meter's bars settling — see
-        ic_blogmark_splash), but nothing here imposes a delay: the duration
+        ic_duskread_splash), but nothing here imposes a delay: the duration
         below only tells the system how long the animation runs, and the
         window is still dismissed the moment the app has something to draw.
         On a warm start that cuts the settle off part-way through, which is
         the right trade — the splash is there to cover a wait, not to make
         one.
     -->
-    <style name="Theme.Blogmark.Splash" parent="Theme.SplashScreen">
+    <style name="Theme.DuskRead.Splash" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/splash_background</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_blogmark_splash</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_duskread_splash</item>
         <item name="windowSplashScreenAnimationDuration">700</item>
-        <item name="postSplashScreenTheme">@style/Theme.Blogmark</item>
+        <item name="postSplashScreenTheme">@style/Theme.DuskRead</item>
     </style>
 
     <!-- Compose draws everything; this only needs to avoid a flash of the
          wrong colour before the first frame. -->
-    <style name="Theme.Blogmark" parent="android:Theme.Material.NoActionBar">
+    <style name="Theme.DuskRead" parent="android:Theme.Material.NoActionBar">
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowBackground">@color/splash_background</item>
@@ -36,14 +36,14 @@
         splash matches whichever launcher icon the reader tapped, and by
         extension whichever scheme they last chose in-app.
     -->
-    <style name="Theme.Blogmark.Splash.Ink" parent="Theme.SplashScreen">
+    <style name="Theme.DuskRead.Splash.Ink" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/splash_background_ink</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_blogmark_splash_ink</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_duskread_splash_ink</item>
         <item name="windowSplashScreenAnimationDuration">700</item>
-        <item name="postSplashScreenTheme">@style/Theme.Blogmark.Ink</item>
+        <item name="postSplashScreenTheme">@style/Theme.DuskRead.Ink</item>
     </style>
 
-    <style name="Theme.Blogmark.Ink" parent="android:Theme.Material.NoActionBar">
+    <style name="Theme.DuskRead.Ink" parent="android:Theme.Material.NoActionBar">
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowBackground">@color/splash_background_ink</item>

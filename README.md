@@ -1,4 +1,4 @@
-<h1 align="center">Blogmark</h1>
+<h1 align="center">DuskRead</h1>
 
 <p align="center">
   <strong>Save a link. Follow a blog. Hear it read back. Stay focused.</strong>

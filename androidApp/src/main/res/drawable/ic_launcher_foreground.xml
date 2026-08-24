@@ -2,7 +2,7 @@
     The launcher's copy of the mark, held further off the edge of the tile.
 
     An inset rather than a second drawing of it: the safe-zone scale in
-    ic_blogmark_mark is the most a mark may be, not the most it should be, and
+    ic_duskread_mark is the most a mark may be, not the most it should be, and
     a launcher icon that runs to the edge of its mask reads as cramped next to
     every other icon on the home screen, which sit in far more air than the
     mask strictly requires. The splash has a whole screen and needs no such
@@ -10,5 +10,5 @@
     geometry, wrapped, rather than a second copy free to drift from it.
 -->
 <inset xmlns:android="http://schemas.android.com/apk/res/android"
-    android:drawable="@drawable/ic_blogmark_mark"
+    android:drawable="@drawable/ic_duskread_mark"
     android:inset="13%" />

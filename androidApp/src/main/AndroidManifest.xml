@@ -33,9 +33,9 @@
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
-        android:label="Blogmark"
+        android:label="DuskRead"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Blogmark.Splash">
+        android:theme="@style/Theme.DuskRead.Splash">
 
         <!--
             singleTask so a share reuses the running app instead of stacking a
@@ -47,14 +47,14 @@
             activity; onNewIntent is where a share now arrives.
         -->
         <activity
-            android:name="dev.mks.blogmark.android.MainActivity"
+            android:name="dev.mks.duskread.android.MainActivity"
             android:exported="true"
             android:launchMode="singleTask"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode|density|fontScale"
             android:windowSoftInputMode="adjustResize">
 
             <!--
-                Share target: "Share -> Blogmark" from a browser or any app that
+                Share target: "Share -> DuskRead" from a browser or any app that
                 sends text. Chrome sends the page URL as EXTRA_TEXT, often with
                 the title in front of it, which is why the handler extracts the
                 link rather than storing the payload whole.
@@ -79,14 +79,14 @@
             UserPrefs' default (mono = false).
         -->
         <activity-alias
-            android:name="dev.mks.blogmark.android.LauncherPaper"
-            android:targetActivity="dev.mks.blogmark.android.MainActivity"
+            android:name="dev.mks.duskread.android.LauncherPaper"
+            android:targetActivity="dev.mks.duskread.android.MainActivity"
             android:enabled="true"
             android:exported="true"
             android:icon="@mipmap/ic_launcher"
             android:roundIcon="@mipmap/ic_launcher_round"
-            android:label="Blogmark"
-            android:theme="@style/Theme.Blogmark.Splash">
+            android:label="DuskRead"
+            android:theme="@style/Theme.DuskRead.Splash">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -94,14 +94,14 @@
         </activity-alias>
 
         <activity-alias
-            android:name="dev.mks.blogmark.android.LauncherInk"
-            android:targetActivity="dev.mks.blogmark.android.MainActivity"
+            android:name="dev.mks.duskread.android.LauncherInk"
+            android:targetActivity="dev.mks.duskread.android.MainActivity"
             android:enabled="false"
             android:exported="true"
             android:icon="@mipmap/ic_launcher_ink"
             android:roundIcon="@mipmap/ic_launcher_round_ink"
-            android:label="Blogmark"
-            android:theme="@style/Theme.Blogmark.Splash.Ink">
+            android:label="DuskRead"
+            android:theme="@style/Theme.DuskRead.Splash.Ink">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -114,7 +114,7 @@
             harmless no-op on older versions where the type is not enforced.
         -->
         <service
-            android:name="dev.mks.blogmark.pomodoro.PomodoroService"
+            android:name="dev.mks.duskread.pomodoro.PomodoroService"
             android:exported="false"
             android:foregroundServiceType="specialUse">
             <property
@@ -124,7 +124,7 @@
 
         <!-- Reader playback: a real foreground-service type exists for this one. -->
         <service
-            android:name="dev.mks.blogmark.reader.ReaderPlaybackService"
+            android:name="dev.mks.duskread.reader.ReaderPlaybackService"
             android:exported="false"
             android:foregroundServiceType="mediaPlayback" />
     </application>

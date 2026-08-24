@@ -13,7 +13,7 @@ kotlin {
     // Since AGP 9 the Android side of a KMP module is configured here rather
     // than with the `com.android.library` plugin.
     androidLibrary {
-        namespace = "dev.mks.blogmark"
+        namespace = "dev.mks.duskread"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
 
@@ -105,11 +105,11 @@ kotlin {
 
 compose.desktop {
     application {
-        mainClass = "dev.mks.blogmark.MainKt"
+        mainClass = "dev.mks.duskread.MainKt"
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg)
-            packageName = "Blogmark"
+            packageName = "DuskRead"
             packageVersion = "1.0.0"
         }
     }

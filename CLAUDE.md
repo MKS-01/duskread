@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-Blogmark — a Compose Multiplatform reading app: save a link, follow a blog's
+DuskRead — a Compose Multiplatform reading app: save a link, follow a blog's
 RSS feed, and hear posts read back as audio, with a focus timer around it all.
 Used mostly on an Android phone, one-handed, so everything sits in the lower
 third of the screen.
@@ -49,8 +49,8 @@ uses the AGP 9 `androidLibrary` KMP DSL, not `com.android.library`:
 Compiling proves nothing about layout. For any UI change, check it on a device:
 
 ```bash
-adb shell am force-stop dev.mks.blogmark
-adb shell am start -n dev.mks.blogmark/dev.mks.blogmark.android.MainActivity
+adb shell am force-stop dev.mks.duskread
+adb shell am start -n dev.mks.duskread/dev.mks.duskread.android.MainActivity
 adb exec-out screencap -p > /tmp/check.png
 ```
 
@@ -73,7 +73,7 @@ xcrun simctl boot "iPhone 17" 2>/dev/null; open -a Simulator
 APP_PATH=$(find ~/Library/Developer/Xcode/DerivedData/iosApp-*/Build/Products/Debug-iphonesimulator \
   -maxdepth 1 -name "iosApp.app")
 xcrun simctl install "iPhone 17" "$APP_PATH"
-xcrun simctl launch "iPhone 17" dev.mks.blogmark
+xcrun simctl launch "iPhone 17" dev.mks.duskread
 xcrun simctl io "iPhone 17" screenshot /tmp/ios_check.png
 ```
 
@@ -118,7 +118,7 @@ aggregate task would be `:composeApp:allTests`. Do not invent test commands.
 
 ## Icons
 
-Use `ui/theme/BlogmarkIcons.kt`, not `Icons.Filled.*` — the set is stroked to match
+Use `ui/theme/DuskReadIcons.kt`, not `Icons.Filled.*` — the set is stroked to match
 the type weight, and mixing in a filled Material glyph is immediately visible.
 Add new ones there as vector paths.
 

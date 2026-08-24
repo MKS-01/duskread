@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    The foreground is an inset around `ic_blogmark_mark`, not a copy of it: the
+    The foreground is an inset around `ic_duskread_mark`, not a copy of it: the
     launcher icon and the launch animation have to be the same mark, and the
     surest way to keep them that way is for there to be only one drawing of it.
 -->
