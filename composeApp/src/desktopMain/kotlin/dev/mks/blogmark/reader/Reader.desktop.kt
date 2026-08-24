@@ -1,12 +1,13 @@
 package dev.mks.blogmark.reader
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -24,6 +25,8 @@ import dev.mks.blogmark.data.rememberKeyValueStore
 import dev.mks.blogmark.ui.common.AppTextField
 import dev.mks.blogmark.ui.common.PrimaryButton
 import dev.mks.blogmark.ui.theme.BlogmarkIcons
+import dev.mks.blogmark.ui.theme.Radius
+import dev.mks.blogmark.ui.theme.Stroke
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -144,15 +147,18 @@ actual fun ReaderSourcePicker(repository: ReadRepository, compact: Boolean) {
     var path by remember { mutableStateOf(desktopRepository.currentPath()) }
 
     if (compact && !expanded) {
-        // A bare glyph, same weight as the Settings icon on Home — this is
-        // "change where the library comes from", not a destination on par
-        // with Newest/Oldest, so it no longer sits in that row.
+        // Same hairline-and-softened-corner language as the sort chips —
+        // this is "change where the library comes from", not a destination
+        // on par with Newest/Oldest, so it no longer sits in that row, but it
+        // keeps that row's weight rather than reading as a bare, smaller
+        // glyph next to it.
         Icon(
             imageVector = BlogmarkIcons.FolderConnect,
             contentDescription = "Choose folder",
             modifier = Modifier
                 .size(34.dp)
-                .clip(CircleShape)
+                .clip(RoundedCornerShape(Radius.Chip))
+                .border(Stroke.Hairline, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(Radius.Chip))
                 .clickable { expanded = true }
                 .padding(9.dp),
             tint = MaterialTheme.colorScheme.onSurfaceVariant,

@@ -122,8 +122,9 @@ fun DashboardTab(
             // The greeting only appears if a name was given — no "Hello, there"
             // fallback, which reads worse than nothing — but the row itself
             // always shows, since Settings needs somewhere to live either way.
-            // A bare glyph, not a circle button: the greeting row is chrome,
-            // not a card, and nothing else on it has a background either.
+            // The same hairline-and-softened-corner language as the sort
+            // chips, not a circle button — a bare glyph read as too slight
+            // next to them, and this keeps it one system rather than two.
             item("head") {
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 22.dp)) {
                     greeting?.let {
@@ -139,6 +140,8 @@ fun DashboardTab(
                         contentDescription = "Settings",
                         modifier = Modifier
                             .size(34.dp)
+                            .clip(RoundedCornerShape(Radius.Chip))
+                            .border(Stroke.Hairline, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(Radius.Chip))
                             .clickable(onClick = onOpenSettings)
                             .padding(9.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
