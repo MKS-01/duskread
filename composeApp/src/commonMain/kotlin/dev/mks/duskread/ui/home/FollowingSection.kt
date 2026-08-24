@@ -47,8 +47,10 @@ import dev.mks.duskread.links.Feed
 import dev.mks.duskread.links.FeedLibrary
 import dev.mks.duskread.links.FeedPost
 import dev.mks.duskread.links.FeedPostCache
+import dev.mks.duskread.links.FeedSourceKind
 import dev.mks.duskread.links.LinkLibrary
-import dev.mks.duskread.links.discoverFeedUrl
+import dev.mks.duskread.links.discoverFeedSource
+import dev.mks.duskread.links.hostOf
 import dev.mks.duskread.links.looksLikeUrl
 import dev.mks.duskread.links.normaliseUrl
 import dev.mks.duskread.links.savedAgo
@@ -100,16 +102,26 @@ fun FollowingDigest(
     var note by remember { mutableStateOf<String?>(null) }
     var expanded by remember { mutableStateOf<String?>(null) }
 
-    // Following a blog by its homepage rather than its exact feed address is
-    // the common case — this is what turns "swmansion.com/blog/" into the
+    // Following a blog by its page rather than its exact feed address is the
+    // common case — this is what turns "swmansion.com/blog/" into the
     // `/rss.xml` underneath it before it ever reaches [FeedLibrary].
+    //
+    // What came back is worth saying out loud, because the three outcomes look
+    // identical in the list underneath: a real feed, a blog with no feed whose
+    // page is being read as one, and an address nothing could be found at.
+    // The last is the reader's cue that they typed the wrong page.
     fun follow() {
         val typed = feedUrl
         if (discovering || !looksLikeUrl(typed)) return
         discovering = true
         scope.launch {
-            val resolved = discoverFeedUrl(client, normaliseUrl(typed))
-            feedLibrary.add(resolved)
+            val source = discoverFeedSource(client, normaliseUrl(typed))
+            feedLibrary.add(source.url)
+            note = when (source.kind) {
+                FeedSourceKind.Feed -> "Following ${hostOf(source.url)}."
+                FeedSourceKind.Page -> "No feed at ${hostOf(source.url)} — following its page instead."
+                FeedSourceKind.Unknown -> "Followed, but found no posts at ${hostOf(source.url)}."
+            }
             feedUrl = ""
             discovering = false
         }
@@ -179,7 +191,7 @@ fun FollowingDigest(
             CompactEmptyState(
                 title = if (feedLibrary.feeds.isEmpty()) "Follow a blog" else "Nothing synced yet",
                 message = if (feedLibrary.feeds.isEmpty()) {
-                    "Follow a blog's RSS or Atom feed to see its posts here."
+                    "Follow any blog by its address — its feed is found for you."
                 } else {
                     "Tap Sync now to pull in its latest posts."
                 },
@@ -343,7 +355,7 @@ private fun FeedManagePanel(
         AppTextField(
             value = url,
             onValueChange = onUrlChange,
-            placeholder = "Blog's address or its RSS/Atom feed",
+            placeholder = "Blog's address, or its feed",
             enabled = !discovering,
             fontSize = 14.5.sp,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),

@@ -26,6 +26,10 @@
   thumb), not phone-only.
 - **Never lose a link again.** Paste one in or share it from a browser and
   it's usable instantly; the real title fills in a second later on its own.
+- **Follow a blog, not a feed URL.** Paste the address you'd send a friend
+  — `medium.com/basecs`, a Blogger site, a company's `/blog` — and the feed
+  behind it is found for you. No feed at all? The page itself is read as
+  one, so "follow this blog" means any blog.
 - **Read with your ears, hands-free.** A synced
   [readback](https://github.com/MKS-01/readback) library plays right from
   the floating bar, so listening never means leaving what you're doing.

@@ -2,9 +2,16 @@ package dev.mks.duskread.links
 
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
+import io.ktor.client.request.head
 import io.ktor.client.request.header
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.contentType
+import io.ktor.http.isSuccess
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 
@@ -32,15 +39,35 @@ data class FeedEntry(
  * machine-generated XML, well-formed often enough that a real parser buys
  * nothing a five-target KMP project doesn't already pay for as a dependency,
  * and the two formats only need two tag shapes told apart.
+ *
+ * Strictly XML: a page that is not a feed comes back empty rather than being
+ * read some other way, because that answer is what [discoverFeedSource] uses
+ * to reject a candidate address.
  */
-suspend fun fetchFeed(client: HttpClient, url: String): List<FeedEntry> {
-    val xml = client.get(url) {
-        header(HttpHeaders.UserAgent, UserAgent)
-        header(HttpHeaders.Accept, "application/rss+xml, application/atom+xml, application/xml, text/xml, */*")
-    }.bodyAsText().take(MaxBytesScanned)
+suspend fun fetchFeed(client: HttpClient, url: String): List<FeedEntry> = parseFeed(fetchSource(client, url))
 
-    return parseFeed(xml)
+/**
+ * The posts behind a followed address, whichever shape that address turned out
+ * to be — an XML feed, or a listing page read by [parseIndexPage].
+ *
+ * One fetch decides, rather than the caller having to remember which kind of
+ * source it stored: what came back either parses as a feed or it does not, and
+ * a publisher that adds a feed later starts being read as one on the next sync
+ * with nothing to migrate.
+ */
+suspend fun fetchEntries(client: HttpClient, url: String): List<FeedEntry> {
+    val body = fetchSource(client, url)
+    return parseFeed(body).ifEmpty { parseIndexPage(body, url) }
 }
+
+/** The body of [url], capped — both a feed and a listing page are read as one string. */
+private suspend fun fetchSource(client: HttpClient, url: String): String = client.get(url) {
+    header(HttpHeaders.UserAgent, UserAgent)
+    header(
+        HttpHeaders.Accept,
+        "application/rss+xml, application/atom+xml, application/xml, text/xml, text/html;q=0.9, */*;q=0.8",
+    )
+}.bodyAsText().take(MaxBytesScanned)
 
 /**
  * RSS wraps posts in `<item>`, Atom in `<entry>` — never both in one
@@ -80,40 +107,64 @@ private fun String.atomEntryUrl(): String? = AtomAlternateLinkPattern.firstNotNu
     ?: AtomAnyLinkPattern.find(this)?.groupValues?.get(1)?.tidy()
 
 /**
- * A publication date out of either format, without a calendar library.
+ * A publication date out of any of the shapes a post arrives dated in, without
+ * a calendar library.
  *
- * Atom dates are ISO-8601 and [Instant] parses those outright. RSS dates are
- * RFC-822 — "Wed, 13 Aug 2026 09:00:00 +0000" — which it will not touch, so
- * they are rewritten into ISO and handed to the same parser rather than
- * turned into an epoch by hand: the arithmetic that converts a civil date to
- * a count of days is exactly the part worth not writing twice.
+ * Atom dates are ISO-8601 and [Instant] parses those outright. Everything else
+ * — RSS's RFC-822 "Wed, 13 Aug 2026 09:00:00 +0000", a bare "2026-08-13", the
+ * "August 13, 2026" a listing page prints for people — is rewritten into ISO
+ * and handed to the same parser rather than turned into an epoch by hand: the
+ * arithmetic that converts a civil date to a count of days is exactly the part
+ * worth not writing twice.
  *
- * A named zone other than UTC ("EST", "PDT") is read as UTC. They are rare in
- * modern feeds, and the error is hours on a stamp shown as "3d ago".
+ * A named zone other than UTC ("EST", "PDT") is read as UTC, and a date with
+ * no time at all is read as midnight UTC. They are rare and small errors
+ * respectively, against a stamp shown as "3d ago".
  */
 @OptIn(ExperimentalTime::class)
 internal fun parsePostDate(raw: String): Long? {
     val text = raw.trim().removeSurrounding("<![CDATA[", "]]>").trim().ifEmpty { return null }
     runCatching { return Instant.parse(text).toEpochMilliseconds() }
 
-    val match = Rfc822Pattern.find(text) ?: return null
-    val month = MonthNames.indexOf(match.groupValues[2].lowercase()) + 1
+    IsoDayPattern.find(text)?.let { day -> return isoMillis(day.value + "T00:00:00Z") }
+
+    return text.writtenDateAsIso()?.let(::isoMillis)
+}
+
+/**
+ * "Wed, 13 Aug 2026 09:00:00 +0000" or "August 13, 2026" as an ISO timestamp.
+ *
+ * Day-first with a clock, and month-first without one, are the same fields in
+ * a different order — matching both here rather than in two functions is what
+ * keeps the month lookup and the zero-padding written once.
+ */
+private fun String.writtenDateAsIso(): String? {
+    val dayFirst = Rfc822Pattern.find(this)
+    val parts = (dayFirst ?: MonthFirstPattern.find(this) ?: return null).groupValues
+
+    val day = if (dayFirst != null) parts[1] else parts[2]
+    val month = MonthNames.indexOf((if (dayFirst != null) parts[2] else parts[1]).take(3).lowercase()) + 1
     if (month == 0) return null
 
-    val zone = match.groupValues[7]
+    // Only the RFC-822 shape carries a clock and a zone; a printed date is
+    // midnight UTC, which is as precise as the page was.
+    val zone = if (dayFirst != null) parts[7] else ""
     val offset = if (zone.length == 5 && (zone[0] == '+' || zone[0] == '-')) "${zone.take(3)}:${zone.drop(3)}" else "Z"
-    val iso = buildString {
-        append(match.groupValues[3].padStart(4, '0')).append('-')
+    val clock = if (dayFirst != null) listOf(parts[4], parts[5], parts[6]) else emptyList()
+
+    return buildString {
+        append(parts[3].padStart(4, '0')).append('-')
         append(month.toString().padStart(2, '0')).append('-')
-        append(match.groupValues[1].padStart(2, '0')).append('T')
-        append(match.groupValues[4].padStart(2, '0')).append(':')
-        append(match.groupValues[5].padStart(2, '0')).append(':')
-        append(match.groupValues[6].ifEmpty { "00" }.padStart(2, '0'))
+        append(day.padStart(2, '0')).append('T')
+        append(clock.getOrNull(0).orEmpty().ifEmpty { "00" }.padStart(2, '0')).append(':')
+        append(clock.getOrNull(1).orEmpty().ifEmpty { "00" }.padStart(2, '0')).append(':')
+        append(clock.getOrNull(2).orEmpty().ifEmpty { "00" }.padStart(2, '0'))
         append(offset)
     }
-
-    return runCatching { Instant.parse(iso).toEpochMilliseconds() }.getOrNull()
 }
+
+@OptIn(ExperimentalTime::class)
+private fun isoMillis(iso: String): Long? = runCatching { Instant.parse(iso).toEpochMilliseconds() }.getOrNull()
 
 /**
  * A feed's own copy of the post, unwrapped.
@@ -147,51 +198,162 @@ private fun String.entryImage(): String? = EntryImagePatterns.firstNotNullOfOrNu
     pattern.find(this)?.groupValues?.get(1)?.trim()?.takeIf { it.isNotEmpty() }
 }
 
+/** Where a followed address's posts come from, once [discoverFeedSource] has looked. */
+enum class FeedSourceKind {
+    /** An RSS or Atom document — the publisher's own machine-readable answer. */
+    Feed,
+
+    /** No feed anywhere, but the page lists its posts and [parseIndexPage] can read them. */
+    Page,
+
+    /** Neither. Followed anyway, so the reader can see what they typed and fix it. */
+    Unknown,
+}
+
+/** The address a follow resolved to, and what kind of thing it turned out to be. */
+data class FeedSource(val url: String, val kind: FeedSourceKind)
+
 /**
- * Resolves whatever the reader typed — a blog's homepage, or the feed
- * address itself — to an actual RSS/Atom URL.
+ * Resolves whatever the reader typed — a blog's homepage, a section of it, or
+ * the feed address itself — to something that can actually be synced.
  *
- * Asking for the exact feed address up front is how a follow can end up
- * pointed at an HTML page with nothing to parse: a blog's homepage is what
- * people actually have on hand, not its `/rss.xml`. So the address itself is
- * tried first — most people who *do* paste a real feed URL should not pay for
- * a discovery round trip — and only on a feed that parses to nothing does
- * this fall back to reading the page for the `<link rel="alternate">` a
- * publisher points feed readers at, then a handful of conventional paths.
- * Whatever is tried last, successful or not, is what gets followed — a
- * result the reader can inspect and fix beats silently failing.
+ * Asking for the exact feed address up front is how a follow ends up pointed
+ * at an HTML page with nothing to parse: a blog's page is what people have on
+ * hand, not its `/rss.xml`. So four things are tried, cheapest and most
+ * authoritative first:
+ *
+ * 1. the address itself, so pasting a real feed URL costs one request;
+ * 2. the `<link rel="alternate">` tags a publisher points feed readers at;
+ * 3. addresses built from the typed path by [feedCandidates], for the many
+ *    sites that serve a feed without ever linking to it;
+ * 4. the page read as a listing, for publishers that have no feed at all.
+ *
+ * The first fetch is what steps 2 and 4 both read, rather than each pulling
+ * the page again — on a page-builder site that body is most of a megabyte and
+ * downloading it twice is the slowest thing a follow does.
+ *
+ * Whatever is tried last, successful or not, is what gets followed — a result
+ * the reader can inspect and fix beats silently failing.
  */
-suspend fun discoverFeedUrl(client: HttpClient, rawUrl: String): String {
-    if (!runCatching { fetchFeed(client, rawUrl) }.getOrNull().isNullOrEmpty()) return rawUrl
+suspend fun discoverFeedSource(client: HttpClient, rawUrl: String): FeedSource {
+    val body = runCatching { fetchSource(client, rawUrl) }.getOrNull()
+    if (body != null && parseFeed(body).isNotEmpty()) return FeedSource(rawUrl, FeedSourceKind.Feed)
 
-    val html = runCatching {
-        client.get(rawUrl) { header(HttpHeaders.UserAgent, UserAgent) }.bodyAsText().take(MaxBytesScanned)
-    }.getOrNull()
+    // Every declared feed, not just the first: a blog that publishes both
+    // Atom and RSS lists both, and a WordPress page also advertises the
+    // comment feed for the post it is showing.
+    val declared = body?.let { page ->
+        FeedLinkPattern.flatMap { pattern -> pattern.findAll(page).map { it.groupValues[1] }.toList() }
+            .mapNotNull { href -> href.tidy()?.let { resolveAgainst(rawUrl, it) } }
+            .distinct()
+            // A comment feed parses perfectly and is the wrong thing to
+            // follow, so it goes last rather than being dropped: it is still
+            // better than nothing on a blog that declares only that.
+            .sortedBy { it.contains("comment", ignoreCase = true) }
+    }.orEmpty()
 
-    val linked = html?.let { page ->
-        FeedLinkPattern.firstNotNullOfOrNull { it.find(page)?.groupValues?.get(1)?.tidy() }?.let { href -> resolveAgainst(rawUrl, href) }
-    }
-    if (linked != null && !runCatching { fetchFeed(client, linked) }.getOrNull().isNullOrEmpty()) return linked
+    firstFeedAmong(client, declared)?.let { return FeedSource(it, FeedSourceKind.Feed) }
+    firstFeedAmong(client, feedCandidates(rawUrl))?.let { return FeedSource(it, FeedSourceKind.Feed) }
 
-    val origin = rawUrl.substringBefore("://") + "://" + rawUrl.substringAfter("://").substringBefore("/")
-    for (path in CommonFeedPaths) {
-        val candidate = origin + path
-        if (!runCatching { fetchFeed(client, candidate) }.getOrNull().isNullOrEmpty()) return candidate
-    }
+    if (body != null && parseIndexPage(body, rawUrl).isNotEmpty()) return FeedSource(rawUrl, FeedSourceKind.Page)
 
-    return rawUrl
+    return FeedSource(rawUrl, FeedSourceKind.Unknown)
 }
 
 /**
- * A `href` from a `<link>` tag, which publishers write both root-relative and
- * absolute. Internal rather than private: [extractArticle] resolves an
- * article's own images and links against its page URL by the same three rules.
+ * Addresses a feed might be at, derived from the typed URL rather than looked
+ * up in a table of publishers.
+ *
+ * Two conventions cover nearly everything. Most sites hang the feed off the
+ * path being read — `/blog` → `/blog/rss.xml` — and some put the feed segment
+ * in front of it instead, which is how Medium addresses a publication
+ * (`medium.com/basecs` → `medium.com/feed/basecs`). Both are generated for
+ * every prefix of the path, deepest first: a section's own feed is the better
+ * answer than the site-wide one, and trying the whole path before its parent
+ * is what prefers it without either being named anywhere.
+ */
+internal fun feedCandidates(url: String): List<String> {
+    val origin = originOf(url)
+    val segments = pathSegmentsOf(url)
+    val prefixes = (segments.size downTo 0).map { depth -> segments.take(depth) }
+
+    return prefixes.flatMap { prefix ->
+        val path = prefix.joinToString("") { "/$it" }
+        FeedPaths.map { suffix -> origin + path + suffix } +
+            // The prefix form only says something when there is a path to put
+            // in front of; at the root it would repeat "/feed" from above.
+            listOfNotNull(prefix.takeIf { it.isNotEmpty() }?.let { "$origin/feed$path" })
+    }.distinct().take(MaxCandidates)
+}
+
+/**
+ * The first of [candidates] that answers with a parseable feed, or null.
+ *
+ * Probed a few at a time rather than one after another: a miss costs a round
+ * trip, and a dozen of them in sequence is the difference between a follow
+ * that feels instant and one that looks stuck. Priority still holds — a batch
+ * is only accepted at its best hit, so a deeper path always wins over a
+ * shallower one that also happens to work.
+ */
+private suspend fun firstFeedAmong(client: HttpClient, candidates: List<String>): String? {
+    for (batch in candidates.chunked(ProbeBatch)) {
+        val hits = coroutineScope {
+            batch.map { candidate -> async { candidate to isFeed(client, candidate) } }.awaitAll()
+        }
+        hits.firstOrNull { (_, isFeed) -> isFeed }?.let { (url, _) -> return url }
+    }
+
+    return null
+}
+
+/**
+ * Whether [url] is a feed, without downloading a quarter-megabyte of XML to
+ * find out it was a 404 page.
+ *
+ * A HEAD says what a body would say for a fraction of the bytes, and a
+ * publisher's 404 is `text/html` where a feed is some flavour of XML — enough
+ * to throw out most candidates for free. Only what survives that is fetched
+ * and parsed, which is the answer that actually counts. A server that refuses
+ * HEAD is not held against the candidate: it falls through to the fetch, the
+ * same way it would have without this at all.
+ */
+private suspend fun isFeed(client: HttpClient, url: String): Boolean {
+    val head = runCatching { client.head(url) { header(HttpHeaders.UserAgent, UserAgent) } }.getOrNull()
+    if (head != null && head.status != HttpStatusCode.MethodNotAllowed && head.status != HttpStatusCode.NotImplemented) {
+        if (!head.status.isSuccess()) return false
+        val type = head.contentType()?.let { "${it.contentType}/${it.contentSubtype}" }?.lowercase()
+        if (type != null && !FeedContentType.containsMatchIn(type)) return false
+    }
+
+    return !runCatching { fetchFeed(client, url) }.getOrNull().isNullOrEmpty()
+}
+
+/**
+ * A `href` from a `<link>` tag, which publishers write root-relative,
+ * scheme-relative and absolute. Internal rather than private: [extractArticle]
+ * resolves an article's own images and links against its page URL by the same
+ * rules, and so does [parseIndexPage] for every link on a listing.
  */
 internal fun resolveAgainst(pageUrl: String, href: String): String = when {
     href.startsWith("http://") || href.startsWith("https://") -> href
-    href.startsWith("/") -> pageUrl.substringBefore("://") + "://" + pageUrl.substringAfter("://").substringBefore("/") + href
+    // "//cdn.example.com/x" — the scheme is inherited, and treating it as a
+    // path would produce "https://example.com//cdn.example.com/x".
+    href.startsWith("//") -> pageUrl.substringBefore("://") + ":" + href
+    href.startsWith("/") -> originOf(pageUrl) + href
     else -> pageUrl.substringBeforeLast("/") + "/" + href
 }
+
+/** "https://example.com" — scheme and host, what every root-relative path hangs off. */
+internal fun originOf(url: String): String = url.substringBefore("://") + "://" + url.substringAfter("://").substringBefore("/")
+
+/** The path as segments: "https://h/blog/page/2?x=1" → ["blog", "page", "2"]. */
+internal fun pathSegmentsOf(url: String): List<String> = url
+    .substringAfter("://", url)
+    .substringBefore('?')
+    .substringBefore('#')
+    .substringAfter('/', "")
+    .split('/')
+    .filter { it.isNotBlank() }
 
 /**
  * Fetches every followed feed and, for each one that actually yields posts,
@@ -201,17 +363,21 @@ internal fun resolveAgainst(pageUrl: String, href: String): String = when {
  * the rest from syncing.
  *
  * An empty parse is treated the same as a failed fetch, not a real "no
- * posts" answer: a 200 response with no `<item>`/`<entry>` tags is far more
- * often a rate limit or an interstitial page served instead of the feed than
- * an actually empty blog, and overwriting a good cache with that would throw
- * away real posts over a transient hiccup. Returns how many feeds actually
- * yielded posts, for the caller to report.
+ * posts" answer: a 200 response that yields nothing is far more often a rate
+ * limit or an interstitial page served instead of the feed than an actually
+ * empty blog, and overwriting a good cache with that would throw away real
+ * posts over a transient hiccup. Returns how many feeds actually yielded
+ * posts, for the caller to report.
+ *
+ * "Feed" is loose here — [fetchEntries] reads a followed address as XML or as
+ * a listing page, whichever it turns out to be, so a blog that publishes no
+ * feed syncs through this the same as one that does.
  */
 suspend fun syncFeeds(client: HttpClient, feeds: List<Feed>, cache: FeedPostCache): Int {
     var synced = 0
 
     for (feed in feeds) {
-        val entries = runCatching { fetchFeed(client, feed.url) }.getOrNull()
+        val entries = runCatching { fetchEntries(client, feed.url) }.getOrNull()
         if (entries.isNullOrEmpty()) continue
         cache.replace(feed.id, entries.take(EntriesPerFeed).mapIndexed { index, entry -> entry.asPost(feed.id, index) })
         synced++
@@ -263,6 +429,14 @@ private val DatePatterns = listOf(
 private val Rfc822Pattern = Regex(
     """(\d{1,2})\s+([A-Za-z]{3})[a-z]*\s+(\d{2,4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*([+-]\d{4}|[A-Za-z]{1,4})?""",
 )
+
+// "August 13, 2026" and "Aug 13 2026" — how a page dates a card for a reader
+// rather than for a parser, which is all a listing page ever offers.
+private val MonthFirstPattern = Regex("""([A-Za-z]{3,9})\.?\s+(\d{1,2}),?\s+(\d{4})""")
+
+// A date with no time, which Instant.parse rejects outright.
+private val IsoDayPattern = Regex("""\d{4}-\d{2}-\d{2}""")
+
 private val MonthNames = listOf("jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
 
 private val EntryImagePatterns = listOf(
@@ -302,9 +476,24 @@ private val FeedLinkPattern = listOf(
 )
 
 // Tried in this order once neither the address itself nor a discovery link
-// worked — the paths enough blogging platforms default to that it is worth
-// trying before giving up.
-private val CommonFeedPaths = listOf("/feed", "/feed/", "/rss.xml", "/rss", "/atom.xml", "/index.xml")
+// worked — the endings enough publishing platforms default to that they are
+// worth a probe before giving up. "/feeds/posts/default" is Blogger's, which
+// is a large enough share of blogs to earn its place at the end.
+private val FeedPaths = listOf("/feed", "/rss.xml", "/feed.xml", "/index.xml", "/atom.xml", "/rss", "/feeds/posts/default")
+
+// What a server calls a feed. A publisher's 404 page is text/html, which is
+// the whole point of looking — see [isFeed].
+private val FeedContentType = Regex("""xml|rss|atom""")
+
+// A path three deep generates two dozen candidates, and past the first few the
+// odds of a hit are thin. This is where trying stops being worth the requests.
+private const val MaxCandidates = 18
+
+// Probed concurrently, a few at a time. A publisher that rate-limits the
+// burst answers 403 to some of them, which reads here as "not a feed" — the
+// cost of that is landing on a later candidate that serves the same feed at a
+// different address, not a failed follow.
+private const val ProbeBatch = 4
 
 // A feed with a thousand-item archive should not flood the list on first
 // sync — the point of following a blog is what's new, not its backlog.
@@ -313,4 +502,8 @@ private const val EntriesPerFeed = 15
 // See [asPost]: what the cache is allowed to hold.
 private const val EntriesWithContent = 6
 private const val MaxCachedContentChars = 24_000
-private const val MaxBytesScanned = 500_000
+
+// Generous, because this is also the cap a listing page is read under: a
+// page-builder site is mostly markup, and the posts can sit past the point a
+// feed-sized budget would have stopped at.
+private const val MaxBytesScanned = 1_000_000

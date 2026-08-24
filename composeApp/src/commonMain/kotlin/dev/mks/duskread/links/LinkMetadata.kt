@@ -90,6 +90,15 @@ private val Entities = listOf(
     "&mdash;" to "—",
     "&ndash;" to "–",
     "&hellip;" to "…",
+    // The numeric forms of the typographic quotes and dashes, which is what a
+    // CMS writes into a headline rather than the named ones above.
+    "&#8216;" to "'",
+    "&#8217;" to "'",
+    "&#8220;" to "“",
+    "&#8221;" to "”",
+    "&#8211;" to "–",
+    "&#8212;" to "—",
+    "&#8230;" to "…",
 )
 
 internal const val UserAgent = "Mozilla/5.0 (compatible; DuskRead/1.0; +https://github.com/MKS-01)"

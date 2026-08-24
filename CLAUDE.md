@@ -11,7 +11,9 @@ The four things the app does, and where each lives:
 
 - **Saved links** — `links/` (`LinkLibrary`, `SavedLink`, `LinkMetadata`:
   a pasted or shared URL is usable immediately and backfills its real title)
-- **Feeds** — `links/` (`Feed`, `FeedLibrary`, `FeedSync`, `FeedPostCache`)
+- **Feeds** — `links/` (`Feed`, `FeedLibrary`, `FeedSync`, `FeedPostCache`,
+  `PageIndex`: a followed address resolves to a real RSS/Atom feed where one
+  exists, and otherwise to the blog's own page read as a listing)
 - **Readback** — `reader/` (`Reader`, `AudioPlayer`). Integration with the
   separate [readback](https://github.com/MKS-01/readback) project is
   **read-only**: the app reads what a sync step puts on the device and never
