@@ -22,6 +22,7 @@ import dev.mks.duskread.ui.home.HomeScreen
 import dev.mks.duskread.ui.home.HomeTab
 import dev.mks.duskread.ui.onboarding.Onboarding
 import dev.mks.duskread.ui.pomodoro.FocusScreen
+import dev.mks.duskread.ui.summary.SummaryOverlay
 import dev.mks.duskread.ui.theme.DuskReadTheme
 import dev.mks.duskread.ui.theme.Motion
 
@@ -70,6 +71,11 @@ fun App() {
                 ) {
                     FocusScreen(onClose = { focusMode = false })
                 }
+
+                // A summary asked for by swiping a row, wherever that row
+                // was. Under the reader below, which hosts its own panel
+                // over its own article.
+                SummaryOverlay()
 
                 // Android's embedded reader browser; a no-op everywhere else.
                 // See `PlatformOverlay`.

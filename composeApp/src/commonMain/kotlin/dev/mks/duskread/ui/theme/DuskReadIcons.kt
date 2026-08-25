@@ -372,6 +372,28 @@ object DuskReadIcons {
         }
     }
 
+    /**
+     * Summary: three rules, each shorter than the last — an article read
+     * down to a paragraph.
+     *
+     * Left-aligned and stepping in from the right, as drawn in the design
+     * system's concept sheet. A symmetrical wedge was tried and reads as a
+     * filter or a funnel; ragged-right reads as text getting shorter, which
+     * is what this actually does.
+     */
+    val Summary: ImageVector by lazy {
+        icon("Summary") {
+            stroked {
+                moveTo(4f, 7f)
+                lineTo(20f, 7f)
+                moveTo(4f, 12f)
+                lineTo(15f, 12f)
+                moveTo(4f, 17f)
+                lineTo(10f, 17f)
+            }
+        }
+    }
+
     /** A tick, for marking a saved link read. */
     val Check: ImageVector by lazy {
         icon("Check") {

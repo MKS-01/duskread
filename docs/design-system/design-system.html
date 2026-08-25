@@ -667,16 +667,53 @@ footer { margin-top: 56px; padding-top: 22px; border-top: 1px solid var(--line);
 
   <!-- ---------------------------------------------------------- -->
   <section id="summary-concept">
-    <h2>Screen — Article summary <span style="color:var(--a-faint);font-weight:400">(concept, not built)</span></h2>
-    <p class="section-title">On-device, from the reader — not the list</p>
+    <h2>Screen — Article summary <span style="color:var(--a-faint);font-weight:400">(shipped)</span></h2>
+    <p class="section-title">On-device, from the reader <em>and</em> from a swiped row</p>
     <p class="section-note">
-      A local-model summary, generated from the text <code>InAppBrowserScreen</code>
-      already extracts into <code>Article.text</code> once a reader view opens —
-      see <code>links/Article.kt</code> and <code>links/ArticleDocument.kt</code>.
-      Nothing here is built yet; this is the idea worked into a shape that
-      fits what already exists, so it doesn't get lost between now and
-      whenever it does get built.
+      A local-model summary (ML Kit GenAI &rarr; AICore), generated from the
+      text <code>InAppBrowserScreen</code> extracts into <code>Article.text</code>
+      when a reader view opens, or from a fetch when a list row asks. Lives in
+      <code>summary/</code> and <code>ui/summary/</code>. The mockups below are
+      the original concept; three things about the built version differ from
+      them, each for a reason worth keeping:
     </p>
+    <ul class="status-list">
+      <li><b>Prose, not bullets.</b> The concept drew a gist line and three
+      bullets. What shipped is a single paragraph in a single tone — a summary
+      of an argument asks the reader to reassemble it from fragments
+      otherwise, which is most of the work they opened the panel to avoid.
+      The engine returns bullets <em>always</em>, so <code>parseSummary</code>
+      flattens them into prose rather than the panel growing a layout per
+      engine mood.</li>
+      <li><b>Two lengths, on the engine's own dial.</b> Settings offers Short
+      and Full, mapped to AICore's <code>ONE_BULLET</code> and
+      <code>THREE_BULLETS</code> — genuinely different answers, not one
+      trimmed from the other. A word limit was tried first and dropped: a
+      limit can only cut, never lengthen, and three points from this model
+      often run under any ceiling worth naming, so every setting produced the
+      same text. Two settings that always differ beat three that usually
+      don't. The chips are described by what you get to read, never by the
+      number of points — that number is an AICore implementation detail and
+      means nothing to someone deciding whether to open an article.</li>
+      <li><b>One engine, no model picker.</b> There were two paths — AICore's
+      free-form Prompt API first, the purpose-built summarisation feature as
+      fallback — because only the former could be pointed at the Gemma 4
+      preview. On real hardware the Prompt API answers
+      <code>FEATURE_NOT_FOUND</code>, so it and the three-model Settings
+      picker that depended on it are both gone. The remaining feature takes no
+      model preference, and a control that selects between identical outcomes
+      is worse than no control.</li>
+      <li><b>A list row can ask too.</b> The concept ruled the list out. Saved
+      already teaches swipe-left-to-remove, so swipe-right-to-summarise is the
+      mirror of a gesture that exists, and triaging a list is exactly when a
+      summary is worth most. <code>SummariseBackground</code> draws it in
+      <code>surfaceContainerHigh</code>, not Remove's accent container — one
+      is destructive and should look like it.</li>
+      <li><b>One shared pill.</b> <code>ui/summary/SummaryChip.kt</code> is
+      the download button, in the panel and in Settings alike — bordered,
+      mono-uppercase, <code>Radius.Chip</code>, accent and border, never a
+      fill.</li>
+    </ul>
 
     <div class="frame-row">
       <div class="v-amp frame-block">
@@ -779,7 +816,7 @@ footer { margin-top: 56px; padding-top: 22px; border-top: 1px solid var(--line);
       it, dismissible with the corner close glyph or a tap outside, so
       checking the summary never costs your scroll position in the actual
       article.<br><br>
-      <b>The model:</b> ML Kit's on-device GenAI Summarization API,
+      <b>The model (as built):</b> ML Kit's on-device GenAI Summarization API,
       Android-only, behind an <code>expect</code>/<code>actual</code> the way
       <code>ReadRepository</code> and <code>AudioPlayer</code> already are —
       other platforms would hide the button the same way Readback's folder
@@ -1167,6 +1204,8 @@ footer { margin-top: 56px; padding-top: 22px; border-top: 1px solid var(--line);
       <li><b>The floating nav bar</b> carries three tabs, the transport when something's playing, and the Ink toggle behind a divider.</li>
       <li><b><code>AppTextField</code></b> is the one text-field shape in the app — hairline border, <code>Radius.Inline</code> (10dp), never a pill — used by every field: Saved's paste field, the feed-follow field, Settings, the desktop folder path, onboarding, and Focus's new custom-length entry.</li>
       <li><b>Launcher icon and splash</b> fill ~70% of their canvas, solid rather than alpha-stepped, animating the outer bars to rest on boot.</li>
+      <li><b>On-device summaries, running on real hardware.</b> ML Kit GenAI's summarisation feature against AICore, confirmed end to end on a Galaxy S25 (<code>SM_S931B</code>) — download, generation and the panel. Note that an emulator cannot stand in for this: those system images carry no <code>com.google.android.aicore</code>, so the engine can only ever answer "unavailable" there.</li>
+      <li><b>The summary panel</b> (<code>ui/summary/SummaryPanel.kt</code>) is bottom-anchored and floats over whatever asked for it — the article in the reader, the list under the overlay — on <code>surfaceContainerHigh</code> with a hairline border and <code>Radius.Card</code>. It is never a destination: the point of summarising is deciding whether to open the thing, and a full-screen answer has already taken you away from the list you were triaging.</li>
     </ul>
   </section>
 
@@ -1185,7 +1224,6 @@ footer { margin-top: 56px; padding-top: 22px; border-top: 1px solid var(--line);
       <li><b>Desktop has no app icon</b> — <code>compose.desktop.application.nativeDistributions</code> sets no <code>iconFile</code>.</li>
       <li><b>iOS and Wasm haven't been compiled</b> across this whole design pass — a cold Kotlin/Native build is ten-plus minutes, so it's deliberately been skipped; one run should happen before calling any of this settled on those platforms.</li>
       <li><b>Cut features awaiting a call, not a bug:</b> the read-along highlighted-excerpt view and the "Read original" external-link row (both real, both cut when Readback went to two-facts-and-a-waveform), and the floating bar's ambient background waveform (moirés into a hatch at the row pitch).</li>
-      <li><b>Article summary</b> — see the <a href="#summary-concept">Screen — Article summary</a> section above for the worked-out idea (entry point, loading state, floating result). Not started; the extraction prerequisite (<code>Article.text</code>) already exists.</li>
     </ul>
   </section>
 

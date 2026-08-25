@@ -9,12 +9,17 @@ import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -24,6 +29,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -61,7 +67,11 @@ import dev.mks.duskread.links.createHttpClient
 import dev.mks.duskread.links.loadArticle
 import dev.mks.duskread.links.postFor
 import dev.mks.duskread.links.rememberFeedPostCache
+import dev.mks.duskread.summary.SummaryTarget
+import dev.mks.duskread.summary.summariesSupported
+import dev.mks.duskread.ui.summary.SummaryPanel
 import dev.mks.duskread.ui.theme.DuskReadIcons
+import dev.mks.duskread.ui.theme.Motion
 
 /** Which of the two things this screen can show is showing. */
 private enum class BrowserMode { Reader, Original }
@@ -105,6 +115,9 @@ fun InAppBrowserScreen(url: String, mono: Boolean, onClose: () -> Unit, modifier
     var article by remember(url) { mutableStateOf<Article?>(null) }
     var extracting by remember(url) { mutableStateOf(true) }
     var mode by remember(url) { mutableStateOf(BrowserMode.Reader) }
+    // Closed by default, and per article: following a link out of one piece
+    // into another should not carry the first one's summary with it.
+    var summarising by remember(url) { mutableStateOf(false) }
     // What the WebView currently holds. Without it, every recomposition that
     // touches mode or article would reload the page underneath the reader.
     var loaded by remember(url) { mutableStateOf("") }
@@ -160,6 +173,13 @@ fun InAppBrowserScreen(url: String, mono: Boolean, onClose: () -> Unit, modifier
                 readerAvailable = article != null,
                 readerActive = mode == BrowserMode.Reader && article != null,
                 onToggleReader = { mode = if (mode == BrowserMode.Reader) BrowserMode.Original else BrowserMode.Reader },
+                // Hidden until there is an article, for the same reason the
+                // reader toggle is: the summary is made from the extracted
+                // text, so on a page that yielded none there is nothing to
+                // summarise and the control could only disappoint.
+                summaryAvailable = article != null && summariesSupported(),
+                summaryActive = summarising,
+                onToggleSummary = { summarising = !summarising },
                 onClose = onClose,
                 onOpenExternally = { context.openExternally(currentUrl) },
             )
@@ -247,7 +267,51 @@ fun InAppBrowserScreen(url: String, mono: Boolean, onClose: () -> Unit, modifier
                 // fetch away — so without this the screen is a bare rectangle
                 // of `ground` for however long that takes.
                 if (extracting) ArticleSkeleton(Modifier.fillMaxSize())
+
+                // Over the article rather than beside it: the summary is a
+                // second look at what is already on screen, and pushing the
+                // page aside to show four lines would lose the thing being
+                // summarised.
+                SummaryOverArticle(
+                    article = article,
+                    visible = summarising,
+                    onClose = { summarising = false },
+                    modifier = Modifier.align(Alignment.BottomCenter),
+                )
             }
+        }
+    }
+}
+
+/**
+ * The summary panel, sliding up from the bottom edge.
+ *
+ * Its own composable rather than an `AnimatedVisibility` written inline: at
+ * the call site both the column's scoped overload and the plain one are in
+ * scope, and the column's wins — which is not the one that can be aligned
+ * inside the box the WebView lives in.
+ */
+@Composable
+private fun SummaryOverArticle(article: Article?, visible: Boolean, onClose: () -> Unit, modifier: Modifier = Modifier) {
+    AnimatedVisibility(
+        visible = visible && article != null,
+        enter = fadeIn(tween(Motion.Chip)) + slideInVertically(tween(Motion.Chip)) { it / 3 },
+        exit = fadeOut(tween(Motion.Fade)) + slideOutVertically(tween(Motion.Fade)) { it / 3 },
+        modifier = modifier,
+    ) {
+        article?.let { found ->
+            SummaryPanel(
+                target = SummaryTarget(found.url, found.title, text = found.text),
+                onClose = onClose,
+                modifier = Modifier
+                    .navigationBarsPadding()
+                    // 12dp either side and clear of the gesture handle, as
+                    // the design system's card draws it — the panel is
+                    // bottom-anchored, so its own inset is all that separates
+                    // it from the edge of the screen.
+                    .padding(horizontal = 12.dp)
+                    .padding(top = 14.dp, bottom = 16.dp),
+            )
         }
     }
 }
@@ -331,6 +395,9 @@ private fun BrowserToolbar(
     readerAvailable: Boolean,
     readerActive: Boolean,
     onToggleReader: () -> Unit,
+    summaryAvailable: Boolean,
+    summaryActive: Boolean,
+    onToggleSummary: () -> Unit,
     onClose: () -> Unit,
     onOpenExternally: () -> Unit,
 ) {
@@ -359,6 +426,14 @@ private fun BrowserToolbar(
                 label = if (readerActive) "Show the original page" else "Show the reader view",
                 onClick = onToggleReader,
                 tint = if (readerActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        if (summaryAvailable) {
+            ToolbarButton(
+                icon = DuskReadIcons.Summary,
+                label = if (summaryActive) "Hide the summary" else "Summarise this article",
+                onClick = onToggleSummary,
+                tint = if (summaryActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         ToolbarButton(DuskReadIcons.External, "Open in browser", onOpenExternally)

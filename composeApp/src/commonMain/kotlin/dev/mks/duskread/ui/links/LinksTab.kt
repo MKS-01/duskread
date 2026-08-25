@@ -51,6 +51,9 @@ import dev.mks.duskread.links.createHttpClient
 import dev.mks.duskread.links.fetchLinkMetadata
 import dev.mks.duskread.links.looksLikeUrl
 import dev.mks.duskread.links.savedAgo
+import dev.mks.duskread.summary.SummaryRequest
+import dev.mks.duskread.summary.SummaryTarget
+import dev.mks.duskread.summary.summariesSupported
 import dev.mks.duskread.ui.common.AppTextField
 import dev.mks.duskread.ui.common.EmptyState
 import dev.mks.duskread.ui.common.EyebrowHeader
@@ -61,6 +64,7 @@ import dev.mks.duskread.ui.common.RowMeta
 import dev.mks.duskread.ui.common.RowTone
 import dev.mks.duskread.ui.common.ToastRequest
 import dev.mks.duskread.ui.rememberUrlOpener
+import dev.mks.duskread.ui.summary.SummariseBackground
 import dev.mks.duskread.ui.theme.DuskReadIcons
 import dev.mks.duskread.ui.theme.Mono
 import dev.mks.duskread.ui.theme.Radius
@@ -314,7 +318,14 @@ private fun LinkRow(
     val scheme = MaterialTheme.colorScheme
     val dismiss = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->
-            if (value == SwipeToDismissBoxValue.EndToStart) onRemove()
+            when (value) {
+                SwipeToDismissBoxValue.EndToStart -> onRemove()
+                // The mirror gesture: same commitment, nothing destroyed. The
+                // panel it opens does the fetching, so this hands over the
+                // little it knows and lets the row spring back.
+                SwipeToDismissBoxValue.StartToEnd -> SummaryRequest.open(SummaryTarget(link.url, link.title))
+                SwipeToDismissBoxValue.Settled -> Unit
+            }
             // Never let the box settle into a dismissed state of its own: the
             // row is gone from the list the moment onRemove lands, and a box
             // holding a "dismissed" position would flash the background of a
@@ -329,8 +340,17 @@ private fun LinkRow(
         // from over it — see `ListRowBody`.
         SwipeToDismissBox(
             state = dismiss,
-            enableDismissFromStartToEnd = false,
-            backgroundContent = { RemoveBackground(dismiss.progress) },
+            // Only where there is a model to run: a gesture whose whole
+            // outcome is a panel explaining that it cannot work is worse than
+            // no gesture at all.
+            enableDismissFromStartToEnd = summariesSupported(),
+            backgroundContent = {
+                if (dismiss.dismissDirection == SwipeToDismissBoxValue.StartToEnd) {
+                    SummariseBackground(dismiss.progress)
+                } else {
+                    RemoveBackground(dismiss.progress)
+                }
+            },
         ) {
             ListRowBody(
                 host = link.host,
