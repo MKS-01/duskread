@@ -22,6 +22,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -35,6 +36,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -118,6 +120,7 @@ fun InAppBrowserScreen(url: String, mono: Boolean, onClose: () -> Unit, modifier
     // Closed by default, and per article: following a link out of one piece
     // into another should not carry the first one's summary with it.
     var summarising by remember(url) { mutableStateOf(false) }
+    var summaryBusy by remember(url) { mutableStateOf(false) }
     // What the WebView currently holds. Without it, every recomposition that
     // touches mode or article would reload the page underneath the reader.
     var loaded by remember(url) { mutableStateOf("") }
@@ -179,6 +182,7 @@ fun InAppBrowserScreen(url: String, mono: Boolean, onClose: () -> Unit, modifier
                 // summarise and the control could only disappoint.
                 summaryAvailable = article != null && summariesSupported(),
                 summaryActive = summarising,
+                summaryBusy = summaryBusy,
                 onToggleSummary = { summarising = !summarising },
                 onClose = onClose,
                 onOpenExternally = { context.openExternally(currentUrl) },
@@ -272,10 +276,27 @@ fun InAppBrowserScreen(url: String, mono: Boolean, onClose: () -> Unit, modifier
                 // second look at what is already on screen, and pushing the
                 // page aside to show four lines would lose the thing being
                 // summarised.
+                // Tapping the article dismisses the panel. No ripple and no
+                // scrim: the page underneath stays legible, which is the
+                // point of floating over it, so the only sign this layer is
+                // there is that the first tap closes the summary.
+                if (summarising) {
+                    Box(
+                        Modifier
+                            .fillMaxSize()
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                                onClick = { summarising = false },
+                            ),
+                    )
+                }
+
                 SummaryOverArticle(
                     article = article,
                     visible = summarising,
                     onClose = { summarising = false },
+                    onBusyChange = { summaryBusy = it },
                     modifier = Modifier.align(Alignment.BottomCenter),
                 )
             }
@@ -292,7 +313,13 @@ fun InAppBrowserScreen(url: String, mono: Boolean, onClose: () -> Unit, modifier
  * inside the box the WebView lives in.
  */
 @Composable
-private fun SummaryOverArticle(article: Article?, visible: Boolean, onClose: () -> Unit, modifier: Modifier = Modifier) {
+private fun SummaryOverArticle(
+    article: Article?,
+    visible: Boolean,
+    onClose: () -> Unit,
+    onBusyChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     AnimatedVisibility(
         visible = visible && article != null,
         enter = fadeIn(tween(Motion.Chip)) + slideInVertically(tween(Motion.Chip)) { it / 3 },
@@ -303,6 +330,8 @@ private fun SummaryOverArticle(article: Article?, visible: Boolean, onClose: () 
             SummaryPanel(
                 target = SummaryTarget(found.url, found.title, text = found.text),
                 onClose = onClose,
+                hostShowsBusy = true,
+                onBusyChange = onBusyChange,
                 modifier = Modifier
                     .navigationBarsPadding()
                     // 12dp either side and clear of the gesture handle, as
@@ -397,6 +426,7 @@ private fun BrowserToolbar(
     onToggleReader: () -> Unit,
     summaryAvailable: Boolean,
     summaryActive: Boolean,
+    summaryBusy: Boolean,
     onToggleSummary: () -> Unit,
     onClose: () -> Unit,
     onOpenExternally: () -> Unit,
@@ -429,12 +459,25 @@ private fun BrowserToolbar(
             )
         }
         if (summaryAvailable) {
-            ToolbarButton(
-                icon = DuskReadIcons.Summary,
-                label = if (summaryActive) "Hide the summary" else "Summarise this article",
-                onClick = onToggleSummary,
-                tint = if (summaryActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            // The glyph becomes the spinner rather than sitting beside one:
+            // the article stays readable while the model runs, and this is
+            // the only thing on screen that should move.
+            if (summaryBusy) {
+                Box(Modifier.size(40.dp), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(15.dp),
+                        color = MaterialTheme.colorScheme.primary,
+                        strokeWidth = 1.5.dp,
+                    )
+                }
+            } else {
+                ToolbarButton(
+                    icon = DuskReadIcons.Summary,
+                    label = if (summaryActive) "Hide the summary" else "Summarise this article",
+                    onClick = onToggleSummary,
+                    tint = if (summaryActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
         ToolbarButton(DuskReadIcons.External, "Open in browser", onOpenExternally)
     }

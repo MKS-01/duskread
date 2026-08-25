@@ -17,6 +17,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -44,16 +45,16 @@ import kotlinx.coroutines.launch
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
-/** Where the panel is in getting from a URL to something worth reading. */
+/** Where the panel is between a URL and something worth reading. */
 private sealed interface Stage {
     data object Waiting : Stage
 
-    /** The model is there but not on the device yet — the reader decides, since it is a large download. */
+    /** On the device? Not yet — and it is a large download, so the reader decides. */
     data object NeedsDownload : Stage
 
     data class Downloading(val fraction: Float?) : Stage
 
-    /** Fetching and reducing the page, for a summary asked for from a list rather than the reader. */
+    /** Fetching the page, for a summary asked for from a list rather than the reader. */
     data object Reading : Stage
 
     /** [text] is the answer so far, shown as it arrives. */
@@ -67,25 +68,26 @@ private sealed interface Stage {
 /**
  * The summary itself: one panel, floating, wherever it was asked for.
  *
- * Everything the feature does lives here rather than in its two hosts — the
- * reader's toolbar and the sheet a swiped row opens are both "put this panel
- * on the screen and hand it a target", and duplicating a fetch-then-generate
- * pipeline across them is how the two would drift apart.
+ * Everything the feature does lives here rather than in its two hosts, which
+ * are both "put this panel on screen and hand it a target"; duplicating a
+ * fetch-then-generate pipeline across them is how they would drift apart.
  *
- * The order it works in matters. A cached summary short-circuits the lot,
- * because the common case is an article being looked at twice and inference
- * is seconds of the phone's own power. Failing that: the article's text if the
- * caller had it (the reader always does), otherwise a fetch; then generation,
- * streamed, so the panel fills in rather than sitting on a spinner.
+ * Order matters: a cached summary short-circuits the lot, then the caller's
+ * own text if it had any (the reader always does), otherwise a fetch — then
+ * generation, streamed, so the panel fills in rather than sits.
  *
- * A model that is downloadable is *not* downloaded automatically. It is
- * hundreds of megabytes over whatever connection the phone is on, and a
- * feature quietly spending that on first tap is the kind of thing that
- * belongs to the reader to decide.
+ * A downloadable model is *not* downloaded automatically. Hundreds of
+ * megabytes over whatever connection the phone is on is the reader's call.
  */
 @OptIn(ExperimentalTime::class)
 @Composable
-fun SummaryPanel(target: SummaryTarget, onClose: () -> Unit, modifier: Modifier = Modifier) {
+fun SummaryPanel(
+    target: SummaryTarget,
+    onClose: () -> Unit,
+    modifier: Modifier = Modifier,
+    hostShowsBusy: Boolean = false,
+    onBusyChange: (Boolean) -> Unit = {},
+) {
     val prefs = rememberUserPrefs()
     val summariser = rememberSummariser(prefs.summaryLength)
     val cache = rememberSummaryCache()
@@ -107,8 +109,8 @@ fun SummaryPanel(target: SummaryTarget, onClose: () -> Unit, modifier: Modifier 
             is SummariserState.Downloading -> stage = Stage.Downloading(engineState.fraction)
             is SummariserState.Unavailable -> stage = Stage.Failed(engineState.reason)
             is SummariserState.Ready -> {
-                // Already generating for this article — a state change that
-                // isn't about readiness must not start a second run.
+                // A state change that isn't about readiness must not start
+                // a second run for the same article.
                 if (stage is Stage.Generating || stage is Stage.Done) return@LaunchedEffect
 
                 stage = if (target.text == null) Stage.Reading else Stage.Generating("")
@@ -145,6 +147,13 @@ fun SummaryPanel(target: SummaryTarget, onClose: () -> Unit, modifier: Modifier 
         }
     }
 
+    val busy = stage is Stage.Generating || stage is Stage.Reading || stage is Stage.Downloading
+    // Reported upward so a host with somewhere better to put it can — the
+    // reader swaps its toolbar glyph for a spinner, which is the whole of
+    // what moves on screen while the model runs.
+    LaunchedEffect(busy) { onBusyChange(busy) }
+    DisposableEffect(Unit) { onDispose { onBusyChange(false) } }
+
     Column(
         modifier
             .fillMaxWidth()
@@ -158,7 +167,7 @@ fun SummaryPanel(target: SummaryTarget, onClose: () -> Unit, modifier: Modifier 
                 is Stage.Downloading -> current.fraction?.let { "${(it * 100).toInt()}%" } ?: "downloading"
                 else -> (engineState as? SummariserState.Ready)?.model.orEmpty()
             },
-            busy = stage is Stage.Generating || stage is Stage.Reading || stage is Stage.Downloading,
+            busy = busy && !hostShowsBusy,
             onClose = onClose,
         )
         Spacer(Modifier.height(8.dp))
@@ -177,10 +186,10 @@ fun SummaryPanel(target: SummaryTarget, onClose: () -> Unit, modifier: Modifier 
 
 /**
  * The design system's card puts the spinner in the toolbar slot the summary
- * icon vacates, so that nothing on the page moves but that one glyph. That
- * needs the panel's stage plumbed back up into the reader's toolbar — and the
- * panel has two hosts, only one of which has a toolbar at all. Until that is
- * worth doing, the motion lives here, next to the model's name.
+ * icon vacates, so nothing on the page moves but that one glyph. The reader
+ * does exactly that and passes `hostShowsBusy`; the overlay a swiped row
+ * opens has no toolbar to put it in, so there it stays here beside the
+ * model's name.
  */
 @Composable
 private fun PanelHeader(note: String, busy: Boolean, onClose: () -> Unit) {
@@ -201,8 +210,7 @@ private fun PanelHeader(note: String, busy: Boolean, onClose: () -> Unit) {
             )
             Spacer(Modifier.width(8.dp))
         }
-        // Which model wrote this, in the mono face every other fact in this
-        // app is set in — a summary is only as good as what produced it.
+        // Which model wrote this: a summary is only as good as its source.
         if (note.isNotBlank()) {
             Text(
                 text = note,

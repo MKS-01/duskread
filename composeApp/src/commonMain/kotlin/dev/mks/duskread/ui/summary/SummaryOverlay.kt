@@ -6,6 +6,8 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -41,6 +43,21 @@ fun SummaryOverlay(modifier: Modifier = Modifier) {
     requested?.let { shown.value = it }
 
     Box(modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
+        // Tapping the list dismisses the panel. No ripple and no scrim — the
+        // rows underneath stay legible, which is the point of floating over
+        // them; the only sign this layer exists is that the first tap closes.
+        if (requested != null) {
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = SummaryRequest::consume,
+                    ),
+            )
+        }
+
         AnimatedVisibility(
             visible = requested != null,
             enter = fadeIn(tween(Motion.Chip)) + slideInVertically(tween(Motion.Chip)) { it / 3 },

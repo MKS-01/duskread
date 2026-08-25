@@ -11,11 +11,9 @@ import dev.mks.duskread.data.rememberKeyValueStore
 /**
  * Summaries already generated, kept so a second look costs nothing.
  *
- * Generation is seconds of the phone's own silicon, and an article's summary
- * does not change — regenerating one because the reader closed the panel and
- * opened it again is the kind of waste that shows up as heat. AICore also
- * meters inference per app, so a cache is what keeps a normal afternoon of
- * reading well inside the quota.
+ * Generation is seconds of the phone's own silicon and shows up as heat, and
+ * AICore meters inference per app — so this is what keeps an afternoon of
+ * reading inside the quota.
  *
  * Same flat-store encoding as [dev.mks.duskread.links.FeedPostCache], for the
  * same reason: this is a few dozen short records and a database would be
@@ -25,17 +23,10 @@ class SummaryCache(private val store: KeyValueStore) {
     var summaries: Map<String, ArticleSummary> by mutableStateOf(load())
         private set
 
-    /**
-     * Short and full are different answers to the same article, not one
-     * trimmed from the other, so a summary taken at the other length is a
-     * miss — the panel regenerates rather than showing the wrong shape.
-     */
+    /** Short and full are different answers, so the other length is a miss. */
     fun summaryFor(url: String, length: SummaryLength): ArticleSummary? = summaries[url]?.takeIf { it.length == length }
 
-    /**
-     * Newest first, oldest past the cap dropped: this is a convenience, not a
-     * record, and the store it lives in is read into memory whole at launch.
-     */
+    /** Newest first, oldest dropped: a convenience, not a record. */
     fun put(summary: ArticleSummary) {
         val kept = (listOf(summary) + summaries.values.filterNot { it.url == summary.url })
             .sortedByDescending { it.createdAt }

@@ -40,7 +40,7 @@ the timer, and what's new from the blogs you follow — nothing to dig for.
 
 Summaries run through [ML Kit GenAI](https://developer.android.com/ai),
 which routes to **Gemini Nano** via AICore on supported hardware. The app
-asks for article summarisation only — one to three bullets, folded into a
+asks for article summarisation only — one bullet or three, folded into a
 paragraph — and lets the system decide the register; there's no prompt to
 write and nothing to configure beyond how long a summary you want.
 
