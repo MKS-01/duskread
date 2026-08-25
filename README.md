@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/media/duskread-mark.svg" alt="DuskRead" width="96" height="96">
+</p>
+
 <h1 align="center">DuskRead</h1>
 
 <p align="center">
@@ -30,11 +34,18 @@
   other target just doesn't show the control.
 - **A timer that interrupts you, and a theme that gets out of the way.**
   A real notification and a vibration when time's up, not a number quietly
-  hitting zero — and one tap drains the app to "Ink", a near-black,
-  colourless scheme, with a single terracotta accent one more tap away.
+  hitting zero. The app opens in "Ink" — a near-black, colourless scheme —
+  by default; one tap brings a single accent back, terracotta or a dusty
+  green, picked in Settings and spent on nothing else.
 
 Home is one screen on purpose: today's pick from Saved, today's Readback,
 the timer, and what's new from the blogs you follow — nothing to dig for.
+
+<p align="center">
+  <img src="docs/media/home-ink.png" alt="Home dashboard, Ink" width="31%">
+  <img src="docs/media/settings-accent-paper.png" alt="Settings — accent picker, Paper Black" width="31%">
+  <img src="docs/media/readback-ink.png" alt="Readback tab, Ink" width="31%">
+</p>
 
 ## On-device AI
 

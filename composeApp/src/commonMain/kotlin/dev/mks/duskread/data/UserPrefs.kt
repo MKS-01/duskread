@@ -6,6 +6,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import dev.mks.duskread.summary.SummaryLength
+import dev.mks.duskread.ui.theme.AccentColor
 
 /**
  * The first state in this app that is genuinely mutable and outlives a
@@ -23,8 +24,23 @@ class UserPrefs(private val store: KeyValueStore) {
     var introSeen: Boolean by mutableStateOf(store.getBoolean(KeyIntroSeen))
         private set
 
-    /** The monochrome ("Ink") scheme, kept across restarts until changed by hand. */
-    var mono: Boolean by mutableStateOf(store.getBoolean(KeyMono))
+    /**
+     * The monochrome ("Ink") scheme, kept across restarts until changed by
+     * hand. Ink by default — the app opens colourless and a reader opts into
+     * an accent, not the other way round.
+     */
+    var mono: Boolean by mutableStateOf(store.getBoolean(KeyMono, default = true))
+        private set
+
+    /**
+     * Which accent "Paper Black" lights up with. Stored by name, same
+     * reasoning as [summaryLength] below; falls back to the scheme's own
+     * terracotta if nothing was ever chosen, or the stored name no longer
+     * matches an entry.
+     */
+    var accent: AccentColor by mutableStateOf(
+        store.getString(KeyAccent)?.let { name -> AccentColor.entries.firstOrNull { it.name == name } } ?: AccentColor.Orange,
+    )
         private set
 
     /**
@@ -55,6 +71,11 @@ class UserPrefs(private val store: KeyValueStore) {
         store.putBoolean(KeyMono, value)
     }
 
+    fun updateAccent(value: AccentColor) {
+        accent = value
+        store.putString(KeyAccent, value.name)
+    }
+
     fun updateSummaryLength(value: SummaryLength) {
         summaryLength = value
         store.putString(KeySummaryLength, value.name)
@@ -71,6 +92,7 @@ class UserPrefs(private val store: KeyValueStore) {
         const val KeyName = "user.name"
         const val KeyIntroSeen = "intro.seen"
         const val KeyMono = "theme.mono"
+        const val KeyAccent = "theme.accent"
         const val KeySummaryLength = "summary.length"
     }
 }

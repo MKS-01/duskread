@@ -17,7 +17,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import dev.mks.duskread.data.rememberUserPrefs
 import dev.mks.duskread.ui.PlatformOverlay
-import dev.mks.duskread.ui.PlatformThemeIcon
 import dev.mks.duskread.ui.home.HomeScreen
 import dev.mks.duskread.ui.home.HomeTab
 import dev.mks.duskread.ui.onboarding.Onboarding
@@ -32,11 +31,11 @@ fun App() {
 
     // Both themes are dark; this picks the colourless one. Persisted through
     // prefs so a reader who drops into Ink stays there until they switch back
-    // by hand, even across a process kill.
+    // by hand, even across a process kill. The home-screen icon and splash
+    // don't follow this — they're Ink's, always; see AndroidManifest.xml.
     val mono = prefs.mono
-    PlatformThemeIcon(mono = mono)
 
-    DuskReadTheme(mono = mono) {
+    DuskReadTheme(mono = mono, accent = prefs.accent) {
         Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
             if (!prefs.introSeen) {
                 Onboarding(

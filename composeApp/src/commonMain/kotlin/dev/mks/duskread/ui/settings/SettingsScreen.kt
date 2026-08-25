@@ -1,6 +1,7 @@
 package dev.mks.duskread.ui.settings
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -34,7 +35,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -54,6 +58,7 @@ import dev.mks.duskread.ui.common.EyebrowHeader
 import dev.mks.duskread.ui.common.ToastRequest
 import dev.mks.duskread.ui.summary.SummaryActionChip
 import dev.mks.duskread.ui.summary.SummaryChip
+import dev.mks.duskread.ui.theme.AccentColor
 import dev.mks.duskread.ui.theme.DuskReadIcons
 import dev.mks.duskread.ui.theme.Mono
 import dev.mks.duskread.ui.theme.Radius
@@ -129,6 +134,8 @@ fun SettingsScreen(
                 EyebrowHeader(text = "APPEARANCE")
                 Spacer(Modifier.height(14.dp))
                 ThemeRow(mono = mono, onToggleTheme = onToggleTheme)
+                Spacer(Modifier.height(18.dp))
+                AccentPicker(accent = prefs.accent, mono = mono, onAccentChange = prefs::updateAccent)
 
                 Spacer(Modifier.height(28.dp))
 
@@ -207,15 +214,76 @@ private fun ThemeRow(mono: Boolean, onToggleTheme: () -> Unit) {
         )
         Text(
             text = if (mono) {
-                "Colour drained out — tap to bring the terracotta accent back."
+                "Colour drained out — tap to bring the accent back."
             } else {
-                "The terracotta accent — tap to drop colour entirely."
+                "One accent, chosen below — tap to drop colour entirely."
             },
             fontSize = 11.5.sp,
             lineHeight = 15.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
+}
+
+/**
+ * The accent "Paper Black" lights up with, as swatches rather than a word
+ * list — the whole point of picking one is seeing it, not reading its name.
+ * Shown regardless of [mono] up above: it's a choice for the *next* time
+ * colour is on, so picking one while Ink is active still has to work — but
+ * while Ink is active the swatches themselves drop their hue too
+ * ([greyed]), the same "nothing but lightness left to tell things apart"
+ * rule [MonoScheme] applies everywhere else. Showing three saturated
+ * squares in a screen that has otherwise gone entirely grey would read as a
+ * bug, not a preview.
+ *
+ * Squared off with [Radius.Chip], same as the sort chips and the sourcechip
+ * cell — a circular swatch would be the one rounded shape in a screen built
+ * entirely from hairline squares. The border alone carries selection: a
+ * hairline in [outline][androidx.compose.material3.ColorScheme.outline] at
+ * rest, doubled and switched to onSurface when chosen — no ring, no check.
+ */
+@Composable
+private fun AccentPicker(accent: AccentColor, mono: Boolean, onAccentChange: (AccentColor) -> Unit) {
+    Column(Modifier.fillMaxWidth()) {
+        Text(
+            text = "Accent",
+            style = MaterialTheme.typography.titleSmall,
+            fontSize = 14.sp,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Spacer(Modifier.height(10.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(Space.ChipGap)) {
+            AccentColor.entries.forEach { option ->
+                AccentSwatch(
+                    color = if (mono) greyed(option.primary) else option.primary,
+                    selected = option == accent,
+                    contentDescription = option.label,
+                    onClick = { onAccentChange(option) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun AccentSwatch(color: Color, selected: Boolean, contentDescription: String, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(Radius.Chip)
+    val borderColor = if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.outline
+    Box(
+        modifier = Modifier
+            .size(28.dp)
+            .clip(shape)
+            .background(color)
+            .border(if (selected) Stroke.Hairline * 2 else Stroke.Hairline, borderColor, shape)
+            .semantics { this.contentDescription = contentDescription }
+            .clickable(onClick = onClick),
+    ) {}
+}
+
+/** Drains the hue, keeps the value — the same trade [MonoScheme] makes for the whole app. */
+private fun greyed(color: Color): Color {
+    val value = 0.299f * color.red + 0.587f * color.green + 0.114f * color.blue
+    return Color(value, value, value, color.alpha)
 }
 
 /**

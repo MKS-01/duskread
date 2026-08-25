@@ -7,34 +7,18 @@
         than cover it.
 
         The icon animates (the meter's bars settling — see
-        ic_duskread_splash), but nothing here imposes a delay: the duration
-        below only tells the system how long the animation runs, and the
-        window is still dismissed the moment the app has something to draw.
-        On a warm start that cuts the settle off part-way through, which is
-        the right trade — the splash is there to cover a wait, not to make
-        one.
-    -->
-    <style name="Theme.DuskRead.Splash" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">@color/splash_background</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_duskread_splash</item>
-        <item name="windowSplashScreenAnimationDuration">700</item>
-        <item name="postSplashScreenTheme">@style/Theme.DuskRead</item>
-    </style>
+        ic_duskread_splash_ink), but nothing here imposes a delay: the
+        duration below only tells the system how long the animation runs, and
+        the window is still dismissed the moment the app has something to
+        draw. On a warm start that cuts the settle off part-way through,
+        which is the right trade — the splash is there to cover a wait, not
+        to make one.
 
-    <!-- Compose draws everything; this only needs to avoid a flash of the
-         wrong colour before the first frame. -->
-    <style name="Theme.DuskRead" parent="android:Theme.Material.NoActionBar">
-        <item name="android:statusBarColor">@android:color/transparent</item>
-        <item name="android:navigationBarColor">@android:color/transparent</item>
-        <item name="android:windowBackground">@color/splash_background</item>
-    </style>
-
-    <!--
-        Ink's copy of the pair above. Which one actually shows is decided by
-        which launcher alias is enabled (see AndroidManifest.xml) — the
-        activity-alias's own android:theme wins for that launch, so the
-        splash matches whichever launcher icon the reader tapped, and by
-        extension whichever scheme they last chose in-app.
+        ".Ink" in the name is a holdover from when a second, terracotta pair
+        existed alongside it and the app picked between them at runtime — see
+        AndroidManifest.xml. The app icon is Ink's only now, but the name
+        stayed rather than forcing a rename through the manifest and every
+        resource file that points at it.
     -->
     <style name="Theme.DuskRead.Splash.Ink" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/splash_background_ink</item>

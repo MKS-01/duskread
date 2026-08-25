@@ -1,0 +1,23 @@
+<!--
+  Standalone copy of the app's launcher icon (background + ic_duskread_mark_ink
+  foreground, androidApp's res/drawable/ic_launcher_background_ink.xml and
+  ic_duskread_mark_ink.xml), redrawn as plain SVG so it can be embedded in
+  README.md — GitHub renders repo-relative SVGs directly, but not Android's
+  VectorDrawable XML.
+
+  Drawn as a self-contained tile (ground colour included) rather than a bare
+  transparent mark: the mark's "bite" is painted in the ground colour rather
+  than cut as a true hole (same reasoning as the Android drawable — evenOdd
+  only makes a clean hole where the cut shape sits fully inside the base
+  shape, and this bite doesn't), so it only reads correctly over that exact
+  background. A transparent version would show a dark smudge on GitHub's
+  white light-mode background; this way the logo is the same icon a reader
+  sees on their home screen, tile and all.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108" width="96" height="96">
+  <rect width="108" height="108" rx="24" fill="#161616" />
+  <g transform="translate(54,54) scale(0.85) translate(-54,-54)">
+    <path fill="#DCDCDC" d="M40,38 a14,14 0 0 1 28,0 v36 a14,14 0 0 1 -28,0 z" />
+    <path fill="#161616" d="M44,32 a16,16 0 0 1 32,0 a16,16 0 0 1 -32,0 z" />
+  </g>
+</svg>

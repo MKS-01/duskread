@@ -937,9 +937,9 @@ footer { margin-top: 56px; padding-top: 22px; border-top: 1px solid var(--line);
         themed-icon layer, which reads only alpha, no colour — keeps a true
         evenOdd hole instead, sized down to sit fully inside the bar so the
         same bug can't recur there. The mark still settles into place on
-        boot the same way the one before it did, and an Ink-coloured
-        launcher icon and splash still swap in automatically via the same
-        pair of Android activity-aliases.
+        boot the same way the one before it did. The launcher icon and
+        splash are this Ink mark permanently now, not one half of a pair
+        that swapped with the in-app theme — see "In use today" below.
       </p>
     </div>
   </section>
@@ -1059,8 +1059,8 @@ footer { margin-top: 56px; padding-top: 22px; border-top: 1px solid var(--line);
     <ul class="status-list">
       <li><b>No card boxes anywhere.</b> Home, Readback, Saved, Following and Settings all sit flush on the background, separated by a bottom hairline (<code>ui/common/ListRow.kt</code>). The Following post carousel and feed-management list, once boxed, are flat now too.</li>
       <li><b>One shared row skeleton.</b> <code>ListRow</code>/<code>ListRowBody</code>/<code>ListRowDivider</code> hold the sourcechip-title-meta shape everywhere it appears, instead of three hand-rolled copies. <code>RowTone</code> (<code>Normal</code>/<code>Accent</code>/<code>Faded</code>) names the states a row can be in.</li>
-      <li><b>Two colour schemes, real tokens.</b> <code>ui/theme/Theme.kt</code>'s <code>DarkScheme</code> (Paper Black, terracotta <code>#C6684A</code>) and <code>MonoScheme</code> (Ink) — both dark, mono is the same layout with hue drained to luminance alone.</li>
-      <li><b>Ink persists and reaches the launcher.</b> The toggle (tab bar or Settings) is saved via <code>UserPrefs</code> and survives restarts; on Android it also flips a pair of activity-aliases (<code>LauncherPaper</code>/<code>LauncherInk</code>) so the home-screen icon and splash match.</li>
+      <li><b>Two colour schemes, real tokens, one is now pickable.</b> <code>ui/theme/Theme.kt</code>'s <code>DarkScheme</code> (Paper Black) and <code>MonoScheme</code> (Ink) — both dark, mono is the same layout with hue drained to luminance alone. Paper Black's accent is an <code>AccentColor</code> — terracotta <code>#C6684A</code> or a dusty green <code>#4FA870</code>, built at the terracotta's own saturation and lightness so neither reads louder than the scheme was designed to carry — chosen in Settings and defaulting to terracotta. Ink ignores it; the Settings swatches themselves grey out while Ink is active, the same "nothing but lightness left" rule as everywhere else.</li>
+      <li><b>Ink is the default, and persists — but the launcher no longer follows it.</b> <code>UserPrefs.mono</code> defaults to <code>true</code> and survives restarts. The home-screen icon and splash used to swap between a Paper Black and an Ink pair via a pair of Android activity-aliases (<code>LauncherPaper</code>/<code>LauncherInk</code>); that mechanism — and the orange launcher assets it switched to — is gone. The app icon is Ink's white mark on its dark tile, always, regardless of which scheme is active in-app.</li>
       <li><b>Radius.Chip (3dp)</b> is the shared corner for anything hairline-bordered and squared-off: sort chips, the sourcechip, and — as of this pass — the Settings and folder icon buttons, both now bordered squares rather than bare glyphs.</li>
       <li><b>Jost + Inconsolata</b> throughout, replacing Space Grotesk and each platform's default mono.</li>
       <li><b><code>DuskReadIcons.kt</code></b> holds 22 stroked vector icons in the Bar hand (2.4 weight, round cap/join) — see the Icon set section above.</li>

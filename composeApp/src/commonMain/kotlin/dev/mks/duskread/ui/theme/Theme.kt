@@ -5,19 +5,56 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
+/**
+ * The accent a reader can pick for "Paper Black" in Settings. Orange is the
+ * scheme's own name for its terracotta and stays the default; Green is just
+ * a different lamp over the same page — background, ink and every other role
+ * stay exactly as [DarkScheme] defines them, only `primary` and its
+ * container pair move.
+ *
+ * Built at the terracotta's own saturation and lightness, only the hue
+ * turns — a neon green would be a louder accent than the scheme was ever
+ * designed to carry, and would fight the "one accent, spent on purpose" rule
+ * on sight. Matched tone, not matched mood: `hacker green` still reads as
+ * terminal green, just a dusty one.
+ */
+enum class AccentColor(
+    val label: String,
+    val primary: Color,
+    val onPrimary: Color,
+    val primaryContainer: Color,
+    val onPrimaryContainer: Color,
+) {
+    Orange(
+        label = "Orange",
+        primary = Color(0xFFC6684A),
+        onPrimary = Color(0xFF2B1006),
+        primaryContainer = Color(0xFF352822),
+        onPrimaryContainer = Color(0xFFFFD9C0),
+    ),
+    Green(
+        label = "Hacker green",
+        primary = Color(0xFF4FA870),
+        onPrimary = Color(0xFF0B2013),
+        primaryContainer = Color(0xFF223228),
+        onPrimaryContainer = Color(0xFFCDEAD6),
+    ),
+}
+
 // "Paper Black" — a page, not a screen; ink, not a glow. A neutral, matte
 // near-black rather than tinted brown, with soft warm-white "ink" text rather
-// than stark white, lit by a single terracotta accent.
+// than stark white, lit by a single accent (terracotta by default — see
+// [AccentColor]).
 //
 // `background` sits just above pure black — close enough to still save real
 // power on an OLED/AMOLED panel (background is by far the largest area on
 // screen), but not so flat that it loses depth against the cards. Cards get
 // a slightly lifted `surface` so they read as raised above that background.
-private val DarkScheme = darkColorScheme(
-    primary = Color(0xFFC6684A),
-    onPrimary = Color(0xFF2B1006),
-    primaryContainer = Color(0xFF352822),
-    onPrimaryContainer = Color(0xFFFFD9C0),
+private fun darkScheme(accent: AccentColor) = darkColorScheme(
+    primary = accent.primary,
+    onPrimary = accent.onPrimary,
+    primaryContainer = accent.primaryContainer,
+    onPrimaryContainer = accent.onPrimaryContainer,
     background = Color(0xFF101010),
     onBackground = Color(0xFFE8E6E2),
     surface = Color(0xFF1A1A1A),
@@ -68,15 +105,18 @@ private val MonoScheme = darkColorScheme(
 /**
  * Both themes are dark; [mono] picks which. The app is read on a phone in the
  * evening, so a light polarity never got used — what the toggle is actually
- * for is dropping colour entirely on the days the terracotta is a distraction.
+ * for is dropping colour entirely on the days the accent is a distraction.
+ * [accent] only matters on the "Paper Black" side; Ink has no hue to spend it
+ * on, so [MonoScheme] ignores it entirely.
  */
 @Composable
 fun DuskReadTheme(
-    mono: Boolean = false,
+    mono: Boolean = true,
+    accent: AccentColor = AccentColor.Orange,
     content: @Composable () -> Unit,
 ) {
     MaterialTheme(
-        colorScheme = if (mono) MonoScheme else DarkScheme,
+        colorScheme = if (mono) MonoScheme else darkScheme(accent),
         typography = AlgoTypography(DuskReadFontFamily()),
         content = content,
     )
