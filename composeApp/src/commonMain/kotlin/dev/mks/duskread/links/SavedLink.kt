@@ -22,6 +22,8 @@ data class SavedLink(
     val readAt: Long? = null,
     /** False until the page itself has answered; the title is a guess from the URL until then. */
     val fetched: Boolean = false,
+    /** Whether the last fetch attempt couldn't reach the page — [fetched] is still true, so the loop won't retry it on its own. */
+    val fetchFailed: Boolean = false,
 ) {
     val read: Boolean
         get() = readAt != null

@@ -80,18 +80,6 @@ h1 {
 .standfirst { font-size: 18px; line-height: 1.62; color: var(--muted); max-width: 66ch; margin: 0 0 14px; }
 .standfirst strong { color: var(--text); font-weight: 600; }
 
-.retired-note {
-  font-size: 14px;
-  line-height: 1.6;
-  color: var(--muted);
-  max-width: 66ch;
-  margin: 0;
-  padding: 12px 16px;
-  border-left: 2px solid var(--line-firm);
-  background: var(--surface);
-}
-.retired-note code { font-family: var(--data); font-size: 0.92em; }
-
 section { padding: 56px 0 0; }
 
 h2 {
@@ -154,9 +142,9 @@ h2 {
 }
 .navbar .nb { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; }
 
-/* Concept only — the in-app-browser toolbar and a floating summary
-   panel, neither shipped, sketched in the same hairline-square /
-   floating-glass language as the icon buttons and nav bar above. */
+/* The in-app-browser toolbar and floating summary panel, sketched in
+   the same hairline-square / floating-glass language as the icon
+   buttons and nav bar above. */
 .toolbar { display: flex; align-items: center; gap: 4px; margin-bottom: 10px; }
 .toolbar .title { flex: 1; font-size: 13px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .iconbtn.active { color: var(--a-sound); border-color: var(--a-sound); }
@@ -367,11 +355,11 @@ footer { margin-top: 56px; padding-top: 22px; border-top: 1px solid var(--line);
     <symbol id="w-close" viewBox="0 0 24 24"><path d="M6.5 6.5 17.5 17.5M17.5 6.5 6.5 17.5"/></symbol>
     <symbol id="w-chev" viewBox="0 0 24 24"><path d="M9.5 5.5 16 12l-6.5 6.5"/></symbol>
 
-    <!-- Concept icons for the article-summary idea below — not in
-         DuskReadIcons.kt yet, drawn to the same Bar-hand spec so the
-         wireframe reads as this app rather than a foreign mockup. -->
+    <!-- Summary and Reader, matching DuskReadIcons.kt's shipped paths
+         exactly rather than a rough stand-in, so the toolbar mockups
+         below read as this app rather than a foreign wireframe. -->
     <symbol id="w-summary" viewBox="0 0 24 24"><path d="M4 7h16M4 12h11M4 17h6"/></symbol>
-    <symbol id="w-reader" viewBox="0 0 24 24"><path d="M4.5 6h6.5v13h-6.5zM19.5 6h-6.5v13h6.5z"/></symbol>
+    <symbol id="w-reader" viewBox="0 0 24 24"><path d="M5 7h14M5 12h14M5 17h7.5"/></symbol>
   </defs>
 </svg>
 
@@ -379,19 +367,12 @@ footer { margin-top: 56px; padding-top: 22px; border-top: 1px solid var(--line);
 
   <header class="masthead">
     <p class="kicker">DuskRead · design system</p>
-    <h1>Amplitude</h1>
+    <h1>DuskRead</h1>
     <p class="standfirst">
       Greyscale interface, one hue, and that hue means exactly one thing:
       <strong>there is sound here</strong>. This page documents the design
       language as it actually ships today — real tokens, real layouts, real
       icon set — plus what's genuinely still open.
-    </p>
-    <p class="retired-note">
-      This replaces <code>docs/design/redesign-variants.html</code>, which
-      compared Amplitude against a second direction ("Bindery") to decide
-      between them. That decision is made — Amplitude shipped — so the
-      comparison page is retired. Screen-by-screen migration history lives
-      in <code>docs/design/amplitude-migration.md</code>.
     </p>
   </header>
 
@@ -666,16 +647,15 @@ footer { margin-top: 56px; padding-top: 22px; border-top: 1px solid var(--line);
   </section>
 
   <!-- ---------------------------------------------------------- -->
-  <section id="summary-concept">
-    <h2>Screen — Article summary <span style="color:var(--a-faint);font-weight:400">(shipped)</span></h2>
+  <section id="summary">
+    <h2>Screen — Article summary</h2>
     <p class="section-title">On-device, from the reader <em>and</em> from a swiped row</p>
     <p class="section-note">
       A local-model summary (ML Kit GenAI &rarr; AICore), generated from the
       text <code>InAppBrowserScreen</code> extracts into <code>Article.text</code>
       when a reader view opens, or from a fetch when a list row asks. Lives in
-      <code>summary/</code> and <code>ui/summary/</code>. The mockups below are
-      the original concept; three things about the built version differ from
-      them, each for a reason worth keeping:
+      <code>summary/</code> and <code>ui/summary/</code>. A few decisions
+      behind the built version are worth calling out:
     </p>
     <ul class="status-list">
       <li><b>Prose, not bullets.</b> The concept drew a gist line and three
@@ -897,12 +877,9 @@ footer { margin-top: 56px; padding-top: 22px; border-top: 1px solid var(--line);
     <h2>Brand</h2>
     <p class="section-title">Dusk bar — one shape, a crescent bitten out</p>
     <p class="section-note">
-      The house language ("the waveform is the alphabet") kept rather than
-      started over, with the app's new name folded in: one wide bar — read,
-      listen — with a crescent bitten from its top, for dusk. Replaces the
-      level-meter-with-a-bookmark mark this section showed under the
-      Blogmark name; that mark and two other DuskRead concepts (Horizon,
-      Crescent) are below, kept for the record rather than deleted.
+      The house language ("the waveform is the alphabet") carries into the
+      mark itself: one wide bar — read, listen — with a crescent bitten from
+      its top, for dusk.
     </p>
 
     <div class="v-amp" style="color:var(--text)">
@@ -969,122 +946,6 @@ footer { margin-top: 56px; padding-top: 22px; border-top: 1px solid var(--line);
 
   <!-- ---------------------------------------------------------- -->
   <section>
-    <h2>Brand — rejected DuskRead concepts</h2>
-    <p class="section-title">Two other marks tried against the name</p>
-    <p class="section-note">
-      Three marks were drawn against DuskRead once the name itself was
-      settled (replacing an earlier round explored against the Blogmark
-      name, before DuskRead existed as a concept). <b>Dusk bar</b> is the
-      one that shipped — see the Brand section above. <b>Horizon</b> and
-      <b>Crescent</b>, below, are the two that didn't, kept for the record
-      rather than deleted. Primitives only (circles, rects, one
-      ground-colour overlay technique), same reasoning as the shipped mark:
-      what's drawn here is exactly what would render at any size, nothing
-      hand-fit.
-    </p>
-
-    <p class="rationale" style="border:0;padding:0;max-width:66ch;margin-bottom:24px">
-      Same infrastructure note as before, still true regardless of which
-      mark or name: whichever ships still needs the flattened single-fill
-      silhouette Android 13+'s themed-icon system expects
-      (<code>ic_launcher_monochrome.xml</code>), which the OS re-tints from
-      the wallpaper. Not a per-concept decision.
-    </p>
-
-    <div class="v-amp" style="color:var(--text)">
-      <div class="brandrow" style="margin-bottom:34px">
-        <div>
-          <svg class="appicon" width="88" height="88" viewBox="0 0 108 108" aria-label="Horizon concept, launcher size">
-            <rect width="108" height="108" fill="#101010"/>
-            <circle cx="54" cy="58" r="24" fill="#c6684a"/>
-            <rect x="0" y="68" width="108" height="40" fill="#101010"/>
-            <rect x="16" y="64" width="76" height="8" rx="4" fill="#c6684a"/>
-          </svg>
-          <p class="brand-label">48</p>
-        </div>
-        <div>
-          <svg class="appicon" width="44" height="44" viewBox="0 0 108 108">
-            <rect width="108" height="108" fill="#101010"/>
-            <circle cx="54" cy="58" r="24" fill="#c6684a"/>
-            <rect x="0" y="68" width="108" height="40" fill="#101010"/>
-            <rect x="16" y="64" width="76" height="8" rx="4" fill="#c6684a"/>
-          </svg>
-          <p class="brand-label">24</p>
-        </div>
-        <div>
-          <div class="splash" style="background:#101010">
-            <svg width="74" height="74" viewBox="0 0 108 108">
-              <circle cx="54" cy="58" r="24" fill="#c6684a"/>
-              <rect x="0" y="68" width="108" height="40" fill="#101010"/>
-              <rect x="16" y="64" width="76" height="8" rx="4" fill="#c6684a"/>
-            </svg>
-          </div>
-          <p class="brand-label">splash</p>
-        </div>
-        <p class="rationale" style="flex:1 1 240px;align-self:center;border:0;padding:0">
-          <b>Horizon.</b> A sun (or moon) sitting exactly on a line — the
-          most literal reading of "dusk" of the three, and the one that
-          says least about "read" or "listen" on its own. The horizon bar
-          is drawn last, over a background-coloured rect that erases the
-          lower half of the circle — exact, no arc math to get wrong.
-        </p>
-      </div>
-
-      <div class="brandrow" style="margin-bottom:34px">
-        <div>
-          <svg class="appicon" width="88" height="88" viewBox="0 0 108 108" aria-label="Crescent concept, launcher size">
-            <rect width="108" height="108" fill="#101010"/>
-            <circle cx="50" cy="54" r="26" fill="#c6684a"/>
-            <circle cx="62" cy="44" r="24" fill="#101010"/>
-          </svg>
-          <p class="brand-label">48</p>
-        </div>
-        <div>
-          <svg class="appicon" width="44" height="44" viewBox="0 0 108 108">
-            <rect width="108" height="108" fill="#101010"/>
-            <circle cx="50" cy="54" r="26" fill="#c6684a"/>
-            <circle cx="62" cy="44" r="24" fill="#101010"/>
-          </svg>
-          <p class="brand-label">24</p>
-        </div>
-        <div>
-          <div class="splash" style="background:#101010">
-            <svg width="74" height="74" viewBox="0 0 108 108">
-              <circle cx="50" cy="54" r="26" fill="#c6684a"/>
-              <circle cx="62" cy="44" r="24" fill="#101010"/>
-            </svg>
-          </div>
-          <p class="brand-label">splash</p>
-        </div>
-        <p class="rationale" style="flex:1 1 240px;align-self:center;border:0;padding:0">
-          <b>Crescent.</b> One circle, one background-coloured circle
-          biting into it — the purest "dusk" reference of the three and the
-          simplest shape in the whole exploration so far. It says nothing
-          about reading or audio at all; the name would have to carry that
-          half of the meaning entirely on its own.
-        </p>
-      </div>
-
-    </div>
-
-    <p class="frame-cap" style="margin-top:34px">Name</p>
-    <div class="retired-note" style="max-width:66ch">
-      <p style="margin:0">
-        <b style="color:var(--text)">DuskRead</b> — shipped: the package,
-        every renamed identifier (<code>DuskReadIcons</code>,
-        <code>DuskReadTheme</code>, …), the manifest label, and the app
-        store/window titles across all four platforms all read DuskRead
-        now. Every other name suggested earlier (Cadence, Tempo,
-        Marginalia, Waypoint, Longform, Aloud, Cairn, Alcove, Dogear, Stet,
-        Digest, Abstract, Précis, Rundown, Byline, Quietfeed, Lowlight) is
-        retired — kept in git history, not repeated here.
-      </p>
-    </div>
-  </section>
-
-
-  <!-- ---------------------------------------------------------- -->
-  <section>
     <h2>Icon set</h2>
     <p class="section-title">Bar — the waveform is the alphabet</p>
     <p class="section-note">
@@ -1095,14 +956,16 @@ footer { margin-top: 56px; padding-top: 22px; border-top: 1px solid var(--line);
       borrows the same weight and terminal so the set still looks cut from
       one clip. This is the mockup's original demo wall, kept as the stroke
       reference — it is <b>not</b> a mirror of <code>ui/theme/DuskReadIcons.kt</code>.
-      The shipped set is 20 icons and diverges both ways: <code>search</code>,
+      The shipped set is 22 icons and diverges both ways: <code>search</code>,
       <code>share</code>, <code>sleep</code>, <code>speed</code>,
-      <code>skip</code>, <code>queue</code>, <code>offline</code>,
+      <code>skip</code>, <code>queue</code>,
       <code>add</code> and <code>delete</code> below were never built (no
       playback-speed, sleep-timer, search or share feature exists), while the
       code has several this wall doesn't show — <code>Target</code>,
       <code>Clock</code>, <code>Shuffle</code>, <code>FolderConnect</code>,
       <code>BookmarkFilled</code>, <code>Reader</code>, <code>Check</code>.
+      <code>offline</code> below is shipped as <code>DuskReadIcons.Offline</code> —
+      the wall's own bars, exact same path, reused rather than redrawn.
     </p>
 
     <div class="v-amp" style="color:var(--text)">
@@ -1200,7 +1063,7 @@ footer { margin-top: 56px; padding-top: 22px; border-top: 1px solid var(--line);
       <li><b>Ink persists and reaches the launcher.</b> The toggle (tab bar or Settings) is saved via <code>UserPrefs</code> and survives restarts; on Android it also flips a pair of activity-aliases (<code>LauncherPaper</code>/<code>LauncherInk</code>) so the home-screen icon and splash match.</li>
       <li><b>Radius.Chip (3dp)</b> is the shared corner for anything hairline-bordered and squared-off: sort chips, the sourcechip, and — as of this pass — the Settings and folder icon buttons, both now bordered squares rather than bare glyphs.</li>
       <li><b>Jost + Inconsolata</b> throughout, replacing Space Grotesk and each platform's default mono.</li>
-      <li><b><code>DuskReadIcons.kt</code></b> holds 20 stroked vector icons in the Bar hand (2.4 weight, round cap/join) — see the Icon set section above.</li>
+      <li><b><code>DuskReadIcons.kt</code></b> holds 22 stroked vector icons in the Bar hand (2.4 weight, round cap/join) — see the Icon set section above.</li>
       <li><b>The floating nav bar</b> carries three tabs, the transport when something's playing, and the Ink toggle behind a divider.</li>
       <li><b><code>AppTextField</code></b> is the one text-field shape in the app — hairline border, <code>Radius.Inline</code> (10dp), never a pill — used by every field: Saved's paste field, the feed-follow field, Settings, the desktop folder path, onboarding, and Focus's new custom-length entry.</li>
       <li><b>Launcher icon and splash</b> fill ~70% of their canvas, solid rather than alpha-stepped, animating the outer bars to rest on boot.</li>
@@ -1228,7 +1091,7 @@ footer { margin-top: 56px; padding-top: 22px; border-top: 1px solid var(--line);
   </section>
 
   <footer>
-    DuskRead design system · Amplitude, as shipped · replaces redesign-variants.html
+    DuskRead design system
   </footer>
 
 </div>

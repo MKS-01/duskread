@@ -122,16 +122,27 @@ class LinkLibrary(private val store: KeyValueStore) {
                     title = title?.clean()?.takeIf { it.isNotBlank() } ?: link.title,
                     description = description?.clean()?.takeIf { it.isNotBlank() } ?: link.description,
                     fetched = true,
+                    fetchFailed = false,
                 )
             }
         }
         persist()
     }
 
-    /** Marks a fetch as finished without changing anything, so the row stops showing a spinner. */
+    /**
+     * Marks a fetch as finished without changing anything but [SavedLink.fetchFailed] —
+     * the row stops showing a spinner and starts saying it couldn't reach the page,
+     * rather than quietly keeping the URL-guessed title forever with no sign anything
+     * went wrong.
+     */
     fun markFetchFailed(id: String) {
-        links = links.map { if (it.id == id) it.copy(fetched = true) else it }
+        links = links.map { if (it.id == id) it.copy(fetched = true, fetchFailed = true) else it }
         persist()
+    }
+
+    /** One row's retry, from the offline glyph on it — sets it back to `!fetched` without touching the rest of the list. */
+    fun retryFetch(id: String) {
+        links = links.map { if (it.id == id) it.copy(fetched = false) else it }
     }
 
     /**
@@ -150,7 +161,7 @@ class LinkLibrary(private val store: KeyValueStore) {
      * ordinary unfetched links next launch, not persist as a stalled one.
      */
     fun refreshAll() {
-        links = links.map { it.copy(fetched = false) }
+        links = links.map { it.copy(fetched = false, fetchFailed = false) }
     }
 
     /**
@@ -189,6 +200,7 @@ class LinkLibrary(private val store: KeyValueStore) {
             link.savedAt.toString(),
             link.readAt?.toString().orEmpty(),
             if (link.fetched) "1" else "0",
+            if (link.fetchFailed) "1" else "0",
         ).joinToString(FieldSeparator.toString())
     }
 
@@ -209,6 +221,9 @@ class LinkLibrary(private val store: KeyValueStore) {
             // unknown" rather than being thrown away.
             readAt = if (fields[5] == "1") 0L else fields[5].toLongOrNull(),
             fetched = fields[6] == "1",
+            // A record written before this field existed has no 8th field —
+            // absent reads as "not failed", the same as it did implicitly before.
+            fetchFailed = fields.getOrNull(7) == "1",
         )
     }
 

@@ -171,6 +171,7 @@ fun LinksTab(
                                 library.toggleRead(link.id)
                             },
                             onToggleRead = { library.toggleRead(link.id) },
+                            onRetry = { library.retryFetch(link.id) },
                             onRemove = {
                                 library.remove(link.id)
                                 ToastRequest.show("Removed")
@@ -201,6 +202,7 @@ fun LinksTab(
                             last = index == sorted.lastIndex,
                             onOpen = { open(link.url) },
                             onToggleRead = { library.toggleRead(link.id) },
+                            onRetry = { library.retryFetch(link.id) },
                             onRemove = {
                                 library.remove(link.id)
                                 ToastRequest.show("Removed")
@@ -313,6 +315,7 @@ private fun LinkRow(
     last: Boolean,
     onOpen: () -> Unit,
     onToggleRead: () -> Unit,
+    onRetry: () -> Unit,
     onRemove: () -> Unit,
 ) {
     val scheme = MaterialTheme.colorScheme
@@ -376,12 +379,26 @@ private fun LinkRow(
                                 .padding(6.dp),
                             tint = scheme.onSurfaceVariant,
                         )
+                    } else if (link.fetchFailed) {
+                        // A retry that reaches in and refetches this one link,
+                        // rather than making a couldn't-load row wait for a
+                        // pull-to-refresh over the whole list to try again.
+                        Icon(
+                            imageVector = DuskReadIcons.Offline,
+                            contentDescription = "Couldn't load — retry",
+                            modifier = Modifier
+                                .size(26.dp)
+                                .clickable(onClick = onRetry)
+                                .padding(6.dp),
+                            tint = scheme.onSurfaceVariant,
+                        )
                     }
                 },
             ) {
                 RowMeta(
                     text = when {
                         !link.fetched -> "reading the page…"
+                        link.fetchFailed -> "couldn’t load this page"
                         link.readAt != null && link.readAt > 0L -> "${link.host} · ${savedAgo(link.readAt)}"
                         else -> "${link.host} · ${savedAgo(link.savedAt)}"
                     },

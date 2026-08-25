@@ -426,6 +426,30 @@ object DuskReadIcons {
     }
 
     /**
+     * Offline: [Feed]'s bars struck through — a fetch that could not reach the
+     * network, told apart from a page that simply has nothing better to say
+     * for itself. Reuses Feed's exact bars rather than a signal-bar or
+     * cloud glyph: this set draws "can't reach the network" as the thing that
+     * usually *would* be read failing to arrive, not as a generic warning icon.
+     */
+    val Offline: ImageVector by lazy {
+        icon("Offline") {
+            stroked {
+                moveTo(5f, 19.5f)
+                lineTo(5f, 18f)
+                moveTo(10f, 19.5f)
+                lineTo(10f, 14.5f)
+                moveTo(15f, 19.5f)
+                lineTo(15f, 10.5f)
+                moveTo(20f, 19.5f)
+                lineTo(20f, 6.5f)
+                moveTo(4f, 20f)
+                lineTo(20f, 4f)
+            }
+        }
+    }
+
+    /**
      * Contrast: a ring with bars fanning inward, standing in for a half-fill.
      *
      * The theme toggle swaps colour for greyscale, not light for dark, so the
