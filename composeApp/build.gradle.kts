@@ -77,6 +77,10 @@ kotlin {
             // MediaSessionCompat + NotificationCompat.MediaStyle, for proper
             // lock-screen/notification/Bluetooth controls on Reader playback.
             implementation(libs.androidx.media)
+            // The on-device summariser talks to AICore through this. Android
+            // only — every other target reports summaries as unavailable, so
+            // there is nothing to add to their source sets.
+            implementation(libs.mlkit.genai.summarization)
         }
 
         iosMain.dependencies {

@@ -5,6 +5,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import dev.mks.duskread.summary.SummaryLength
 
 /**
  * The first state in this app that is genuinely mutable and outlives a
@@ -26,6 +27,17 @@ class UserPrefs(private val store: KeyValueStore) {
     var mono: Boolean by mutableStateOf(store.getBoolean(KeyMono))
         private set
 
+    /**
+     * How long a summary the reader wants. Stored by name rather than
+     * ordinal, so reordering the enum one day cannot silently repoint an
+     * existing reader at a different length; an unknown name falls back to
+     * the default, which is the engine's own maximum.
+     */
+    var summaryLength: SummaryLength by mutableStateOf(
+        store.getString(KeySummaryLength)?.let { name -> SummaryLength.entries.firstOrNull { it.name == name } } ?: SummaryLength.Full,
+    )
+        private set
+
     /** A blank name is stored as absent, so "skip" and "cleared" mean the same thing. */
     fun updateName(value: String?) {
         val cleaned = value?.trim()?.takeIf { it.isNotEmpty() }
@@ -43,6 +55,11 @@ class UserPrefs(private val store: KeyValueStore) {
         store.putBoolean(KeyMono, value)
     }
 
+    fun updateSummaryLength(value: SummaryLength) {
+        summaryLength = value
+        store.putString(KeySummaryLength, value.name)
+    }
+
     /** Used by the "start over" affordance in settings, and by manual testing. */
     fun reset() {
         updateName(null)
@@ -54,6 +71,7 @@ class UserPrefs(private val store: KeyValueStore) {
         const val KeyName = "user.name"
         const val KeyIntroSeen = "intro.seen"
         const val KeyMono = "theme.mono"
+        const val KeySummaryLength = "summary.length"
     }
 }
 

@@ -1,7 +1,9 @@
 [versions]
 agp = "9.0.1"
 android-compileSdk = "36"
-android-minSdk = "24"
+# 26, not 24: ML Kit GenAI's manifest requires it, and every phone that has
+# AICore at all is far newer than either number.
+android-minSdk = "26"
 android-targetSdk = "36"
 androidx-activity = "1.13.0"
 androidx-webkit = "1.13.0"
@@ -32,6 +34,8 @@ androidx-media = { module = "androidx.media:media", version.ref = "androidx-medi
 androidx-lifecycle-runtimeCompose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose", version.ref = "androidx-lifecycle" }
 haze = { module = "dev.chrisbanes.haze:haze", version.ref = "haze" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
+# ML Kit GenAI: the client for AICore, which holds the on-device model.
+mlkit-genai-summarization = { module = "com.google.mlkit:genai-summarization", version = "1.0.0-beta1" }
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
 ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }

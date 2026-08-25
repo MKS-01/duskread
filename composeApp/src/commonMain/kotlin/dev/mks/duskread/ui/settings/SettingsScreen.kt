@@ -1,6 +1,7 @@
 package dev.mks.duskread.ui.settings
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -10,12 +11,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -26,6 +29,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,11 +44,23 @@ import dev.mks.duskread.links.ExportSink
 import dev.mks.duskread.links.LinkLibrary
 import dev.mks.duskread.links.exportLinks
 import dev.mks.duskread.links.rememberExportSink
+import dev.mks.duskread.summary.SummariserState
+import dev.mks.duskread.summary.SummaryLength
+import dev.mks.duskread.summary.rememberSummariser
+import dev.mks.duskread.summary.rememberSummaryCache
 import dev.mks.duskread.ui.PlatformBackHandler
 import dev.mks.duskread.ui.common.AppTextField
 import dev.mks.duskread.ui.common.EyebrowHeader
+import dev.mks.duskread.ui.common.ToastRequest
+import dev.mks.duskread.ui.summary.SummaryActionChip
+import dev.mks.duskread.ui.summary.SummaryChip
 import dev.mks.duskread.ui.theme.DuskReadIcons
+import dev.mks.duskread.ui.theme.Mono
+import dev.mks.duskread.ui.theme.Radius
+import dev.mks.duskread.ui.theme.Space
+import dev.mks.duskread.ui.theme.Stroke
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 /**
  * Everything that isn't a tab of its own, gathered behind a gear rather than
@@ -113,6 +129,12 @@ fun SettingsScreen(
                 EyebrowHeader(text = "APPEARANCE")
                 Spacer(Modifier.height(14.dp))
                 ThemeRow(mono = mono, onToggleTheme = onToggleTheme)
+
+                Spacer(Modifier.height(28.dp))
+
+                EyebrowHeader(text = "SUMMARIES")
+                Spacer(Modifier.height(14.dp))
+                SummarySettings(prefs)
 
                 Spacer(Modifier.height(28.dp))
 
@@ -193,6 +215,86 @@ private fun ThemeRow(mono: Boolean, onToggleTheme: () -> Unit) {
             lineHeight = 15.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+    }
+}
+
+/**
+ * How long a summary should be, whether the model is there, and a way to
+ * throw away what it has written.
+ *
+ * Length is asked of the engine rather than trimmed out of its answer, so
+ * the two settings are genuinely different summaries — which is why an
+ * article already summarised at one is regenerated when read at the other.
+ *
+ * This is the one screen that binds the engine deliberately: everywhere else
+ * the summariser is built only when a summary is actually asked for.
+ */
+@Composable
+private fun SummarySettings(prefs: UserPrefs) {
+    val summariser = rememberSummariser(prefs.summaryLength)
+    val cache = rememberSummaryCache()
+    val scope = rememberCoroutineScope()
+    val state = summariser.state
+
+    Column(Modifier.fillMaxWidth()) {
+        Text(
+            text = "Summaries are generated on this phone. Nothing about an article is sent anywhere.",
+            fontSize = 12.5.sp,
+            lineHeight = 17.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(12.dp))
+
+        Row(horizontalArrangement = Arrangement.spacedBy(Space.ChipGap)) {
+            SummaryLength.entries.forEach { length ->
+                SummaryChip(
+                    label = length.label,
+                    tone = if (prefs.summaryLength == length) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    onClick = { prefs.updateSummaryLength(length) },
+                )
+            }
+        }
+        Spacer(Modifier.height(10.dp))
+
+        Text(
+            text = lengthNote(prefs.summaryLength),
+            fontSize = 11.5.sp,
+            lineHeight = 16.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(14.dp))
+
+        Text(
+            text = when (state) {
+                is SummariserState.Checking -> "Checking…"
+                is SummariserState.Ready -> "Ready · ${state.model}"
+                is SummariserState.Downloadable -> "Not on this phone yet. It downloads once, then every summary runs offline."
+                is SummariserState.Downloading -> state.fraction?.let { "Downloading · ${(it * 100).toInt()}%" } ?: "Downloading…"
+                is SummariserState.Unavailable -> state.reason
+            },
+            fontSize = 11.5.sp,
+            lineHeight = 16.sp,
+            color = if (state is SummariserState.Ready) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        if (state is SummariserState.Downloadable) {
+            Spacer(Modifier.height(12.dp))
+            SummaryActionChip("Download the model") { scope.launch { summariser.prepare() } }
+        }
+
+        // Only when there is something to clear: an action that does nothing
+        // is worse than no action, and the count is the only reason to show it.
+        if (cache.summaries.isNotEmpty()) {
+            Spacer(Modifier.height(8.dp))
+            // Offset back by the action's own inset so its text starts on the
+            // section's left edge rather than 12dp inside it.
+            Box(Modifier.offset(x = (-12).dp)) {
+                TransferAction("Clear ${cache.summaries.size} saved summar${if (cache.summaries.size == 1) "y" else "ies"}") {
+                    cache.clear()
+                    ToastRequest.show("Summaries cleared")
+                }
+            }
+        }
     }
 }
 
@@ -425,4 +527,14 @@ private fun ImportPanel(
             )
         }
     }
+}
+
+/**
+ * Described by what you get to read, not by the number of points the engine
+ * is configured with — that number is an implementation detail of AICore and
+ * means nothing to someone deciding whether to open an article.
+ */
+private fun lengthNote(length: SummaryLength): String = when (length) {
+    SummaryLength.Short -> "A sentence or two — just enough to decide."
+    SummaryLength.Full -> "A short paragraph. The most this phone's model will give."
 }

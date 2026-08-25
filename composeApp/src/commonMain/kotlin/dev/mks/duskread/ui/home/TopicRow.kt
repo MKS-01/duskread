@@ -1,20 +1,29 @@
 package dev.mks.duskread.ui.home
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import dev.mks.duskread.links.FeedPost
 import dev.mks.duskread.links.LinkLibrary
 import dev.mks.duskread.links.savedAgo
+import dev.mks.duskread.summary.SummaryRequest
+import dev.mks.duskread.summary.SummaryTarget
+import dev.mks.duskread.summary.summariesSupported
 import dev.mks.duskread.ui.common.ListRow
 import dev.mks.duskread.ui.common.RowMeta
 import dev.mks.duskread.ui.common.ToastRequest
 import dev.mks.duskread.ui.rememberUrlOpener
+import dev.mks.duskread.ui.summary.SummariseBackground
 import dev.mks.duskread.ui.theme.DuskReadIcons
 
 /**
@@ -43,6 +52,7 @@ import dev.mks.duskread.ui.theme.DuskReadIcons
  * feed is a real feature, and a control that appears only once the thing is
  * already saved cannot offer it.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun TopicRow(
     post: FeedPost,
@@ -57,12 +67,50 @@ internal fun TopicRow(
     val open = rememberUrlOpener()
     val saved = linkLibrary.isSaved(post.url)
 
+    // Swiped one way only, and never to remove: a feed post is not the
+    // reader's own record, so there is nothing here to destroy. What the feed
+    // already carried goes with the request — a post whose body arrived in
+    // the feed is summarised without a single request.
+    val dismiss = rememberSwipeToDismissBoxState(
+        confirmValueChange = { value ->
+            if (value == SwipeToDismissBoxValue.StartToEnd) {
+                SummaryRequest.open(SummaryTarget(post.url, post.title, feedContent = post.content))
+            }
+            false
+        },
+    )
+
+    SwipeToDismissBox(
+        state = dismiss,
+        modifier = modifier,
+        enableDismissFromStartToEnd = summariesSupported(),
+        enableDismissFromEndToStart = false,
+        backgroundContent = { SummariseBackground(dismiss.progress) },
+    ) {
+        TopicRowBody(post = post, host = host, last = last, saved = saved, linkLibrary = linkLibrary, onOpen = { open(post.url) })
+    }
+}
+
+/**
+ * The row itself, split out so the swipe box above wraps one thing. It also
+ * needs its own background: the box slides this over the summarise panel
+ * behind it, and without one the label shows through the gaps between words.
+ */
+@Composable
+private fun TopicRowBody(
+    post: FeedPost,
+    host: String,
+    last: Boolean,
+    saved: Boolean,
+    linkLibrary: LinkLibrary,
+    onOpen: () -> Unit,
+) {
     ListRow(
         host = host,
         title = post.title,
         last = last,
-        onClick = { open(post.url) },
-        modifier = modifier,
+        onClick = onOpen,
+        modifier = Modifier.background(MaterialTheme.colorScheme.background),
         titleMaxLines = 3,
         trailing = {
             // Two glyphs, not one glyph in two colours: filled reads as
