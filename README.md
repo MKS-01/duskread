@@ -42,10 +42,13 @@ Home is one screen on purpose: today's pick from Saved, today's Readback,
 the timer, and what's new from the blogs you follow — nothing to dig for.
 
 <p align="center">
-  <img src="docs/media/saved.png" alt="Saved links, one failed and retryable" width="24%">
-  <img src="docs/media/summary.png" alt="An on-device summary, generated from the reader" width="24%">
-  <img src="docs/media/focus.png" alt="A running focus timer" width="24%">
-  <img src="docs/media/settings.png" alt="Settings — accent picker and summary status" width="24%">
+  <img src="docs/media/home.png" alt="Home — today's pick, Readback, Focus, and Following" width="38%">
+</p>
+
+<p align="center">
+  <img src="docs/media/saved.png" alt="Saved links, one failed and retryable" width="31%">
+  <img src="docs/media/summary.png" alt="An on-device summary, generated from the reader" width="31%">
+  <img src="docs/media/focus.png" alt="A running focus timer" width="31%">
 </p>
 
 ## On-device AI
