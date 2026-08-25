@@ -138,12 +138,12 @@ naming one implies a system that is not there.
 
 ## The Android skills in `.claude/skills/`
 
-All of android/skills is installed for browsing and learning. **They are
-written for native Android apps; this is Compose Multiplatform.** Anything
-Android-only they suggest — Navigation3, Compose MediaQuery, Wear/XR/CameraX
-APIs, Android instrumentation tests — can only live in `androidMain` or
-`androidApp`, never `commonMain`. Most of them do not apply to this repo at
-all. `edge-to-edge`, `adaptive` and `testing-setup` are the ones that do.
+Only `edge-to-edge`, `adaptive` and `testing-setup` are kept — the rest of
+the stock Android skill set was pruned because it targets native Android apps
+and did not apply here. **`edge-to-edge` and `adaptive` are still written for
+native Android apps; this is Compose Multiplatform.** Anything Android-only
+they suggest — Compose MediaQuery, Android instrumentation tests — can only
+live in `androidMain` or `androidApp`, never `commonMain`.
 
 State is plain `remember { mutableStateOf(...) }` hoisted into `App.kt` — no
 ViewModel, no DI, no navigation library. Keep it that way unless asked.
