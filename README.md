@@ -23,10 +23,16 @@
 
 ## What it does
 
-- **Never lose a link again.** Paste one in, share it from a browser, or
-  follow a blog's RSS feed — it's usable instantly, and read back to you
-  hands-free through a synced [readback](https://github.com/MKS-01/readback)
-  library.
+- **Never lose a link again.** Paste one in or share it straight from a
+  browser — it's usable instantly, and the real title fills itself in once
+  the page has loaded.
+- **Follow a blog the old way, drawn in this app's own style.** RSS and
+  Atom — the original feed-reading idea, not reinvented, just redrawn in
+  the same hairline-square, one-accent language as everything else here.
+- **Readback picks up where reading leaves off.** A synced
+  [readback](https://github.com/MKS-01/readback) library reads saved
+  links and followed posts back to you, hands-free, with a real transport
+  bar to show for it — not just a "now playing" toast.
 - **Ask for a summary, get one without a round trip to a server.** Swipe a
   saved link or open an article and [Gemini Nano, running on-device through
   Android AICore](https://developer.android.com/ai), reads it for you.
@@ -42,9 +48,10 @@ Home is one screen on purpose: today's pick from Saved, today's Readback,
 the timer, and what's new from the blogs you follow — nothing to dig for.
 
 <p align="center">
-  <img src="docs/media/home.png" alt="Home — today's pick, Readback, Focus, and Following" width="31%">
-  <img src="docs/media/following.png" alt="A followed blog's posts" width="31%">
-  <img src="docs/media/summary.png" alt="An on-device summary, generated from the reader" width="31%">
+  <img src="docs/media/home.png" alt="Home — today's pick, Readback, Focus, and Following" width="24%">
+  <img src="docs/media/following.png" alt="A followed blog's posts" width="24%">
+  <img src="docs/media/readback.png" alt="Readback, with the transport bar playing a post" width="24%">
+  <img src="docs/media/summary.png" alt="An on-device summary, generated from the reader" width="24%">
 </p>
 
 ## On-device AI
