@@ -5,9 +5,11 @@
 <h1 align="center">DuskRead</h1>
 
 <p align="center">
-  <strong>Save what you want to read, follow the blogs worth following, and hear it all read back.</strong><br>
-  Summarised on your phone by Gemini Nano — no server, no API key, no round trip.<br>
-  One Kotlin codebase; Android is the one that's finished.
+  <strong>A reading habit that survives the news cycle.</strong><br>
+  Save the link, follow the blog, hear it read back on the walk.<br>
+  Gemini Nano summarises on-device — the model helps you get through it,<br>
+  and everything you read stays yours.<br>
+  <sub>Compose Multiplatform · Android first</sub>
 </p>
 
 <p align="center">
@@ -21,7 +23,7 @@
 
 ---
 
-Every blog you follow and every link you meant to get back to, in one app in your pocket — RSS and Atom on one side, whatever you shared from a browser on the other, and no bare URLs sitting there waiting for a title. Sync a [readback](https://github.com/MKS-01/readback) library and all of it is waiting as audio, with a transport bar that seeks and keeps playing after you leave. Ask for a summary and Gemini Nano writes it on the phone through Android AICore — no key, no account, fetching the page the only thing that touches the network. A focus timer sits alongside, ending in a real notification and a vibration. It's drawn as **Paper Black** — a page rather than a screen, warm-white ink on matte near-black, lit by one terracotta accent — or **Ink**, the same page with the hue drained to luminance alone, which is what it opens in.
+You find something good at eleven in the morning and you are not going to read it at eleven in the morning. So you share it here and forget it. It goes in with the blogs you follow, and by the evening the pile has sorted itself out: titles filled in, new posts pulled down, the whole lot waiting on one screen. Some of it you read. Some of it you hand to [readback](https://github.com/MKS-01/readback) and listen to on the walk, thumb on a transport bar that keeps playing once the screen is off. The long ones you ask about first, and Gemini Nano tells you what's in them without the article ever leaving the phone. Then you set the timer, put the phone face-down, and actually read for twenty-five minutes — on **Paper Black**, a page rather than a screen, warm-white ink on matte near-black lit by one terracotta accent, or on **Ink**, the same page with the hue drained out entirely, which is where it starts.
 
 <p align="center">
   <img src="docs/media/home.png" alt="Home — today's pick, Readback, Focus, and Following" width="22%">
@@ -96,7 +98,7 @@ Summaries go through [ML Kit GenAI](https://developer.android.com/ai), which rou
 
 - **First run downloads the model.** AICore handles it; it takes a moment once and never again.
 - **Two ways in** — swipe a row in Saved, or the toolbar control inside the reader.
-- **Everywhere else, it's simply absent.** iOS, desktop and web compile the same summary UI against a stub that reports itself unavailable, so the rest of the app never has to know the difference — the control just isn't drawn.
+- **Off Android it's simply absent.** The same UI compiles against a stub that reports itself unavailable, so the control just isn't drawn and nothing upstream has to care.
 
 ---
 
@@ -108,25 +110,22 @@ A pomodoro that behaves like an alarm and not a widget: a real system notificati
 
 ## Tech stack
 
-Deliberately small: everything but the leaf nodes is shared, and the platform seams are `expect`/`actual` pairs — the reader's storage, the audio player, the summariser, the timer, the key/value store, the HTTP client.
+Everything but the leaf nodes is shared; the platform seams are `expect`/`actual` pairs — storage, audio, the summariser, the timer, the HTTP client.
 
 | Layer | Technology |
 |---|---|
-| **UI** | [Compose Multiplatform](https://www.jetbrains.com/compose-multiplatform/) 1.11 + Material 3 — Android, iOS, desktop, web from one source set |
-| **Language** | Kotlin 2.3, JVM 17 target |
-| **Navigation** | None — three tabs are a `HomeTab` enum behind the floating bar; focus mode, the summary panel and the reader are overlays in one `Box` gated on a `Boolean`, with system back through a single `expect fun PlatformBackHandler`. No Navigation Compose, no back stack |
-| **State** | `remember { mutableStateOf(…) }` hoisted into `App.kt`; a flat key/value store for links, feeds and prefs. No ViewModel, no DI, no database |
-| **On-device AI** | [ML Kit GenAI](https://developer.android.com/ai) `genai-summarization` → Gemini Nano through AICore |
-| **Networking** | [Ktor](https://ktor.io/) 3.1 — OkHttp on Android, CIO on desktop, Darwin on iOS, JS on web |
-| **Async** | kotlinx.coroutines |
-| **Readback source** | Storage Access Framework + `DocumentFile` on Android; [sqlite-jdbc](https://github.com/xerial/sqlite-jdbc) on desktop — read-only both ways |
-| **Audio** | `MediaPlayer` in a foreground service with `androidx.media` session + notification |
+| **UI** | [Compose Multiplatform](https://www.jetbrains.com/compose-multiplatform/) 1.11 + Material 3, one source set for all four targets |
+| **Language** | Kotlin 2.3 · JVM 17 · kotlinx.coroutines |
+| **Architecture** | A `HomeTab` enum and overlays in one `Box`; state hoisted into `App.kt`, a flat key/value store underneath. No nav library, no ViewModel, no DI, no database |
+| **On-device AI** | [ML Kit GenAI](https://developer.android.com/ai) `genai-summarization` → Gemini Nano |
+| **Networking** | [Ktor](https://ktor.io/) 3.1 — OkHttp · CIO · Darwin · JS, one per target |
+| **Storage** | SAF + `DocumentFile` on Android, [sqlite-jdbc](https://github.com/xerial/sqlite-jdbc) on desktop |
+| **Audio** | `MediaPlayer` and an `androidx.media` session in a foreground service |
 | **Effects** | [Haze](https://github.com/chrisbanes/haze) — the blur behind the floating bar |
-| **Build** | AGP 9 with the `androidLibrary` KMP DSL, Gradle 9.3.1 |
-| **Lint** | [ktlint](https://pinterest.github.io/ktlint/) — several rules deliberately off, see `.editorconfig` |
+| **Build** | AGP 9 `androidLibrary` KMP DSL · Gradle 9.3.1 · [ktlint](https://pinterest.github.io/ktlint/) |
 
 ```bash
-./gradlew ktlintCheck    # lint
+./gradlew ktlintCheck    # lint; several rules deliberately off, see .editorconfig
 ./gradlew ktlintFormat   # auto-fix
 ```
 
