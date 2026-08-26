@@ -35,7 +35,7 @@ You find something good at eleven in the morning and you are not going to read i
 
 ## Getting started
 
-> **Android is the app. The other three are the workshop.** Android is what this is built, run and tested against every day, and the only target where every feature is real. Desktop, web and iOS share the same Compose Multiplatform source and all four compile from one command — but they exist to prove the shared code and the design system travel, not because DuskRead is meant to be read on them. Treat anything outside Android as a working surface: it builds, it looks right, and it is not the thing that gets used. See [Platform support](#platform-support) for what each one can and cannot do.
+> **Android is the app; the other three are the workshop.** It's what this is built and tested against day to day. Desktop, web and iOS compile from the same source and are there to prove it travels — see [Platform support](#platform-support).
 
 ```bash
 git clone https://github.com/MKS-01/duskread.git && cd duskread
@@ -114,52 +114,29 @@ A pomodoro that behaves like an alarm and not a widget: a real system notificati
 
 ## Platform support
 
-**Android is the only target that is finished and tested.** The other three
-run the same code and wear the same design, and that is the whole point of
-them: they are how the shared layer and the design system get exercised
-against something other than one phone. They are not a shipping matrix.
-
-| | Android | Desktop | Web | iOS |
-|---|---|---|---|---|
-| **Saved links, feeds, themes, timer** | ✅ | ✅ | ✅ | ✅ |
-| **Readback library** | ✅ SAF folder grant | ✅ plain path + sqlite-jdbc | ❌ no filesystem | ❌ no folder grant |
-| **Audio playback** | ✅ foreground service + media session | ⚠️ in-app only | ❌ | ❌ |
-| **On-device summaries** | ✅ Gemini Nano via AICore | ❌ no host | ❌ | ❌ |
-| **In-app reader browser** | ✅ WebView | ✅ Chromium via JCEF | ❌ opens a tab | ➖ `SFSafariViewController` |
-| **Background focus timer** | ✅ notification + vibration | ⚠️ only while open | ⚠️ only while open | ⚠️ only while open |
-| **Wide layout** | ➖ phone layout | ✅ rail + transport | ✅ rail + transport | ➖ phone layout |
-
-Every ❌ is a real platform ceiling rather than a to-do, and each one is
-answered in code rather than left to fail: `summariesSupported()` and
-`readbackSupported()` are `expect`/`actual` constants, and a screen asks them
-before it offers anything. A control that could only disappoint is not drawn
-at all, and an empty state says why instead of prompting for something the
-platform cannot give.
-
-**Two things this means for anyone reading the source.** Non-Android
-behaviour is best treated as a demonstration of the shared architecture: the
-`expect`/`actual` seams, one `commonMain` UI, one set of tokens, one theme
-swap. And bug reports are worth filing against Android — that is the surface
-with real use behind it.
+**Android is the app; desktop, web and iOS are how the shared code and the
+design system get exercised off a phone.** Everything runs everywhere, but
+readback needs a filesystem and summaries need AICore, so both are Android
+first and desktop second — `summariesSupported()` and `readbackSupported()`
+are `expect`/`actual` constants, and a screen asks before it offers, so a
+control that could only disappoint is never drawn.
 
 ---
 
 ## Tech stack
 
-Everything but the leaf nodes is shared; the platform seams are `expect`/`actual` pairs — storage, audio, the summariser, the timer, the HTTP client.
-
-| Layer | Technology |
-|---|---|
-| **UI** | [Compose Multiplatform](https://www.jetbrains.com/compose-multiplatform/) 1.11 + Material 3, one source set for all four targets |
-| **Language** | Kotlin 2.3 · JVM 17 · kotlinx.coroutines |
-| **Architecture** | A `HomeTab` enum and overlays in one `Box`; state hoisted into `App.kt`, a flat key/value store underneath. No nav library, no ViewModel, no DI, no database |
-| **On-device AI** | [ML Kit GenAI](https://developer.android.com/ai) `genai-summarization` → Gemini Nano |
-| **Networking** | [Ktor](https://ktor.io/) 3.1 — OkHttp · CIO · Darwin · JS, one per target |
-| **Storage** | SAF + `DocumentFile` on Android, [sqlite-jdbc](https://github.com/xerial/sqlite-jdbc) on desktop |
-| **In-app browser** | `WebView` on Android, [KCEF](https://github.com/DatL4g/KCEF) — Chromium via JCEF — on desktop |
-| **Audio** | `MediaPlayer` and an `androidx.media` session in a foreground service |
-| **Effects** | [Haze](https://github.com/chrisbanes/haze) — the blur behind the floating bar |
-| **Build** | AGP 9 `androidLibrary` KMP DSL · Gradle 9.3.1 · [ktlint](https://pinterest.github.io/ktlint/) |
+[Compose Multiplatform](https://www.jetbrains.com/compose-multiplatform/) 1.11
+and Material 3 on Kotlin 2.3, one source set for all four targets — everything
+but the leaf nodes is shared, and the platform seams are `expect`/`actual`
+pairs: storage, audio, the summariser, the timer, the HTTP client. State is a
+`HomeTab` enum and overlays in one `Box`, hoisted into `App.kt` over a flat
+key/value store; no nav library, no ViewModel, no DI, no database.
+[Ktor](https://ktor.io/) 3.1 does the network with a different engine per
+target, [ML Kit GenAI](https://developer.android.com/ai) routes summaries to
+Gemini Nano, [sqlite-jdbc](https://github.com/xerial/sqlite-jdbc) and SAF read
+the readback library, [KCEF](https://github.com/DatL4g/KCEF) is the desktop
+browser, and [Haze](https://github.com/chrisbanes/haze) is the blur behind the
+floating bar. Built with AGP 9's `androidLibrary` KMP DSL on Gradle 9.3.1.
 
 ```bash
 ./gradlew ktlintCheck    # lint; several rules deliberately off, see .editorconfig
