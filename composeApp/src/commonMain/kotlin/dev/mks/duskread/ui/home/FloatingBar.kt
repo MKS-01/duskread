@@ -161,7 +161,6 @@ fun FloatingBar(
     onSeek: (Float) -> Unit,
     onStop: () -> Unit,
     mono: Boolean,
-    colourMode: Boolean,
     onToggleTheme: () -> Unit,
     collapse: BarCollapse,
     modifier: Modifier = Modifier,
@@ -230,7 +229,6 @@ fun FloatingBar(
                         peekingTabs = false
                     },
                     mono = mono,
-                    colourMode = colourMode,
                     onToggleTheme = onToggleTheme,
                 )
 
@@ -289,13 +287,7 @@ fun FloatingBar(
  * whole reason for existing.
  */
 @Composable
-private fun TabsFace(
-    selected: HomeTab,
-    onSelect: (HomeTab) -> Unit,
-    mono: Boolean,
-    colourMode: Boolean,
-    onToggleTheme: () -> Unit,
-) {
+private fun TabsFace(selected: HomeTab, onSelect: (HomeTab) -> Unit, mono: Boolean, onToggleTheme: () -> Unit) {
     Row(
         Modifier.padding(horizontal = 7.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -304,16 +296,12 @@ private fun TabsFace(
         HomeTab.entries.forEach { tab ->
             BarButton(tab.icon, tab.label, active = tab == selected) { onSelect(tab) }
         }
-        // The divider goes with the button it separates. A rule with nothing
-        // after it is the bar admitting something used to be there.
-        if (colourMode) {
-            BarDivider()
-            BarButton(
-                icon = DuskReadIcons.Contrast,
-                label = if (mono) "Switch to the colour theme" else "Switch to the monochrome theme",
-                onClick = onToggleTheme,
-            )
-        }
+        BarDivider()
+        BarButton(
+            icon = DuskReadIcons.Contrast,
+            label = if (mono) "Switch to the colour theme" else "Switch to the monochrome theme",
+            onClick = onToggleTheme,
+        )
     }
 }
 
