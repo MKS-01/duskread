@@ -24,26 +24,17 @@
 
 ## What it does
 
-- **Never lose a link again.** Paste one in or share it straight from a
-  browser — it's usable instantly, and the real title fills itself in once
-  the page has loaded.
-- **Follow a blog the old way, drawn in this app's own style.** RSS and
-  Atom — the original feed-reading idea, not reinvented, just redrawn in
-  the same hairline-square, one-accent language as everything else here.
-- **Readback picks up where reading leaves off.** A synced
-  [readback](https://github.com/MKS-01/readback) library reads saved
-  links and followed posts back to you, hands-free, with a real transport
-  bar to show for it — not just a "now playing" toast.
-- **Ask for a summary, get one without a round trip to a server.** Swipe a
-  saved link or open an article and [Gemini Nano, running on-device through
-  Android AICore](https://developer.android.com/ai), reads it for you.
-  Nothing about the article leaves the phone. Android only for now — every
-  other target just doesn't show the control.
-- **A timer that interrupts you, and a theme that gets out of the way.**
-  A real notification and a vibration when time's up, not a number quietly
-  hitting zero. The app opens in "Ink" — a near-black, colourless scheme —
-  by default; one tap brings a single accent back, terracotta or a dusty
-  green, picked in Settings and spent on nothing else.
+Paste a link in or share it from a browser and it's usable instantly, real
+title included, or follow a blog by RSS or Atom, drawn in the same
+hairline-square, one-accent language as everything else here. A synced
+[readback](https://github.com/MKS-01/readback) library reads it all back to
+you hands-free, with a real transport bar to show for it, and [Gemini Nano,
+running on-device through Android AICore](https://developer.android.com/ai),
+summarises an article without a round trip to a server — nothing about it
+leaves the phone, Android only for now. A focus timer interrupts with a real
+notification and a vibration, not a number quietly hitting zero, in an app
+that opens in "Ink" — a near-black, colourless scheme — by default, until one
+tap brings a single accent back, terracotta or a dusty green.
 
 Home is one screen on purpose: today's pick from Saved, today's Readback,
 the timer, and what's new from the blogs you follow — nothing to dig for.
