@@ -260,6 +260,69 @@ h2 {
 }
 
 /* ============================================================
+   WIDE FRAME — desktop and web. Same tokens, a different plan:
+   a rail instead of a floating bar, list and detail side by
+   side, and a measure that stops growing at ~68ch.
+   ============================================================ */
+
+.desk {
+  width: 100%; max-width: 560px; aspect-ratio: 16 / 10;
+  border-radius: 10px; border: 1px solid var(--line-firm);
+  background: var(--surface); box-shadow: 0 14px 34px rgb(0 0 0 / 0.14); overflow: hidden;
+}
+.desk-block { width: 100%; max-width: 560px; }
+.desk .screen { height: 100%; border-radius: 0; }
+
+/* Host window chrome, greyed right back — it belongs to the OS, not to us. */
+.titlebar { display: flex; align-items: center; gap: 5px; padding: 7px 10px; flex: none; border-bottom: 1px solid var(--a-line); }
+.titlebar .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--a-line); flex: none; }
+.titlebar .wt { font-family: var(--a-data); font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--a-faint); margin-left: 6px; }
+
+.panes { flex: 1; display: flex; min-height: 0; }
+
+/* The three tabs, vertical. No thumb to reach with, so the bottom edge is
+   simply the longest travel from where the eye already is. */
+.rail { width: 44px; border-right: 1px solid var(--a-line); display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 10px 0; flex: none; }
+.rail .nb { width: 30px; height: 30px; border-radius: 3px; display: grid; place-items: center; color: var(--a-faint); position: relative; }
+.rail .nb.sel { background: var(--a-raise); color: var(--a-ink); }
+.rail .nb.sel::before {
+  content: ""; position: absolute; left: -8px; top: 50%; transform: translateY(-50%);
+  width: 2px; height: 15px; background: var(--a-sound); border-radius: 1px;
+}
+.rail .i { font-size: 15px; }
+.rail .spacer { flex: 1; }
+
+.pane-list { width: 42%; border-right: 1px solid var(--a-line); padding: 12px 13px; flex: none; overflow: hidden; }
+.pane-detail { flex: 1; padding: 14px 16px; min-width: 0; overflow: hidden; }
+
+/* The one rule that matters at this width: prose stops, the ground does not. */
+.measure { max-width: 232px; }
+
+.v-amp .drow { padding: 0 0 9px; margin-bottom: 9px; border-bottom: 1px solid var(--a-line); }
+.v-amp .drow:last-child { border-bottom: 0; }
+.v-amp .drow h4 { margin: 0 0 5px; font-size: 11.5px; line-height: 1.34; font-weight: 400; }
+.v-amp .drow .meta { font-size: 9px; gap: 9px; }
+.v-amp .drow .wave { height: 11px; }
+.v-amp .drow .wave i { width: 1.5px; }
+
+/* Selected, hovered, keyboard-focused — three states a phone never needed. */
+.v-amp .drow.sel { background: var(--a-raise); margin-left: -9px; margin-right: -9px; padding: 9px; border-radius: 3px; border-bottom-color: transparent; }
+.v-amp .drow.hover { background: rgb(255 255 255 / 0.035); margin-left: -9px; margin-right: -9px; padding: 9px; border-radius: 3px; border-bottom-color: transparent; }
+.v-amp .drow.focusring { outline: 1px solid var(--a-sound); outline-offset: -1px; border-radius: 3px; }
+
+/* Bottom-anchored and full-bleed: the transport is the one thing that stays
+   put when the window is wide, because it outlives whichever pane is open. */
+.transport { border-top: 1px solid var(--a-line); padding: 8px 13px; display: flex; align-items: center; gap: 10px; flex: none; }
+.transport .tt { font-size: 11px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.transport .i { font-size: 14px; }
+
+.statecard { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; max-width: 760px; margin-bottom: 22px; }
+.statecard > div { background: var(--bg); padding: 13px 15px; }
+.statecard .sc-lbl { font-family: var(--data); font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint); margin-bottom: 9px; }
+
+.kbd { font-family: var(--data); font-size: 11px; border: 1px solid var(--line-firm); border-bottom-width: 2px; border-radius: 4px; padding: 1px 6px; background: var(--surface); color: var(--text); white-space: nowrap; }
+
+/* ============================================================
    MONOCHROME — Ink, exactly as ui/theme/Theme.kt defines
    MonoScheme. The hue drops to nothing; level is luminance alone.
    ============================================================ */
@@ -807,6 +870,211 @@ footer { margin-top: 56px; padding-top: 22px; border-top: 1px solid var(--line);
   </section>
 
   <!-- ---------------------------------------------------------- -->
+  <section id="wide">
+    <h2>Wide — desktop and web</h2>
+    <p class="section-title">One breakpoint, and the bar stops floating</p>
+    <p class="section-note">
+      <b>Planned, not built.</b> Desktop opens at 1180&times;820
+      (<code>Main.kt</code>) and web at whatever the tab is, and both currently
+      render the phone layout stretched to fill it — a saved-link title runs
+      past 100 characters on one line, and the floating bar sits at the bottom
+      of a window nobody is holding. Nothing in <code>commonMain</code> reads
+      the window size today. This section is the plan for when it does.
+    </p>
+
+    <table class="spec">
+      <tr><th>Breakpoint</th><td><code>Layout.TwoPaneBreakpoint = 720.dp</code> — one threshold, not a five-class ladder. Below it the phone layout is used unchanged, including in a narrow desktop window; above it, two panes.</td></tr>
+      <tr><th>Rail</th><td>44dp, left, hairline on its right edge. The three tabs go vertical; the selected one keeps the <code>surface</code> lift it has today and gains a 2dp accent tick on the outer edge.</td></tr>
+      <tr><th>List pane</th><td>Fixed 380&ndash;420dp. Fixed, not proportional — a list of two-line titles has a correct width and a 2560px monitor does not change it.</td></tr>
+      <tr><th>Detail pane</th><td>Fills the rest; its <em>content</em> is capped at 68ch and left-aligned against the pane's own gutter, not centred in the window.</td></tr>
+      <tr><th>Gutters</th><td><code>ReadingGutter</code> 18 &rarr; 28dp, <code>ListGutter</code> 14 &rarr; 20dp. Type sizes do not change at all.</td></tr>
+      <tr><th>Transport</th><td>Full-bleed along the bottom, above nothing. The only element that keeps its phone position, because it outlives whichever pane is open.</td></tr>
+    </table>
+
+    <div class="frame-row">
+      <div class="v-amp desk-block">
+        <p class="frame-cap">Readback &mdash; wide, one row playing</p>
+        <div class="desk">
+          <div class="screen">
+            <div class="titlebar">
+              <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+              <span class="wt">DuskRead</span>
+            </div>
+            <div class="panes">
+              <div class="rail">
+                <span class="nb"><svg class="i"><use href="#w-home"/></svg></span>
+                <span class="nb sel"><svg class="i"><use href="#w-wave"/></svg></span>
+                <span class="nb"><svg class="i"><use href="#w-saved"/></svg></span>
+                <span class="spacer"></span>
+                <span class="nb"><svg class="i"><use href="#w-contrast"/></svg></span>
+                <span class="nb"><svg class="i"><use href="#w-settings"/></svg></span>
+              </div>
+
+              <div class="pane-list">
+                <div class="pillrow" style="margin-bottom:12px">
+                  <span class="pill" style="font-size:9px;padding:3px 8px">Newest</span>
+                  <span class="pill sel" style="font-size:9px;padding:3px 8px">Oldest</span>
+                </div>
+                <div class="drow sel">
+                  <h4 class="playing">Claude Code now supports artifacts</h4>
+                  <div class="meta"><span class="playing">0:41 / 1:31</span><span>538w</span></div>
+                </div>
+                <div class="drow hover">
+                  <h4>Gesture Handler&rsquo;s Touchable</h4>
+                  <div class="meta"><span>1:22</span><span>682w</span></div>
+                </div>
+                <div class="drow">
+                  <h4>A Tale of Two Flink Autoscalers</h4>
+                  <div class="meta"><span>1:37</span><span>2020w</span></div>
+                </div>
+                <div class="drow">
+                  <h4>Preparing your app for broader memory limits</h4>
+                  <div class="meta"><span>1:18</span><span>378w</span></div>
+                </div>
+              </div>
+
+              <div class="pane-detail">
+                <p class="eyebrow" style="font-size:9px">Now reading</p>
+                <div style="font-family:var(--a-ui);font-weight:300;font-size:17px;line-height:1.2;margin-bottom:10px" class="measure">Claude Code now supports artifacts</div>
+                <div class="meta" style="margin-bottom:14px"><span>claude.com</span><span>538w</span><span>1:31</span></div>
+                <div class="wave part" style="height:22px;gap:2px;margin-bottom:16px">
+                  <i class="p" style="height:8px"></i><i class="p" style="height:14px"></i><i class="p" style="height:20px"></i><i class="p" style="height:11px"></i><i class="p" style="height:17px"></i><i class="p" style="height:22px"></i><i class="p" style="height:13px"></i><i style="height:18px"></i><i style="height:9px"></i><i style="height:15px"></i><i style="height:21px"></i><i style="height:12px"></i><i style="height:16px"></i><i style="height:7px"></i><i style="height:14px"></i><i style="height:19px"></i><i style="height:10px"></i><i style="height:15px"></i><i style="height:22px"></i><i style="height:8px"></i><i style="height:13px"></i><i style="height:18px"></i><i style="height:11px"></i><i style="height:16px"></i>
+                </div>
+                <div class="measure" style="font-size:11px;line-height:1.62;color:var(--a-mute)">
+                  Artifacts in Claude Code let you publish a page from the
+                  session you are already in, rather than pasting a file
+                  somewhere else and hoping the link survives&hellip;
+                </div>
+              </div>
+            </div>
+
+            <div class="transport">
+              <svg class="i playing"><use href="#w-pause"/></svg>
+              <span class="tt playing">Claude Code now supports artifacts</span>
+              <span class="meta"><span class="playing">0:41 / 1:31</span></span>
+              <svg class="i" style="color:var(--a-faint)"><use href="#w-close"/></svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p class="rationale">
+        <b>The bar stops floating.</b> On a phone it sits at the bottom
+        because that is where the thumb is. On a desktop there is no thumb,
+        the pointer is already wherever the eye is, and the bottom edge of an
+        820dp window is simply the longest journey from the list — so
+        navigation goes to a left rail and only the <b>transport</b> stays
+        bottom, full-bleed, because it is the one thing that outlives the
+        pane above it.<br><br>
+        <b>The list pane is a fixed width, not a fraction.</b> Two-line
+        titles have a correct measure and a wider monitor does not change it;
+        a percentage would just make the same four rows emptier.<br><br>
+        <b>Nothing gets bigger.</b> Titles stay at their phone size, the
+        waveform keeps its 2dp bars, rows keep their hairline. Only the
+        gutters open up. Scaling type with the window is the fastest way to
+        turn a considered phone screen into a generic desktop one.
+      </p>
+    </div>
+
+    <p class="section-title" style="margin-top:44px">Three states a phone never needed</p>
+    <p class="section-note">
+      Touch has one state worth drawing: pressed, and it is gone before you
+      look at it. A pointer hovers, a keyboard focuses, and a two-pane layout
+      has to say which row the right-hand side belongs to. None of these
+      exist in the app today and none of them may use colour&nbsp;— the accent
+      still means <em>there is sound here</em>.
+    </p>
+
+    <div class="v-amp statecard" style="color:var(--text)">
+      <div style="background:var(--a-bg)">
+        <div class="sc-lbl">Rest</div>
+        <div class="drow" style="border:0;margin:0;padding:0">
+          <h4>A Tale of Two Flink Autoscalers</h4>
+          <div class="meta"><span>1:37</span><span>2020w</span></div>
+        </div>
+      </div>
+      <div style="background:var(--a-bg)">
+        <div class="sc-lbl">Hover · white 3.5%</div>
+        <div class="drow hover" style="border:0;margin:0">
+          <h4>A Tale of Two Flink Autoscalers</h4>
+          <div class="meta"><span>1:37</span><span>2020w</span></div>
+        </div>
+      </div>
+      <div style="background:var(--a-bg)">
+        <div class="sc-lbl">Selected · surface lift</div>
+        <div class="drow sel" style="border:0;margin:0">
+          <h4>A Tale of Two Flink Autoscalers</h4>
+          <div class="meta"><span>1:37</span><span>2020w</span></div>
+        </div>
+      </div>
+      <div style="background:var(--a-bg)">
+        <div class="sc-lbl">Keyboard focus · 1dp accent</div>
+        <div class="drow sel focusring" style="border-bottom:0;margin:0">
+          <h4>A Tale of Two Flink Autoscalers</h4>
+          <div class="meta"><span>1:37</span><span>2020w</span></div>
+        </div>
+      </div>
+    </div>
+
+    <p class="rationale" style="max-width:64ch">
+      <b>Hover is 3.5% white, not a border.</b> A border on hover shifts
+      every row by a pixel as the pointer travels the list; a ground wash
+      does not move anything. <b>Selected is the same <code>surface</code>
+      lift a card already uses</b> — no new value, and it survives Ink
+      intact. <b>Focus is the one place a hairline accent ring is allowed</b>,
+      because a keyboard user with no visible caret has nothing else to go
+      on; it is an outline drawn inside the row's own bounds, so it too
+      moves nothing. In Ink all three collapse to luminance, exactly as
+      everything else does.
+    </p>
+
+    <p class="section-title" style="margin-top:44px">Keys</p>
+    <p class="section-note">
+      Deliberately few, and deliberately the same ones
+      <a href="https://github.com/MKS-01/readback">readback</a>'s own terminal
+      player uses — the two projects are read by the same person on the same
+      evening and should not disagree about what <span class="kbd">space</span> does.
+    </p>
+    <table class="spec">
+      <tr><th>Play</th><td><span class="kbd">space</span> play / pause the transport, from any pane</td></tr>
+      <tr><th>Seek</th><td><span class="kbd">&larr;</span> <span class="kbd">&rarr;</span> &plusmn;5&thinsp;s</td></tr>
+      <tr><th>Move</th><td><span class="kbd">&uarr;</span> <span class="kbd">&darr;</span> through the list pane, <span class="kbd">enter</span> to open in the detail pane</td></tr>
+      <tr><th>Paste</th><td><span class="kbd">&#8984;V</span> anywhere on Saved fills the paste field, no click first</td></tr>
+      <tr><th>Dismiss</th><td><span class="kbd">esc</span> closes the topmost overlay — the same single <code>PlatformBackHandler</code> Android's gesture already goes through</td></tr>
+    </table>
+
+    <p class="rationale" style="max-width:64ch">
+      <b>No shortcut opens a pane that a tab does not.</b> Every key here
+      either drives the transport or moves a selection; none of them are a
+      hidden route to a screen, which keeps the rail the only answer to
+      "where am I?" and means the phone build loses nothing by having no
+      keyboard.
+    </p>
+
+    <p class="section-title" style="margin-top:44px">Overlays, at width</p>
+    <p class="section-note">
+      Focus, the summary panel and the reader are overlays in one
+      <code>Box</code> rather than destinations, and that stays true when the
+      window is wide — but a bottom-anchored sheet spanning 1180dp is a
+      banner, not a panel.
+    </p>
+    <ul class="status-list">
+      <li><b>The summary panel anchors to the detail pane</b>, not the window: same <code>Radius.Card</code>, same hairline, bottom-right of the pane that asked for it, capped at 420dp wide. Its job is to sit beside the article you are deciding about, and at this width it can do that without covering it at all.</li>
+      <li><b>Focus becomes a centred panel</b>, ~440dp, on a dimmed ground — not a full-screen takeover. The phone version goes full-screen because a phone has no room to be beside anything; a desktop window does, and blanking 1180&times;820 to show a clock is theatre. The bottom-anchored, thumb-zone rule that put the meter low on the phone has no counterpart here: centred is correct once nothing has to be reachable.</li>
+      <li><b>The reader stops being an overlay at all.</b> It <em>is</em> the detail pane. Android's in-app browser is a platform overlay because the phone has one column; with two, opening a link fills the right-hand side and the list stays visible beside it — which is the entire argument for two panes.</li>
+      <li><b>Nothing gains a modal.</b> No dialog, no confirm step. Removing a saved link is still a swipe on touch and a row action on pointer, undone from a toast either way.</li>
+    </ul>
+
+    <p class="section-title" style="margin-top:44px">What web has to answer that desktop does not</p>
+    <ul class="status-list">
+      <li><b>No readback library.</b> The folder picker is Android SAF and desktop file-path; a browser tab has neither, so Readback in Wasm shows the same "not configured" state it does now and the rail's Readback tab stays visible but empty. Not hidden — a missing tab is a worse answer than an empty one.</li>
+      <li><b>No summaries.</b> Same as iOS: <code>summariesSupported()</code> is false, the control is not drawn, and nothing upstream knows.</li>
+      <li><b>The window is not yours.</b> A tab can be 320dp or 3000dp and can change mid-session; the breakpoint has to be read continuously rather than at start-up, which is the one place <code>BoxWithConstraints</code> earns its keep over a platform window-size class.</li>
+      <li><b>Fonts arrive late.</b> Jost and Inconsolata are bundled resources on the other three targets and a network fetch on web. The first paint has to be legible in the fallback stack rather than invisible, so no <code>font-display: block</code> equivalent — accept the swap.</li>
+    </ul>
+  </section>
+
+  <!-- ---------------------------------------------------------- -->
   <section>
     <h2>Monochrome</h2>
     <p class="section-title">Ink — a second design, not the first one with the colour deleted</p>
@@ -1084,6 +1352,8 @@ footer { margin-top: 56px; padding-top: 22px; border-top: 1px solid var(--line);
 
     <ul class="status-list">
       <li><b>Saved's "From clipboard" suggestion and one paste-row fill</b> are still filled <code>surfaceContainer</code>/<code>primaryContainer</code> boxes (<code>LinksTab.kt</code>) rather than a bordered pill.</li>
+      <li><b>Nothing reads the window size.</b> Desktop opens at 1180&times;820 and web at whatever the tab is; both get the phone layout stretched, with titles running past 100 characters and a floating bar at the foot of a window nobody is holding. The plan is in <a href="#wide">Wide &mdash; desktop and web</a> above: one <code>TwoPaneBreakpoint</code>, a left rail, a fixed list pane and a capped measure. None of it is built.</li>
+      <li><b>There are no hover or focus states</b> anywhere in the app, because touch never needed them. A pointer and a keyboard both do &mdash; see the three states in the Wide section.</li>
       <li><b>Desktop has no app icon</b> — <code>compose.desktop.application.nativeDistributions</code> sets no <code>iconFile</code>.</li>
       <li><b>iOS and Wasm haven't been compiled</b> across this whole design pass — a cold Kotlin/Native build is ten-plus minutes, so it's deliberately been skipped; one run should happen before calling any of this settled on those platforms.</li>
       <li><b>Cut features awaiting a call, not a bug:</b> the read-along highlighted-excerpt view and the "Read original" external-link row (both real, both cut when Readback went to two-facts-and-a-waveform), and the floating bar's ambient background waveform (moirés into a hatch at the row pitch).</li>

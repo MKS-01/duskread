@@ -6,10 +6,8 @@
 
 <p align="center">
   <strong>A reading habit that survives the news cycle.</strong><br>
-  Save the link, follow the blog, hear it read back on the walk.<br>
-  Gemini Nano summarises on-device — the model helps you get through it,<br>
-  and everything you read stays yours.<br>
-  <sub>Compose Multiplatform · Android first</sub>
+  Save the link, follow the blog, hear it read back on the walk — summarised<br>
+  on-device by Gemini Nano, so everything you read stays yours.
 </p>
 
 <p align="center">
