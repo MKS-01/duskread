@@ -12,12 +12,15 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Kotlin-1a1a1a?style=flat-square&logo=kotlin&logoColor=white" alt="Kotlin">
   <img src="https://img.shields.io/badge/Compose_Multiplatform-1a1a1a?style=flat-square&logo=jetpackcompose&logoColor=white" alt="Compose Multiplatform">
-  <img src="https://img.shields.io/badge/Android_·_iOS_·_Desktop_·_Web-1a1a1a?style=flat-square" alt="Android, iOS, Desktop, Web">
+  <img src="https://img.shields.io/badge/Android-b45f3c?style=flat-square&logo=android&logoColor=white" alt="Android, phase one">
+  <img src="https://img.shields.io/badge/iOS_·_Desktop_·_Web-1a1a1a?style=flat-square" alt="iOS, Desktop, Web — parked for later">
   <img src="https://img.shields.io/badge/On--device_AI-Android_only-b45f3c?style=flat-square" alt="On-device AI, Android only">
   <img src="https://img.shields.io/badge/MIT-1a1a1a?style=flat-square" alt="MIT License">
 </p>
 
 <p align="center"><sub>Monochrome by default. One accent, spent on purpose.</sub></p>
+<p align="center"><sub>Phase one: Android. iOS, desktop and web are parked
+until the Android side is finished.</sub></p>
 
 ---
 
@@ -46,6 +49,11 @@
 
 Home is one screen on purpose: today's pick from Saved, today's Readback,
 the timer, and what's new from the blogs you follow — nothing to dig for.
+
+**Phase one is Android** — that's the target this is built and tested
+against day to day. iOS, desktop and web share the same Compose
+Multiplatform codebase and build today, but they're parked until the
+Android side is done.
 
 <p align="center">
   <img src="docs/media/home.png" alt="Home — today's pick, Readback, Focus, and Following" width="24%">
