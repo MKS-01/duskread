@@ -19,8 +19,6 @@
 </p>
 
 <p align="center"><sub>Monochrome by default. One accent, spent on purpose.</sub></p>
-<p align="center"><sub>Phase one: Android. iOS, desktop and web are parked
-until the Android side is finished.</sub></p>
 
 ---
 
@@ -50,11 +48,6 @@ until the Android side is finished.</sub></p>
 Home is one screen on purpose: today's pick from Saved, today's Readback,
 the timer, and what's new from the blogs you follow — nothing to dig for.
 
-**Phase one is Android** — that's the target this is built and tested
-against day to day. iOS, desktop and web share the same Compose
-Multiplatform codebase and build today, but they're parked until the
-Android side is done.
-
 <p align="center">
   <img src="docs/media/home.png" alt="Home — today's pick, Readback, Focus, and Following" width="24%">
   <img src="docs/media/following.png" alt="A followed blog's posts" width="24%">
@@ -77,8 +70,14 @@ itself unavailable, so the rest of the app never has to know the difference
 
 ## Running it
 
+Android is phase one — the target this is built and tested against day to
+day, so start there. iOS, desktop and web share the same Compose
+Multiplatform codebase and build today, but they're parked until the
+Android side is done, and on-device summaries won't show up on them at all
+— AICore has no other host.
+
 ```bash
-./gradlew :androidApp:installDebug                  # Android
+./gradlew :androidApp:installDebug                  # Android — start here
 ./gradlew :composeApp:run                           # Desktop
 ./gradlew :composeApp:wasmJsBrowserDevelopmentRun   # Web
 ```
