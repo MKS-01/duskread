@@ -3,22 +3,29 @@ package dev.mks.duskread.ui.home
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -46,9 +53,11 @@ import dev.mks.duskread.reader.rememberAudioPlayer
 import dev.mks.duskread.reader.rememberReadRepository
 import dev.mks.duskread.ui.common.ToastHost
 import dev.mks.duskread.ui.common.ToastRequest
+import dev.mks.duskread.ui.layout.LocalWindowClass
 import dev.mks.duskread.ui.links.LinksTab
 import dev.mks.duskread.ui.reader.ReaderTab
 import dev.mks.duskread.ui.settings.SettingsScreen
+import dev.mks.duskread.ui.theme.Layout
 import dev.mks.duskread.ui.theme.Motion
 
 /**
@@ -111,6 +120,13 @@ fun HomeScreen(
     val feedClient = remember { createHttpClient() }
     DisposableEffect(feedClient) { onDispose { feedClient.close() } }
 
+    // Wide windows get the rail-and-transport plan instead of the floating
+    // bar; see `ui/layout/WindowClass.kt` and the design system's "Wide"
+    // section. Read once here and passed down as a boolean rather than read
+    // again in each branch, so the two layouts can never disagree about
+    // which one is running.
+    val wide = LocalWindowClass.current.isWide
+
     // One fixed clearance for the last card. It used to grow while the player
     // was docked above the bar; now that the transport lives inside the bar,
     // the bar is the same height whether anything is playing or not, and the
@@ -119,11 +135,16 @@ fun HomeScreen(
     // `top` is more generous than it used to be: with no per-tab title left
     // above the first card, that clearance is the only thing keeping content
     // off the status bar.
+    //
+    // Wide drops most of the bottom clearance: the transport is a sibling in
+    // a Column there rather than something floating over the list, so the
+    // list already ends where the transport begins and padding for it would
+    // be a second gap under the first.
     val listPadding = PaddingValues(
-        start = 16.dp,
-        end = 16.dp,
+        start = if (wide) Layout.WideListGutter else 16.dp,
+        end = if (wide) Layout.WideListGutter else 16.dp,
         top = 24.dp,
-        bottom = 104.dp,
+        bottom = if (wide) 28.dp else 104.dp,
     )
 
     // Shared by all three tabs so the bar's collapse survives switching
@@ -157,7 +178,10 @@ fun HomeScreen(
     val imeInsets = WindowInsets.ime
     val imeVisible by remember(density) { derivedStateOf { imeInsets.getBottom(density) > 0 } }
 
-    Box(modifier.fillMaxSize()) {
+    // Hoisted out of the layout branch below so the two plans share one
+    // definition of "the tabs" — the rail layout and the floating-bar layout
+    // differ in what surrounds the content, never in what the content is.
+    val tabs: @Composable (Modifier) -> Unit = { tabModifier ->
         AnimatedContent(
             targetState = tab,
             transitionSpec = {
@@ -166,8 +190,15 @@ fun HomeScreen(
                 (slideInHorizontally(tween(240)) { it / 6 * offset } + fadeIn(tween(180))) togetherWith
                     (slideOutHorizontally(tween(200)) { -it / 6 * offset } + fadeOut(tween(140)))
             },
-            modifier = Modifier
-                .fillMaxSize()
+            modifier = tabModifier
+                // The measure cap, and the only thing standing between a
+                // 1180dp window and a paste field a metre wide. Left-aligned
+                // against the rail rather than centred in the window: the
+                // eye returns to the same left edge on every line, and a
+                // column floating in the middle of the ground has no edge to
+                // return to. Below the breakpoint this is inert — the phone
+                // is narrower than the cap by definition.
+                .then(if (wide) Modifier.widthIn(max = Layout.ReadingMeasure) else Modifier)
                 .nestedScroll(collapse)
                 .hazeSource(hazeState)
                 .statusBarsPadding()
@@ -206,6 +237,45 @@ fun HomeScreen(
                 )
             }
         }
+    }
+
+    Box(modifier.fillMaxSize()) {
+        if (wide) {
+            // Rail and transport are siblings of the content here, not
+            // floating over it: with room to spare, furniture anchored to
+            // the window's own edges beats anything that has to blur what it
+            // covers. The transport keeps the bottom because it outlives
+            // whichever pane is above it.
+            Column(Modifier.fillMaxSize()) {
+                Row(Modifier.weight(1f).fillMaxWidth()) {
+                    NavRail(
+                        selected = tab,
+                        onSelect = onTabChange,
+                        mono = mono,
+                        onToggleTheme = onToggleTheme,
+                        onOpenSettings = { showSettings = true },
+                    )
+                    tabs(Modifier.weight(1f).fillMaxHeight())
+                }
+
+                AnimatedVisibility(
+                    visible = playback.item != null,
+                    enter = expandVertically(tween(Motion.Chip)) + fadeIn(tween(Motion.Fade)),
+                    exit = shrinkVertically(tween(Motion.Chip)) + fadeOut(tween(Motion.Fade)),
+                ) {
+                    TransportBar(
+                        item = playback.item,
+                        playback = playback,
+                        onTogglePlay = { player.togglePlayPause() },
+                        onSeek = { player.seekTo(it) },
+                        onStop = { player.stop() },
+                        modifier = Modifier.navigationBarsPadding(),
+                    )
+                }
+            }
+        } else {
+            tabs(Modifier.fillMaxSize())
+        }
 
         // There is no scrim gradient under the bar any more. The bar blurs
         // whatever passes beneath it, so fading that content to the
@@ -224,7 +294,7 @@ fun HomeScreen(
         // mid-sentence — every field here commits with its own inline
         // action or the IME's Done key.
         AnimatedVisibility(
-            visible = !imeVisible,
+            visible = !wide && !imeVisible,
             enter = slideInVertically(tween(Motion.Chip)) { it } + fadeIn(tween(Motion.Fade)),
             exit = slideOutVertically(tween(Motion.Chip)) { it } + fadeOut(tween(Motion.Fade)),
             modifier = Modifier.align(Alignment.BottomCenter),

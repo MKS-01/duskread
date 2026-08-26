@@ -47,6 +47,7 @@ import dev.mks.duskread.pomodoro.rememberPomodoroController
 import dev.mks.duskread.reader.ReadItem
 import dev.mks.duskread.reader.ReadSort
 import dev.mks.duskread.reader.ReaderSource
+import dev.mks.duskread.reader.readbackSupported
 import dev.mks.duskread.reader.rememberReadRepository
 import dev.mks.duskread.ui.common.ChipSize
 import dev.mks.duskread.ui.common.CompactEmptyState
@@ -245,6 +246,17 @@ private fun ReadbackSection(onOpen: () -> Unit, modifier: Modifier = Modifier) {
 
         val item = latest
         when {
+            // Said plainly rather than as a prompt: on a platform with no
+            // folder to point at, "connect your library" is an instruction
+            // that cannot be followed, and a reader who tries it finds the
+            // Readback tab explaining the same thing from the other end.
+            !readbackSupported() -> {
+                CompactEmptyState(
+                    title = "Readback needs a device",
+                    message = "Reads are audio files synced onto a phone or a Mac. There's nowhere here to keep them.",
+                )
+            }
+
             source != ReaderSource.READY -> {
                 CompactEmptyState(
                     title = "Connect your readback library",

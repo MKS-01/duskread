@@ -47,6 +47,22 @@ interface ReadRepository {
 expect fun rememberReadRepository(): ReadRepository
 
 /**
+ * Whether this platform can reach a readback library at all — not whether one
+ * has been configured, which only [ReadRepository.source] can answer.
+ *
+ * The two are worth keeping apart because the answers call for opposite
+ * screens. `NOT_CONFIGURED` means "point me at the folder", and every screen
+ * that says so is offering the reader something to do. A platform with no
+ * folder to point at can only say so plainly: a browser tab has no filesystem
+ * and iOS has no equivalent of Android's SAF grant, so a prompt there is an
+ * instruction that cannot be followed.
+ *
+ * A constant per platform, deliberately, so a screen can ask it without
+ * touching the repository or the disk.
+ */
+expect fun readbackSupported(): Boolean
+
+/**
  * Platform-specific UI for pointing the repository at its data — a
  * Storage-Access-Framework folder picker on Android, a plain path field on
  * desktop. Full prompt when [compact] is false (rendered wherever

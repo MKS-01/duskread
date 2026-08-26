@@ -99,6 +99,11 @@ kotlin {
             // non-Android platform with a real (if manual) way to point at
             // a synced folder.
             implementation(libs.sqlite.jdbc)
+            // Embedded Chromium, so a saved link opens in the app rather than
+            // handing the reader off to Safari. Android has a WebView in the
+            // platform; the JVM has nothing, so the browser has to be brought
+            // along. See `InAppBrowserScreen.desktop.kt`.
+            implementation(libs.kcef)
         }
 
         commonTest.dependencies {
@@ -111,10 +116,30 @@ compose.desktop {
     application {
         mainClass = "dev.mks.duskread.MainKt"
 
+        // JCEF reaches into AWT's macOS internals to hand Chromium a native
+        // surface, and the module system closed those packages in JDK 17.
+        // Without these the browser fails at `createBrowser`, not at start-up,
+        // so the app looks fine until the first link is opened.
+        jvmArgs("--add-opens", "java.desktop/sun.awt=ALL-UNNAMED")
+        jvmArgs("--add-opens", "java.desktop/java.awt.peer=ALL-UNNAMED")
+        if (System.getProperty("os.name").contains("Mac")) {
+            jvmArgs("--add-opens", "java.desktop/sun.lwawt=ALL-UNNAMED")
+            jvmArgs("--add-opens", "java.desktop/sun.lwawt.macosx=ALL-UNNAMED")
+        }
+
         nativeDistributions {
             targetFormats(TargetFormat.Dmg)
             packageName = "DuskRead"
             packageVersion = "1.0.0"
+
+            // jpackage builds a cut-down runtime, and by default it holds
+            // none of these. What each is for, since a missing one only
+            // shows up as a ClassNotFoundException in the packaged app and
+            // never in `run`: `java.sql` is sqlite-jdbc reading readback's
+            // library.db, `jdk.unsupported` is sun.misc.Unsafe underneath
+            // both Skiko and CEF, and the other two are what JCEF's own
+            // start-up touches. From `./gradlew :composeApp:suggestRuntimeModules`.
+            modules("java.instrument", "java.management", "java.sql", "jdk.unsupported")
         }
     }
 }

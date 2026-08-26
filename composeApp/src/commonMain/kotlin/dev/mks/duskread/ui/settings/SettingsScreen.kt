@@ -52,6 +52,7 @@ import dev.mks.duskread.summary.SummariserState
 import dev.mks.duskread.summary.SummaryLength
 import dev.mks.duskread.summary.rememberSummariser
 import dev.mks.duskread.summary.rememberSummaryCache
+import dev.mks.duskread.summary.summariesSupported
 import dev.mks.duskread.ui.PlatformBackHandler
 import dev.mks.duskread.ui.common.AppTextField
 import dev.mks.duskread.ui.common.EyebrowHeader
@@ -139,11 +140,19 @@ fun SettingsScreen(
 
                 Spacer(Modifier.height(28.dp))
 
-                EyebrowHeader(text = "SUMMARIES")
-                Spacer(Modifier.height(14.dp))
-                SummarySettings(prefs)
+                // Hidden, not disabled, off Android. The length chips choose
+                // between two shapes of a summary that this platform cannot
+                // produce at all, and `SummarySettings` binds the engine as
+                // its first act — on a target where that engine is a stub,
+                // the section is a control to learn to ignore and a needless
+                // allocation behind it.
+                if (summariesSupported()) {
+                    EyebrowHeader(text = "SUMMARIES")
+                    Spacer(Modifier.height(14.dp))
+                    SummarySettings(prefs)
 
-                Spacer(Modifier.height(28.dp))
+                    Spacer(Modifier.height(28.dp))
+                }
 
                 EyebrowHeader(text = "SAVED LINKS")
                 Spacer(Modifier.height(14.dp))

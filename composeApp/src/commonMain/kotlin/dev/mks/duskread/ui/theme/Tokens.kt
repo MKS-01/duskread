@@ -29,6 +29,42 @@ object Layout {
 
     /** Bottom inset so the last item clears the floating bar. */
     val BarClearance = 72.dp
+
+    /**
+     * The one width that changes the plan: below it the phone layout, above
+     * it a rail and two panes. One threshold rather than a size-class ladder
+     * because there are only two layouts to choose between — naming Medium
+     * and Expanded separately would imply a third that does not exist.
+     *
+     * 720 rather than 600: at 600 the list and detail panes are each too
+     * narrow to be worth the split, and a landscape phone — which is still
+     * held, still thumb-driven — stays on the layout built for it.
+     */
+    val TwoPaneBreakpoint = 720.dp
+
+    /**
+     * The list pane's width above [TwoPaneBreakpoint]. Fixed, not a
+     * fraction: a two-line title has a correct measure and a wider monitor
+     * does not change it — a percentage only makes the same rows emptier.
+     */
+    val ListPaneWidth = 400.dp
+
+    /**
+     * The vertical navigation rail replacing the floating bar when wide.
+     * Narrow enough to read as an edge rather than a column of its own.
+     */
+    val RailWidth = 64.dp
+
+    /**
+     * The widest a column of prose is allowed to get, regardless of how much
+     * room the detail pane has. Roughly 68 characters at body size — past
+     * that the eye loses the start of the next line.
+     */
+    val ReadingMeasure = 640.dp
+
+    /** [ReadingGutter] and [ListGutter], opened up once there is room. */
+    val WideReadingGutter = 28.dp
+    val WideListGutter = 20.dp
 }
 
 /** Corner radii, largest to smallest. */

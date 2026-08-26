@@ -30,3 +30,6 @@ actual fun ReaderSourcePicker(repository: ReadRepository, compact: Boolean) {
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
 }
+
+/** A browser tab has no filesystem to sync a library onto. See above. */
+actual fun readbackSupported(): Boolean = false

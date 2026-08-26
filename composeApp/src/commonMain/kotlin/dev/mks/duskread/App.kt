@@ -19,6 +19,7 @@ import dev.mks.duskread.data.rememberUserPrefs
 import dev.mks.duskread.ui.PlatformOverlay
 import dev.mks.duskread.ui.home.HomeScreen
 import dev.mks.duskread.ui.home.HomeTab
+import dev.mks.duskread.ui.layout.WindowClassProvider
 import dev.mks.duskread.ui.onboarding.Onboarding
 import dev.mks.duskread.ui.pomodoro.FocusScreen
 import dev.mks.duskread.ui.summary.SummaryOverlay
@@ -36,49 +37,55 @@ fun App() {
     val mono = prefs.mono
 
     DuskReadTheme(mono = mono, accent = prefs.accent) {
-        Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-            if (!prefs.introSeen) {
-                Onboarding(
-                    onDone = { name ->
-                        prefs.updateName(name)
-                        prefs.markIntroSeen()
-                    },
-                )
-                return@Surface
-            }
-
-            var homeTab by remember { mutableStateOf(HomeTab.HOME) }
-            var focusMode by remember { mutableStateOf(false) }
-
-            Box(Modifier.fillMaxSize()) {
-                HomeScreen(
-                    onOpenFocus = { focusMode = true },
-                    prefs = prefs,
-                    mono = mono,
-                    onToggleTheme = { prefs.updateMono(!mono) },
-                    tab = homeTab,
-                    onTabChange = { homeTab = it },
-                )
-
-                // The big-timer mode: a full-screen destination for whenever
-                // the point is to actually stare at the clock, not glance at a
-                // corner. Closing it never stops the session underneath.
-                AnimatedVisibility(
-                    visible = focusMode,
-                    enter = fadeIn(tween(Motion.PushIn)) + slideInVertically(tween(Motion.PushIn)) { it / 8 },
-                    exit = fadeOut(tween(Motion.PopFade)),
-                ) {
-                    FocusScreen(onClose = { focusMode = false })
+        // Outermost, so every screen — onboarding and the overlays included —
+        // reads the same window class, and so a desktop window being dragged
+        // wider re-lays-out everything rather than only what happens to be
+        // below Home.
+        WindowClassProvider(Modifier.fillMaxSize()) {
+            Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                if (!prefs.introSeen) {
+                    Onboarding(
+                        onDone = { name ->
+                            prefs.updateName(name)
+                            prefs.markIntroSeen()
+                        },
+                    )
+                    return@Surface
                 }
 
-                // A summary asked for by swiping a row, wherever that row
-                // was. Under the reader below, which hosts its own panel
-                // over its own article.
-                SummaryOverlay()
+                var homeTab by remember { mutableStateOf(HomeTab.HOME) }
+                var focusMode by remember { mutableStateOf(false) }
 
-                // Android's embedded reader browser; a no-op everywhere else.
-                // See `PlatformOverlay`.
-                PlatformOverlay(mono = mono)
+                Box(Modifier.fillMaxSize()) {
+                    HomeScreen(
+                        onOpenFocus = { focusMode = true },
+                        prefs = prefs,
+                        mono = mono,
+                        onToggleTheme = { prefs.updateMono(!mono) },
+                        tab = homeTab,
+                        onTabChange = { homeTab = it },
+                    )
+
+                    // The big-timer mode: a full-screen destination for whenever
+                    // the point is to actually stare at the clock, not glance at a
+                    // corner. Closing it never stops the session underneath.
+                    AnimatedVisibility(
+                        visible = focusMode,
+                        enter = fadeIn(tween(Motion.PushIn)) + slideInVertically(tween(Motion.PushIn)) { it / 8 },
+                        exit = fadeOut(tween(Motion.PopFade)),
+                    ) {
+                        FocusScreen(onClose = { focusMode = false })
+                    }
+
+                    // A summary asked for by swiping a row, wherever that row
+                    // was. Under the reader below, which hosts its own panel
+                    // over its own article.
+                    SummaryOverlay()
+
+                    // Android's embedded reader browser; a no-op everywhere else.
+                    // See `PlatformOverlay`.
+                    PlatformOverlay(mono = mono)
+                }
             }
         }
     }

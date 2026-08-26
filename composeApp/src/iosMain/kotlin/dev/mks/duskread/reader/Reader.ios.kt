@@ -31,3 +31,6 @@ actual fun ReaderSourcePicker(repository: ReadRepository, compact: Boolean) {
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
 }
+
+/** No equivalent of a SAF folder grant in the iOS sandbox. See above. */
+actual fun readbackSupported(): Boolean = false

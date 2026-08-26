@@ -874,12 +874,17 @@ footer { margin-top: 56px; padding-top: 22px; border-top: 1px solid var(--line);
     <h2>Wide — desktop and web</h2>
     <p class="section-title">One breakpoint, and the bar stops floating</p>
     <p class="section-note">
-      <b>Planned, not built.</b> Desktop opens at 1180&times;820
-      (<code>Main.kt</code>) and web at whatever the tab is, and both currently
-      render the phone layout stretched to fill it — a saved-link title runs
-      past 100 characters on one line, and the floating bar sits at the bottom
-      of a window nobody is holding. Nothing in <code>commonMain</code> reads
-      the window size today. This section is the plan for when it does.
+      <b>Partly built.</b> The breakpoint, the rail, the bottom transport and
+      the capped measure are in — <code>ui/layout/WindowClass.kt</code>,
+      <code>ui/home/NavRail.kt</code> and the <code>wide</code> branch in
+      <code>HomeScreen.kt</code>. The two-pane split, the hover/focus/selected
+      states, the keys and the overlay rules below are still the plan.
+      <br><br>
+      <b>And this is a workshop, not a product surface.</b> Desktop and web
+      exist to prove the shared code and this design system travel off a
+      phone; Android is the target that is finished and tested. Read the
+      wide layout as an argument about the system rather than a screen anyone
+      is using daily.
     </p>
 
     <table class="spec">

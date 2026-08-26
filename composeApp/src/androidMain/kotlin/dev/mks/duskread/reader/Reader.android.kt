@@ -229,3 +229,6 @@ actual fun ReaderSourcePicker(repository: ReadRepository, compact: Boolean) {
         PrimaryButton(label = "Choose folder", onClick = { pickFolder.launch(null) })
     }
 }
+
+/** SAF gives a durable grant on a synced folder; this is the target it was built for. */
+actual fun readbackSupported(): Boolean = true
