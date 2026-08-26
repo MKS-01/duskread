@@ -188,3 +188,6 @@ actual fun ReaderSourcePicker(repository: ReadRepository, compact: Boolean) {
         )
     }
 }
+
+/** A plain filesystem path and a JDBC driver — everything the repository needs. */
+actual fun readbackSupported(): Boolean = true

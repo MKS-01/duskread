@@ -35,7 +35,7 @@ You find something good at eleven in the morning and you are not going to read i
 
 ## Getting started
 
-> **Phase one is Android.** It's the target this is built and tested against day to day. iOS, desktop and web share the same Compose Multiplatform codebase and compile today, but they're parked until the Android side is done — and summaries won't appear on them at all, because AICore has no other host.
+> **Android is the app. The other three are the workshop.** Android is what this is built, run and tested against every day, and the only target where every feature is real. Desktop, web and iOS share the same Compose Multiplatform source and all four compile from one command — but they exist to prove the shared code and the design system travel, not because DuskRead is meant to be read on them. Treat anything outside Android as a working surface: it builds, it looks right, and it is not the thing that gets used. See [Platform support](#platform-support) for what each one can and cannot do.
 
 ```bash
 git clone https://github.com/MKS-01/duskread.git && cd duskread
@@ -56,14 +56,20 @@ That's the whole setup. Saved links, feeds, the timer and the themes all work th
 <summary><strong>The other three targets</strong></summary>
 
 ```bash
-./gradlew :composeApp:run                           # desktop
-./gradlew :composeApp:wasmJsBrowserDevelopmentRun   # web
+./gradlew :composeApp:runDistributable              # desktop — see the note below
+./gradlew :composeApp:wasmJsBrowserDevelopmentRun   # web, on :8080
 
 cd iosApp && xcodegen generate && cd ..             # iOS needs an Xcode host
 open iosApp/iosApp.xcodeproj
 ```
 
-A first Kotlin/Native build for iOS is ten minutes or more; incremental after that.
+`runDistributable`, not `run`, for desktop: the embedded browser is Chromium
+through JCEF, and its native side needs the packaged `.app` layout. Under a
+plain `run` it segfaults during `CefApp.initialize`. Everything else in the
+app works either way.
+
+A first Kotlin/Native build for iOS is ten minutes or more; incremental after
+that.
 </details>
 
 ---
@@ -106,6 +112,38 @@ A pomodoro that behaves like an alarm and not a widget: a real system notificati
 
 ---
 
+## Platform support
+
+**Android is the only target that is finished and tested.** The other three
+run the same code and wear the same design, and that is the whole point of
+them: they are how the shared layer and the design system get exercised
+against something other than one phone. They are not a shipping matrix.
+
+| | Android | Desktop | Web | iOS |
+|---|---|---|---|---|
+| **Saved links, feeds, themes, timer** | ✅ | ✅ | ✅ | ✅ |
+| **Readback library** | ✅ SAF folder grant | ✅ plain path + sqlite-jdbc | ❌ no filesystem | ❌ no folder grant |
+| **Audio playback** | ✅ foreground service + media session | ⚠️ in-app only | ❌ | ❌ |
+| **On-device summaries** | ✅ Gemini Nano via AICore | ❌ no host | ❌ | ❌ |
+| **In-app reader browser** | ✅ WebView | ✅ Chromium via JCEF | ❌ opens a tab | ➖ `SFSafariViewController` |
+| **Background focus timer** | ✅ notification + vibration | ⚠️ only while open | ⚠️ only while open | ⚠️ only while open |
+| **Wide layout** | ➖ phone layout | ✅ rail + transport | ✅ rail + transport | ➖ phone layout |
+
+Every ❌ is a real platform ceiling rather than a to-do, and each one is
+answered in code rather than left to fail: `summariesSupported()` and
+`readbackSupported()` are `expect`/`actual` constants, and a screen asks them
+before it offers anything. A control that could only disappoint is not drawn
+at all, and an empty state says why instead of prompting for something the
+platform cannot give.
+
+**Two things this means for anyone reading the source.** Non-Android
+behaviour is best treated as a demonstration of the shared architecture: the
+`expect`/`actual` seams, one `commonMain` UI, one set of tokens, one theme
+swap. And bug reports are worth filing against Android — that is the surface
+with real use behind it.
+
+---
+
 ## Tech stack
 
 Everything but the leaf nodes is shared; the platform seams are `expect`/`actual` pairs — storage, audio, the summariser, the timer, the HTTP client.
@@ -118,6 +156,7 @@ Everything but the leaf nodes is shared; the platform seams are `expect`/`actual
 | **On-device AI** | [ML Kit GenAI](https://developer.android.com/ai) `genai-summarization` → Gemini Nano |
 | **Networking** | [Ktor](https://ktor.io/) 3.1 — OkHttp · CIO · Darwin · JS, one per target |
 | **Storage** | SAF + `DocumentFile` on Android, [sqlite-jdbc](https://github.com/xerial/sqlite-jdbc) on desktop |
+| **In-app browser** | `WebView` on Android, [KCEF](https://github.com/DatL4g/KCEF) — Chromium via JCEF — on desktop |
 | **Audio** | `MediaPlayer` and an `androidx.media` session in a foreground service |
 | **Effects** | [Haze](https://github.com/chrisbanes/haze) — the blur behind the floating bar |
 | **Build** | AGP 9 `androidLibrary` KMP DSL · Gradle 9.3.1 · [ktlint](https://pinterest.github.io/ktlint/) |

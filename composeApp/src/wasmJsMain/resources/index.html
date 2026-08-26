@@ -11,9 +11,56 @@
          canvas matches the first frame drawn onto it rather than flashing a
          different near-black first. */
       body { background: #101010; }
+
+      /* The wait before Compose exists at all: several megabytes of Wasm to
+         fetch and instantiate, and on a cold cache that is seconds of a blank
+         near-black page indistinguishable from a site that failed to load.
+         Hand-written CSS rather than anything drawn by the app, because none
+         of the app is running yet — this has to paint from the first byte.
+
+         Deliberately the flat waveform `EmptyState` uses, not a spinner: it
+         is the one mark in the app that already means "no signal yet", and it
+         costs no font, no image and no second request. */
+      #boot {
+        position: fixed; inset: 0; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; gap: 18px;
+        background: #101010; font-family: system-ui, -apple-system, sans-serif;
+      }
+      #boot .bars { display: flex; align-items: center; gap: 3px; height: 16px; }
+      #boot .bars i {
+        display: block; width: 2px; height: 2px; border-radius: 1px;
+        background: #4a4a48; animation: boot-pulse 1.4s ease-in-out infinite;
+      }
+      #boot .bars i:nth-child(2) { animation-delay: 0.1s; }
+      #boot .bars i:nth-child(3) { animation-delay: 0.2s; }
+      #boot .bars i:nth-child(4) { animation-delay: 0.3s; }
+      #boot .bars i:nth-child(5) { animation-delay: 0.4s; }
+      #boot .bars i:nth-child(6) { animation-delay: 0.5s; }
+      #boot .bars i:nth-child(7) { animation-delay: 0.6s; }
+      #boot .bars i:nth-child(8) { animation-delay: 0.7s; }
+      #boot .bars i:nth-child(9) { animation-delay: 0.8s; }
+      #boot .word {
+        color: #6a6a67; font-size: 10px; letter-spacing: 0.18em;
+        text-transform: uppercase;
+      }
+      /* A reader who has asked not to see motion gets the flat line, which is
+         what the meter means at rest anyway. */
+      @media (prefers-reduced-motion: reduce) {
+        #boot .bars i { animation: none; }
+      }
+      @keyframes boot-pulse {
+        0%, 100% { height: 2px; }
+        50% { height: 14px; }
+      }
     </style>
   </head>
   <body>
+    <div id="boot">
+      <div class="bars">
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+      </div>
+      <div class="word">DuskRead</div>
+    </div>
     <script src="composeApp.js"></script>
   </body>
 </html>
