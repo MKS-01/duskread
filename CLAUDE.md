@@ -22,11 +22,14 @@ The four things the app does, and where each lives:
 API, library or tool is in scope and does not need justifying.
 
 `README.md` describes how the app is put together — do not restate it here.
-`docs/design-system/design-system.html` is the current visual-language
-reference (open it in a browser); `docs/design/amplitude-migration.md` tracks
-the redesign's progress screen by screen. Both are kept up to date and should
-be treated as current — update them alongside a UI change rather than letting
-them drift.
+`docs/design-system/design-system.html` is the landing page and the
+visual-language reference in one (open it in a browser): what the app does,
+reading and following first, then the language screen by screen. Keep it that
+way — **no code paths, no class names, no TODO lists in it.** That material
+lives in `docs/design/amplitude-migration.md`, which holds the state of the
+system, what is still open, and the plans for unbuilt work. Both are kept up
+to date and should be treated as current — update them alongside a UI change
+rather than letting them drift.
 
 ## Build and verify
 

@@ -264,3 +264,145 @@ screenshots are the only verification that exists here.
 - [ ] iOS and Wasm have not been compiled across this entire migration — a
       cold Kotlin/Native build is ten minutes plus, so it was deliberately
       skipped, but one run should happen before the migration is called done
+
+## Moved out of the design-system page (landing-page pass)
+
+`docs/design-system/design-system.html` is now the product intro as well as
+the visual reference, so the engineering inventory it had accumulated moved
+here. None of it changed — it just stopped being something a first-time
+reader has to scroll past.
+
+### State of the system (verified against the code at the time of the move)
+
+- No boxed surface is left in a list anywhere in the app. Home, Readback,
+  Saved, Following and Settings all sit flush on the ground, separated by
+  their own bottom hairline.
+- `ui/common/ListRow.kt` is the one row: `ListRow`, `ListRowBody`,
+  `ListRowDivider`, with `RowTone` (`Normal`, `Accent`, `Faded`) the whole
+  vocabulary of row states.
+- `ui/theme/Theme.kt` holds `DarkScheme` (Paper Black) and `MonoScheme`
+  (Ink). Ink is the default and persists (`UserPrefs.mono`, default `true`).
+  The app icon is the Ink mark at all times and does not follow the setting.
+- Paper Black's accent is terracotta `#C6684A` — one hue, meaning "there is
+  sound here" and nothing else. Ink ignores it entirely.
+- [ ] The second `AccentColor` (dusty green `#4FA870`) is being dropped. It
+      is out of the docs already; the enum, the Settings swatches and the
+      picker still need removing from the code.
+- `Radius.Chip` 3dp (hairline-bordered, squared-off: sort chips, sourcechip,
+  the Settings and folder icon buttons), `Radius.Inline` 10dp (fields),
+  `Radius.Card` 14dp (the summary panel, the one thing that floats).
+- `AppTextField` is every text input: Saved's paste field, the feed address,
+  Settings, the desktop folder path, onboarding, Focus's custom length.
+- `ui/theme/DuskReadIcons.kt` — 22 icons, all stroked at 2.4, round cap and
+  join. No Material glyph is mixed in.
+- `ui/layout/WindowClass.kt` reads the window against a 720dp breakpoint;
+  past it `ui/home/NavRail.kt` replaces the floating bar, the transport
+  anchors to the bottom edge, and prose caps at `Layout.ReadingMeasure`
+  (640dp).
+- Summaries: ML Kit GenAI against AICore, confirmed end to end on a Galaxy
+  S25. No emulator can stand in — those system images ship no
+  `com.google.android.aicore`, so the engine there only ever answers
+  "unavailable".
+
+### Still open
+
+- [ ] Two filled boxes survive in Saved: the "From clipboard" suggestion and
+      one paste-row fill, still `surfaceContainer`/`primaryContainer`
+      rectangles in `LinksTab.kt` — the last two painted surfaces in the app
+- [ ] The wide layout has a rail but not two panes. The list-and-detail
+      split, and the overlay rules that go with it, are drawn and not built
+- [ ] No hover, no focus ring, no keys — touch never needed them, so none
+      were built. A pointer and a keyboard need all three
+- [ ] Desktop has no app icon: `nativeDistributions` sets no `iconFile`
+
+### Wide-layout plan, in full
+
+Cut from the design-system page because it documents unbuilt work at more
+length than the built app gets.
+
+**Three states a phone never needed.** Touch has one state worth drawing —
+pressed, and it is gone before you look at it. A pointer hovers, a keyboard
+focuses, and a two-pane layout has to say which row the right-hand side
+belongs to. None may use colour: the accent still means *there is sound
+here*. Hover is a 3.5% white wash; selected is a `surface` raise; focus is a
+1px accent outline, inset — the one place the accent is spent on something
+other than sound, because a focus ring that is not obvious is not a focus
+ring.
+
+**Keys** — deliberately few, and deliberately the same ones readback's own
+terminal player uses, since the two projects are read by the same person on
+the same evening and should not disagree about what `space` does:
+
+| | |
+|---|---|
+| Play | `space` play/pause the transport, from any pane |
+| Seek | `←` `→` ±5 s |
+| Move | `↑` `↓` through the list pane, `enter` to open in the detail pane |
+| Paste | `⌘V` anywhere on Saved fills the paste field, no click first |
+| Dismiss | `esc` closes the topmost overlay — the same single `PlatformBackHandler` Android's gesture already goes through |
+
+No shortcut opens a pane that a tab does not. Every key either drives the
+transport or moves a selection; none is a hidden route to a screen, which
+keeps the rail the only answer to "where am I?" and means the phone build
+loses nothing by having no keyboard.
+
+**Overlays, at width.** Focus, the summary panel and the reader are overlays
+in one `Box` rather than destinations, and that stays true when the window is
+wide — but a bottom-anchored sheet spanning 1180dp is a banner, not a panel.
+
+- The summary panel anchors to the detail pane, not the window: same
+  `Radius.Card`, same hairline, bottom-right of the pane that asked for it,
+  capped at 420dp. Its job is to sit beside the article you are deciding
+  about, and at this width it can do that without covering it at all.
+- Focus becomes a centred panel, ~440dp, on a dimmed ground — not a
+  full-screen takeover. The phone goes full-screen because a phone has no
+  room to be beside anything; blanking 1180×820 to show a clock is theatre.
+  The thumb-zone rule that put the meter low on the phone has no counterpart
+  here: centred is correct once nothing has to be reachable.
+- The reader stops being an overlay at all. It *is* the detail pane — which
+  is the entire argument for two panes.
+- Nothing gains a modal. No dialog, no confirm step.
+
+**What web has to answer that desktop does not.**
+
+- No readback library. The folder picker is Android SAF and desktop
+  file-path; a browser tab has neither, so Readback in Wasm shows the
+  "not configured" state and the rail's tab stays visible but empty. Not
+  hidden — a missing tab is a worse answer than an empty one.
+- No summaries. Same as iOS: `summariesSupported()` is false, the control is
+  not drawn, nothing upstream knows.
+- The window is not yours. A tab can be 320dp or 3000dp and can change
+  mid-session, so the breakpoint has to be read continuously — the one place
+  `BoxWithConstraints` earns its keep over a platform window-size class.
+- Fonts arrive late. Jost and Inconsolata are bundled on the other three
+  targets and a network fetch on web; the first paint has to be legible in
+  the fallback stack rather than invisible.
+
+### Summary-screen decisions, in full
+
+- **Prose, not bullets.** The engine returns bullets *always*, so
+  `parseSummary` flattens them into prose rather than the panel growing a
+  layout per engine mood.
+- **Two lengths, on the engine's own dial.** Short and Full map to AICore's
+  `ONE_BULLET` and `THREE_BULLETS`. A word limit was tried first and
+  dropped: a limit can only cut, never lengthen, and three points from this
+  model often run under any ceiling worth naming, so every setting produced
+  the same text.
+- **One engine, no model picker.** AICore's free-form Prompt API answers
+  `FEATURE_NOT_FOUND` on real hardware, so it and the three-model Settings
+  picker that depended on it are both gone.
+- **Swipe-right-to-summarise** draws `SummariseBackground` in
+  `surfaceContainerHigh`, not Remove's accent container — one is destructive
+  and should look like it.
+- **One shared pill.** `ui/summary/SummaryChip.kt` is the download button in
+  the panel and in Settings alike.
+
+### App-icon geometry note
+
+The crescent is an opaque circle in the exact ground colour, drawn after the
+bar — *not* a `fillType="evenOdd"` subtraction, which was tried first and is
+wrong for a cut shape extending outside the base shape: evenOdd fills that
+outside part back in as a second, disconnected blob. The one place the
+ground-colour trick cannot apply — the Android 13+ themed-icon layer, which
+reads only alpha — keeps a true evenOdd hole, sized down to sit fully inside
+the bar so the same bug cannot recur.
