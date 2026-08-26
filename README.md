@@ -11,30 +11,17 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/On--device_AI-Gemini_Nano-b45f3c?style=for-the-badge&logo=googlegemini&logoColor=white" alt="On-device AI via Gemini Nano">
-  <img src="https://img.shields.io/badge/Kotlin_·_Compose-3DDC84?style=for-the-badge&logo=android&logoColor=white" alt="Kotlin and Compose Multiplatform">
-  <img src="https://img.shields.io/badge/Monochrome_by_default-1a1a1a?style=for-the-badge&logo=inkscape&logoColor=white" alt="Monochrome by default">
-  <img src="https://img.shields.io/badge/MIT-22c55e?style=for-the-badge" alt="MIT License">
+  <img src="https://img.shields.io/badge/Gemini_Nano_·_on--device-b45f3c?style=flat-square&logo=googlegemini&logoColor=white" alt="On-device AI via Gemini Nano">
+  <img src="https://img.shields.io/badge/Kotlin_·_Compose_Multiplatform-1a1a1a?style=flat-square&logo=kotlin&logoColor=white" alt="Kotlin and Compose Multiplatform">
+  <img src="https://img.shields.io/badge/Android_8.0+-1a1a1a?style=flat-square&logo=android&logoColor=white" alt="Android 8.0 and up">
+  <img src="https://img.shields.io/badge/MIT-1a1a1a?style=flat-square" alt="MIT License">
 </p>
 
-<p align="center">
-  <img src="https://img.shields.io/badge/phase_one_·_Android-0ea5e9?style=flat" alt="Phase one: Android">
-  <img src="https://img.shields.io/badge/Android_8.0+_·_minSdk_26-64748b?style=flat" alt="Android 8.0 and up">
-  <img src="https://img.shields.io/badge/iOS_·_desktop_·_web_compile-64748b?style=flat" alt="iOS, desktop and web compile">
-  <img src="https://img.shields.io/badge/no_ViewModel_·_no_DI_·_no_db-64748b?style=flat" alt="No ViewModel, no DI, no database">
-  <img src="https://img.shields.io/badge/Built_with_Claude_Code-D97757?style=flat&logo=claude&logoColor=white" alt="Built with Claude Code">
-</p>
+<p align="center"><sub>Monochrome by default. One accent, spent on purpose.</sub></p>
 
-<p align="center">
-  <a href="#getting-started">Getting started</a> ·
-  <a href="#saved-links-and-feeds">Links &amp; feeds</a> ·
-  <a href="#readback">Readback</a> ·
-  <a href="#on-device-summaries">Summaries</a> ·
-  <a href="#focus-timer">Focus</a> ·
-  <a href="#how-its-put-together">How it's put together</a> ·
-  <a href="#tech-stack">Stack</a> ·
-  <a href="#design-system">Design system</a>
-</p>
+---
+
+Every blog you follow and every link you meant to get back to, in one app in your pocket — RSS and Atom on one side, whatever you shared from a browser on the other, and no bare URLs sitting there waiting for a title. Sync a [readback](https://github.com/MKS-01/readback) library and all of it is waiting as audio, with a transport bar that seeks and keeps playing after you leave. Ask for a summary and Gemini Nano writes it on the phone through Android AICore — no key, no account, fetching the page the only thing that touches the network. A focus timer sits alongside, ending in a real notification and a vibration. It's drawn as **Paper Black** — a page rather than a screen, warm-white ink on matte near-black, lit by one terracotta accent — or **Ink**, the same page with the hue drained to luminance alone, which is what it opens in.
 
 <p align="center">
   <img src="docs/media/home.png" alt="Home — today's pick, Readback, Focus, and Following" width="22%">
@@ -43,20 +30,6 @@
   <img src="docs/media/summary.png" alt="An on-device summary, generated from the reader" width="22%"><br>
   <sub>Home · Following · Readback mid-play · a summary written on the phone.</sub>
 </p>
-
----
-
-**Save it, and it's saved.** Paste a URL or share one from any app; the row appears that second and the real title fills itself in behind you. Follow a blog by RSS or Atom and its new posts land on Home.
-
-**Listen instead of reading.** Sync a [readback](https://github.com/MKS-01/readback) library onto the phone and every saved link and followed post is waiting as audio, with a transport bar that seeks, scrubs and keeps playing after you leave the app.
-
-**Ask for a summary.** Gemini Nano writes it on the phone, through Android AICore. No key, no account, no token bill — fetching the page is the only thing here that touches the network.
-
-**Read for twenty-five minutes.** The focus timer sits on Home next to everything else, and ends with a real notification and a vibration, so it works face-down.
-
-It's drawn as **Paper Black**: a page rather than a screen, matte near-black ground, warm-white ink, no card boxes, rows separated by a hairline and lit by a single terracotta accent. On days that accent is a distraction, one tap gives you **Ink** — the same page with the hue drained to luminance alone. That's what the app opens in.
-
-Home is one screen on purpose: today's pick from Saved, today's Readback, the timer, and what's new from the blogs you follow. Three tabs under it, nothing to dig for.
 
 ---
 
@@ -133,37 +106,16 @@ A pomodoro that behaves like an alarm and not a widget: a real system notificati
 
 ---
 
-## How it's put together
-
-```mermaid
-flowchart LR
-    SHARE["share sheet · paste"] --> LINKS
-    FEED["RSS · Atom"] --> LINKS
-
-    subgraph APP["DuskRead · commonMain"]
-        direction LR
-        LINKS["LinkLibrary<br/>FeedLibrary"] --> HOME["Home<br/>one screen"]
-        READER["Reader"] --> HOME
-        POMO["Focus timer"] --> HOME
-    end
-
-    LINKS -- "androidMain" --> NANO["ML Kit GenAI<br/>→ Gemini Nano · AICore"]
-    DB[("readback-audio-db<br/>library.db + audio/")] -- "read-only · SAF" --> READER
-    READER --> SVC["foreground service<br/>media notification"]
-```
-
-Everything but the leaf nodes is shared. The platform seams are `expect`/`actual` pairs — the reader's storage, the audio player, the summariser, the timer, the key/value store, the HTTP client — and on iOS, desktop and web the summariser is a stub that reports itself unavailable, so nothing upstream has to care.
-
-State is plain `remember { mutableStateOf(…) }` hoisted into `App.kt`. Saved links and feeds live in a flat key/value store. There is no ViewModel, no DI container, no navigation library and no database — the app is small enough that adding them would cost more than it saved.
-
----
-
 ## Tech stack
+
+Deliberately small: everything but the leaf nodes is shared, and the platform seams are `expect`/`actual` pairs — the reader's storage, the audio player, the summariser, the timer, the key/value store, the HTTP client.
 
 | Layer | Technology |
 |---|---|
 | **UI** | [Compose Multiplatform](https://www.jetbrains.com/compose-multiplatform/) 1.11 + Material 3 — Android, iOS, desktop, web from one source set |
 | **Language** | Kotlin 2.3, JVM 17 target |
+| **Navigation** | None — three tabs are a `HomeTab` enum behind the floating bar; focus mode, the summary panel and the reader are overlays in one `Box` gated on a `Boolean`, with system back through a single `expect fun PlatformBackHandler`. No Navigation Compose, no back stack |
+| **State** | `remember { mutableStateOf(…) }` hoisted into `App.kt`; a flat key/value store for links, feeds and prefs. No ViewModel, no DI, no database |
 | **On-device AI** | [ML Kit GenAI](https://developer.android.com/ai) `genai-summarization` → Gemini Nano through AICore |
 | **Networking** | [Ktor](https://ktor.io/) 3.1 — OkHttp on Android, CIO on desktop, Darwin on iOS, JS on web |
 | **Async** | kotlinx.coroutines |
