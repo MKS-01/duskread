@@ -28,7 +28,15 @@ You find something good at eleven in the morning and you are not going to read i
   <img src="docs/media/following.png" alt="A followed blog's posts" width="22%">
   <img src="docs/media/readback.png" alt="Readback, with the transport bar playing a post" width="22%">
   <img src="docs/media/summary.png" alt="An on-device summary, generated from the reader" width="22%"><br>
-  <sub>Home · Following · Readback mid-play · a summary written on the phone.</sub>
+  <sub><strong>Ink</strong> — Home · Following · Readback mid-play · a summary written on the phone.</sub>
+</p>
+
+<p align="center">
+  <img src="docs/media/paper-home.png" alt="Home in Paper Black" width="22%">
+  <img src="docs/media/paper-following.png" alt="A followed blog's posts in Paper Black" width="22%">
+  <img src="docs/media/paper-readback.png" alt="Readback in Paper Black, transport bar playing" width="22%">
+  <img src="docs/media/paper-summary.png" alt="An on-device summary in Paper Black" width="22%"><br>
+  <sub><strong>Paper Black</strong> — the same four screens with colour mode switched on.</sub>
 </p>
 
 ---
@@ -149,7 +157,9 @@ No tests yet.
 
 ## Design system
 
-Two colour schemes, one layout, both dark. `DarkScheme` is **Paper Black**; `MonoScheme` is **Ink**, the same layout with hue drained to luminance alone. Paper Black's accent is an `AccentColor` — terracotta `#C6684A` or a dusty green `#4FA870`, built at the terracotta's own saturation and lightness so neither reads louder than the scheme was designed to carry. Ink ignores it, and the Settings swatches grey out while it's active. Ink is the default and persists.
+Two colour schemes, one layout, both dark. `DarkScheme` is **Paper Black**; `MonoScheme` is **Ink**, the same layout with hue drained to luminance alone. Paper Black's accent is an `AccentColor` — terracotta `#C6684A` or a dusty green `#4FA870`, built at the terracotta's own saturation and lightness so neither reads louder than the scheme was designed to carry.
+
+**Colour is off by default, and not on offer until you ask for it.** DuskRead opens in Ink with no contrast glyph in the bar and no accent row in settings — this is a monochrome app that can be lit, not a colour app with the lights off. A **Colour mode** row under Appearance reveals Paper Black, the accent swatches and the bar's switch; turning it back off drops to Ink in the same move, so there's no way to be stranded in a scheme whose exit has stopped being drawn. Both choices persist.
 
 The app swaps between them at runtime, which is why no screen hard-codes a colour — a literal survives the swap and immediately looks wrong.
 

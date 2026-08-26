@@ -252,6 +252,7 @@ fun HomeScreen(
                         selected = tab,
                         onSelect = onTabChange,
                         mono = mono,
+                        colourMode = prefs.colourMode,
                         onToggleTheme = onToggleTheme,
                         onOpenSettings = { showSettings = true },
                     )
@@ -309,6 +310,7 @@ fun HomeScreen(
                 onSeek = { player.seekTo(it) },
                 onStop = { player.stop() },
                 mono = mono,
+                colourMode = prefs.colourMode,
                 onToggleTheme = onToggleTheme,
                 collapse = collapse,
                 modifier = Modifier

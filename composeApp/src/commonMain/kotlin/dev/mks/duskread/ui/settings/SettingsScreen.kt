@@ -134,9 +134,20 @@ fun SettingsScreen(
 
                 EyebrowHeader(text = "APPEARANCE")
                 Spacer(Modifier.height(14.dp))
-                ThemeRow(mono = mono, onToggleTheme = onToggleTheme)
-                Spacer(Modifier.height(18.dp))
-                AccentPicker(accent = prefs.accent, mono = mono, onAccentChange = prefs::updateAccent)
+                ColourModeRow(
+                    enabled = prefs.colourMode,
+                    onToggle = { prefs.updateColourMode(!prefs.colourMode) },
+                )
+                // Both of these only mean anything once colour is on offer,
+                // and both vanish rather than grey out — a greyed accent
+                // swatch reads as "unavailable here", which is wrong; it is
+                // available, it simply has not been asked for.
+                if (prefs.colourMode) {
+                    Spacer(Modifier.height(18.dp))
+                    ThemeRow(mono = mono, onToggleTheme = onToggleTheme)
+                    Spacer(Modifier.height(18.dp))
+                    AccentPicker(accent = prefs.accent, mono = mono, onAccentChange = prefs::updateAccent)
+                }
 
                 Spacer(Modifier.height(28.dp))
 
@@ -197,6 +208,52 @@ private fun NameField(prefs: UserPrefs) {
                     )
                 }
             },
+        )
+    }
+}
+
+/**
+ * The one control that decides whether the other two exist.
+ *
+ * Off by default: DuskRead is a monochrome app that can be lit, not a
+ * colour app with the lights off, and a reader who never wants the accent
+ * should never have to see the switch for it in the bar. Turning it off
+ * again also drops back to Ink — see [UserPrefs.updateColourMode], which is
+ * where that has to live so the two cannot disagree.
+ *
+ * A bordered state chip rather than a Material `Switch`: there is no switch
+ * anywhere else in this app, and adding one here would be the only piece of
+ * stock Material chrome on a screen built out of hairlines and small caps.
+ */
+@Composable
+private fun ColourModeRow(enabled: Boolean, onToggle: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().clickable(onClick = onToggle).padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(
+                text = "Colour mode",
+                style = MaterialTheme.typography.titleSmall,
+                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = if (enabled) {
+                    "Paper Black and the accent are on offer, and the bar carries the switch."
+                } else {
+                    "Ink only. Nothing to choose, and one fewer glyph in the bar."
+                },
+                fontSize = 11.5.sp,
+                lineHeight = 15.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Spacer(Modifier.width(12.dp))
+        SummaryChip(
+            label = if (enabled) "Shown" else "Hidden",
+            tone = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+            onClick = onToggle,
         )
     }
 }

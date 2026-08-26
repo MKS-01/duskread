@@ -64,6 +64,7 @@ fun NavRail(
     selected: HomeTab,
     onSelect: (HomeTab) -> Unit,
     mono: Boolean,
+    colourMode: Boolean,
     onToggleTheme: () -> Unit,
     onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
@@ -89,11 +90,13 @@ fun NavRail(
             // be redundant once a whole column of empty rail separates them.
             Spacer(Modifier.weight(1f))
 
-            RailButton(
-                icon = DuskReadIcons.Contrast,
-                label = if (mono) "Switch to the colour theme" else "Switch to the monochrome theme",
-                onClick = onToggleTheme,
-            )
+            if (colourMode) {
+                RailButton(
+                    icon = DuskReadIcons.Contrast,
+                    label = if (mono) "Switch to the colour theme" else "Switch to the monochrome theme",
+                    onClick = onToggleTheme,
+                )
+            }
             RailButton(
                 icon = DuskReadIcons.Settings,
                 label = "Settings",
