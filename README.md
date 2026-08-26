@@ -31,13 +31,16 @@ You find something good at eleven in the morning and you are not going to read i
   <sub><strong>Ink</strong> — Home · Following · Readback mid-play · a summary written on the phone.</sub>
 </p>
 
+<details>
+<summary align="center"><sub><strong>Paper Black</strong> — the same four screens with the accent lit</sub></summary>
+<br>
 <p align="center">
   <img src="docs/media/paper-home.png" alt="Home in Paper Black" width="22%">
   <img src="docs/media/paper-following.png" alt="A followed blog's posts in Paper Black" width="22%">
   <img src="docs/media/paper-readback.png" alt="Readback in Paper Black, transport bar playing" width="22%">
-  <img src="docs/media/paper-summary.png" alt="An on-device summary in Paper Black" width="22%"><br>
-  <sub><strong>Paper Black</strong> — the same four screens with the accent lit.</sub>
+  <img src="docs/media/paper-summary.png" alt="An on-device summary in Paper Black" width="22%">
 </p>
+</details>
 
 ---
 
