@@ -23,11 +23,6 @@
 
 You find something good at eleven in the morning and you are not going to read it at eleven in the morning. So you share it here and forget it. It goes in with the blogs you follow, and by the evening the pile has sorted itself out: titles filled in, new posts pulled down, the whole lot waiting on one screen. Some of it you read. Some of it you hand to [readback](https://github.com/MKS-01/readback) and listen to on the walk, thumb on a transport bar that keeps playing once the screen is off. The long ones you ask about first, and Gemini Nano tells you what's in them without the article ever leaving the phone. Then you set the timer, put the phone face-down, and actually read for twenty-five minutes — on **Paper Black**, a page rather than a screen, warm-white ink on matte near-black lit by one terracotta accent, or on **Ink**, the same page with the hue drained out entirely, which is where it starts.
 
-<p align="center">
-  <img src="docs/media/summary-ink.png" alt="An on-device summary in Ink, written on the phone by Gemini Nano" width="30%"><br>
-  <sub><strong>Ink</strong>, the default — a summary written on the phone, floating over the article rather than taking you anywhere.</sub>
-</p>
-
 ---
 
 ## Getting started
@@ -71,15 +66,15 @@ that.
 
 ---
 
-## Saved links and feeds
+## What it does
+
+### Saved links and feeds
 
 **Save it however it reaches you.** Paste a URL into the field, or share one straight from Chrome — DuskRead is in the share sheet. Either way the row appears immediately with the host as its stand-in title, then a fetch fills in the real one behind it. A link that can't be fetched keeps a retry glyph rather than pretending it worked.
 
 **Follow blogs by feed.** RSS and Atom, synced on open, cached so the list is instant. Posts land in Following on Home and read back exactly like a saved link does.
 
----
-
-## Readback
+### Readback
 
 **Generation happens elsewhere; this app just listens.** [readback](https://github.com/MKS-01/readback) runs on a Mac and turns articles into neural-TTS audio, writing a `library.db` and an `audio/` folder. You sync that folder to the phone yourself — its own script, run whenever you like.
 
@@ -91,9 +86,7 @@ Point DuskRead at it once, through the system folder picker in the Readback tab:
 
 Playback runs in a foreground service with a media notification, so it survives leaving the app, and the floating bar at the foot of Home turns into the transport when something's playing.
 
----
-
-## On-device summaries
+### On-device summaries
 
 Summaries go through [ML Kit GenAI](https://developer.android.com/ai), which routes to **Gemini Nano** via AICore on supported hardware. The app asks for article summarisation only — one bullet or three, folded into a paragraph — and lets the system pick the register. There's no prompt to write and nothing to configure beyond how long a summary you want.
 
@@ -101,15 +94,15 @@ Summaries go through [ML Kit GenAI](https://developer.android.com/ai), which rou
 - **Two ways in** — swipe a row in Saved, or the toolbar control inside the reader.
 - **Off Android it's simply absent.** The same UI compiles against a stub that reports itself unavailable, so the control just isn't drawn and nothing upstream has to care.
 
----
-
-## Focus timer
+### Focus timer
 
 A pomodoro that behaves like an alarm and not a widget: a real system notification and a vibration when the interval ends, so it works with the phone face-down and the app closed. It lives on Home beside the reading, because the point is to read for twenty-five minutes rather than to admire a timer.
 
 ---
 
-## Platform support
+## How it's built
+
+### Platform support
 
 **Android is the app; desktop, web and iOS are how the shared code and the
 design system get exercised off a phone.** Everything runs everywhere, but
@@ -118,9 +111,7 @@ first and desktop second — `summariesSupported()` and `readbackSupported()`
 are `expect`/`actual` constants, and a screen asks before it offers, so a
 control that could only disappoint is never drawn.
 
----
-
-## Tech stack
+### Tech stack
 
 [Compose Multiplatform](https://www.jetbrains.com/compose-multiplatform/) 1.11
 and Material 3 on Kotlin 2.3, one source set for all four targets — everything
