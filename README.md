@@ -24,8 +24,8 @@
 You find something good at eleven in the morning and you are not going to read it at eleven in the morning. So you share it here and forget it. It goes in with the blogs you follow, and by the evening the pile has sorted itself out: titles filled in, new posts pulled down, the whole lot waiting on one screen. Some of it you read. Some of it you hand to [readback](https://github.com/MKS-01/readback) and listen to on the walk, thumb on a transport bar that keeps playing once the screen is off. The long ones you ask about first, and Gemini Nano tells you what's in them without the article ever leaving the phone. Then you set the timer, put the phone face-down, and actually read for twenty-five minutes — on **Paper Black**, a page rather than a screen, warm-white ink on matte near-black lit by one terracotta accent, or on **Ink**, the same page with the hue drained out entirely, which is where it starts.
 
 <p align="center">
-  <img src="docs/media/summary-schemes.png" alt="An on-device summary, shown in Paper Black and in Ink" width="82%"><br>
-  <sub>The same screen in both schemes. <strong>Paper Black</strong> spends its one accent on the <code>SUMMARY</code> label; <strong>Ink</strong> has no hue to spend, so it goes white. Nothing else moves.</sub>
+  <img src="docs/media/summary-ink.png" alt="An on-device summary in Ink, written on the phone by Gemini Nano" width="30%"><br>
+  <sub><strong>Ink</strong>, the default — a summary written on the phone, floating over the article rather than taking you anywhere.</sub>
 </p>
 
 ---
