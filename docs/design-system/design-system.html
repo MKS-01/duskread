@@ -1262,21 +1262,44 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
                 <span class="iconbtn"><svg class="i" style="font-size:16px"><use href="#w-settings"/></svg></span>
               </div>
 
-              <p class="eyebrow">From saved</p>
+              <p class="eyebrow bare" style="gap:0">Next up<span style="flex:1;height:1px;background:var(--a-line);margin:0 8px"></span><svg class="i" style="font-size:13px;color:var(--a-faint)"><use href="#w-shuffle"/></svg></p>
+              <div class="row">
+                <div style="display:flex;gap:10px;align-items:flex-start">
+                  <span class="sourcechip">N</span>
+                  <div style="flex:1;min-width:0">
+                    <h4>A Tale of Two Flink Autoscalers</h4>
+                    <div class="meta"><span>netflixtechblog.com</span><span>9 min</span></div>
+                  </div>
+                </div>
+              </div>
               <div class="row">
                 <div style="display:flex;gap:10px;align-items:flex-start">
                   <span class="sourcechip">S</span>
                   <div style="flex:1;min-width:0">
-                    <h4>When Can LLMs Replace Humans in A/B Tests?</h4>
-                    <div class="meta"><span>engineering.atspotify.com</span></div>
+                    <h4 style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">When Can LLMs Replace Humans&hellip;</h4>
+                    <div class="meta"><span>engineering.atspotify.com</span><span>12 min</span></div>
+                  </div>
+                </div>
+              </div>
+              <div class="row">
+                <div style="display:flex;gap:10px;align-items:flex-start">
+                  <span class="sourcechip">S</span>
+                  <div style="flex:1;min-width:0">
+                    <h4 style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Missing layer in live video&hellip;</h4>
+                    <div class="meta"><span>swmansion.com</span><span>4 min</span></div>
                   </div>
                 </div>
               </div>
 
-              <p class="eyebrow"><svg class="i eb"><use href="#w-wave"/></svg>Today&rsquo;s readback</p>
+              <p class="eyebrow bare" style="gap:0"><svg class="i eb" style="margin-right:8px"><use href="#w-wave"/></svg>Today&rsquo;s readback<span style="flex:1;height:1px;background:var(--a-line);margin:0 8px"></span><svg class="i" style="font-size:12px;color:var(--a-faint)"><use href="#w-chev"/></svg></p>
               <div class="row">
-                <h4 class="playing">Gesture Handler&rsquo;s Touchable</h4>
-                <div class="meta" style="margin-bottom:8px"><span class="playing">0:38 / 1:22</span></div>
+                <div style="display:flex;gap:10px;align-items:flex-start">
+                  <div style="flex:1;min-width:0">
+                    <h4 class="playing">Gesture Handler&rsquo;s Touchable</h4>
+                    <div class="meta" style="margin-bottom:8px"><span class="playing">0:38 / 1:22</span></div>
+                  </div>
+                  <svg class="i playing" style="font-size:14px;margin-top:2px"><use href="#w-pause"/></svg>
+                </div>
                 <div class="wave part">
                   <i class="p" style="height:7px"></i><i class="p" style="height:12px"></i><i class="p" style="height:15px"></i><i class="p" style="height:9px"></i><i class="p" style="height:13px"></i><i class="p" style="height:6px"></i><i class="p" style="height:11px"></i><i style="height:14px"></i><i style="height:8px"></i><i style="height:12px"></i><i style="height:5px"></i><i style="height:10px"></i><i style="height:15px"></i><i style="height:7px"></i><i style="height:11px"></i><i style="height:9px"></i><i style="height:13px"></i><i style="height:6px"></i>
                 </div>
@@ -1318,10 +1341,17 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
           <p class="num">02 / 07 &nbsp;&middot;&nbsp; Home</p>
           <h3>What is there to read, without going to look</h3>
           <p>
-            Four sections, in this order: something from <b>saved</b>, whatever
-            is mid-<b>readback</b>, the <b>focus</b> presets, and the
+            Four sections, in this order: <b>next up</b>, whatever is
+            mid-<b>readback</b>, the <b>focus</b> presets, and the
             <b>following</b> digest. Everything the app knows, on one screen,
             before you have chosen a tab.
+          </p>
+          <p>
+            <b>Next up</b> is the only one that makes a choice rather than
+            reporting state, and it chooses over both halves of the app: every
+            unread saved link and every cached post from a followed blog, one
+            pool. A hero and two runners-up &mdash; one row reads as a decree,
+            a list reads as a browse.
           </p>
           <p>
             Flush on the background, separated by their own hairline. No
@@ -2071,7 +2101,7 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
     </div>
 
     <table class="spec">
-      <tr><th>Android</th><td>8.0 Oreo and up. The target that is finished.</td></tr>
+      <tr><th>Android</th><td>12 and up. The target that is finished.</td></tr>
       <tr><th>Summaries</th><td>Need a phone with AICore — Pixel 9 and up, Galaxy S24 and up, and similar. Everywhere else the control simply is not drawn.</td></tr>
       <tr><th>Readback</th><td>Audio comes from the separate <a href="https://github.com/MKS-01/readback">readback</a> project, synced onto the device. Without it the tab is empty rather than hidden.</td></tr>
       <tr><th>Desktop, web, iOS</th><td>Build from the same source and exist to prove it travels. The workshop, not the product.</td></tr>

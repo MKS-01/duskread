@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.sp
 import dev.mks.duskread.data.rememberUserPrefs
 import dev.mks.duskread.links.createHttpClient
 import dev.mks.duskread.links.loadArticle
+import dev.mks.duskread.links.rememberReadingSignals
 import dev.mks.duskread.summary.ArticleSummary
 import dev.mks.duskread.summary.SummariserState
 import dev.mks.duskread.summary.SummaryTarget
@@ -91,6 +92,7 @@ fun SummaryPanel(
     val prefs = rememberUserPrefs()
     val summariser = rememberSummariser(prefs.summaryLength)
     val cache = rememberSummaryCache()
+    val signals = rememberReadingSignals()
     val client = remember { createHttpClient() }
     val scope = rememberCoroutineScope()
 
@@ -142,6 +144,9 @@ fun SummaryPanel(
                 }
 
                 cache.put(summary)
+                // Asking what is in an article is interest, even if it is
+                // never opened — worth more than nothing, less than a read.
+                signals.recordOpen(target.url)
                 stage = Stage.Done(summary)
             }
         }

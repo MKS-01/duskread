@@ -1,9 +1,16 @@
 [versions]
+# The app's own version. Read by androidApp for versionName and written into
+# commonMain as `AppVersion`, so what Settings shows and what the APK reports
+# come from the same line.
+app = "1.0.0"
 agp = "9.0.1"
 android-compileSdk = "36"
-# 26, not 24: ML Kit GenAI's manifest requires it, and every phone that has
-# AICore at all is far newer than either number.
-android-minSdk = "26"
+# 31 (Android 12). It was 26, which ML Kit GenAI's manifest forced; 31 is
+# chosen rather than forced. Nothing this app is for runs on a phone that old:
+# AICore needs far newer, and the reading it is built around is a thing people
+# do on a current phone. Raising it also means the platform APIs are simply
+# there rather than guarded.
+android-minSdk = "31"
 android-targetSdk = "36"
 androidx-activity = "1.13.0"
 androidx-webkit = "1.13.0"
