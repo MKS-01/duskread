@@ -290,9 +290,13 @@ reader has to scroll past.
   The app icon is the Ink mark at all times and does not follow the setting.
 - Paper Black's accent is terracotta `#C6684A` — one hue, meaning "there is
   sound here" and nothing else. Ink ignores it entirely.
-- [ ] The second `AccentColor` (dusty green `#4FA870`) is being dropped. It
-      is out of the docs already; the enum, the Settings swatches and the
-      picker still need removing from the code.
+- [x] The second `AccentColor` (dusty green `#4FA870`) is gone from the code
+      too — the enum, `UserPrefs.accent` and its stored key, the Settings
+      swatch picker and its `greyed()` helper, and the `accent` parameter on
+      `DuskReadTheme`. A second accent was never a feature: the whole argument
+      of this palette is that exactly one hue means exactly one thing, and
+      letting the reader choose which hue that is buys nothing while giving
+      the palette a dial it then has to justify.
 - `Radius.Chip` 3dp (hairline-bordered, squared-off: sort chips, sourcechip,
   the Settings and folder icon buttons), `Radius.Inline` 10dp (fields),
   `Radius.Card` 14dp (the summary panel, the one thing that floats).
@@ -520,6 +524,44 @@ design system, get it) with the reference values split out into
   since the Summary pair arrived. Two stale HTML structure comments fixed
   too: act one was described as Ink-pinned and act three as "grids, not a
   deck".
+
+- [x] The app reports a version now. `app = "1.0.0"` in the version catalog
+      feeds both `androidApp`'s `versionName` and a generated `AppVersion`
+      constant in commonMain, shown at the foot of Settings. Generated rather
+      than checked in because the value has two consumers in two languages —
+      Gradle cannot read a Kotlin `const`, so the build has to own it or the
+      About line eventually lies about which build you are holding.
+- [x] `TODAY'S READBACK` on Home was neither dynamic nor playable: it showed
+      `listReads().first()` with `progress = 0f` hardcoded and a tap that only
+      opened the tab. Start a read from the Readback tab, come back to Home,
+      and the one section about audio was the one section that could not tell
+      you audio was running. It now prefers whatever is playing over whatever
+      is newest, follows the real position in both the meter and the meta
+      line, takes the accent while playing, and the row plays rather than
+      navigates — the chevron on the eyebrow is the way to the tab. Tapping a
+      read to play it is what the identical row does in the Readback tab.
+
+- [x] `minSdk` 26 to 31 (Android 12). 26 was never a choice — it was the
+      floor ML Kit GenAI's manifest imposed. 31 is chosen: AICore needs far
+      newer anyway, and nothing this app is for happens on a phone that old.
+      No dead guards fell out of it; the one `SDK_INT` check left
+      (`MainActivity`'s notification permission) is API 33 and still needed.
+      README badge and table, and the landing page's Get it table, updated to
+      match.
+
+- [x] Home's wireframe in the design system caught up with the code: `FROM
+      SAVED` is `NEXT UP` with a hero and two runners-up, each carrying
+      `host . N min`, and the shuffle sits at the end of the eyebrow. The
+      readback row shows the playing state it now has — accented title, a
+      play/pause glyph, `0:38 / 1:22` — with the chevron to the tab moved onto
+      the eyebrow, since the row itself plays.
+- [x] The README's eight device screenshots are gone, replaced by one image
+      rendered straight out of `design-system.html`: the Article summary in
+      Paper Black and Ink, side by side. Rendered rather than photographed so
+      it cannot drift from the design system, and transparent-backed so it
+      sits on either GitHub theme. The four Ink shots plus the four Paper
+      Black ones behind a `<details>` were eight files to re-take every time a
+      screen moved, which is why they were always slightly out of date.
 
 ### Not a page issue, but found while drawing it
 

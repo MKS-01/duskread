@@ -9,6 +9,35 @@ plugins {
     alias(libs.plugins.composeCompiler)
 }
 
+/**
+ * Writes `AppVersion` into commonMain from the `app` entry in the version
+ * catalog — the same entry androidApp uses for `versionName`.
+ *
+ * A generated file rather than a checked-in constant because the value has
+ * two consumers in two languages: Gradle cannot read a Kotlin `const`, so the
+ * only way to keep one source of truth is for the build to own it.
+ */
+val generateAppVersion by tasks.registering {
+    val version = libs.versions.app.get()
+    val outputDir = layout.buildDirectory.dir("generated/appVersion")
+
+    inputs.property("version", version)
+    outputs.dir(outputDir)
+
+    doLast {
+        val file = outputDir.get().file("dev/mks/duskread/AppVersion.kt").asFile
+        file.parentFile.mkdirs()
+        file.writeText(
+            """
+            package dev.mks.duskread
+
+            /** Generated from `app` in gradle/libs.versions.toml. Do not edit. */
+            const val AppVersion: String = "$version"
+            """.trimIndent() + "\n",
+        )
+    }
+}
+
 kotlin {
     // Since AGP 9 the Android side of a KMP module is configured here rather
     // than with the `com.android.library` plugin.
@@ -45,6 +74,12 @@ kotlin {
     }
 
     sourceSets {
+        // The version string, written into commonMain rather than declared
+        // there. Settings has to show it and the Android manifest has to
+        // report it, and two hand-kept copies of a number are two chances for
+        // the About line to start lying about which build you are holding.
+        commonMain { kotlin.srcDir(generateAppVersion) }
+
         commonMain.dependencies {
             implementation(compose.runtime)
             implementation(compose.foundation)

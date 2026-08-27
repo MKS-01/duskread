@@ -36,7 +36,7 @@ fun App() {
     // don't follow this — they're Ink's, always; see AndroidManifest.xml.
     val mono = prefs.mono
 
-    DuskReadTheme(mono = mono, accent = prefs.accent) {
+    DuskReadTheme(mono = mono) {
         // Outermost, so every screen — onboarding and the overlays included —
         // reads the same window class, and so a desktop window being dragged
         // wider re-lays-out everything rather than only what happens to be

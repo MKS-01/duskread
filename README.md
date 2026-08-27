@@ -13,7 +13,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Gemini_Nano_·_on--device-b45f3c?style=flat-square&logo=googlegemini&logoColor=white" alt="On-device AI via Gemini Nano">
   <img src="https://img.shields.io/badge/Kotlin_·_Compose_Multiplatform-1a1a1a?style=flat-square&logo=kotlin&logoColor=white" alt="Kotlin and Compose Multiplatform">
-  <img src="https://img.shields.io/badge/Android_8.0+-1a1a1a?style=flat-square&logo=android&logoColor=white" alt="Android 8.0 and up">
+  <img src="https://img.shields.io/badge/Android_12+-1a1a1a?style=flat-square&logo=android&logoColor=white" alt="Android 12 and up">
   <img src="https://img.shields.io/badge/MIT-1a1a1a?style=flat-square" alt="MIT License">
 </p>
 
@@ -24,23 +24,9 @@
 You find something good at eleven in the morning and you are not going to read it at eleven in the morning. So you share it here and forget it. It goes in with the blogs you follow, and by the evening the pile has sorted itself out: titles filled in, new posts pulled down, the whole lot waiting on one screen. Some of it you read. Some of it you hand to [readback](https://github.com/MKS-01/readback) and listen to on the walk, thumb on a transport bar that keeps playing once the screen is off. The long ones you ask about first, and Gemini Nano tells you what's in them without the article ever leaving the phone. Then you set the timer, put the phone face-down, and actually read for twenty-five minutes — on **Paper Black**, a page rather than a screen, warm-white ink on matte near-black lit by one terracotta accent, or on **Ink**, the same page with the hue drained out entirely, which is where it starts.
 
 <p align="center">
-  <img src="docs/media/home.png" alt="Home — today's pick, Readback, Focus, and Following" width="22%">
-  <img src="docs/media/following.png" alt="A followed blog's posts" width="22%">
-  <img src="docs/media/readback.png" alt="Readback, with the transport bar playing a post" width="22%">
-  <img src="docs/media/summary.png" alt="An on-device summary, generated from the reader" width="22%"><br>
-  <sub><strong>Ink</strong> — Home · Following · Readback mid-play · a summary written on the phone.</sub>
+  <img src="docs/media/summary-schemes.png" alt="An on-device summary, shown in Paper Black and in Ink" width="82%"><br>
+  <sub>The same screen in both schemes. <strong>Paper Black</strong> spends its one accent on the <code>SUMMARY</code> label; <strong>Ink</strong> has no hue to spend, so it goes white. Nothing else moves.</sub>
 </p>
-
-<details>
-<summary align="center"><sub><strong>Paper Black</strong> — the same four screens with the accent lit</sub></summary>
-<br>
-<p align="center">
-  <img src="docs/media/paper-home.png" alt="Home in Paper Black" width="22%">
-  <img src="docs/media/paper-following.png" alt="A followed blog's posts in Paper Black" width="22%">
-  <img src="docs/media/paper-readback.png" alt="Readback in Paper Black, transport bar playing" width="22%">
-  <img src="docs/media/paper-summary.png" alt="An on-device summary in Paper Black" width="22%">
-</p>
-</details>
 
 ---
 
@@ -58,7 +44,7 @@ That's the whole setup. Saved links, feeds, the timer and the themes all work th
 | | |
 |---|---|
 | **JDK** | 17 or newer — the toolchain targets JVM 17 |
-| **Android** | 8.0 Oreo and up (`minSdk` 26, compile/target 36) |
+| **Android** | 12 and up (`minSdk` 31, compile/target 36) |
 | **Gradle** | 9.3.1, via the wrapper — don't install it yourself |
 | **For summaries** | A phone with **AICore** — Pixel 9+, Galaxy S24+ and similar. No emulator has it |
 | **For iOS** | Xcode, plus [XcodeGen](https://github.com/yonaskolb/XcodeGen) — the host project is generated, not committed |
