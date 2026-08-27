@@ -40,13 +40,15 @@ no TODO lists. Open work lives in `docs/design/amplitude-migration.md`.
 
 ```
 masthead          lockup, headline, standfirst, act nav
-01 · brand        laid out, not a deck: lockup + name, the mark built in
-                  three steps, the size ramp, the splash
-02 · walkthrough  one deck, 13 slides — every screen in the order you meet them
-03 · design system one deck, 5 slides — monochrome, colour, type, icons,
-                  shape and motion
-04 · get it       clone, Gradle task, platform table
-footer            "Built with AI", source links, MIT
+01 · concept       laid out, not a deck: lockup + name, then the on-device
+                   Summary panel in Paper Black and Ink side by side
+02 · walkthrough   one deck, 7 slides — onboarding (name), Home, Following,
+                   reading + summary, Saved, Focus, Readback
+03 · design system one deck, 6 slides — monochrome, colour, type, icon set,
+                   app icon (the mark's construction, size ramp, splash),
+                   shape and motion
+04 · get it        clone, Gradle task, platform table
+footer             "Built with AI", source links, MIT
 ```
 
 Acts are `<section class="act">` with an `<h2>` eyebrow and a `.act-title`.
@@ -54,9 +56,15 @@ Blocks inside them are `<div class="subsection">` with a `.sublabel`.
 
 **Do not stack three levels of heading in one act.** An eyebrow *and* a title
 *and* a note for one row of icons is chrome restating the act title above it.
-Act one carries exactly one sub-heading (`The name`) because it labels the
-second column of a two-column row; everything else there runs as continuous
-prose. That was a deliberate cut, not an omission.
+Act one (Concept, `id="concept"`) carries exactly one sub-heading (`The name`)
+because it labels the second column of a two-column row; everything else
+there runs as continuous prose. That was a deliberate cut, not an omission.
+
+**Concept argues the identity; the Design system deck is reference on how the
+mark is built.** The app icon's construction (bar, crescent, mark), its size
+ramp and the splash live in the deck's "App icon" slide, not in act one —
+they used to be in act one and were moved out because a construction
+diagram and an identity argument were competing for the same attention.
 
 ## The deck
 
@@ -69,7 +77,7 @@ The slider. One component, two instances, driven by `[data-deck]`.
       <article class="deck-slide">            <!-- first slide: no inert -->
         <div class="v-amp deck-figure"> … </div>
         <div class="deck-copy">
-          <p class="num">01 / 13 &nbsp;&middot;&nbsp; Onboarding</p>
+          <p class="num">01 / 07 &nbsp;&middot;&nbsp; Onboarding</p>
           <h3>…</h3>
           <p>…</p>
           <p class="rationale">…</p>
@@ -84,7 +92,7 @@ The slider. One component, two instances, driven by `[data-deck]`.
       <button class="cdot is-on" aria-label="…"></button>
       …one per slide…
     </div>
-    <span class="deck-count" aria-live="polite">01 / 13</span>
+    <span class="deck-count" aria-live="polite">01 / 07</span>
     <button class="deck-nav deck-next" …><svg class="i"><use href="#w-chev"/></svg></button>
   </div>
 </div>
@@ -96,7 +104,7 @@ inert>`, add one `.cdot`, and renumber every `.num` line. The script fixes
 initial attributes slightly wrong is survivable — but the `.num` lines are
 static text and are not.
 
-Numbers are two digits on both sides (`03 / 13`, never `3 / 13`) so a slide's
+Numbers are two digits on both sides (`03 / 07`, never `3 / 7`) so a slide's
 own number matches the counter beneath it.
 
 It is a **filmstrip, not a stack of cross-fading cards** — that is what lets a
@@ -130,8 +138,13 @@ Everything inside `.v-amp` uses the app's own tokens (`--a-bg`, `--a-ink`,
 app, not a wireframe of it. **If a token changes in Kotlin, change it here in
 the same pass** — a mockup that has drifted is worse than no mockup.
 
-`.v-amp.mono` pins one frame to Ink permanently; `body.ink` (the switch in the
-top corner) repaints every other frame at once.
+`.v-amp.mono` pins one frame to Ink permanently, and `.v-amp.paper` is its
+mirror for Paper Black (needs `body.ink .v-amp.paper` for the specificity to
+win — a bare `.v-amp` still follows the page-wide toggle). `body.ink` itself
+is the switch in the top corner, and it repaints every unpinned frame at
+once. Reach for `.paper` any time two schemes need to sit side by side and
+hold still regardless of which way the reader has the switch set — the
+Concept act's Summary comparison is the existing example.
 
 ## Motion
 

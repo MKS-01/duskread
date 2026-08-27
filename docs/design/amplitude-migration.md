@@ -4,6 +4,11 @@ Tracking the app's migration to the Amplitude direction from
 `docs/design/redesign-variants.html`, screen by screen. Terracotta and
 monochrome are the only two palettes kept — no cyan "signature" accent.
 
+This file is the state of what is **built**. One unbuilt feature has a plan
+of its own: `docs/design/home-discovery.md`, on making Home's pick a ranking
+over saved links and followed-blog posts together, with on-device topic
+tagging behind it where the device has a model for it.
+
 ## Already done (previous pass)
 
 - [x] Icon set redrawn in the Bar hand (18 icons, all stroked)
@@ -447,10 +452,74 @@ design system, get it) with the reference values split out into
   "shape and motion" slide and are genuinely hard to tell apart there. Either
   accept it — they are one step apart on purpose — or draw a zoomed corner
   detail instead of whole squares.
-- [ ] Summaries and the focus timer are no longer named anywhere before the
-  walkthrough, since the four capability cards were cut from act one as a
-  table of contents for act two. If they should be named up front, a clause in
-  the masthead standfirst is the cheap fix, not bringing the cards back.
+- [x] Summaries is named and shown before the walkthrough after all — a
+  subsection in act one, the Article summary frame shown twice, in Paper
+  Black and in Ink side by side, framed as "the feature no other read-later
+  app has" rather than as a fourth capability card. Getting the two frames
+  to actually hold their schemes regardless of the page-wide switch needed a
+  new `.paper` pin class (`.mono`'s mirror, `body.ink .v-amp.paper` to win
+  the specificity fight) — a bare `.v-amp` "Paper Black" frame was silently
+  flipping to Ink because the reader's toggle defaults to Ink. The focus
+  timer is still only introduced in the walkthrough; leave it there unless it
+  turns out to need the same treatment.
+- [x] The mark's construction (Bar / Crescent / Mark, number and title only),
+  its size ramp and the splash moved out of act one entirely, into a new
+  "App icon" slide in the Design system deck (now six slides). Act one argues
+  the identity; the deck is where a reader steps through how the mark is
+  built — the two were competing for the same attention in one act.
+- [x] The system deck's Monochrome slide went through two frames before
+  landing: first reverted to Readback (to avoid repeating act one's Summary
+  screen), then swapped again to a plain article-open reading view — no
+  summary panel, no spinner, just the extracted text with the reader button
+  active. Reading is the app's central concept, so the monochrome test
+  demonstrates it on the screen that concept lives on, not on Readback
+  (a secondary feature) or a second copy of the Summary comparison. The
+  colour demonstration is quieter as a result — only the reader button's
+  ring goes from terracotta to white, versus Readback's pill/title/chip/wave
+  all switching at once — a deliberate trade of a stronger demo for the
+  better conceptual fit.
+- [x] The Monochrome slide's copy was still describing Paper Black as the
+  baseline and Ink as what you get when you strip it ("becomes white here"),
+  backwards from how the app actually defaults. Reworded to describe Paper
+  Black as the one-tap addition on top of Ink, not Ink as the derived state.
+
+- [x] The walkthrough deck cut from thirteen slides to seven: onboarding's
+  name panel (the other three intro panels were the same panel with different
+  art), Home, Following, reading + summary as one slide, Saved, Focus
+  running, Readback. Thirteen screens is a tour; seven is an argument.
+- [x] The Readback mockup had drifted from `ui/reader/ReaderTab.kt` and
+  `ui/home/FloatingBar.kt` and is now redrawn against them: the floating bar
+  shows its **player face** (play/pause, title, remaining, stop, divider, the
+  tab you are already on) with the 2.5dp scrub line along its foot, because
+  playback wins the bar while it runs — the mockup was still drawing the tab
+  face. Added the `NowPlayingTip` line above the list ("use the bar below to
+  control it") and the per-row external-link row, neither of which the mockup
+  had.
+- [x] The Focus mockup was missing its close button (top-left, the only way
+  out of a full-screen destination), had the eyebrow accented where
+  `FocusScreen` passes `tint = onSurfaceVariant`, and was left-aligned where
+  the real column is `CenterHorizontally`. All three fixed; clock size
+  corrected 56 → 52 to match the `52.sp` in code.
+
+- [x] Every walkthrough phone was rendering narrower than 320px. The deck's
+  figure column is `max-content`, and `.phone` is `width: 100%` — so a screen
+  with sparse content (Focus is a clock and two pills) collapsed to the width
+  of that content. `.deck-figure .phone { width: 320px; max-width: 100% }`
+  gives max-content something definite to resolve to. The floor this replaces
+  was lost when act one's deck was dismantled.
+- [x] The bookmark was missing from Following entirely — and per
+  `ui/home/TopicRow.kt` it is "the only way a feed post ever reaches the Saved
+  tab", so its absence made the two screens look unconnected. Expanded rows
+  now carry the sourcechip `ListRow` draws and the bookmark pair (filled =
+  saved, hollow = not), with copy naming the route into Saved and the
+  swipe-right-to-summarise gesture beside it.
+- [x] Wording pass: "dashboard" is not a word this app uses (it is Home),
+  "nested carousel" read oddly on a page built out of decks, and the floating
+  bar was being called "tab bar" on one slide and "nav bar" on another. Act
+  one's note still claimed everything in it was "drawn once, in Ink" — false
+  since the Summary pair arrived. Two stale HTML structure comments fixed
+  too: act one was described as Ink-pinned and act three as "grids, not a
+  deck".
 
 ### Not a page issue, but found while drawing it
 

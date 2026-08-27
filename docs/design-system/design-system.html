@@ -202,6 +202,9 @@ h2 {
 
 .screen-row { display: grid; grid-template-columns: max-content minmax(300px, 560px); gap: 44px; align-items: start; }
 .screen-row .frames { display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-start; min-width: 0; }
+/* Two frames side by side outside a screen-row's frame+notes layout — the
+   Summary showcase's Paper Black / Ink pair. */
+.frame-pair { display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-start; }
 /* ============================================================
    DECK — the big slider each act is built around. A filmstrip
    rather than a stack of cross-fading cards, because a filmstrip
@@ -230,6 +233,12 @@ h2 {
   display: grid; grid-template-columns: max-content minmax(280px, 540px); gap: 48px; align-items: center;
 }
 .deck-system .deck-slide { grid-template-columns: fit-content(760px) minmax(250px, 330px); gap: 44px; }
+/* The figure column is `max-content`, so a phone whose content happens to be
+   sparse — Focus is a clock and two pills — would collapse to the width of
+   that content instead of holding the same 320px frame every other slide
+   draws. A definite width gives max-content something to resolve to. */
+.deck-figure .phone { width: 320px; max-width: 100%; }
+
 .deck-system .deck-figure { min-width: 0; width: 100%; }
 
 @media (max-width: 1120px) {
@@ -475,6 +484,54 @@ h2 {
 }
 
 .v-amp .navbar { background: rgb(23 24 27 / 0.92); border: 1px solid var(--a-line); color: var(--a-faint); }
+
+/* The bar has three faces and only ever shows one — playback wins it while
+   something is running, because it is the transient thing and navigation is
+   one tap away behind the trailing tab icon. Two stacked pills ate a third
+   of the reachable zone, so the transport moved inside this one. */
+.v-amp .navbar.player { left: 12px; right: 12px; transform: none; gap: 6px; padding: 6px 8px 9px; }
+.v-amp .navbar .tt {
+  flex: 1; min-width: 0; font-size: 11.5px; color: var(--a-ink);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.v-amp .navbar .rem { font-family: var(--a-data); font-size: 9.5px; color: var(--a-faint); flex: none; }
+.v-amp .navbar .nb.sm { width: 26px; height: 26px; }
+/* The visible scrub line along the pill's foot. 2.5dp drawn, but the real
+   touch target is the whole title above it. */
+.v-amp .navbar .seek {
+  position: absolute; left: 14px; right: 14px; bottom: 4px;
+  height: 2.5px; border-radius: 2px; background: var(--a-line);
+}
+.v-amp .navbar .seek i { display: block; height: 100%; width: 45%; border-radius: 2px; background: var(--a-sound); }
+
+/* The bookmark on a feed post — the only way a post from a followed blog
+   ever reaches Saved. Two glyphs rather than one glyph in two colours:
+   filled reads as "saved" at this size in a way a tint change does not, and
+   it is the only signal that survives Ink, where the accent is a grey. */
+.v-amp .bm { font-size: 14px; color: var(--a-mute); flex: none; margin-top: 1px; }
+.v-amp .bm.on { color: var(--a-sound); }
+
+/* Focus is a full-screen destination, not a tab: no bar at the foot, and the
+   only way out is this, top-left, clear of everything the thumb reaches. */
+.v-amp .focusclose {
+  position: absolute; top: 30px; left: 12px; width: 30px; height: 30px;
+  border-radius: 50%; display: grid; place-items: center; color: var(--a-mute);
+}
+.v-amp .focusclose .i { font-size: 14px; }
+
+/* A pointer at the transport, not a second copy of it. */
+.v-amp .nowtip {
+  display: flex; gap: 7px; align-items: flex-start; margin: 0 0 14px;
+  font-family: var(--a-data); font-size: 9.5px; line-height: 1.45; color: var(--a-mute);
+}
+.v-amp .nowtip .i { font-size: 11px; color: var(--a-sound); flex: none; margin-top: 1px; }
+
+/* Outside the row's own tap target: the row is "play this", this is "go to
+   where it came from". Its glyph keeps a permanent muted hint of the accent
+   because it marks "this leaves the app" whatever is playing. */
+.v-amp .extlink { display: flex; align-items: center; gap: 5px; margin-top: 9px; }
+.v-amp .extlink .i { font-size: 11px; color: color-mix(in srgb, var(--a-sound) 75%, transparent); flex: none; }
+.v-amp .extlink span { font-family: var(--a-data); font-size: 10.5px; color: var(--a-faint); }
 .v-amp .navbar .nb.sel { background: var(--a-raise); color: var(--a-ink); }
 .v-amp .navbar .i { font-size: 17px; }
 .v-amp .playing { color: var(--a-sound); }
@@ -543,6 +600,22 @@ body.ink .v-amp {
   --a-sound:    #dcdcdc;
   --a-on-sound: #161616;
   --a-wave-off: rgb(156 156 156 / 0.55);
+}
+
+/* `.paper` is `.mono`'s mirror: pins a frame to Paper Black regardless of
+   the page-wide toggle, for the one place two schemes are shown side by
+   side and both have to hold still while the switch in the corner moves.
+   Needs the extra specificity to win over `body.ink .v-amp` above. */
+body.ink .v-amp.paper {
+  --a-bg:       #101010;
+  --a-raise:    #1a1a1a;
+  --a-ink:      #e8e6e2;
+  --a-mute:     #a3a19d;
+  --a-faint:    #6c6a67;
+  --a-line:     #242423;
+  --a-sound:    #c6684a;
+  --a-on-sound: #2b1006;
+  --a-wave-off: rgb(163 161 157 / 0.55);
 }
 
 /* ============================================================
@@ -655,8 +728,7 @@ body.swapping .v-amp * {
 .cstep { background: var(--bg); margin: 0; padding: 26px 22px 24px; }
 .cstep-art { display: flex; justify-content: center; margin-bottom: 20px; }
 .cstep-num { font-family: var(--data); font-size: 11px; letter-spacing: 0.14em; color: var(--accent); margin: 0 0 7px; }
-.cstep-title { font-size: 16px; font-weight: 500; margin: 0 0 6px; color: var(--text); }
-.cstep figcaption p:last-child { font-size: 14px; line-height: 1.56; color: var(--muted); margin: 0; }
+.cstep-title { font-size: 16px; font-weight: 500; margin: 0; color: var(--text); }
 
 /* The splash tile is phone-shaped, so it never belonged in a row that is
    otherwise a size ramp. */
@@ -954,7 +1026,7 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
     </p>
 
     <nav class="contents" aria-label="Contents">
-      <a href="#brand">01 &middot; Brand</a>
+      <a href="#concept">01 &middot; Concept</a>
       <a href="#walkthrough">02 &middot; Walkthrough</a>
       <a href="#system">03 &middot; Design system</a>
       <a href="#get">04 &middot; Get it</a>
@@ -962,17 +1034,17 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
   </header>
 
   <!-- ============================================================
-       ACT 1 — the mark, the name, and what the thing is for.
-       Pinned to Ink: the launcher icon and splash have no second
-       scheme any more, so neither does the act that documents them.
+       ACT 1 — Concept: what the app is called, why, and the one
+       thing it does that nothing else does. The mark's own
+       construction lives in act 3, with the rest of the reference.
        ============================================================ -->
-  <section id="brand" class="act">
+  <section id="concept" class="act">
     <div data-reveal>
-      <h2>Act one &middot; Brand</h2>
+      <h2>Act one &middot; Concept</h2>
       <p class="act-title">One shape, one word, and the hour it is named for</p>
       <p class="act-note">
-        Everything a reader meets before they meet a screen. All of it is
-        drawn once, in Ink, and hands off without a seam.
+        What the app is called, where the name comes from, and the one thing
+        it does that no other read-later app does.
       </p>
     </div>
 
@@ -998,74 +1070,125 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
 
     <div class="subsection" data-reveal>
       <p class="section-note">
-        The house rule &mdash; that the waveform is the alphabet &mdash;
-        carries into the logo. The mark is not drawn as a picture of a moon;
-        it is the app&rsquo;s own bar with a moon taken out of it.
+        One more thing before the walkthrough: the feature no other
+        read-later app has. A summary written on the phone by Gemini Nano
+        &mdash; the article never leaves the device, and the panel floats
+        rather than taking you anywhere.
       </p>
 
-      <div class="v-amp mono concept">
-        <figure class="cstep">
-          <div class="cstep-art"><svg class="appicon" width="120" height="120" viewBox="0 0 108 108" aria-hidden="true"><rect width="108" height="108" fill="#161616"/><g transform="translate(54,54) scale(0.85) translate(-54,-54)"><path fill="#dcdcdc" d="M40,38 a14,14 0 0 1 28,0 v36 a14,14 0 0 1 -28,0 z"/></g></svg></div>
-          <figcaption>
-            <p class="cstep-num">01</p>
-            <p class="cstep-title">The bar</p>
-            <p>One wide upright, the same shape every waveform in the app is built from. Read, and listen.</p>
-          </figcaption>
-        </figure>
-        <figure class="cstep">
-          <div class="cstep-art"><svg class="appicon" width="120" height="120" viewBox="0 0 108 108" aria-hidden="true"><rect width="108" height="108" fill="#161616"/><g transform="translate(54,54) scale(0.85) translate(-54,-54)"><path fill="#dcdcdc" d="M40,38 a14,14 0 0 1 28,0 v36 a14,14 0 0 1 -28,0 z"/><path fill="none" stroke="#9c9c9c" stroke-width="2.4" stroke-dasharray="6 5" d="M44,32 a16,16 0 0 1 32,0 a16,16 0 0 1 -32,0 z"/></g></svg></div>
-          <figcaption>
-            <p class="cstep-num">02</p>
-            <p class="cstep-title">The crescent</p>
-            <p>A circle set over its top corner. Where it overlaps, the bar is not there any more.</p>
-          </figcaption>
-        </figure>
-        <figure class="cstep">
-          <div class="cstep-art"><svg class="appicon" width="120" height="120" viewBox="0 0 108 108" aria-hidden="true"><rect width="108" height="108" fill="#161616"/><g transform="translate(54,54) scale(0.85) translate(-54,-54)"><path fill="#dcdcdc" d="M40,38 a14,14 0 0 1 28,0 v36 a14,14 0 0 1 -28,0 z"/><path fill="#161616" d="M44,32 a16,16 0 0 1 32,0 a16,16 0 0 1 -32,0 z"/></g></svg></div>
-          <figcaption>
-            <p class="cstep-num">03</p>
-            <p class="cstep-title">The mark</p>
-            <p>A bar with a bite taken out of it: the moon coming up on the hour the app is named for.</p>
-          </figcaption>
-        </figure>
-      </div>
-
-      <p class="rationale" style="max-width:70ch">
-        <b>The bite is painted, not subtracted.</b> As step 02 shows, the
-        circle overruns the bar on two sides &mdash; and a hole that runs
-        outside its own shape is not a hole.
-      </p>
-    </div>
-
-    <div class="subsection" data-reveal>
-      <p class="section-note">
-        The terracotta launcher pair the app used to swap between at runtime
-        is gone. An icon that changes colour behind the user&rsquo;s back is
-        a bug report waiting to happen.
-      </p>
-
-      <div class="v-amp mono brandrow">
-        <div><svg class="appicon" width="96" height="96" viewBox="0 0 108 108" aria-hidden="true"><rect width="108" height="108" fill="#161616"/><g transform="translate(54,54) scale(0.85) translate(-54,-54)"><path fill="#dcdcdc" d="M40,38 a14,14 0 0 1 28,0 v36 a14,14 0 0 1 -28,0 z"/><path fill="#161616" d="M44,32 a16,16 0 0 1 32,0 a16,16 0 0 1 -32,0 z"/></g></svg><p class="brand-label">96</p></div>
-        <div><svg class="appicon" width="56" height="56" viewBox="0 0 108 108" aria-hidden="true"><rect width="108" height="108" fill="#161616"/><g transform="translate(54,54) scale(0.85) translate(-54,-54)"><path fill="#dcdcdc" d="M40,38 a14,14 0 0 1 28,0 v36 a14,14 0 0 1 -28,0 z"/><path fill="#161616" d="M44,32 a16,16 0 0 1 32,0 a16,16 0 0 1 -32,0 z"/></g></svg><p class="brand-label">56</p></div>
-        <div><svg class="appicon" width="28" height="28" viewBox="0 0 108 108" aria-hidden="true"><rect width="108" height="108" fill="#161616"/><g transform="translate(54,54) scale(0.85) translate(-54,-54)"><path fill="#dcdcdc" d="M40,38 a14,14 0 0 1 28,0 v36 a14,14 0 0 1 -28,0 z"/><path fill="#161616" d="M44,32 a16,16 0 0 1 32,0 a16,16 0 0 1 -32,0 z"/></g></svg><p class="brand-label">28</p></div>
-      </div>
-
-      <div class="splash-row">
-        <div class="v-amp mono">
-          <div class="splash" id="splashdemo" style="background:#161616" title="Replay">
-            <svg width="88" height="88" viewBox="0 0 108 108"><g class="mark"><g transform="translate(54,54) scale(0.85) translate(-54,-54)"><path fill="#dcdcdc" d="M40,38 a14,14 0 0 1 28,0 v36 a14,14 0 0 1 -28,0 z"/><path fill="#161616" d="M44,32 a16,16 0 0 1 32,0 a16,16 0 0 1 -32,0 z"/></g></g></svg>
+      <div class="frame-pair" style="margin-bottom:24px">
+        <div class="v-amp paper frame-block">
+          <p class="frame-cap">Article summary &mdash; Paper Black</p>
+          <div class="phone">
+            <div class="screen">
+              <div class="statusbar"><span>4:19</span><span class="bars"><i></i><i></i><i></i><i></i></span></div>
+              <div class="canvas">
+                <div class="toolbar">
+                  <span class="iconbtn" style="border:0"><svg class="i" style="font-size:16px"><use href="#w-back"/></svg></span>
+                  <span class="title">A Tale of Two Flink Autoscalers</span>
+                  <span class="iconbtn active"><svg class="i" style="font-size:15px"><use href="#w-reader"/></svg></span>
+                  <span class="iconbtn active"><svg class="i" style="font-size:15px"><use href="#w-summary"/></svg></span>
+                  <span class="iconbtn"><svg class="i" style="font-size:15px"><use href="#w-external"/></svg></span>
+                </div>
+                <div style="font-size:13px;line-height:1.6;color:var(--a-mute);filter:blur(1.5px);opacity:0.5">
+                  Netflix currently runs two different autoscalers for Apache
+                  Flink, and they are actively moving toward replacing the
+                  custom one with the open-source Kubernetes-native
+                  autoscaler.<br><br>
+                  The custom autoscaler predates the Kubernetes operator by
+                  several years. It was built when the platform ran Flink on
+                  its own scheduling layer, and it carries assumptions from
+                  that era &mdash; most visibly that scaling decisions are made
+                  from a single aggregated backlog metric rather than
+                  per-vertex.<br><br>
+                  Feature parity is the gating question. The open-source
+                  autoscaler reached rough equivalence on throughput-based
+                  scaling last year, but two things kept the custom one alive:
+                  its handling of sources with irregular partition counts, and
+                  the operational tooling built around it.<br><br>
+                  What follows is a comparison of how each one reacts to the
+                  same three production incidents, and what that implies for
+                  the migration order.
+                </div>
+              </div>
+              <div class="summarycard">
+                <div style="display:flex;align-items:center;margin-bottom:8px;font-family:var(--a-ui);font-weight:700;font-size:10px;letter-spacing:0.09em;text-transform:uppercase;color:var(--a-sound)">
+                  Summary
+                  <svg class="i" style="font-size:13px;margin-left:auto;color:var(--a-faint)"><use href="#w-close"/></svg>
+                </div>
+                <div style="font-size:12.5px;line-height:1.55;color:var(--a-ink)">
+                  Netflix runs two Flink autoscalers today and is consolidating
+                  on the open-source, Kubernetes-native one &mdash; the custom
+                  version is being retired once feature parity closes the
+                  remaining gap.
+                </div>
+              </div>
+            </div>
           </div>
-          <p class="brand-label">splash &middot; click to replay</p>
         </div>
-
-        <p class="rationale" style="max-width:none;margin:0">
-          <b>The splash is a launch theme, not a composable.</b> It is up
-          from the moment the process starts, so it costs nothing. Its ground
-          is the same <code>#161616</code> as the launcher tile and the
-          app&rsquo;s own background, so icon, splash and first frame hand off
-          invisibly.
-        </p>
+        <div class="v-amp mono frame-block">
+          <p class="frame-cap">Article summary &mdash; Ink</p>
+          <div class="phone">
+            <div class="screen">
+              <div class="statusbar"><span>4:19</span><span class="bars"><i></i><i></i><i></i><i></i></span></div>
+              <div class="canvas">
+                <div class="toolbar">
+                  <span class="iconbtn" style="border:0"><svg class="i" style="font-size:16px"><use href="#w-back"/></svg></span>
+                  <span class="title">A Tale of Two Flink Autoscalers</span>
+                  <span class="iconbtn active"><svg class="i" style="font-size:15px"><use href="#w-reader"/></svg></span>
+                  <span class="iconbtn active"><svg class="i" style="font-size:15px"><use href="#w-summary"/></svg></span>
+                  <span class="iconbtn"><svg class="i" style="font-size:15px"><use href="#w-external"/></svg></span>
+                </div>
+                <div style="font-size:13px;line-height:1.6;color:var(--a-mute);filter:blur(1.5px);opacity:0.5">
+                  Netflix currently runs two different autoscalers for Apache
+                  Flink, and they are actively moving toward replacing the
+                  custom one with the open-source Kubernetes-native
+                  autoscaler.<br><br>
+                  The custom autoscaler predates the Kubernetes operator by
+                  several years. It was built when the platform ran Flink on
+                  its own scheduling layer, and it carries assumptions from
+                  that era &mdash; most visibly that scaling decisions are made
+                  from a single aggregated backlog metric rather than
+                  per-vertex.<br><br>
+                  Feature parity is the gating question. The open-source
+                  autoscaler reached rough equivalence on throughput-based
+                  scaling last year, but two things kept the custom one alive:
+                  its handling of sources with irregular partition counts, and
+                  the operational tooling built around it.<br><br>
+                  What follows is a comparison of how each one reacts to the
+                  same three production incidents, and what that implies for
+                  the migration order.
+                </div>
+              </div>
+              <div class="summarycard">
+                <div style="display:flex;align-items:center;margin-bottom:8px;font-family:var(--a-ui);font-weight:700;font-size:10px;letter-spacing:0.09em;text-transform:uppercase;color:var(--a-sound)">
+                  Summary
+                  <svg class="i" style="font-size:13px;margin-left:auto;color:var(--a-faint)"><use href="#w-close"/></svg>
+                </div>
+                <div style="font-size:12.5px;line-height:1.55;color:var(--a-ink)">
+                  Netflix runs two Flink autoscalers today and is consolidating
+                  on the open-source, Kubernetes-native one &mdash; the custom
+                  version is being retired once feature parity closes the
+                  remaining gap.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
+
+      <p class="rationale" style="max-width:74ch">
+        <b>On the phone, not in the cloud.</b> AICore runs the model locally
+        over text the reader has already extracted, so nothing is uploaded
+        and nothing needs a connection. <b>Prose, not bullets</b> &mdash; a
+        summary of an argument delivered as fragments asks you to
+        reassemble the argument, which is most of the work you opened the
+        panel to avoid.
+        <br><br>
+        <b>And it survives Ink.</b> The <b>Summary</b> label and the two lit
+        toolbar buttons are the only coloured things in the Paper Black
+        frame; both become white on the right, and nothing else moves.
+      </p>
     </div>
 
   </section>
@@ -1076,11 +1199,11 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
   <section id="walkthrough" class="act">
     <div data-reveal>
       <h2>Act two &middot; Walkthrough</h2>
-      <p class="act-title">Thirteen screens, in the order you meet them</p>
+      <p class="act-title">Seven screens, in the order you meet them</p>
       <p class="act-note">
-        First run, then the three tabs, then the two things that sit on top
-        of them. Drag the deck, or use the arrows &mdash; it advances on its
-        own until you touch it.
+        First run, then Home, then the five screens it opens onto. Drag the
+        deck, or use the arrows &mdash; it advances on its own until you
+        touch it.
       </p>
     </div>
 
@@ -1089,138 +1212,6 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
         <div class="deck-window">
           <div class="deck-track">
       <article class="deck-slide">
-        <div class="v-amp deck-figure">
-          <div class="phone">
-            <div class="screen">
-              <div class="statusbar"><span>4:19</span><span class="bars"><i></i><i></i><i></i><i></i></span></div>
-              <div class="canvas onb">
-                <div class="skiprow"><span class="skip">Skip</span></div>
-                <div class="panel">
-                  <div class="art">
-                    <div class="savedart">
-                      <span class="r"><i></i><b style="width:117px"></b></span>
-                      <span class="r"><i></i><b style="width:72px"></b></span>
-                      <span class="r"><i></i><b style="width:98px"></b></span>
-                    </div>
-                  </div>
-                  <p class="lbl">Save anything</p>
-                  <h3>Keep the good reads</h3>
-                  <p>
-                    Paste a link or share one in from any app &mdash; it saves
-                    instantly and stays here, read or not, until you decide
-                    it&rsquo;s done.
-                  </p>
-                </div>
-                <div class="footrow">
-                  <span class="dots"><i class="on"></i><i></i><i></i><i></i></span>
-                  <span class="cta">Next</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="deck-copy">
-          <p class="num">01 / 13 &nbsp;&middot;&nbsp; Onboarding</p>
-          <h3>Keep the good reads</h3>
-          <p>
-            First run is four panels in a pager &mdash; one per pillar of the
-            app, not one per feature &mdash; and then a name.
-          </p>
-          <p>
-            Paste a link or share one in from any app. It is in the list
-            instantly, under whatever title the URL gives away, and fills in
-            the real one afterwards.
-          </p>
-        </div>
-      </article>
-      <article class="deck-slide" aria-hidden="true" inert>
-        <div class="v-amp deck-figure">
-          <div class="phone">
-            <div class="screen">
-              <div class="statusbar"><span>4:19</span><span class="bars"><i></i><i></i><i></i><i></i></span></div>
-              <div class="canvas onb">
-                <div class="skiprow"><span class="skip">Skip</span></div>
-                <div class="panel">
-                  <div class="art">
-                    <div>
-                      <div style="font-family:var(--a-data);font-size:30px;line-height:1;font-weight:500;font-variant-numeric:tabular-nums;letter-spacing:-0.02em">18:24</div>
-                      <div class="wave part" style="height:26px;gap:2px;margin-top:13px"><i class="p" style="height:9px"></i><i class="p" style="height:16px"></i><i class="p" style="height:22px"></i><i class="p" style="height:12px"></i><i class="p" style="height:19px"></i><i class="p" style="height:26px"></i><i class="p" style="height:14px"></i><i class="p" style="height:20px"></i><i style="height:10px"></i><i style="height:17px"></i><i style="height:24px"></i><i style="height:13px"></i><i style="height:18px"></i><i style="height:8px"></i><i style="height:15px"></i><i style="height:21px"></i><i style="height:11px"></i><i style="height:16px"></i><i style="height:23px"></i><i style="height:9px"></i></div>
-                    </div>
-                  </div>
-                  <p class="lbl">Focus</p>
-                  <h3>A timer built for reading sessions</h3>
-                  <p>
-                    Run a Pomodoro session while you read &mdash; start it from
-                    the dashboard, and it keeps going even when you close the
-                    timer screen.
-                  </p>
-                </div>
-                <div class="footrow">
-                  <span class="dots"><i></i><i class="on"></i><i></i><i></i></span>
-                  <span class="cta">Next</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="deck-copy">
-          <p class="num">02 / 13 &nbsp;&middot;&nbsp; Onboarding</p>
-          <h3>A timer built for reading sessions</h3>
-          <p>
-            A Pomodoro session you start from the dashboard, which keeps going
-            when you close the timer screen.
-          </p>
-          <p class="rationale"><b>The art is the real component.</b> This draws the same
-            <code>WaveformMeter</code> the Focus screen draws, at a fixed
-            fraction. A stock illustration is a promise the next screen has to
-            keep &mdash; this one drifted once already, showing a clock face
-            the app had stopped having.</p>
-        </div>
-      </article>
-      <article class="deck-slide" aria-hidden="true" inert>
-        <div class="v-amp deck-figure">
-          <div class="phone">
-            <div class="screen">
-              <div class="statusbar"><span>4:19</span><span class="bars"><i></i><i></i><i></i><i></i></span></div>
-              <div class="canvas onb">
-                <div class="skiprow"><span class="skip">Skip</span></div>
-                <div class="panel">
-                  <div class="art">
-                    <div class="wave part" style="height:38px;gap:4px"><i class="p" style="height:12px;width:4px"></i><i class="p" style="height:22px;width:4px"></i><i class="p" style="height:32px;width:4px"></i><i class="p" style="height:17px;width:4px"></i><i class="p" style="height:27px;width:4px"></i><i class="p" style="height:38px;width:4px"></i><i class="p" style="height:20px;width:4px"></i><i class="p" style="height:29px;width:4px"></i><i class="p" style="height:15px;width:4px"></i><i style="height:25px;width:4px"></i><i style="height:35px;width:4px"></i><i style="height:19px;width:4px"></i><i style="height:26px;width:4px"></i><i style="height:11px;width:4px"></i><i style="height:21px;width:4px"></i><i style="height:31px;width:4px"></i><i style="height:16px;width:4px"></i><i style="height:23px;width:4px"></i><i style="height:33px;width:4px"></i><i style="height:13px;width:4px"></i></div>
-                  </div>
-                  <p class="lbl">Readback</p>
-                  <h3>Pick up where you left off</h3>
-                  <p>
-                    Connect a synced readback audio library and your past reads
-                    show up here, ready to play.
-                  </p>
-                  <span class="cta" style="margin:16px 0 0;display:inline-flex;align-items:center;gap:7px">
-                    <svg class="i" style="font-size:13px"><use href="#w-folderconnect"/></svg>
-                    Choose folder
-                  </span>
-                </div>
-                <div class="footrow">
-                  <span class="dots"><i></i><i></i><i class="on"></i><i></i></span>
-                  <span class="cta">Next</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="deck-copy">
-          <p class="num">03 / 13 &nbsp;&middot;&nbsp; Onboarding</p>
-          <h3>Pick up where you left off</h3>
-          <p>
-            Connect a synced readback audio library and your past reads show up
-            ready to play.
-          </p>
-          <p class="rationale"><b>This panel does real work.</b> The folder is connected here,
-            through the system picker, rather than described and deferred to
-            Settings &mdash; so you finish onboarding set up rather than
-            informed.</p>
-        </div>
-      </article>
-      <article class="deck-slide" aria-hidden="true" inert>
         <div class="v-amp deck-figure">
           <div class="phone">
             <div class="screen">
@@ -1246,16 +1237,17 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
           </div>
         </div>
         <div class="deck-copy">
-          <p class="num">04 / 13 &nbsp;&middot;&nbsp; Onboarding</p>
+          <p class="num">01 / 07 &nbsp;&middot;&nbsp; Onboarding</p>
           <h3>What should I call you?</h3>
           <p>
-            Optional, and it stays on the device. There is no account, and it
-            is only ever used to say hello on Home.
+            First run is four panels &mdash; one per pillar of the app &mdash;
+            and then this. The name is optional, stays on the device, and is
+            only ever used to say hello on Home. There is no account.
           </p>
           <p class="rationale"><b>The dot lengthens, it does not just light up</b> &mdash; 20dp
             against 7dp, because at that size hue is the only other difference
-            and Ink has none to spend. <b>Next / Get started</b> is the one
-            filled button in the app, at <code>Radius.Inline</code> rather than
+            and Ink has none to spend. <b>Get started</b> is the one filled
+            button in the app, at <code>Radius.Inline</code> rather than
             Material&rsquo;s pill.</p>
         </div>
       </article>
@@ -1323,84 +1315,24 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
           </div>
         </div>
         <div class="deck-copy">
-          <p class="num">05 / 13 &nbsp;&middot;&nbsp; Home</p>
+          <p class="num">02 / 07 &nbsp;&middot;&nbsp; Home</p>
           <h3>What is there to read, without going to look</h3>
           <p>
             Four sections, in this order: something from <b>saved</b>, whatever
             is mid-<b>readback</b>, the <b>focus</b> presets, and the
-            <b>following</b> digest. Everything the app knows, before you have
-            chosen a tab.
+            <b>following</b> digest. Everything the app knows, on one screen,
+            before you have chosen a tab.
           </p>
           <p>
-            Flush on the background, separated by their own hairline. No cards,
-            no nested carousel. Two eyebrows carry a glyph rather than text
-            alone, so a running timer is legible from the label.
+            Flush on the background, separated by their own hairline. No
+            cards, and no horizontal strip of tiles nested inside a section.
+            Two eyebrows carry a glyph rather than text alone, so a running
+            timer is legible from the label.
           </p>
           <p class="rationale"><b>Following goes last.</b> It is the only section that can be
-            arbitrarily long, so growing costs nothing beneath it.</p>
-        </div>
-      </article>
-      <article class="deck-slide" aria-hidden="true" inert>
-        <div class="v-amp deck-figure">
-          <div class="phone">
-          <div class="screen">
-            <div class="statusbar"><span>4:19</span><span class="bars"><i></i><i></i><i></i><i></i></span></div>
-            <div class="canvas">
-              <div class="fieldbox typing">
-                <span class="txt">swmansion.com/blog/live-video<span class="caret"></span></span>
-                <span class="save">Save</span>
-              </div>
-              <div class="offer">
-                <span class="lbl">From clipboard</span>
-                <span class="url">netflixtechblog.com/two-autoscalers</span>
-              </div>
-
-              <p class="eyebrow">Unread · 1</p>
-              <div class="row">
-                <div style="display:flex;gap:10px;align-items:flex-start">
-                  <span class="sourcechip">S</span>
-                  <div style="flex:1;min-width:0">
-                    <h4>When Can LLMs Replace Humans in A/B Tests?</h4>
-                    <div class="meta"><span>atspotify</span><span>7m ago</span></div>
-                  </div>
-                </div>
-              </div>
-
-              <p class="eyebrow muted">Read · 4</p>
-              <div class="row" style="opacity:0.5">
-                <div style="display:flex;gap:10px;align-items:flex-start">
-                  <span class="sourcechip">S</span>
-                  <div style="flex:1;min-width:0">
-                    <h4>Missing layer in live video streaming APIs</h4>
-                    <div class="meta"><span>swmansion</span><span>2m ago</span></div>
-                  </div>
-                  <svg class="i" style="font-size:13px;margin-top:2px"><use href="#w-done"/></svg>
-                </div>
-              </div>
-            </div>
-
-            <div class="navbar">
-              <span class="nb"><svg class="i"><use href="#w-home"/></svg></span>
-              <span class="nb"><svg class="i"><use href="#w-wave"/></svg></span>
-              <span class="nb sel"><svg class="i"><use href="#w-saved"/></svg></span>
-              <span class="bardiv"></span>
-              <span class="nb"><svg class="i"><use href="#w-contrast"/></svg></span>
-            </div>
-          </div>
-          </div>
-        </div>
-        <div class="deck-copy">
-          <p class="num">06 / 13 &nbsp;&middot;&nbsp; Saved</p>
-          <h3>Unread and read, told apart without a heading</h3>
-          <p>
-            A link arrives by paste or by the share sheet and is in the list
-            immediately, backfilling its real title when the fetch lands. Never
-            blocked on the network.
-          </p>
-          <p class="rationale"><b>A read link recedes rather than being struck through</b> &mdash;
-            one alpha over the whole row, plus a trailing tick. <b>Read</b> is
-            the one section label that stays muted: it sits under an unread
-            list and should not compete with it.</p>
+            arbitrarily long, so growing costs nothing beneath it &mdash; and
+            two lines and a count are enough to decide whether the screen on
+            the right is worth opening.</p>
         </div>
       </article>
       <article class="deck-slide" aria-hidden="true" inert>
@@ -1420,16 +1352,34 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
 
                 <div style="padding:10px 0 12px">
                   <div class="row">
-                    <h4>When Can LLMs Replace Humans in A/B Tests?</h4>
-                    <div class="meta"><span>4d ago</span></div>
+                    <div style="display:flex;gap:10px;align-items:flex-start">
+                      <span class="sourcechip">S</span>
+                      <div style="flex:1;min-width:0">
+                        <h4>When Can LLMs Replace Humans in A/B Tests?</h4>
+                        <div class="meta"><span>4d ago</span></div>
+                      </div>
+                      <svg class="i bm on"><use href="#w-bookmarkfilled"/></svg>
+                    </div>
                   </div>
                   <div class="row">
-                    <h4>A Tale of Two Flink Autoscalers</h4>
-                    <div class="meta"><span>1w ago</span></div>
+                    <div style="display:flex;gap:10px;align-items:flex-start">
+                      <span class="sourcechip">S</span>
+                      <div style="flex:1;min-width:0">
+                        <h4>A Tale of Two Flink Autoscalers</h4>
+                        <div class="meta"><span>1w ago</span></div>
+                      </div>
+                      <svg class="i bm"><use href="#w-saved"/></svg>
+                    </div>
                   </div>
                   <div class="row">
-                    <h4>Reducing tail latency at the edge</h4>
-                    <div class="meta"><span>2w ago</span></div>
+                    <div style="display:flex;gap:10px;align-items:flex-start">
+                      <span class="sourcechip">S</span>
+                      <div style="flex:1;min-width:0">
+                        <h4>Reducing tail latency at the edge</h4>
+                        <div class="meta"><span>2w ago</span></div>
+                      </div>
+                      <svg class="i bm"><use href="#w-saved"/></svg>
+                    </div>
                   </div>
                   <p class="eyebrow bare" style="margin:0;gap:6px">All 12 posts <svg class="i" style="font-size:11px"><use href="#w-chev"/></svg></p>
                 </div>
@@ -1457,106 +1407,29 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
           </div>
         </div>
         <div class="deck-copy">
-          <p class="num">07 / 13 &nbsp;&middot;&nbsp; Following</p>
+          <p class="num">03 / 07 &nbsp;&middot;&nbsp; Following</p>
           <h3>A digest line per blog, opened in place</h3>
           <p>
-            One line per feed: host, how many posts you have not saved, a
-            chevron. The count is the only accented thing, and only while there
-            is something behind it.
-          </p>
-          <p class="rationale"><b>Three, then a door.</b> Tapping expands the newest three as the
-            same flat rows the full screen is built from, then hands over
-            &mdash; so a section inside a dashboard cannot push everything
-            under it off the bottom.</p>
-        </div>
-      </article>
-      <article class="deck-slide" aria-hidden="true" inert>
-        <div class="v-amp deck-figure">
-          <div class="phone">
-            <div class="screen">
-              <div class="statusbar"><span>4:19</span><span class="bars"><i></i><i></i><i></i><i></i></span></div>
-              <div class="canvas">
-                <p class="eyebrow bare" style="gap:0">Following<span style="flex:1;height:1px;background:var(--a-line);margin:0 8px"></span><span style="color:var(--a-sound);letter-spacing:0.09em">Done</span></p>
-
-                <div class="fieldbox" style="width:100%;text-align:left;margin-bottom:16px">Blog&rsquo;s address or its RSS/Atom feed</div>
-
-                <div class="digest"><span class="host">engineering.atspotify.com/feed.xml</span><span class="unfollow">Unfollow</span></div>
-                <div class="digest"><span class="host">swmansion.com/blog/rss.xml</span><span class="unfollow">Unfollow</span></div>
-                <div class="digest"><span class="host">netflixtechblog.com/feed</span><span class="unfollow">Unfollow</span></div>
-              </div>
-
-              <div class="navbar">
-                <span class="nb sel"><svg class="i"><use href="#w-home"/></svg></span>
-                <span class="nb"><svg class="i"><use href="#w-wave"/></svg></span>
-                <span class="nb"><svg class="i"><use href="#w-saved"/></svg></span>
-                <span class="bardiv"></span>
-                <span class="nb"><svg class="i"><use href="#w-contrast"/></svg></span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="deck-copy">
-          <p class="num">08 / 13 &nbsp;&middot;&nbsp; Following</p>
-          <h3>A site, not a feed URL</h3>
-          <p>
-            Feed discovery runs against whatever you paste, because nobody has
-            the <code>/atom.xml</code> to hand when they decide to follow
-            something.
-          </p>
-        </div>
-      </article>
-      <article class="deck-slide" aria-hidden="true" inert>
-        <div class="v-amp deck-figure">
-          <div class="phone">
-            <div class="screen">
-              <div class="statusbar"><span>4:19</span><span class="bars"><i></i><i></i><i></i><i></i></span></div>
-              <div class="canvas">
-                <div class="toolbar">
-                  <span class="iconbtn" style="border:0"><svg class="i" style="font-size:16px"><use href="#w-back"/></svg></span>
-                  <span class="title">A Tale of Two Flink Autoscalers</span>
-                  <span class="iconbtn active"><svg class="i" style="font-size:15px"><use href="#w-reader"/></svg></span>
-                  <span class="iconbtn active"><span class="spinner"></span></span>
-                  <span class="iconbtn"><svg class="i" style="font-size:15px"><use href="#w-external"/></svg></span>
-                </div>
-                <div style="font-size:13px;line-height:1.6;color:var(--a-mute)">
-                  Netflix currently runs two different autoscalers for Apache
-                  Flink, and they are actively moving toward replacing the
-                  custom one with the open-source Kubernetes-native
-                  autoscaler.<br><br>
-                  The custom autoscaler predates the Kubernetes operator by
-                  several years. It was built when the platform ran Flink on
-                  its own scheduling layer, and it carries assumptions from
-                  that era — most visibly that scaling decisions are made
-                  from a single aggregated backlog metric rather than
-                  per-vertex.<br><br>
-                  Feature parity is the gating question. The open-source
-                  autoscaler reached rough equivalence on throughput-based
-                  scaling last year, but two things kept the custom one alive:
-                  its handling of sources with irregular partition counts, and
-                  the operational tooling built around it.<br><br>
-                  What follows is a comparison of how each one reacts to the
-                  same three production incidents, and what that implies for
-                  the migration order.
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="deck-copy">
-          <p class="num">09 / 13 &nbsp;&middot;&nbsp; Summaries</p>
-          <h3>Enough to decide whether to read it</h3>
-          <p>
-            The question is not &ldquo;what does this article say&rdquo; but
-            &ldquo;is this worth the next twenty minutes&rdquo;, and that one
-            framing decides the rest of the screen.
+            The dedicated screen behind Home&rsquo;s digest. One line per feed:
+            host, how many posts you have not saved, a chevron. The count is
+            the only accented thing, and only while there is something behind
+            it.
           </p>
           <p>
-            Gemini Nano, on the phone, over text the reader has already
-            extracted. Nothing uploaded, no connection needed.
+            Expanded, each post carries a <b>bookmark</b>. Tapping it is what
+            moves the post into <b>Saved</b>; swiping it right asks for a
+            summary instead. The row itself opens the article.
           </p>
-          <p class="rationale"><b>Hidden until it can work.</b> The button lives where the text
-            already exists, and is hidden rather than greyed out before then.
-            While the model runs, the icon becomes a spinner in its own slot.</p>
+          <p class="rationale"><b>The bookmark is the only way out.</b> A feed post reaches Saved
+            by being bookmarked here and no other way &mdash; and it is two
+            glyphs, not one glyph in two colours, because filled reads as
+            &ldquo;saved&rdquo; at 14dp in a way a tint change does not, and
+            it is the only signal that survives Ink.
+            <br><br>
+            <b>Three, then a door.</b> Tapping expands the newest three as
+            the same flat rows the full screen is built from, then hands over
+            &mdash; so one section of Home cannot push everything under it
+            off the bottom.</p>
         </div>
       </article>
       <article class="deck-slide" aria-hidden="true" inert>
@@ -1609,15 +1482,85 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
           </div>
         </div>
         <div class="deck-copy">
-          <p class="num">10 / 13 &nbsp;&middot;&nbsp; Summaries</p>
-          <h3>Floating, never a destination</h3>
+          <p class="num">04 / 07 &nbsp;&middot;&nbsp; Reading</p>
+          <h3>Read it here, or ask what is in it</h3>
           <p>
-            The panel sits over the article and nothing else on screen moves.
-            Checking a summary never costs your place in the thing you were
-            reading.
+            The reader view strips the page to its text. From there the
+            <b>summary</b> button hands that same extracted text to Gemini
+            Nano, on the phone &mdash; nothing uploaded, no connection needed.
+          </p>
+          <p>
+            The panel floats over the article and nothing else on screen
+            moves. Checking a summary never costs your place in the thing you
+            were reading.
           </p>
           <p class="rationale"><b>Prose, not bullets.</b> Fragments ask you to reassemble the
-            argument you opened the panel to avoid. One paragraph, one tone.</p>
+            argument you opened the panel to avoid. One paragraph, one tone.
+            The button is hidden rather than greyed out until the reader has
+            text to give it.</p>
+        </div>
+      </article>
+      <article class="deck-slide" aria-hidden="true" inert>
+        <div class="v-amp deck-figure">
+          <div class="phone">
+          <div class="screen">
+            <div class="statusbar"><span>4:19</span><span class="bars"><i></i><i></i><i></i><i></i></span></div>
+            <div class="canvas">
+              <div class="fieldbox typing">
+                <span class="txt">swmansion.com/blog/live-video<span class="caret"></span></span>
+                <span class="save">Save</span>
+              </div>
+              <div class="offer">
+                <span class="lbl">From clipboard</span>
+                <span class="url">netflixtechblog.com/two-autoscalers</span>
+              </div>
+
+              <p class="eyebrow">Unread · 1</p>
+              <div class="row">
+                <div style="display:flex;gap:10px;align-items:flex-start">
+                  <span class="sourcechip">S</span>
+                  <div style="flex:1;min-width:0">
+                    <h4>When Can LLMs Replace Humans in A/B Tests?</h4>
+                    <div class="meta"><span>atspotify</span><span>7m ago</span></div>
+                  </div>
+                </div>
+              </div>
+
+              <p class="eyebrow muted">Read · 4</p>
+              <div class="row" style="opacity:0.5">
+                <div style="display:flex;gap:10px;align-items:flex-start">
+                  <span class="sourcechip">S</span>
+                  <div style="flex:1;min-width:0">
+                    <h4>Missing layer in live video streaming APIs</h4>
+                    <div class="meta"><span>swmansion</span><span>2m ago</span></div>
+                  </div>
+                  <svg class="i" style="font-size:13px;margin-top:2px"><use href="#w-done"/></svg>
+                </div>
+              </div>
+            </div>
+
+            <div class="navbar">
+              <span class="nb"><svg class="i"><use href="#w-home"/></svg></span>
+              <span class="nb"><svg class="i"><use href="#w-wave"/></svg></span>
+              <span class="nb sel"><svg class="i"><use href="#w-saved"/></svg></span>
+              <span class="bardiv"></span>
+              <span class="nb"><svg class="i"><use href="#w-contrast"/></svg></span>
+            </div>
+          </div>
+          </div>
+        </div>
+        <div class="deck-copy">
+          <p class="num">05 / 07 &nbsp;&middot;&nbsp; Saved</p>
+          <h3>Unread and read, told apart without a heading</h3>
+          <p>
+            A link arrives by paste or by the share sheet and is in the list
+            immediately, backfilling its real title when the fetch lands. Never
+            blocked on the network.
+          </p>
+          <p class="rationale"><b>A read link recedes rather than being struck through</b> &mdash;
+            one alpha over the whole row, plus a trailing tick. <b>Read</b> is
+            the one section label that stays muted: it sits under an unread
+            list and should not compete with it.</p>
         </div>
       </article>
       <article class="deck-slide" aria-hidden="true" inert>
@@ -1625,13 +1568,14 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
           <div class="phone">
             <div class="screen">
               <div class="statusbar"><span>4:51</span><span class="bars"><i></i><i></i><i></i><i></i></span></div>
+              <span class="focusclose"><svg class="i"><use href="#w-close"/></svg></span>
               <div class="canvas" style="justify-content:flex-end;padding-bottom:96px">
-                <p class="eyebrow">Focus · 25 min</p>
-                <div style="font-family:var(--a-data);font-size:56px;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-0.02em;margin-bottom:18px">18:24</div>
-                <div class="wave part" style="height:26px;gap:2px;margin-bottom:24px">
+                <p class="eyebrow muted">Focus &middot; 25 min</p>
+                <div style="font-family:var(--a-data);font-size:52px;line-height:1;font-weight:500;font-variant-numeric:tabular-nums;letter-spacing:-0.02em;margin-bottom:18px;text-align:center">18:24</div>
+                <div class="wave part" style="height:26px;gap:2px;margin-bottom:24px;justify-content:center">
                   <i class="p" style="height:9px"></i><i class="p" style="height:16px"></i><i class="p" style="height:22px"></i><i class="p" style="height:12px"></i><i class="p" style="height:19px"></i><i class="p" style="height:26px"></i><i class="p" style="height:14px"></i><i style="height:20px"></i><i style="height:10px"></i><i style="height:17px"></i><i style="height:24px"></i><i style="height:13px"></i><i style="height:18px"></i><i style="height:8px"></i><i style="height:15px"></i><i style="height:21px"></i><i style="height:11px"></i><i style="height:16px"></i><i style="height:23px"></i><i style="height:9px"></i>
                 </div>
-                <div class="pillrow" style="margin:0">
+                <div class="pillrow" style="margin:0;justify-content:center">
                   <span class="pill sel">Pause</span>
                   <span class="pill">Reset</span>
                 </div>
@@ -1640,45 +1584,18 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
           </div>
         </div>
         <div class="deck-copy">
-          <p class="num">11 / 13 &nbsp;&middot;&nbsp; Focus</p>
+          <p class="num">06 / 07 &nbsp;&middot;&nbsp; Focus</p>
           <h3>A meter, not a word in a void</h3>
           <p>
-            The countdown is drawn with the same bars as every waveform in the
-            app &mdash; elapsed filled, remaining not &mdash; so a bar
-            two-thirds lit means the same thing on both screens.
+            Pick a length, put the phone down, read the thing. The countdown is
+            drawn with the same bars as every waveform in the app &mdash;
+            elapsed filled, remaining not &mdash; so a bar two-thirds lit means
+            the same thing on both screens.
           </p>
-          <p class="rationale">A finished session alerts on its own high-importance channel: the
-            per-second countdown&rsquo;s has to stay silent, so completion
-            needed a second one.</p>
-        </div>
-      </article>
-      <article class="deck-slide" aria-hidden="true" inert>
-        <div class="v-amp deck-figure">
-          <div class="phone">
-            <div class="screen">
-              <div class="statusbar"><span>4:51</span><span class="bars"><i></i><i></i><i></i><i></i></span></div>
-              <div class="canvas" style="justify-content:flex-end;padding-bottom:96px">
-                <p class="eyebrow">Focus</p>
-                <div style="font-family:var(--a-ui);font-weight:400;font-size:22px;line-height:1.2;margin-bottom:22px">Pick a length</div>
-                <div class="pillrow" style="margin:0">
-                  <span class="pill">15 min</span>
-                  <span class="pill">25 min</span>
-                  <span class="pill">30 min</span>
-                  <span class="pill">Custom</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="deck-copy">
-          <p class="num">12 / 13 &nbsp;&middot;&nbsp; Focus</p>
-          <h3>Pick a length, put the phone down</h3>
-          <p>
-            The screen you look at least, so it is bottom-anchored in the thumb
-            zone rather than centred, and glanceable from a metre away.
-          </p>
-          <p class="rationale">A fourth <b>Custom</b> chip opens a bare minute field, digits
-            only.</p>
+          <p class="rationale">Bottom-anchored in the thumb zone rather than centred, and
+            glanceable from a metre away. A finished session alerts on its own
+            high-importance channel: the per-second countdown&rsquo;s has to
+            stay silent, so completion needed a second one.</p>
         </div>
       </article>
       <article class="deck-slide" aria-hidden="true" inert>
@@ -1695,6 +1612,11 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
                 <span class="pill">Oldest</span>
               </div>
 
+              <p class="nowtip">
+                <svg class="i"><use href="#w-wave"/></svg>
+                Playing &ldquo;Claude Code now supports artifacts&rdquo; &mdash; use the bar below to control it
+              </p>
+
               <div class="row">
                 <div style="display:flex;gap:10px;align-items:flex-start">
                   <span class="sourcechip">S</span>
@@ -1706,6 +1628,7 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
                 <div class="wave" style="margin-top:9px">
                   <i style="height:5px"></i><i style="height:9px"></i><i style="height:13px"></i><i style="height:7px"></i><i style="height:11px"></i><i style="height:15px"></i><i style="height:8px"></i><i style="height:12px"></i><i style="height:6px"></i><i style="height:10px"></i><i style="height:14px"></i><i style="height:7px"></i><i style="height:11px"></i><i style="height:5px"></i><i style="height:9px"></i><i style="height:13px"></i><i style="height:6px"></i><i style="height:10px"></i>
                 </div>
+                <div class="extlink"><svg class="i"><use href="#w-external"/></svg><span>swmansion.com</span></div>
               </div>
 
               <div class="row">
@@ -1720,34 +1643,46 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
                 <div class="wave part" style="margin-top:9px">
                   <i class="p" style="height:6px"></i><i class="p" style="height:11px"></i><i class="p" style="height:15px"></i><i class="p" style="height:8px"></i><i class="p" style="height:12px"></i><i class="p" style="height:14px"></i><i class="p" style="height:7px"></i><i style="height:10px"></i><i style="height:13px"></i><i style="height:6px"></i><i style="height:9px"></i><i style="height:15px"></i><i style="height:8px"></i><i style="height:11px"></i><i style="height:5px"></i><i style="height:12px"></i><i style="height:7px"></i><i style="height:10px"></i>
                 </div>
+                <div class="extlink"><svg class="i"><use href="#w-external"/></svg><span>claude.com</span></div>
               </div>
             </div>
 
-            <div class="navbar">
-              <span class="nb"><svg class="i"><use href="#w-home"/></svg></span>
-              <span class="nb sel"><svg class="i"><use href="#w-wave"/></svg></span>
-              <span class="nb"><svg class="i"><use href="#w-saved"/></svg></span>
+            <div class="navbar player">
+              <span class="nb playing"><svg class="i"><use href="#w-pause"/></svg></span>
+              <span class="tt">Claude Code now supports artifacts</span>
+              <span class="rem">0:50</span>
+              <span class="nb sm"><svg class="i" style="font-size:12px"><use href="#w-close"/></svg></span>
               <span class="bardiv"></span>
-              <span class="nb"><svg class="i"><use href="#w-contrast"/></svg></span>
+              <span class="nb"><svg class="i"><use href="#w-wave"/></svg></span>
+              <span class="seek"><i></i></span>
             </div>
           </div>
           </div>
         </div>
         <div class="deck-copy">
-          <p class="num">13 / 13 &nbsp;&middot;&nbsp; Readback</p>
+          <p class="num">07 / 07 &nbsp;&middot;&nbsp; Readback</p>
           <h3>Where the accent earns its keep</h3>
           <p>
             Audio a sync step has already put on the device, from the separate
             <a href="https://github.com/MKS-01/readback">readback</a> project,
-            read-only. It is also where the accent hue is defined.
+            read-only. Two facts per row &mdash; the third, how long this is,
+            is drawn as a waveform.
           </p>
           <p>
-            Two facts per row &mdash; the third, how long this is, is drawn as
-            a waveform. The playing row is the only coloured thing on screen.
+            The playing row is the only coloured thing on screen, and the
+            floating bar has given its width over to the transport.
           </p>
-          <p class="rationale"><b>The folder picker</b> sits in the screen&rsquo;s own top-right
-            corner rather than the sort row: it changes where the whole library
-            comes from, so it is not a sort option.</p>
+          <p>
+            The tip above the list points at that bar rather than repeating
+            it: the controls stay where the thumb already is, whatever the
+            list is doing.
+          </p>
+          <p class="rationale"><b>One pill, three faces.</b> The transport lives inside the
+            floating bar rather than on a second pill above it &mdash; two stacked
+            slabs ate a third of the reachable zone. Playback wins the bar
+            while it is running; the trailing icon is the tab you are already
+            on, so it reads as &ldquo;back to where you were&rdquo; rather
+            than a fourth destination.</p>
         </div>
       </article>
           </div>
@@ -1755,21 +1690,15 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
         <div class="deck-bar">
           <button type="button" class="deck-nav deck-prev" aria-label="Previous screen"><svg class="i"><use href="#w-back"/></svg></button>
           <div class="deck-dots" role="tablist" aria-label="Screens">
-          <button type="button" class="cdot is-on" aria-label="Screen 1 of 13"></button>
-          <button type="button" class="cdot" aria-label="Screen 2 of 13"></button>
-          <button type="button" class="cdot" aria-label="Screen 3 of 13"></button>
-          <button type="button" class="cdot" aria-label="Screen 4 of 13"></button>
-          <button type="button" class="cdot" aria-label="Screen 5 of 13"></button>
-          <button type="button" class="cdot" aria-label="Screen 6 of 13"></button>
-          <button type="button" class="cdot" aria-label="Screen 7 of 13"></button>
-          <button type="button" class="cdot" aria-label="Screen 8 of 13"></button>
-          <button type="button" class="cdot" aria-label="Screen 9 of 13"></button>
-          <button type="button" class="cdot" aria-label="Screen 10 of 13"></button>
-          <button type="button" class="cdot" aria-label="Screen 11 of 13"></button>
-          <button type="button" class="cdot" aria-label="Screen 12 of 13"></button>
-          <button type="button" class="cdot" aria-label="Screen 13 of 13"></button>
+          <button type="button" class="cdot is-on" aria-label="Onboarding"></button>
+          <button type="button" class="cdot" aria-label="Home"></button>
+          <button type="button" class="cdot" aria-label="Following"></button>
+          <button type="button" class="cdot" aria-label="Reading"></button>
+          <button type="button" class="cdot" aria-label="Saved"></button>
+          <button type="button" class="cdot" aria-label="Focus"></button>
+          <button type="button" class="cdot" aria-label="Readback"></button>
           </div>
-          <span class="deck-count" aria-live="polite">01 / 13</span>
+          <span class="deck-count" aria-live="polite">01 / 07</span>
           <button type="button" class="deck-nav deck-next" aria-label="Next screen"><svg class="i"><use href="#w-chev"/></svg></button>
         </div>
       </div>
@@ -1777,17 +1706,17 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
   </section>
 
   <!-- ============================================================
-       ACT 3 — the language the screens above are drawn in. Grids,
-       not a deck: a token table and a glyph wall are things you
-       scan, and a slider would make you click to find a value.
+       ACT 3 — the language the screens above are drawn in. A deck,
+       because each slide is a decision worth stopping on; the
+       values themselves are in design-tokens.md, not here.
        ============================================================ -->
   <section id="system" class="act">
     <div data-reveal>
       <h2>Act three &middot; Design system</h2>
       <p class="act-title">The language every screen above is drawn in</p>
       <p class="act-note">
-        Five decisions, starting with the one the rest are tested against:
-        drop the hue and see whether the layout still works.
+        Six decisions, starting with the one the rest are tested against: drop
+        the hue and see whether the layout still works.
       </p>
     </div>
 
@@ -1798,74 +1727,62 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
       <article class="deck-slide">
         <div class="v-amp deck-figure">
           <div class="v-amp mono frame-block">
-            <p class="frame-cap">Article summary &mdash; Ink</p>
+            <p class="frame-cap">Article &mdash; Ink</p>
             <div class="phone">
               <div class="screen">
-                <div class="statusbar"><span>4:19</span><span class="bars"><i></i><i></i><i></i><i></i></span></div>
-                <div class="canvas">
-                  <div class="toolbar">
-                    <span class="iconbtn" style="border:0"><svg class="i" style="font-size:16px"><use href="#w-back"/></svg></span>
-                    <span class="title">A Tale of Two Flink Autoscalers</span>
-                    <span class="iconbtn active"><svg class="i" style="font-size:15px"><use href="#w-reader"/></svg></span>
-                    <span class="iconbtn active"><svg class="i" style="font-size:15px"><use href="#w-summary"/></svg></span>
-                    <span class="iconbtn"><svg class="i" style="font-size:15px"><use href="#w-external"/></svg></span>
-                  </div>
-                  <div style="font-size:13px;line-height:1.6;color:var(--a-mute);filter:blur(1.5px);opacity:0.5">
-                    Netflix currently runs two different autoscalers for Apache
-                    Flink, and they are actively moving toward replacing the
-                    custom one with the open-source Kubernetes-native
-                    autoscaler.<br><br>
-                    The custom autoscaler predates the Kubernetes operator by
-                    several years. It was built when the platform ran Flink on
-                    its own scheduling layer, and it carries assumptions from
-                    that era — most visibly that scaling decisions are made
-                    from a single aggregated backlog metric rather than
-                    per-vertex.<br><br>
-                    Feature parity is the gating question. The open-source
-                    autoscaler reached rough equivalence on throughput-based
-                    scaling last year, but two things kept the custom one alive:
-                    its handling of sources with irregular partition counts, and
-                    the operational tooling built around it.<br><br>
-                    What follows is a comparison of how each one reacts to the
-                    same three production incidents, and what that implies for
-                    the migration order.
-                  </div>
-                </div>
-                <div class="summarycard">
-                  <div style="display:flex;align-items:center;margin-bottom:8px;font-family:var(--a-ui);font-weight:700;font-size:10px;letter-spacing:0.09em;text-transform:uppercase;color:var(--a-sound)">
-                    Summary
-                    <svg class="i" style="font-size:13px;margin-left:auto;color:var(--a-faint)"><use href="#w-close"/></svg>
-                  </div>
-                  <div style="font-size:12.5px;line-height:1.55;color:var(--a-ink)">
-                    Netflix runs two Flink autoscalers today and is consolidating
-                    on the open-source, Kubernetes-native one — the custom
-                    version is being retired once feature parity closes the
-                    remaining gap.
-                  </div>
-                </div>
+            <div class="statusbar"><span>4:19</span><span class="bars"><i></i><i></i><i></i><i></i></span></div>
+            <div class="canvas">
+              <div class="toolbar">
+                <span class="iconbtn" style="border:0"><svg class="i" style="font-size:16px"><use href="#w-back"/></svg></span>
+                <span class="title">A Tale of Two Flink Autoscalers</span>
+                <span class="iconbtn active"><svg class="i" style="font-size:15px"><use href="#w-reader"/></svg></span>
+                <span class="iconbtn"><svg class="i" style="font-size:15px"><use href="#w-summary"/></svg></span>
+                <span class="iconbtn"><svg class="i" style="font-size:15px"><use href="#w-external"/></svg></span>
               </div>
+              <div style="font-size:13px;line-height:1.6;color:var(--a-mute)">
+                Netflix currently runs two different autoscalers for Apache
+                Flink, and they are actively moving toward replacing the
+                custom one with the open-source Kubernetes-native
+                autoscaler.<br><br>
+                The custom autoscaler predates the Kubernetes operator by
+                several years. It was built when the platform ran Flink on
+                its own scheduling layer, and it carries assumptions from
+                that era &mdash; most visibly that scaling decisions are made
+                from a single aggregated backlog metric rather than
+                per-vertex.<br><br>
+                Feature parity is the gating question. The open-source
+                autoscaler reached rough equivalence on throughput-based
+                scaling last year, but two things kept the custom one alive:
+                its handling of sources with irregular partition counts, and
+                the operational tooling built around it.<br><br>
+                What follows is a comparison of how each one reacts to the
+                same three production incidents, and what that implies for
+                the migration order.
+              </div>
+            </div>
+          </div>
             </div>
           </div>
         </div>
         <div class="deck-copy">
-          <p class="num">01 / 05 &nbsp;&middot;&nbsp; Monochrome</p>
-          <h3>Ink &mdash; a second design, not the first with the colour deleted</h3>
+          <p class="num">01 / 06 &nbsp;&middot;&nbsp; Monochrome</p>
+          <h3>Ink &mdash; the default, not a colour stripped away</h3>
         <p>
-          Hue drops to nothing and level is luminance alone. It is reachable
-          from the tab bar&rsquo;s contrast toggle or Settings, and it is the
-          default &mdash; which is why this page opens in it.
+          Hue drops to nothing and level is luminance alone. It is the
+          default, which is why this page opens in it.
         </p>
         <p>
-          This one frame is pinned to Ink. Every other mockup on the page
-          follows the switch in the top corner.
+          Paper Black is one tap on top of that &mdash; the contrast toggle
+          at the end of the floating bar, or Settings &mdash; for a reader
+          who wants the colour. This frame is pinned to Ink regardless of
+          the switch in the corner; every other mockup on the page follows
+          it.
         </p>
-          <p class="rationale">
-            Everything that carries the accent in Paper Black &mdash; the
-            <b>Summary</b> label on the panel, the two lit toolbar buttons
-            &mdash; becomes white here. Nothing changes shape, weight or
-            position, which is the test of whether the layout was ever
-            relying on colour.
-          </p>
+          <p class="rationale"><b>One tap adds the accent, nothing else moves.</b> The
+          <b>reader</b> button is the one coloured thing on this screen
+          &mdash; active means &ldquo;this is the view you&rsquo;re
+          in,&rdquo; and that ring is terracotta in Paper Black, white here.
+          Reading itself was never waiting on colour to work.</p>
         </div>
       </article>
       <article class="deck-slide" aria-hidden="true" inert>
@@ -1895,7 +1812,7 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
           </div>
         </div>
         <div class="deck-copy">
-          <p class="num">02 / 05 &nbsp;&middot;&nbsp; Colour</p>
+          <p class="num">02 / 06 &nbsp;&middot;&nbsp; Colour</p>
           <h3>One accent, and it is only ever spent on sound</h3>
         <p>
           Terracotta means one thing: <b>there is sound here</b>. Nothing
@@ -1938,7 +1855,7 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
           </div>
         </div>
         <div class="deck-copy">
-          <p class="num">03 / 05 &nbsp;&middot;&nbsp; Type</p>
+          <p class="num">03 / 06 &nbsp;&middot;&nbsp; Type</p>
           <h3>Jost and Inconsolata, five roles</h3>
         <p>
           Jost for everything the eye reads as language, Inconsolata for
@@ -1998,7 +1915,7 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
           </div>
         </div>
         <div class="deck-copy">
-          <p class="num">04 / 05 &nbsp;&middot;&nbsp; Icons</p>
+          <p class="num">04 / 06 &nbsp;&middot;&nbsp; Icons</p>
           <h3>Bar &mdash; the waveform is the alphabet</h3>
         <p>
           All twenty-two, drawn from <code>DuskReadIcons.kt</code>&rsquo;s own
@@ -2014,6 +1931,66 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
           <em>on</em> half of a pair. Two states have to be told apart at
           icon size, and a tint change is a colour difference &mdash; the one
           thing Ink does not have.</p>
+        </div>
+      </article>
+
+      <article class="deck-slide" aria-hidden="true" inert>
+        <div class="v-amp deck-figure">
+          <div class="v-amp mono concept">
+          <figure class="cstep">
+            <div class="cstep-art"><svg class="appicon" width="120" height="120" viewBox="0 0 108 108" aria-hidden="true"><rect width="108" height="108" fill="#161616"/><g transform="translate(54,54) scale(0.85) translate(-54,-54)"><path fill="#dcdcdc" d="M40,38 a14,14 0 0 1 28,0 v36 a14,14 0 0 1 -28,0 z"/></g></svg></div>
+            <figcaption>
+              <p class="cstep-num">01</p>
+              <p class="cstep-title">The bar</p>
+            </figcaption>
+          </figure>
+          <figure class="cstep">
+            <div class="cstep-art"><svg class="appicon" width="120" height="120" viewBox="0 0 108 108" aria-hidden="true"><rect width="108" height="108" fill="#161616"/><g transform="translate(54,54) scale(0.85) translate(-54,-54)"><path fill="#dcdcdc" d="M40,38 a14,14 0 0 1 28,0 v36 a14,14 0 0 1 -28,0 z"/><path fill="none" stroke="#9c9c9c" stroke-width="2.4" stroke-dasharray="6 5" d="M44,32 a16,16 0 0 1 32,0 a16,16 0 0 1 -32,0 z"/></g></svg></div>
+            <figcaption>
+              <p class="cstep-num">02</p>
+              <p class="cstep-title">The crescent</p>
+            </figcaption>
+          </figure>
+          <figure class="cstep">
+            <div class="cstep-art"><svg class="appicon" width="120" height="120" viewBox="0 0 108 108" aria-hidden="true"><rect width="108" height="108" fill="#161616"/><g transform="translate(54,54) scale(0.85) translate(-54,-54)"><path fill="#dcdcdc" d="M40,38 a14,14 0 0 1 28,0 v36 a14,14 0 0 1 -28,0 z"/><path fill="#161616" d="M44,32 a16,16 0 0 1 32,0 a16,16 0 0 1 -32,0 z"/></g></svg></div>
+            <figcaption>
+              <p class="cstep-num">03</p>
+              <p class="cstep-title">The mark</p>
+            </figcaption>
+          </figure>
+      </div>
+
+          <div class="v-amp mono brandrow" style="margin-top:24px">
+          <div><svg class="appicon" width="96" height="96" viewBox="0 0 108 108" aria-hidden="true"><rect width="108" height="108" fill="#161616"/><g transform="translate(54,54) scale(0.85) translate(-54,-54)"><path fill="#dcdcdc" d="M40,38 a14,14 0 0 1 28,0 v36 a14,14 0 0 1 -28,0 z"/><path fill="#161616" d="M44,32 a16,16 0 0 1 32,0 a16,16 0 0 1 -32,0 z"/></g></svg><p class="brand-label">96</p></div>
+          <div><svg class="appicon" width="56" height="56" viewBox="0 0 108 108" aria-hidden="true"><rect width="108" height="108" fill="#161616"/><g transform="translate(54,54) scale(0.85) translate(-54,-54)"><path fill="#dcdcdc" d="M40,38 a14,14 0 0 1 28,0 v36 a14,14 0 0 1 -28,0 z"/><path fill="#161616" d="M44,32 a16,16 0 0 1 32,0 a16,16 0 0 1 -32,0 z"/></g></svg><p class="brand-label">56</p></div>
+          <div><svg class="appicon" width="28" height="28" viewBox="0 0 108 108" aria-hidden="true"><rect width="108" height="108" fill="#161616"/><g transform="translate(54,54) scale(0.85) translate(-54,-54)"><path fill="#dcdcdc" d="M40,38 a14,14 0 0 1 28,0 v36 a14,14 0 0 1 -28,0 z"/><path fill="#161616" d="M44,32 a16,16 0 0 1 32,0 a16,16 0 0 1 -32,0 z"/></g></svg><p class="brand-label">28</p></div>
+          <div style="width:64px">
+            <div class="splash" id="splashdemo" style="background:#161616" title="Replay">
+              <svg width="40" height="40" viewBox="0 0 108 108"><g class="mark"><g transform="translate(54,54) scale(0.85) translate(-54,-54)"><path fill="#dcdcdc" d="M40,38 a14,14 0 0 1 28,0 v36 a14,14 0 0 1 -28,0 z"/><path fill="#161616" d="M44,32 a16,16 0 0 1 32,0 a16,16 0 0 1 -32,0 z"/></g></g></svg>
+            </div>
+            <p class="brand-label">splash</p>
+          </div>
+      </div>
+        </div>
+        <div class="deck-copy">
+          <p class="num">05 / 06 &nbsp;&middot;&nbsp; App icon</p>
+          <h3>One mark, in Ink, everywhere it appears</h3>
+        <p>
+          The house rule &mdash; that the waveform is the alphabet &mdash;
+          carries into the launcher icon too: one wide bar, with a crescent
+          bitten from its top for dusk.
+        </p>
+        <p>
+          The terracotta launcher pair it used to swap between at runtime is
+          gone. An icon that changes colour behind the user&rsquo;s back is a
+          bug report waiting to happen.
+        </p>
+          <p class="rationale"><b>The bite is painted, not subtracted.</b> The circle overruns
+          the bar on two sides, so a hole that runs outside its own shape is
+          not a hole. The splash that launches it is a launch theme, not a
+          composable &mdash; up before the first frame, its ground the same
+          <code>#161616</code> as the tile and the app&rsquo;s own
+          background.</p>
         </div>
       </article>
       <article class="deck-slide" aria-hidden="true" inert>
@@ -2036,7 +2013,7 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
           </div>
         </div>
         <div class="deck-copy">
-          <p class="num">05 / 05 &nbsp;&middot;&nbsp; Shape and motion</p>
+          <p class="num">06 / 06 &nbsp;&middot;&nbsp; Shape and motion</p>
           <h3>Values that carry a decision, not a measurement</h3>
         <p>
           Nothing in the app is fully round except an actual circular icon
@@ -2063,9 +2040,10 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
           <button type="button" class="cdot" aria-label="Colour"></button>
           <button type="button" class="cdot" aria-label="Type"></button>
           <button type="button" class="cdot" aria-label="Icons"></button>
+          <button type="button" class="cdot" aria-label="App icon"></button>
           <button type="button" class="cdot" aria-label="Shape and motion"></button>
           </div>
-          <span class="deck-count" aria-live="polite">01 / 05</span>
+          <span class="deck-count" aria-live="polite">01 / 06</span>
           <button type="button" class="deck-nav deck-next" aria-label="Next"><svg class="i"><use href="#w-chev"/></svg></button>
         </div>
       </div>

@@ -24,14 +24,21 @@ API, library or tool is in scope and does not need justifying.
 `README.md` describes how the app is put together — do not restate it here.
 `docs/design-system/design-system.html` is the landing page and the
 visual-language reference in one (open it in a browser), in four acts:
-**Brand** (laid out, not a deck: the lockup, the name, the mark's
-construction in three steps, the size ramp and the splash),
-**Walkthrough** (all thirteen screens, as one draggable deck), **Design
-system** (a five-slide deck: monochrome first, then colour, type, icons, and
-shape/motion) and **Get it**. Keep it that way — **no code
+**Concept** (laid out, not a deck: the lockup and the name, then the
+on-device Summary panel — the app's one genuinely unique feature — shown in
+Paper Black and Ink side by side), **Walkthrough** (seven screens, as one
+draggable deck: onboarding's name panel, Home, Following, reading with a
+summary, Saved, Focus, Readback), **Design system** (a six-slide deck: monochrome, colour,
+type, icon set, app icon, shape/motion) and **Get it**. The app icon's own
+construction (bar, crescent, mark), its size ramp and the splash live in the
+Design system deck's "App icon" slide, not Concept — Concept argues the
+identity, the deck is reference on how the mark is built. Keep it that way — **no code
 paths, no class names, no TODO lists in it.** That material
 lives in `docs/design/amplitude-migration.md`, which holds the state of the
-system, what is still open, and the plans for unbuilt work.
+system and what is still open. A feature large enough to need its own plan
+gets its own file beside it — `docs/design/home-discovery.md` is the first,
+on ranking Home's pick across saved links and followed-blog posts with
+on-device topic tagging behind it.
 `docs/design-system/design-tokens.md` is the reference half: every colour
 role, type style, radius, duration and layout value, with the file it lives
 in. The page shows the language, the tokens file lists it — a table of hex
