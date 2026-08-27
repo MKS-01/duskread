@@ -40,8 +40,8 @@ no TODO lists. Open work lives in `docs/design/amplitude-migration.md`.
 
 ```
 masthead          lockup, headline, standfirst, act nav
-01 · concept       laid out, not a deck: lockup + name, then the on-device
-                   Summary panel in Paper Black and Ink side by side
+01 · concept       laid out, not a deck: lockup + name, then the four
+                   pillars (saved links, feeds, readback, focus) as cards
 02 · walkthrough   one deck, 7 slides — onboarding (name), Home, Following,
                    reading + summary, Saved, Focus, Readback
 03 · design system one deck, 6 slides — monochrome, colour, type, icon set,
@@ -56,9 +56,10 @@ Blocks inside them are `<div class="subsection">` with a `.sublabel`.
 
 **Do not stack three levels of heading in one act.** An eyebrow *and* a title
 *and* a note for one row of icons is chrome restating the act title above it.
-Act one (Concept, `id="concept"`) carries exactly one sub-heading (`The name`)
-because it labels the second column of a two-column row; everything else
-there runs as continuous prose. That was a deliberate cut, not an omission.
+Act one (Concept, `id="concept"`) carries two sub-headings and no more — `The
+name` beside the lockup, `What it does` over the pillar row — and the pillar
+titles are `<p class="pillar-name">`, not headings, for the same reason
+`.cstep-title` is: a card label is not a level of the document.
 
 **Concept argues the identity; the Design system deck is reference on how the
 mark is built.** The app icon's construction (bar, crescent, mark), its size
@@ -138,22 +139,22 @@ Everything inside `.v-amp` uses the app's own tokens (`--a-bg`, `--a-ink`,
 app, not a wireframe of it. **If a token changes in Kotlin, change it here in
 the same pass** — a mockup that has drifted is worse than no mockup.
 
-`.v-amp.mono` pins one frame to Ink permanently, and `.v-amp.paper` is its
-mirror for Paper Black (needs `body.ink .v-amp.paper` for the specificity to
-win — a bare `.v-amp` still follows the page-wide toggle). `body.ink` itself
-is the switch in the top corner, and it repaints every unpinned frame at
-once. Reach for `.paper` any time two schemes need to sit side by side — the
-Concept act's Summary comparison is the existing example.
+`.v-amp.mono` pins one frame to Ink permanently, regardless of the switch —
+the Monochrome slide's frame is the example. `body.ink` itself is the switch
+in the top corner, and it repaints every unpinned frame at once. There is no
+`.paper` mirror any more: the one place two schemes sat side by side was the
+Concept act's Summary comparison, and that block is gone.
 
 **The page opens in Paper Black, and Ink is absolute.** The default is the
 scheme with the accent in it, because a landing page has to be looked at
 before it can argue anything; Ink is one tap away and the page makes its case
 for it a screen later. Under `body.ink` nothing on the page keeps hue at all
-— `.v-amp.paper` and `.accentcard.paper` are hidden outright, so a Paper
-Black specimen steps out rather than sitting there as the only coloured thing
-left. That is why a side-by-side comparison only exists in the Paper Black
-direction: **anything new that carries the accent gets a `.paper` class**, or
-Ink stops being true.
+— the terracotta swatch in the colour slide carries `.accentcard.paper` and
+is hidden outright rather than left as the only coloured thing on screen. So
+a scheme comparison only ever runs in the Paper Black direction, and
+**anything new that carries the accent needs the same treatment**, or the
+switch stops telling the truth. Check it the cheap way: screenshot in Ink and
+count pixels where `max(r,g,b) − min(r,g,b) > 28`. It should be zero.
 
 ## Motion
 
@@ -224,6 +225,48 @@ Two things to check by eye, because code cannot tell you: the page in **both
 schemes** (flip the switch — an accent that only reads in one is a bug), and
 the page at **narrow width** (the decks and the two-column rows collapse at
 1120px and 900px respectively).
+
+## Phone widths
+
+**Headless Chrome will not give you a window narrower than 500px.** Ask for
+`--window-size=390,844` and you get a 500px viewport with a 390px screenshot
+cropped out of it — which looks exactly like content overflowing, and isn't.
+Every conclusion drawn that way is wrong. Load the page in an iframe of the
+width you actually want instead, inside a wider window, with
+`--allow-file-access-from-files` so the parent can read the frame back:
+
+```html
+<iframe id="f" src="design-system.html" width="390" height="20000"></iframe>
+```
+
+Then measure rather than squint — `document.documentElement.scrollWidth`
+against `clientWidth` catches horizontal overflow that a screenshot hides.
+Check 320, 360 and 390: 320 is the narrowest phone the page has to survive
+and it is where things break first.
+
+Two traps, both hit for real:
+
+- **A `1fr` grid column has an automatic min-content floor.** It will not
+  shrink below its widest child, so a 320px phone frame in a 312px column
+  overflows and the deck window silently clips it. `min-width: 0` on the
+  grid items removes the floor and lets the frame's `max-width` work. Same
+  bug, same fix, in `.deck-slide` and `.lockup-hero`.
+- **`align-items: start` is not enough on a stretched slide.** Slides are all
+  the height of the tallest, and that surplus goes to the grid *tracks*
+  first, so items sit in the middle of stretched rows. `align-content: start`
+  is the one that moves them.
+
+The mockups are scaled with **`zoom: 0.84` under 620px**, not a narrower
+width: the frames are drawn at 320×660 with the app's real type sizes in
+them, so a narrower frame reflows its contents and stops being a picture of
+the app. `zoom` takes the whole thing down together, layout box included.
+The page's own prose drops a step in the same block; mockup interiors never
+do, because `zoom` has already carried them.
+
+The scheme switch is **fixed bottom-right under 620px** and top-right above
+it — a phone reader's thumb is nowhere near the top corner, and the switch
+sat over the masthead exactly while it was being read. The page prose says
+"the switch in the corner" for that reason; do not put "top" back in it.
 
 ## Publishing
 

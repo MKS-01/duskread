@@ -24,9 +24,11 @@ API, library or tool is in scope and does not need justifying.
 `README.md` describes how the app is put together — do not restate it here.
 `docs/design-system/design-system.html` is the landing page and the
 visual-language reference in one (open it in a browser), in four acts:
-**Concept** (laid out, not a deck: the lockup and the name, then the
-on-device Summary panel — the app's one genuinely unique feature — shown in
-Paper Black and Ink side by side), **Walkthrough** (seven screens, as one
+**Concept** (laid out, not a deck: the lockup and the name, then the four
+pillars — saved links, feeds, readback, focus — one hairline card each. The
+on-device Summary used to be shown here too and was cut: the Walkthrough's
+Reading slide already had it, and Concept is not the place to demonstrate a
+screen), **Walkthrough** (seven screens, as one
 draggable deck: onboarding's name panel, Home, Following, reading with a
 summary, Saved, Focus, Readback), **Design system** (a six-slide deck: monochrome, colour,
 type, icon set, app icon, shape/motion) and **Get it**. The app icon's own

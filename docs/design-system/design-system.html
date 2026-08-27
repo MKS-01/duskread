@@ -88,12 +88,12 @@ body {
    it rather than only stated in it. */
 body.ink { --accent: var(--accent-mono); }
 
-/* Ink means no hue anywhere, so the two Paper Black specimens on the page
-   leave with the accent rather than sitting there as the only coloured
-   things left: the Summary comparison in act one and the accent swatch in
-   the colour slide. Both are back the moment the switch goes to Paper
-   Black, which is the direction the comparison is worth making in. */
-body.ink .v-amp.paper,
+/* Ink means no hue anywhere, and that has to hold for the specimens too:
+   the terracotta swatch in the colour slide is hidden under Ink rather
+   than left sitting there as the only coloured thing on the page. The
+   comparison only runs in the Paper Black direction, which is the
+   direction it is worth making in. Anything new carrying the accent wants
+   this class, or the switch stops telling the truth. */
 body.ink .accentcard.paper { display: none; }
 
 .wrap { max-width: var(--page); margin: 0 auto; padding: 0 24px 96px; }
@@ -210,9 +210,6 @@ h2 {
 
 .screen-row { display: grid; grid-template-columns: max-content minmax(300px, 560px); gap: 44px; align-items: start; }
 .screen-row .frames { display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-start; min-width: 0; }
-/* Two frames side by side outside a screen-row's frame+notes layout — the
-   Summary showcase's Paper Black / Ink pair. */
-.frame-pair { display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-start; }
 /* ============================================================
    DECK — the big slider each act is built around. A filmstrip
    rather than a stack of cross-fading cards, because a filmstrip
@@ -250,7 +247,27 @@ h2 {
 .deck-system .deck-figure { min-width: 0; width: 100%; }
 
 @media (max-width: 1120px) {
-  .deck-slide, .deck-system .deck-slide { grid-template-columns: 1fr; gap: 28px; }
+  /* Stacked, and pinned to the top of the slide rather than centred in it.
+     Every slide is as tall as the tallest, which is what keeps the page
+     below the deck still — centred, that surplus is split above and below
+     the short slides and the frame appears to float to a new place on every
+     swipe. Starting them all at the top means the phone lands in the same
+     spot each time and the slack collects at the bottom, where the deck bar
+     already is. */
+  /* `align-content` as well as `align-items`: the slide is stretched to the
+     tallest slide's height, and by default that surplus is handed to the
+     rows themselves — aligning the items inside stretched rows moves
+     nothing. Both together put the frame at the top and the slack at the
+     bottom. */
+  .deck-slide, .deck-system .deck-slide {
+    grid-template-columns: 1fr; gap: 28px;
+    align-content: start; align-items: start;
+  }
+  /* A `1fr` column still has an automatic min-content floor, so on a phone
+     narrower than the 320px frame the column refuses to shrink and the
+     window clips the frame's right edge. Zeroing the floor lets the frame's
+     own max-width do its job. */
+  .deck-slide > * { min-width: 0; }
 }
 
 .deck-copy .num {
@@ -610,22 +627,6 @@ body.ink .v-amp {
   --a-wave-off: rgb(156 156 156 / 0.55);
 }
 
-/* `.paper` is `.mono`'s mirror: pins a frame to Paper Black regardless of
-   the page-wide toggle, for the one place two schemes are shown side by
-   side and both have to hold still while the switch in the corner moves.
-   Needs the extra specificity to win over `body.ink .v-amp` above. */
-body.ink .v-amp.paper {
-  --a-bg:       #101010;
-  --a-raise:    #1a1a1a;
-  --a-ink:      #e8e6e2;
-  --a-mute:     #a3a19d;
-  --a-faint:    #6c6a67;
-  --a-line:     #242423;
-  --a-sound:    #c6684a;
-  --a-on-sound: #2b1006;
-  --a-wave-off: rgb(163 161 157 / 0.55);
-}
-
 /* ============================================================
    SCHEME TOGGLE — fixed, because the mockups it repaints run the
    whole length of the page and a control in the masthead would be
@@ -673,8 +674,57 @@ body.ink .v-amp.paper {
 .schemeswitch button:active { transform: scale(0.96); }
 
 @media (max-width: 620px) {
-  .schemeswitch { top: 8px; right: 8px; }
-  .schemeswitch button { font-size: 10px; padding: 5px 8px; letter-spacing: 0.06em; }
+  /* On a phone the switch moves to the bottom-right corner and rides above
+     the page. Top-right is a mouse position: on a phone it is the far end of
+     a one-handed reach, and it sits over the masthead at exactly the moment
+     the reader is trying to read it. The app itself keeps every control in
+     the lower third for the same reason, so the page now agrees with the
+     thing it is documenting. Bottom clearance is env(safe-area-inset-bottom)
+     plus a gap, for the home indicator. */
+  .schemeswitch {
+    top: auto; right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    /* Off the flat page ground it needs its own edge to sit on: the same
+       hairline plus a soft drop, so it reads as floating over the page
+       rather than printed on it. */
+    box-shadow: 0 6px 20px rgb(0 0 0 / 0.34);
+    background: color-mix(in srgb, var(--bg) 94%, transparent);
+  }
+  .schemeswitch button { font-size: 10px; padding: 6px 10px; letter-spacing: 0.06em; }
+
+  /* The frames are drawn at 320×660 with the app's own type sizes inside
+     them, so they cannot just be handed a narrower width: the content would
+     reflow and the mockup would stop being a picture of the app. `zoom`
+     scales the whole frame, layout box and all, so it stays exactly itself
+     at 84% and the slide it sits in gets shorter with it — which is what
+     makes a seven-slide deck swipeable on a phone rather than a column of
+     full-height screens. Desktop is untouched; a browser without `zoom`
+     falls back to the frame at full size, which is today's behaviour. */
+  .phone { zoom: 0.84; }
+
+  /* Type down a step across the page. The sizes above are set for a reading
+     column 66–74 characters wide; on a phone the same measure is reached
+     two sizes lower, and holding the desktop size there is what turns a
+     paragraph into six short lines. Only the page's own prose moves — the
+     sizes inside a mockup are the app's, and `zoom` above already carries
+     them down together. */
+  body { font-size: 15px; }
+  h1 { font-size: clamp(27px, 7.4vw, 34px); }
+  .act-title { font-size: clamp(24px, 6.6vw, 30px); }
+  .standfirst { font-size: 16px; }
+  .act-note { font-size: 15px; }
+  .section-title { font-size: 21px; }
+  .section-note { font-size: 14px; }
+  .deck-copy h3 { font-size: 20px; }
+  .deck-copy p { font-size: 14px; }
+  .rationale { font-size: 13px; }
+  .pillar-name { font-size: 15px; }
+  .pillar-note { font-size: 13px; }
+  .cstep-title { font-size: 15px; }
+  .accentcard .cap2 { font-size: 12.5px; }
+  .spec { font-size: 13px; }
+  .wordmark { font-size: 20px; }
+  .foot-line { font-size: 13.5px; }
 }
 
 /* The swap repaints every mockup at once, and an instant cut across
@@ -738,6 +788,33 @@ body.swapping .v-amp * {
 .cstep-num { font-family: var(--data); font-size: 11px; letter-spacing: 0.14em; color: var(--accent); margin: 0 0 7px; }
 .cstep-title { font-size: 16px; font-weight: 500; margin: 0; color: var(--text); }
 
+/* THE FOUR PILLARS — the same hairline grid as the construction row
+   above, because it is the same kind of object: a set of claims that
+   have to be read across rather than down. Act one says what the app is
+   called and what it is for; the walkthrough below is the screens, and
+   the four never turn into five. Titles are <p>, not headings — the act
+   already has its own, and a fifth level of heading for a card label is
+   chrome. */
+/* Four explicit columns rather than auto-fit: auto-fit drops to three and
+   leaves the fourth claim sitting alone on a row of its own, which reads as
+   an afterthought rather than as the fourth of four. */
+.pillars {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px; background: var(--line); border: 1px solid var(--line);
+  border-radius: var(--radius); overflow: hidden;
+}
+.pillar { background: var(--bg); padding: 24px 22px 26px; }
+/* Muted rather than accent: the accent means sound, and three of these
+   four are not sound. */
+.pillar .i { font-size: 20px; color: var(--faint); margin-bottom: 16px; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.pillar-name { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; margin: 0 0 7px; color: var(--text); }
+.pillar-note { font-size: 14px; line-height: 1.62; color: var(--muted); margin: 0; }
+/* Two up where the decks already collapse, one up at the narrowest. These
+   live beside the rule they override rather than in the shared breakpoint
+   blocks further up the sheet, which come before it and would lose. */
+@media (max-width: 1120px) { .pillars { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 620px)  { .pillars { grid-template-columns: 1fr; } }
+
 /* The splash tile is phone-shaped, so it never belonged in a row that is
    otherwise a size ramp. */
 .splash-row {
@@ -747,6 +824,16 @@ body.swapping .v-amp * {
 
 @media (max-width: 900px) {
   .lockup-hero, .splash-row { grid-template-columns: 1fr; gap: 30px; }
+}
+/* At 320 the mark and the wordmark beside it are wider than the column, and
+   a `1fr` column will not shrink below its content. Zero that floor and take
+   the tile down a size: the lockup has to survive the narrowest phone still
+   sold, and it is the first thing on the page. */
+@media (max-width: 620px) {
+  .lockup-hero > * { min-width: 0; }
+  .hero-mark { gap: 16px; }
+  .hero-mark .appicon { width: 104px; height: 104px; }
+  .bigmark { font-size: clamp(30px, 9vw, 42px); }
 }
 .appicon { border-radius: 22.5%; display: block; flex: none; }
 .brand-label { font-family: var(--data); font-size: 10px; letter-spacing: 0.08em; color: var(--faint); text-align: center; margin-top: 6px; }
@@ -1033,7 +1120,7 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
       accent means one thing: <strong>there is sound here</strong>.
       <strong>Ink</strong> is the same layout with the hue drained out
       entirely, leaving lightness, weight and spacing to separate one
-      element from another. The switch in the top corner repaints every
+      element from another. The switch in the corner repaints every
       screen below — worth flipping once.
     </p>
 
@@ -1046,17 +1133,19 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
   </header>
 
   <!-- ============================================================
-       ACT 1 — Concept: what the app is called, why, and the one
-       thing it does that nothing else does. The mark's own
-       construction lives in act 3, with the rest of the reference.
+       ACT 1 — Concept: what the app is called and where the name
+       comes from, and nothing else. The mark's own construction lives
+       in act 3 with the rest of the reference, and the on-device
+       summary is the walkthrough's fourth slide — it was shown here
+       too until the two were saying the same thing twice.
        ============================================================ -->
   <section id="concept" class="act">
     <div data-reveal>
       <h2>Act one &middot; Concept</h2>
       <p class="act-title">One shape, one word, and the hour it is named for</p>
       <p class="act-note">
-        What the app is called, where the name comes from, and the one thing
-        it does that no other read-later app does.
+        What the app is called, and where the name comes from. What it
+        does is the act below.
       </p>
     </div>
 
@@ -1081,128 +1170,50 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
     </div>
 
     <div class="subsection" data-reveal>
+      <p class="sublabel">What it does</p>
+      <p class="section-title" style="font-size:22px">Four things, and it has never wanted a fifth</p>
       <p class="section-note">
-        One more thing before the walkthrough: the feature no other
-        read-later app has. A summary written on the phone by Gemini Nano
-        &mdash; the article never leaves the device, and the panel floats
-        rather than taking you anywhere.
+        Every screen in the act below is one of these four, or the way you
+        get between them.
       </p>
 
-      <div class="frame-pair" style="margin-bottom:24px">
-        <div class="v-amp paper frame-block">
-          <p class="frame-cap">Article summary &mdash; Paper Black</p>
-          <div class="phone">
-            <div class="screen">
-              <div class="statusbar"><span>4:19</span><span class="bars"><i></i><i></i><i></i><i></i></span></div>
-              <div class="canvas">
-                <div class="toolbar">
-                  <span class="iconbtn" style="border:0"><svg class="i" style="font-size:16px"><use href="#w-back"/></svg></span>
-                  <span class="title">A Tale of Two Flink Autoscalers</span>
-                  <span class="iconbtn active"><svg class="i" style="font-size:15px"><use href="#w-reader"/></svg></span>
-                  <span class="iconbtn active"><svg class="i" style="font-size:15px"><use href="#w-summary"/></svg></span>
-                  <span class="iconbtn"><svg class="i" style="font-size:15px"><use href="#w-external"/></svg></span>
-                </div>
-                <div style="font-size:13px;line-height:1.6;color:var(--a-mute);filter:blur(1.5px);opacity:0.5">
-                  Netflix currently runs two different autoscalers for Apache
-                  Flink, and they are actively moving toward replacing the
-                  custom one with the open-source Kubernetes-native
-                  autoscaler.<br><br>
-                  The custom autoscaler predates the Kubernetes operator by
-                  several years. It was built when the platform ran Flink on
-                  its own scheduling layer, and it carries assumptions from
-                  that era &mdash; most visibly that scaling decisions are made
-                  from a single aggregated backlog metric rather than
-                  per-vertex.<br><br>
-                  Feature parity is the gating question. The open-source
-                  autoscaler reached rough equivalence on throughput-based
-                  scaling last year, but two things kept the custom one alive:
-                  its handling of sources with irregular partition counts, and
-                  the operational tooling built around it.<br><br>
-                  What follows is a comparison of how each one reacts to the
-                  same three production incidents, and what that implies for
-                  the migration order.
-                </div>
-              </div>
-              <div class="summarycard">
-                <div style="display:flex;align-items:center;margin-bottom:8px;font-family:var(--a-ui);font-weight:700;font-size:10px;letter-spacing:0.09em;text-transform:uppercase;color:var(--a-sound)">
-                  Summary
-                  <svg class="i" style="font-size:13px;margin-left:auto;color:var(--a-faint)"><use href="#w-close"/></svg>
-                </div>
-                <div style="font-size:12.5px;line-height:1.55;color:var(--a-ink)">
-                  Netflix runs two Flink autoscalers today and is consolidating
-                  on the open-source, Kubernetes-native one &mdash; the custom
-                  version is being retired once feature parity closes the
-                  remaining gap.
-                </div>
-              </div>
-            </div>
-          </div>
+      <div class="pillars">
+        <div class="pillar">
+          <svg class="i" aria-hidden="true"><use href="#w-saved"/></svg>
+          <p class="pillar-name">Saved links</p>
+          <p class="pillar-note">
+            A pasted or shared URL is in the list before its title has
+            finished loading. Nothing to file and nothing to tag &mdash; the
+            pile is meant to be worked through, not curated.
+          </p>
         </div>
-        <div class="v-amp mono frame-block">
-          <p class="frame-cap">Article summary &mdash; Ink</p>
-          <div class="phone">
-            <div class="screen">
-              <div class="statusbar"><span>4:19</span><span class="bars"><i></i><i></i><i></i><i></i></span></div>
-              <div class="canvas">
-                <div class="toolbar">
-                  <span class="iconbtn" style="border:0"><svg class="i" style="font-size:16px"><use href="#w-back"/></svg></span>
-                  <span class="title">A Tale of Two Flink Autoscalers</span>
-                  <span class="iconbtn active"><svg class="i" style="font-size:15px"><use href="#w-reader"/></svg></span>
-                  <span class="iconbtn active"><svg class="i" style="font-size:15px"><use href="#w-summary"/></svg></span>
-                  <span class="iconbtn"><svg class="i" style="font-size:15px"><use href="#w-external"/></svg></span>
-                </div>
-                <div style="font-size:13px;line-height:1.6;color:var(--a-mute);filter:blur(1.5px);opacity:0.5">
-                  Netflix currently runs two different autoscalers for Apache
-                  Flink, and they are actively moving toward replacing the
-                  custom one with the open-source Kubernetes-native
-                  autoscaler.<br><br>
-                  The custom autoscaler predates the Kubernetes operator by
-                  several years. It was built when the platform ran Flink on
-                  its own scheduling layer, and it carries assumptions from
-                  that era &mdash; most visibly that scaling decisions are made
-                  from a single aggregated backlog metric rather than
-                  per-vertex.<br><br>
-                  Feature parity is the gating question. The open-source
-                  autoscaler reached rough equivalence on throughput-based
-                  scaling last year, but two things kept the custom one alive:
-                  its handling of sources with irregular partition counts, and
-                  the operational tooling built around it.<br><br>
-                  What follows is a comparison of how each one reacts to the
-                  same three production incidents, and what that implies for
-                  the migration order.
-                </div>
-              </div>
-              <div class="summarycard">
-                <div style="display:flex;align-items:center;margin-bottom:8px;font-family:var(--a-ui);font-weight:700;font-size:10px;letter-spacing:0.09em;text-transform:uppercase;color:var(--a-sound)">
-                  Summary
-                  <svg class="i" style="font-size:13px;margin-left:auto;color:var(--a-faint)"><use href="#w-close"/></svg>
-                </div>
-                <div style="font-size:12.5px;line-height:1.55;color:var(--a-ink)">
-                  Netflix runs two Flink autoscalers today and is consolidating
-                  on the open-source, Kubernetes-native one &mdash; the custom
-                  version is being retired once feature parity closes the
-                  remaining gap.
-                </div>
-              </div>
-            </div>
-          </div>
+        <div class="pillar">
+          <svg class="i" aria-hidden="true"><use href="#w-feed"/></svg>
+          <p class="pillar-name">Feeds</p>
+          <p class="pillar-note">
+            Follow a blog and its posts land beside the links you saved
+            yourself, in the same one list rather than in a second inbox to
+            keep up with.
+          </p>
+        </div>
+        <div class="pillar">
+          <svg class="i" aria-hidden="true"><use href="#w-wave"/></svg>
+          <p class="pillar-name">Readback</p>
+          <p class="pillar-note">
+            Some pieces are better heard than read. Audio plays from the row
+            it belongs to rather than from a player you have to go and find,
+            and it is the one thing the accent is ever spent on.
+          </p>
+        </div>
+        <div class="pillar">
+          <svg class="i" aria-hidden="true"><use href="#w-focus"/></svg>
+          <p class="pillar-name">Focus</p>
+          <p class="pillar-note">
+            A timer wrapped around the reading rather than sitting beside it.
+            The pile was never the hard part; sitting down with it is.
+          </p>
         </div>
       </div>
-
-      <p class="rationale" style="max-width:74ch">
-        <b>On the phone, not in the cloud.</b> AICore runs the model locally
-        over text the reader has already extracted, so nothing is uploaded
-        and nothing needs a connection. <b>Prose, not bullets</b> &mdash; a
-        summary of an argument delivered as fragments asks you to
-        reassemble the argument, which is most of the work you opened the
-        panel to avoid.
-        <br><br>
-        <b>And it survives Ink.</b> The <b>Summary</b> label and the two lit
-        toolbar buttons are the only coloured things in the Paper Black
-        frame; in Ink they are white and nothing else moves. Flip the switch
-        in the corner and the terracotta half steps out entirely &mdash; the
-        page holds to its own rule.
-      </p>
     </div>
 
   </section>
