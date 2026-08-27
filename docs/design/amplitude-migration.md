@@ -4,6 +4,11 @@ Tracking the app's migration to the Amplitude direction from
 `docs/design/redesign-variants.html`, screen by screen. Terracotta and
 monochrome are the only two palettes kept — no cyan "signature" accent.
 
+This file is the state of what is **built**. One unbuilt feature has a plan
+of its own: `docs/design/home-discovery.md`, on making Home's pick a ranking
+over saved links and followed-blog posts together, with on-device topic
+tagging behind it where the device has a model for it.
+
 ## Already done (previous pass)
 
 - [x] Icon set redrawn in the Bar hand (18 icons, all stroked)
@@ -264,3 +269,263 @@ screenshots are the only verification that exists here.
 - [ ] iOS and Wasm have not been compiled across this entire migration — a
       cold Kotlin/Native build is ten minutes plus, so it was deliberately
       skipped, but one run should happen before the migration is called done
+
+## Moved out of the design-system page (landing-page pass)
+
+`docs/design-system/design-system.html` is now the product intro as well as
+the visual reference, so the engineering inventory it had accumulated moved
+here. None of it changed — it just stopped being something a first-time
+reader has to scroll past.
+
+### State of the system (verified against the code at the time of the move)
+
+- No boxed surface is left in a list anywhere in the app. Home, Readback,
+  Saved, Following and Settings all sit flush on the ground, separated by
+  their own bottom hairline.
+- `ui/common/ListRow.kt` is the one row: `ListRow`, `ListRowBody`,
+  `ListRowDivider`, with `RowTone` (`Normal`, `Accent`, `Faded`) the whole
+  vocabulary of row states.
+- `ui/theme/Theme.kt` holds `DarkScheme` (Paper Black) and `MonoScheme`
+  (Ink). Ink is the default and persists (`UserPrefs.mono`, default `true`).
+  The app icon is the Ink mark at all times and does not follow the setting.
+- Paper Black's accent is terracotta `#C6684A` — one hue, meaning "there is
+  sound here" and nothing else. Ink ignores it entirely.
+- [ ] The second `AccentColor` (dusty green `#4FA870`) is being dropped. It
+      is out of the docs already; the enum, the Settings swatches and the
+      picker still need removing from the code.
+- `Radius.Chip` 3dp (hairline-bordered, squared-off: sort chips, sourcechip,
+  the Settings and folder icon buttons), `Radius.Inline` 10dp (fields),
+  `Radius.Card` 14dp (the summary panel, the one thing that floats).
+- `AppTextField` is every text input: Saved's paste field, the feed address,
+  Settings, the desktop folder path, onboarding, Focus's custom length.
+- `ui/theme/DuskReadIcons.kt` — 22 icons, all stroked at 2.4, round cap and
+  join. No Material glyph is mixed in.
+- `ui/layout/WindowClass.kt` reads the window against a 720dp breakpoint;
+  past it `ui/home/NavRail.kt` replaces the floating bar, the transport
+  anchors to the bottom edge, and prose caps at `Layout.ReadingMeasure`
+  (640dp).
+- Summaries: ML Kit GenAI against AICore, confirmed end to end on a Galaxy
+  S25. No emulator can stand in — those system images ship no
+  `com.google.android.aicore`, so the engine there only ever answers
+  "unavailable".
+
+### Still open
+
+- [ ] Two filled boxes survive in Saved: the "From clipboard" suggestion and
+      one paste-row fill, still `surfaceContainer`/`primaryContainer`
+      rectangles in `LinksTab.kt` — the last two painted surfaces in the app
+- [ ] The wide layout has a rail but not two panes. The list-and-detail
+      split, and the overlay rules that go with it, are drawn and not built
+- [ ] No hover, no focus ring, no keys — touch never needed them, so none
+      were built. A pointer and a keyboard need all three
+- [ ] Desktop has no app icon: `nativeDistributions` sets no `iconFile`
+
+### Wide-layout plan, in full
+
+Cut from the design-system page because it documents unbuilt work at more
+length than the built app gets.
+
+**Three states a phone never needed.** Touch has one state worth drawing —
+pressed, and it is gone before you look at it. A pointer hovers, a keyboard
+focuses, and a two-pane layout has to say which row the right-hand side
+belongs to. None may use colour: the accent still means *there is sound
+here*. Hover is a 3.5% white wash; selected is a `surface` raise; focus is a
+1px accent outline, inset — the one place the accent is spent on something
+other than sound, because a focus ring that is not obvious is not a focus
+ring.
+
+**Keys** — deliberately few, and deliberately the same ones readback's own
+terminal player uses, since the two projects are read by the same person on
+the same evening and should not disagree about what `space` does:
+
+| | |
+|---|---|
+| Play | `space` play/pause the transport, from any pane |
+| Seek | `←` `→` ±5 s |
+| Move | `↑` `↓` through the list pane, `enter` to open in the detail pane |
+| Paste | `⌘V` anywhere on Saved fills the paste field, no click first |
+| Dismiss | `esc` closes the topmost overlay — the same single `PlatformBackHandler` Android's gesture already goes through |
+
+No shortcut opens a pane that a tab does not. Every key either drives the
+transport or moves a selection; none is a hidden route to a screen, which
+keeps the rail the only answer to "where am I?" and means the phone build
+loses nothing by having no keyboard.
+
+**Overlays, at width.** Focus, the summary panel and the reader are overlays
+in one `Box` rather than destinations, and that stays true when the window is
+wide — but a bottom-anchored sheet spanning 1180dp is a banner, not a panel.
+
+- The summary panel anchors to the detail pane, not the window: same
+  `Radius.Card`, same hairline, bottom-right of the pane that asked for it,
+  capped at 420dp. Its job is to sit beside the article you are deciding
+  about, and at this width it can do that without covering it at all.
+- Focus becomes a centred panel, ~440dp, on a dimmed ground — not a
+  full-screen takeover. The phone goes full-screen because a phone has no
+  room to be beside anything; blanking 1180×820 to show a clock is theatre.
+  The thumb-zone rule that put the meter low on the phone has no counterpart
+  here: centred is correct once nothing has to be reachable.
+- The reader stops being an overlay at all. It *is* the detail pane — which
+  is the entire argument for two panes.
+- Nothing gains a modal. No dialog, no confirm step.
+
+**What web has to answer that desktop does not.**
+
+- No readback library. The folder picker is Android SAF and desktop
+  file-path; a browser tab has neither, so Readback in Wasm shows the
+  "not configured" state and the rail's tab stays visible but empty. Not
+  hidden — a missing tab is a worse answer than an empty one.
+- No summaries. Same as iOS: `summariesSupported()` is false, the control is
+  not drawn, nothing upstream knows.
+- The window is not yours. A tab can be 320dp or 3000dp and can change
+  mid-session, so the breakpoint has to be read continuously — the one place
+  `BoxWithConstraints` earns its keep over a platform window-size class.
+- Fonts arrive late. Jost and Inconsolata are bundled on the other three
+  targets and a network fetch on web; the first paint has to be legible in
+  the fallback stack rather than invisible.
+
+### Summary-screen decisions, in full
+
+- **Prose, not bullets.** The engine returns bullets *always*, so
+  `parseSummary` flattens them into prose rather than the panel growing a
+  layout per engine mood.
+- **Two lengths, on the engine's own dial.** Short and Full map to AICore's
+  `ONE_BULLET` and `THREE_BULLETS`. A word limit was tried first and
+  dropped: a limit can only cut, never lengthen, and three points from this
+  model often run under any ceiling worth naming, so every setting produced
+  the same text.
+- **One engine, no model picker.** AICore's free-form Prompt API answers
+  `FEATURE_NOT_FOUND` on real hardware, so it and the three-model Settings
+  picker that depended on it are both gone.
+- **Swipe-right-to-summarise** draws `SummariseBackground` in
+  `surfaceContainerHigh`, not Remove's accent container — one is destructive
+  and should look like it.
+- **One shared pill.** `ui/summary/SummaryChip.kt` is the download button in
+  the panel and in Settings alike.
+
+### App-icon geometry note
+
+The crescent is an opaque circle in the exact ground colour, drawn after the
+bar — *not* a `fillType="evenOdd"` subtraction, which was tried first and is
+wrong for a cut shape extending outside the base shape: evenOdd fills that
+outside part back in as a second, disconnected blob. The one place the
+ground-colour trick cannot apply — the Android 13+ themed-icon layer, which
+reads only alpha — keeps a true evenOdd hole, sized down to sit fully inside
+the bar so the same bug cannot recur.
+
+---
+
+## The landing page — open work
+
+`docs/design-system/design-system.html` is now the product landing page as
+well as the visual-language reference, in four acts (brand, walkthrough,
+design system, get it) with the reference values split out into
+`docs/design-system/design-tokens.md`. Conventions for editing it are in the
+`duskread-landing-page` skill.
+
+### GitHub Pages
+
+- [x] `.github/workflows/pages.yml` — copies `design-system.html` to
+  `index.html`, adds `.nojekyll`, rewrites the relative `design-tokens.md`
+  link to the GitHub blob URL, and deploys. Triggers on pushes to `main`
+  touching `docs/design-system/**`, plus manual dispatch.
+- [ ] **Enable Pages in the repo, once.** Settings → Pages → Build and
+  deployment → Source → **GitHub Actions**. The deploy job fails with "Get
+  Pages site failed" until this is done, and it cannot be done from a
+  workflow.
+- [ ] Merge `design-page-landing` into `main` — the workflow only fires there.
+- [ ] Link the live page from `README.md` once the URL resolves
+  (`https://mks-01.github.io/duskread/`). Left out for now rather than
+  committing a dead link.
+- [ ] Decide whether `design-tokens.md` should render as a page of its own
+  rather than as a GitHub blob. It would need either Jekyll front matter or a
+  Markdown step in the workflow; the blob link is deliberately the cheap
+  option until the file is being read often enough to justify either.
+
+### Page work still open
+
+- [ ] Feel-check the deck drag on a real phone. The projection constant is
+  `0.99` (snappier); `0.998` is the scroll-like default and is a one-character
+  change. Cannot be judged from code.
+- [ ] Feel-check the walkthrough autoplay interval (6.5s) against actually
+  reading a slide's caption.
+- [ ] The three corner radii (14 / 10 / 3dp) are drawn at true size on the
+  "shape and motion" slide and are genuinely hard to tell apart there. Either
+  accept it — they are one step apart on purpose — or draw a zoomed corner
+  detail instead of whole squares.
+- [x] Summaries is named and shown before the walkthrough after all — a
+  subsection in act one, the Article summary frame shown twice, in Paper
+  Black and in Ink side by side, framed as "the feature no other read-later
+  app has" rather than as a fourth capability card. Getting the two frames
+  to actually hold their schemes regardless of the page-wide switch needed a
+  new `.paper` pin class (`.mono`'s mirror, `body.ink .v-amp.paper` to win
+  the specificity fight) — a bare `.v-amp` "Paper Black" frame was silently
+  flipping to Ink because the reader's toggle defaults to Ink. The focus
+  timer is still only introduced in the walkthrough; leave it there unless it
+  turns out to need the same treatment.
+- [x] The mark's construction (Bar / Crescent / Mark, number and title only),
+  its size ramp and the splash moved out of act one entirely, into a new
+  "App icon" slide in the Design system deck (now six slides). Act one argues
+  the identity; the deck is where a reader steps through how the mark is
+  built — the two were competing for the same attention in one act.
+- [x] The system deck's Monochrome slide went through two frames before
+  landing: first reverted to Readback (to avoid repeating act one's Summary
+  screen), then swapped again to a plain article-open reading view — no
+  summary panel, no spinner, just the extracted text with the reader button
+  active. Reading is the app's central concept, so the monochrome test
+  demonstrates it on the screen that concept lives on, not on Readback
+  (a secondary feature) or a second copy of the Summary comparison. The
+  colour demonstration is quieter as a result — only the reader button's
+  ring goes from terracotta to white, versus Readback's pill/title/chip/wave
+  all switching at once — a deliberate trade of a stronger demo for the
+  better conceptual fit.
+- [x] The Monochrome slide's copy was still describing Paper Black as the
+  baseline and Ink as what you get when you strip it ("becomes white here"),
+  backwards from how the app actually defaults. Reworded to describe Paper
+  Black as the one-tap addition on top of Ink, not Ink as the derived state.
+
+- [x] The walkthrough deck cut from thirteen slides to seven: onboarding's
+  name panel (the other three intro panels were the same panel with different
+  art), Home, Following, reading + summary as one slide, Saved, Focus
+  running, Readback. Thirteen screens is a tour; seven is an argument.
+- [x] The Readback mockup had drifted from `ui/reader/ReaderTab.kt` and
+  `ui/home/FloatingBar.kt` and is now redrawn against them: the floating bar
+  shows its **player face** (play/pause, title, remaining, stop, divider, the
+  tab you are already on) with the 2.5dp scrub line along its foot, because
+  playback wins the bar while it runs — the mockup was still drawing the tab
+  face. Added the `NowPlayingTip` line above the list ("use the bar below to
+  control it") and the per-row external-link row, neither of which the mockup
+  had.
+- [x] The Focus mockup was missing its close button (top-left, the only way
+  out of a full-screen destination), had the eyebrow accented where
+  `FocusScreen` passes `tint = onSurfaceVariant`, and was left-aligned where
+  the real column is `CenterHorizontally`. All three fixed; clock size
+  corrected 56 → 52 to match the `52.sp` in code.
+
+- [x] Every walkthrough phone was rendering narrower than 320px. The deck's
+  figure column is `max-content`, and `.phone` is `width: 100%` — so a screen
+  with sparse content (Focus is a clock and two pills) collapsed to the width
+  of that content. `.deck-figure .phone { width: 320px; max-width: 100% }`
+  gives max-content something definite to resolve to. The floor this replaces
+  was lost when act one's deck was dismantled.
+- [x] The bookmark was missing from Following entirely — and per
+  `ui/home/TopicRow.kt` it is "the only way a feed post ever reaches the Saved
+  tab", so its absence made the two screens look unconnected. Expanded rows
+  now carry the sourcechip `ListRow` draws and the bookmark pair (filled =
+  saved, hollow = not), with copy naming the route into Saved and the
+  swipe-right-to-summarise gesture beside it.
+- [x] Wording pass: "dashboard" is not a word this app uses (it is Home),
+  "nested carousel" read oddly on a page built out of decks, and the floating
+  bar was being called "tab bar" on one slide and "nav bar" on another. Act
+  one's note still claimed everything in it was "drawn once, in Ink" — false
+  since the Summary pair arrived. Two stale HTML structure comments fixed
+  too: act one was described as Ink-pinned and act three as "grids, not a
+  deck".
+
+### Not a page issue, but found while drawing it
+
+- [ ] `ic_launcher_monochrome.xml`'s notch may not be contained after all. The
+  bar spans x 40–68; the notch circle is centred at (67, 36) with r=9, so
+  x 58–76 — roughly 8px hangs off the right edge. `evenOdd` only cuts cleanly
+  where the shapes overlap, so that overhang should fill back in as a lens,
+  which is the exact failure the file's own comment warns about. Check it on a
+  device with themed icons turned on.

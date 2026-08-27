@@ -22,11 +22,33 @@ The four things the app does, and where each lives:
 API, library or tool is in scope and does not need justifying.
 
 `README.md` describes how the app is put together — do not restate it here.
-`docs/design-system/design-system.html` is the current visual-language
-reference (open it in a browser); `docs/design/amplitude-migration.md` tracks
-the redesign's progress screen by screen. Both are kept up to date and should
-be treated as current — update them alongside a UI change rather than letting
-them drift.
+`docs/design-system/design-system.html` is the landing page and the
+visual-language reference in one (open it in a browser), in four acts:
+**Concept** (laid out, not a deck: the lockup and the name, then the
+on-device Summary panel — the app's one genuinely unique feature — shown in
+Paper Black and Ink side by side), **Walkthrough** (seven screens, as one
+draggable deck: onboarding's name panel, Home, Following, reading with a
+summary, Saved, Focus, Readback), **Design system** (a six-slide deck: monochrome, colour,
+type, icon set, app icon, shape/motion) and **Get it**. The app icon's own
+construction (bar, crescent, mark), its size ramp and the splash live in the
+Design system deck's "App icon" slide, not Concept — Concept argues the
+identity, the deck is reference on how the mark is built. Keep it that way — **no code
+paths, no class names, no TODO lists in it.** That material
+lives in `docs/design/amplitude-migration.md`, which holds the state of the
+system and what is still open. A feature large enough to need its own plan
+gets its own file beside it — `docs/design/home-discovery.md` is the first,
+on ranking Home's pick across saved links and followed-blog posts with
+on-device topic tagging behind it.
+`docs/design-system/design-tokens.md` is the reference half: every colour
+role, type style, radius, duration and layout value, with the file it lives
+in. The page shows the language, the tokens file lists it — a table of hex
+values does not belong on a landing page. All three are kept up to date and
+should be treated as current — update them alongside a UI change rather than
+letting them drift.
+
+The page deploys to GitHub Pages via `.github/workflows/pages.yml` on pushes
+to `main` under `docs/design-system/`. It has no build step and should not
+grow one.
 
 ## Build and verify
 
@@ -136,7 +158,36 @@ Sizes that carry a decision — reading gutters, corner radii, the bar
 clearance — live in `ui/theme/Tokens.kt`. Optical one-off nudges stay inline;
 naming one implies a system that is not there.
 
-## The Android skills in `.claude/skills/`
+## The skills in `.claude/skills/`
+
+### Motion and design
+
+Seven skills from [emilkowalski/skill](https://github.com/emilkowalski/skill)
+(MIT, vendored rather than installed via `npx skills add`, so only the ones
+that apply here are present): `apple-design`, `animate` (+ `RECIPES.md`),
+`animation-vocabulary`, `find-animation-opportunities`, `improve-animations`,
+`review-animations` and `emil-design-eng`.
+
+**They are written for the web** — CSS, Pointer Events, Motion. On
+`docs/design-system/design-system.html` they apply directly and did: the
+page's easing tokens, the scroll reveal, the segmented switch and the
+reduced-motion block all come from them. For `composeApp/` only the
+*reasoning* transfers — the gate (should this animate at all), the named
+purpose, ease-out for entrances, sub-300ms for UI — and it lands on
+`animateDpAsState`, `spring()` and `tween()` in `ui/theme/Tokens.kt`'s
+`Motion` object, never on a `cubic-bezier` string.
+
+`review-animations` is `disable-model-invocation: true`; invoke it yourself
+with `/review-animations`.
+
+### This project
+
+`duskread-design-system` for Compose UI work, `duskread-landing-page` for
+`docs/design-system/` (the page's four acts, the deck component, what belongs
+on the page versus in the tokens file), plus `duskread-verify` and
+`duskread-crash-audit`.
+
+### Android
 
 Only `edge-to-edge`, `adaptive` and `testing-setup` are kept — the rest of
 the stock Android skill set was pruned because it targets native Android apps
