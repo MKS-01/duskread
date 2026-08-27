@@ -406,3 +406,57 @@ outside part back in as a second, disconnected blob. The one place the
 ground-colour trick cannot apply — the Android 13+ themed-icon layer, which
 reads only alpha — keeps a true evenOdd hole, sized down to sit fully inside
 the bar so the same bug cannot recur.
+
+---
+
+## The landing page — open work
+
+`docs/design-system/design-system.html` is now the product landing page as
+well as the visual-language reference, in four acts (brand, walkthrough,
+design system, get it) with the reference values split out into
+`docs/design-system/design-tokens.md`. Conventions for editing it are in the
+`duskread-landing-page` skill.
+
+### GitHub Pages
+
+- [x] `.github/workflows/pages.yml` — copies `design-system.html` to
+  `index.html`, adds `.nojekyll`, rewrites the relative `design-tokens.md`
+  link to the GitHub blob URL, and deploys. Triggers on pushes to `main`
+  touching `docs/design-system/**`, plus manual dispatch.
+- [ ] **Enable Pages in the repo, once.** Settings → Pages → Build and
+  deployment → Source → **GitHub Actions**. The deploy job fails with "Get
+  Pages site failed" until this is done, and it cannot be done from a
+  workflow.
+- [ ] Merge `design-page-landing` into `main` — the workflow only fires there.
+- [ ] Link the live page from `README.md` once the URL resolves
+  (`https://mks-01.github.io/duskread/`). Left out for now rather than
+  committing a dead link.
+- [ ] Decide whether `design-tokens.md` should render as a page of its own
+  rather than as a GitHub blob. It would need either Jekyll front matter or a
+  Markdown step in the workflow; the blob link is deliberately the cheap
+  option until the file is being read often enough to justify either.
+
+### Page work still open
+
+- [ ] Feel-check the deck drag on a real phone. The projection constant is
+  `0.99` (snappier); `0.998` is the scroll-like default and is a one-character
+  change. Cannot be judged from code.
+- [ ] Feel-check the walkthrough autoplay interval (6.5s) against actually
+  reading a slide's caption.
+- [ ] The three corner radii (14 / 10 / 3dp) are drawn at true size on the
+  "shape and motion" slide and are genuinely hard to tell apart there. Either
+  accept it — they are one step apart on purpose — or draw a zoomed corner
+  detail instead of whole squares.
+- [ ] Summaries and the focus timer are no longer named anywhere before the
+  walkthrough, since the four capability cards were cut from act one as a
+  table of contents for act two. If they should be named up front, a clause in
+  the masthead standfirst is the cheap fix, not bringing the cards back.
+
+### Not a page issue, but found while drawing it
+
+- [ ] `ic_launcher_monochrome.xml`'s notch may not be contained after all. The
+  bar spans x 40–68; the notch circle is centred at (67, 36) with r=9, so
+  x 58–76 — roughly 8px hangs off the right edge. `evenOdd` only cuts cleanly
+  where the shapes overlap, so that overhang should fill back in as a lens,
+  which is the exact failure the file's own comment warns about. Check it on a
+  device with themed icons turned on.

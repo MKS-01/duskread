@@ -18,11 +18,16 @@ screen rather than introducing a second system next to the first.
 
 ## Source of truth
 
-- **`docs/design-system/design-system.html`** — open it in a browser. Per-screen
-  mockups (Readback, Home, Saved, Focus, empty states), the Monochrome (Ink)
-  and Brand sections, the Type scale, the shipped icon set's stroke language,
-  an **"In use today"** list (cross-checked against the live code, not stale
-  notes), and a **"Next"** list of genuinely open work.
+- **`docs/design-system/design-system.html`** — open it in a browser. The
+  landing page and the visual language in one, in four acts: brand, a
+  thirteen-screen walkthrough, the design system (monochrome, colour, type,
+  icons, shape and motion) and how to run it. Every mockup uses the real token
+  values and the shipped icon paths, so it is the app rather than a wireframe
+  of it. **Editing it has its own skill — `duskread-landing-page`.**
+- **`docs/design-system/design-tokens.md`** — the reference half: every colour
+  role in both schemes, the type scale, layout values, radii, durations and
+  the icon list, each with the file it lives in. Look values up here; look at
+  them on the page.
 - **`docs/design/amplitude-migration.md`** — the day-by-day log of how the app
   got here, screen by screen. Read it for *why* a pattern exists; read the
   design-system doc for *what* the pattern is.
