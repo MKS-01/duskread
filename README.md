@@ -137,17 +137,9 @@ No tests yet.
 
 ## Design system
 
-Two colour schemes, one layout, both dark. `DarkScheme` is **Paper Black**; `MonoScheme` is **Ink**, the same layout with hue drained to luminance alone. Paper Black spends its one accent, terracotta `#C6684A`, on a single meaning: there is sound here. Ink ignores it entirely — lightness, weight and spacing are all that separate elements. Ink is the default and persists.
+Two schemes, one layout, both dark: **Paper Black**, warm-white ink on matte near-black lit by one terracotta accent that means only *there is sound here*, and **Ink**, the same page with the hue drained to luminance alone — the default, and what it persists to. The app swaps between them at runtime, so no screen hard-codes a colour: it comes from `MaterialTheme.colorScheme` (`ui/theme/Theme.kt`), sizes that carry a decision from `ui/theme/Tokens.kt`, icons from `ui/theme/DuskReadIcons.kt`.
 
-The app swaps between them at runtime, which is why no screen hard-codes a colour — a literal survives the swap and immediately looks wrong.
-
-Everything visual is specified in one browsable page:
-
-```bash
-open docs/design-system/design-system.html
-```
-
-Colour comes from `MaterialTheme.colorScheme` (`ui/theme/Theme.kt`), sizes that carry a decision from `ui/theme/Tokens.kt`, and icons from `ui/theme/DuskReadIcons.kt` — stroked to match the type weight, so a filled Material glyph mixed in is visible instantly.
+Everything else visual is specified on the page — **[mks-01.github.io/duskread](https://mks-01.github.io/duskread/)**, or `docs/design-system/design-system.html` in a checkout.
 
 ---
 
