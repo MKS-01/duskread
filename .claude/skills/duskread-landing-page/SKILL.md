@@ -142,9 +142,18 @@ the same pass** — a mockup that has drifted is worse than no mockup.
 mirror for Paper Black (needs `body.ink .v-amp.paper` for the specificity to
 win — a bare `.v-amp` still follows the page-wide toggle). `body.ink` itself
 is the switch in the top corner, and it repaints every unpinned frame at
-once. Reach for `.paper` any time two schemes need to sit side by side and
-hold still regardless of which way the reader has the switch set — the
+once. Reach for `.paper` any time two schemes need to sit side by side — the
 Concept act's Summary comparison is the existing example.
+
+**The page opens in Paper Black, and Ink is absolute.** The default is the
+scheme with the accent in it, because a landing page has to be looked at
+before it can argue anything; Ink is one tap away and the page makes its case
+for it a screen later. Under `body.ink` nothing on the page keeps hue at all
+— `.v-amp.paper` and `.accentcard.paper` are hidden outright, so a Paper
+Black specimen steps out rather than sitting there as the only coloured thing
+left. That is why a side-by-side comparison only exists in the Paper Black
+direction: **anything new that carries the accent gets a `.paper` class**, or
+Ink stops being true.
 
 ## Motion
 

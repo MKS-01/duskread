@@ -88,6 +88,14 @@ body {
    it rather than only stated in it. */
 body.ink { --accent: var(--accent-mono); }
 
+/* Ink means no hue anywhere, so the two Paper Black specimens on the page
+   leave with the accent rather than sitting there as the only coloured
+   things left: the Summary comparison in act one and the accent swatch in
+   the colour slide. Both are back the moment the switch goes to Paper
+   Black, which is the direction the comparison is worth making in. */
+body.ink .v-amp.paper,
+body.ink .accentcard.paper { display: none; }
+
 .wrap { max-width: var(--page); margin: 0 auto; padding: 0 24px 96px; }
 
 a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
@@ -936,10 +944,10 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
   </defs>
 </svg>
 
-<div class="schemeswitch" role="group" aria-label="Colour scheme shown in the mockups" data-active="ink">
+<div class="schemeswitch" role="group" aria-label="Colour scheme shown in the mockups" data-active="paper">
   <span class="thumb" aria-hidden="true"></span>
-  <button type="button" data-scheme="paper" aria-pressed="false">Paper Black</button>
-  <button type="button" data-scheme="ink" aria-pressed="true">Ink</button>
+  <button type="button" data-scheme="paper" aria-pressed="true">Paper Black</button>
+  <button type="button" data-scheme="ink" aria-pressed="false">Ink</button>
 </div>
 
 <!-- Deliberately here rather than at the foot of the page: the class lands
@@ -970,7 +978,7 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
     document.body.classList.toggle('ink', scheme === 'ink');
     // Drives the travelling pill. On the first call this lands the thumb
     // under whichever button the saved preference selected, and because the
-    // attribute starts at "ink" that first landing is usually a no-op
+    // attribute starts at "paper" that first landing is usually a no-op
     // rather than a slide the reader never asked to watch.
     document.querySelector('.schemeswitch').dataset.active = scheme;
     buttons.forEach(function (b) {
@@ -985,10 +993,13 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
     b.addEventListener('click', function () { apply(b.dataset.scheme, true); });
   });
 
-  // Ink is the app's own default, so it is this page's default too.
+  // Ink is the app's default; the page opens in Paper Black anyway. A
+  // landing page has one job before anything else, which is to be looked
+  // at, and the accent is the thing worth looking at first. Ink is one tap
+  // away and the page argues for it a screen later.
   var saved = null;
   try { saved = localStorage.getItem('duskread-scheme'); } catch (e) {}
-  apply(saved === 'paper' ? 'paper' : 'ink', false);
+  apply(saved === 'ink' ? 'ink' : 'paper', false);
 })();
 </script>
 
@@ -1017,12 +1028,13 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
       — one screen to open when you finally sit down.
     </p>
     <p class="standfirst">
-      Two schemes. <strong>Ink</strong> drains the hue out entirely, leaving
-      lightness, weight and spacing to separate one element from another.
-      <strong>Paper Black</strong> is the same layout with a single
-      terracotta accent lit, and that accent means one thing:
-      <strong>there is sound here</strong>. The switch in the top corner
-      repaints every screen below — worth flipping once.
+      Two schemes. <strong>Paper Black</strong>, the one you are looking at,
+      is a near-black ground with a single terracotta accent lit, and that
+      accent means one thing: <strong>there is sound here</strong>.
+      <strong>Ink</strong> is the same layout with the hue drained out
+      entirely, leaving lightness, weight and spacing to separate one
+      element from another. The switch in the top corner repaints every
+      screen below — worth flipping once.
     </p>
 
     <nav class="contents" aria-label="Contents">
@@ -1187,7 +1199,9 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
         <br><br>
         <b>And it survives Ink.</b> The <b>Summary</b> label and the two lit
         toolbar buttons are the only coloured things in the Paper Black
-        frame; both become white on the right, and nothing else moves.
+        frame; in Ink they are white and nothing else moves. Flip the switch
+        in the corner and the terracotta half steps out entirely &mdash; the
+        page holds to its own rule.
       </p>
     </div>
 
@@ -1799,7 +1813,8 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
           <h3>Ink &mdash; the default, not a colour stripped away</h3>
         <p>
           Hue drops to nothing and level is luminance alone. It is the
-          default, which is why this page opens in it.
+          app&rsquo;s own default; this page opens in Paper Black because a
+          landing page has to be looked at first.
         </p>
         <p>
           Paper Black is one tap on top of that &mdash; the contrast toggle
@@ -1818,7 +1833,7 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
       <article class="deck-slide" aria-hidden="true" inert>
         <div class="v-amp deck-figure">
           <div class="accentrow">
-            <div class="accentcard">
+            <div class="accentcard paper">
               <div class="band" style="background:#c6684a;color:#2b1006"><span>#C6684A &middot; ON #2B1006</span></div>
               <p class="cap2"><b>Paper Black &mdash; the accent</b>A terracotta, not a signal orange &mdash; it has to survive being the only coloured thing on a near-black page for an hour.</p>
             </div>
@@ -2363,8 +2378,17 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
     <p class="foot-meta">
       <a href="https://github.com/MKS-01/duskread">Source</a> &middot;
       <a href="https://github.com/MKS-01/readback">readback</a> &middot;
-      MIT
+      MIT &middot; <span id="year">2026</span>
     </p>
   </footer>
+
+  <!-- The year is written into the markup so it is right with scripting off,
+       and corrected here so it does not quietly go stale next January. -->
+  <script>
+  (function () {
+    var y = document.getElementById('year');
+    if (y) y.textContent = String(new Date().getFullYear());
+  })();
+  </script>
 
 </div>
