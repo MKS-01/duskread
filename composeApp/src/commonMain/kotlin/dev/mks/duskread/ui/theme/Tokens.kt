@@ -30,6 +30,30 @@ object Layout {
     /** Bottom inset so the last item clears the floating bar. */
     val BarClearance = 72.dp
 
+    /** Every face of the floating bar is this tall; only the width changes between them. */
+    val BarHeight = 56.dp
+
+    /**
+     * What the floating bar keeps between itself and the safe area.
+     *
+     * On top of `navigationBarsPadding()`, not instead of it — and larger
+     * than it looks like it needs to be. Under gesture navigation that inset
+     * is only a few dp, so the bar was landing all but on the home pill: two
+     * floating things a thumb-width apart, one of them the system's. This is
+     * the gap that stops them reading as one control.
+     */
+    val BarInset = 24.dp
+
+    /**
+     * How far the floating bar slides down to get out of the way, and how
+     * much clearance the list underneath takes back when it does.
+     *
+     * Two-thirds of the bar's own height. Shared rather than repeated because
+     * the two have to move by the same amount: the bar sliding further than
+     * the list reclaims would leave content running under it.
+     */
+    val BarPeekDrop = 38.dp
+
     /**
      * The one width that changes the plan: below it the phone layout, above
      * it a rail and two panes. One threshold rather than a size-class ladder

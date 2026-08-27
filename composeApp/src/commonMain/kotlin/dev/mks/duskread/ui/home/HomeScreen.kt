@@ -2,6 +2,8 @@ package dev.mks.duskread.ui.home
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -49,6 +51,7 @@ import dev.mks.duskread.links.createHttpClient
 import dev.mks.duskread.links.rememberFeedLibrary
 import dev.mks.duskread.links.rememberFeedPostCache
 import dev.mks.duskread.links.rememberLinkLibrary
+import dev.mks.duskread.links.rememberReadingSignals
 import dev.mks.duskread.reader.rememberAudioPlayer
 import dev.mks.duskread.reader.rememberReadRepository
 import dev.mks.duskread.ui.common.ToastHost
@@ -59,6 +62,16 @@ import dev.mks.duskread.ui.reader.ReaderTab
 import dev.mks.duskread.ui.settings.SettingsScreen
 import dev.mks.duskread.ui.theme.Layout
 import dev.mks.duskread.ui.theme.Motion
+
+/**
+ * Bottom inset for the three tab lists with the bar at rest.
+ *
+ * Derived rather than typed out: the bar, the gap it keeps from the safe
+ * area, and a gap under the last row. Widening [Layout.BarInset] without
+ * this moving with it would push the bar up into content the list still
+ * thought it had cleared. Reduced by [Layout.BarPeekDrop] while peeked.
+ */
+private val FullClearance = Layout.BarHeight + Layout.BarInset + 32.dp
 
 /**
  * Home: tabs and a floating bar.
@@ -103,6 +116,12 @@ fun HomeScreen(
     // Saved tab so the share lands whichever tab happens to be showing —
     // the tab switch that follows is a courtesy, not what makes it work.
     val links = rememberLinkLibrary()
+
+    // Hoisted beside the library it describes, and passed down rather than
+    // re-remembered per screen: what gets read is one record, and two copies
+    // of it would disagree.
+    val signals = rememberReadingSignals()
+
     val sharedUrl by SharedLinkRequest.url.collectAsState()
     LaunchedEffect(sharedUrl) {
         sharedUrl?.let {
@@ -127,10 +146,23 @@ fun HomeScreen(
     // which one is running.
     val wide = LocalWindowClass.current.isWide
 
-    // One fixed clearance for the last card. It used to grow while the player
-    // was docked above the bar; now that the transport lives inside the bar,
-    // the bar is the same height whether anything is playing or not, and the
-    // padding no longer has to animate underneath a scrolling list.
+    // Shared by all three tabs so the bar's collapse survives switching
+    // between them — each tab owns its own scroll position, but the bar is one
+    // object and should not pop back open just because you changed lists.
+    val collapse = rememberBarCollapse()
+
+    // Clearance for the last card, and the one thing here that does animate.
+    //
+    // It used to grow while the player was docked above the bar, and that was
+    // right to remove: playback starting is unrelated to what the reader is
+    // doing, so the list shifted under them unprompted. This is the opposite
+    // case. The change is *caused* by the scroll that triggers it and moves
+    // with the bar it is clearing, in lockstep and on the same curve — the
+    // reader is not surprised by it, they asked for it by scrolling.
+    //
+    // It never goes to nothing. The bar only peeks, so a floor has to stay
+    // between the last row and the strip of it still on screen, or the list
+    // reads as running underneath rather than clear of it.
     //
     // `top` is more generous than it used to be: with no per-tab title left
     // above the first card, that clearance is the only thing keeping content
@@ -140,17 +172,21 @@ fun HomeScreen(
     // a Column there rather than something floating over the list, so the
     // list already ends where the transport begins and padding for it would
     // be a second gap under the first.
+    val bottomClearance by animateDpAsState(
+        targetValue = if (collapse.collapsed) FullClearance - Layout.BarPeekDrop else FullClearance,
+        animationSpec = tween(
+            durationMillis = if (collapse.collapsed) Motion.Chip else Motion.Fade,
+            easing = LinearOutSlowInEasing,
+        ),
+        label = "listClearance",
+    )
+
     val listPadding = PaddingValues(
         start = if (wide) Layout.WideListGutter else 16.dp,
         end = if (wide) Layout.WideListGutter else 16.dp,
         top = 24.dp,
-        bottom = if (wide) 28.dp else 104.dp,
+        bottom = if (wide) 28.dp else bottomClearance,
     )
-
-    // Shared by all three tabs so the bar's collapse survives switching
-    // between them — each tab owns its own scroll position, but the bar is one
-    // object and should not pop back open just because you changed lists.
-    val collapse = rememberBarCollapse()
 
     // Owned here rather than in `App.kt`, unlike Focus mode: Settings needs
     // `links`, which already lives at this level, and threading a whole
@@ -214,6 +250,8 @@ fun HomeScreen(
                 HomeTab.HOME -> DashboardTab(
                     greeting = prefs.name?.let { "Hello, $it" },
                     links = links,
+                    signals = signals,
+                    player = player,
                     feeds = feeds,
                     feedPosts = feedPosts,
                     feedClient = feedClient,
@@ -233,6 +271,7 @@ fun HomeScreen(
 
                 HomeTab.SAVED -> LinksTab(
                     library = links,
+                    signals = signals,
                     contentPadding = listPadding,
                 )
             }
@@ -313,7 +352,7 @@ fun HomeScreen(
                 collapse = collapse,
                 modifier = Modifier
                     .navigationBarsPadding()
-                    .padding(bottom = 14.dp, start = 16.dp, end = 16.dp),
+                    .padding(bottom = Layout.BarInset, start = 16.dp, end = 16.dp),
             )
         }
 

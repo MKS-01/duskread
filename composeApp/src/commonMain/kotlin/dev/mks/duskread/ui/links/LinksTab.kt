@@ -46,6 +46,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.mks.duskread.links.LinkLibrary
+import dev.mks.duskread.links.ReadingSignals
 import dev.mks.duskread.links.SavedLink
 import dev.mks.duskread.links.createHttpClient
 import dev.mks.duskread.links.fetchLinkMetadata
@@ -94,6 +95,7 @@ import dev.mks.duskread.ui.theme.SectionLabel
 @Composable
 fun LinksTab(
     library: LinkLibrary,
+    signals: ReadingSignals,
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
 ) {
@@ -169,8 +171,12 @@ fun LinksTab(
                             onOpen = {
                                 open(link.url)
                                 library.toggleRead(link.id)
+                                signals.recordRead(link.url)
                             },
-                            onToggleRead = { library.toggleRead(link.id) },
+                            onToggleRead = {
+                                library.toggleRead(link.id)
+                                signals.recordRead(link.url)
+                            },
                             onRetry = { library.retryFetch(link.id) },
                             onRemove = {
                                 library.remove(link.id)

@@ -2,6 +2,8 @@ package dev.mks.duskread.ui.home
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -17,6 +19,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -44,6 +47,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.chrisbanes.haze.HazeState
@@ -54,6 +58,7 @@ import dev.mks.duskread.reader.PlaybackState
 import dev.mks.duskread.reader.ReadItem
 import dev.mks.duskread.ui.reader.formatDuration
 import dev.mks.duskread.ui.theme.DuskReadIcons
+import dev.mks.duskread.ui.theme.Layout
 import dev.mks.duskread.ui.theme.Motion
 
 enum class HomeTab(val label: String, val icon: ImageVector) {
@@ -62,29 +67,31 @@ enum class HomeTab(val label: String, val icon: ImageVector) {
     SAVED("Saved", DuskReadIcons.Bookmark),
 }
 
-/** Every face of the bar is this tall; only the width changes between them. */
-private val BarHeight = 56.dp
-
 /** The visible scrub line at the foot of the player face. */
 private val SeekTrackHeight = 2.5.dp
 
 /** Its actual touch target — a 2.5dp line is not draggable with a thumb. */
 private val SeekTouchHeight = 20.dp
 
-/** How far a downward run has to travel before the bar gives up its width. */
+/** How far a downward run has to travel before the bar gets out of the way. */
 private val CollapseRun = 52.dp
 
-/** And how far back up to earn it again — deliberately shorter, see [BarCollapse]. */
+/** And how far back up to earn its place again — deliberately shorter, see [BarCollapse]. */
 private val ExpandRun = 18.dp
 
 /**
- * Which of the bar's three faces is on screen.
+ * Which of the bar's two faces is on screen.
  *
  * They are mutually exclusive by design: the whole point of the swap is that
  * there is only ever one floating object above the nav bar, never a stack of
  * them competing for the same thumb.
+ *
+ * Getting out of the way is no longer a third face. It used to collapse to a
+ * bare icon, which cost the reader every control and the answer to "where am
+ * I" for the sake of some pixels; the bar now slides down instead and keeps
+ * both.
  */
-private enum class BarFace { TABS, PLAYER, PUCK }
+private enum class BarFace { TABS, PLAYER }
 
 /**
  * Tracks scroll direction so the bar can shrink out of the way while reading.
@@ -179,14 +186,34 @@ fun FloatingBar(
     nowPlaying?.let { shown.value = it }
 
     val face = when {
-        collapse.collapsed -> BarFace.PUCK
         nowPlaying != null && !peekingTabs -> BarFace.PLAYER
         else -> BarFace.TABS
     }
 
+    // Out of the way, not gone. Sliding beats shrinking here: the bar's
+    // buttons are 42dp against a 56dp bar, so any real reduction in height
+    // takes the touch targets under the size a thumb can hit. Translation
+    // costs them nothing — what is still on screen is still the same size it
+    // always was.
+    //
+    // Deliberate to leave, cheap to return, the same asymmetry [BarCollapse]
+    // already applies to the scroll runs that trigger it.
+    val drop by animateDpAsState(
+        targetValue = if (collapse.collapsed) Layout.BarPeekDrop else 0.dp,
+        animationSpec = tween(
+            durationMillis = if (collapse.collapsed) Motion.Chip else Motion.Fade,
+            easing = LinearOutSlowInEasing,
+        ),
+        label = "barPeek",
+    )
+
     Box(
         modifier = modifier
-            .height(BarHeight)
+            // `offset` with a lambda, not `graphicsLayer`: this has to move
+            // the bar's hit area with it, or the buttons stay tappable at a
+            // position they are no longer drawn in.
+            .offset { IntOffset(0, drop.roundToPx()) }
+            .height(Layout.BarHeight)
             .clip(CircleShape)
             .hazeEffect(
                 state = hazeState,
@@ -241,16 +268,14 @@ fun FloatingBar(
                     onStop = onStop,
                     onShowTabs = { peekingTabs = true },
                 )
-
-                BarFace.PUCK -> PuckFace(
-                    icon = when {
-                        nowPlaying == null || peekingTabs -> selected.icon
-                        playback.playing -> DuskReadIcons.Pause
-                        else -> DuskReadIcons.Play
-                    },
-                    onClick = collapse::expand,
-                )
             }
+        }
+
+        // While peeked the whole bar is one target, not five. A third of a
+        // 42dp button is 14dp, and a tap that lands on the wrong one of three
+        // tabs is worse than a tap that just brings the bar back.
+        if (collapse.collapsed) {
+            Box(Modifier.matchParentSize().clickable(onClick = collapse::expand))
         }
 
         // Position, shown rather than left to be discovered by dragging: the
@@ -364,19 +389,6 @@ private fun PlayerFace(
         // it reads as "return to where you were" rather than as a fourth
         // destination.
         BarButton(selected.icon, "Show tabs", onClick = onShowTabs)
-    }
-}
-
-/** What is left of the bar while you scroll: the one control worth keeping. */
-@Composable
-private fun PuckFace(icon: ImageVector, onClick: () -> Unit) {
-    Box(Modifier.size(BarHeight).clickable(onClick = onClick), contentAlignment = Alignment.Center) {
-        Icon(
-            imageVector = icon,
-            contentDescription = "Expand bar",
-            modifier = Modifier.size(20.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
     }
 }
 
