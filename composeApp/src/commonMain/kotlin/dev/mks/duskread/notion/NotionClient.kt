@@ -4,6 +4,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.get
 import io.ktor.client.request.header
+import io.ktor.client.request.patch
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
@@ -17,6 +18,7 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -122,6 +124,60 @@ class NotionClient(
     }
 
     /**
+     * The database's own schema.
+     *
+     * Wanted for one thing: the names of the `Status` options. Notion's DDL
+     * refuses to rename them from the stock `Not started` / `Done`, so anyone
+     * wanting a reading list to say `Unread` / `Read` does it by hand — and
+     * hard-coding either spelling would break the moment they did. Reading the
+     * schema costs one request per sync and makes the rename a non-event.
+     */
+    suspend fun schema(databaseId: String): NotionResult<JsonObject> = request { token ->
+        client.get("$ApiBase/databases/${databaseId.trim()}") { notionHeaders(token) }
+    }
+
+    /** Creates a row, returning its page id. */
+    suspend fun createPage(databaseId: String, properties: JsonObject): NotionResult<String> {
+        val body = buildJsonObject {
+            put("parent", buildJsonObject { put("database_id", JsonPrimitive(databaseId.trim())) })
+            put("properties", properties)
+        }
+
+        return write { token ->
+            client.post("$ApiBase/pages") {
+                notionHeaders(token)
+                contentType(ContentType.Application.Json)
+                setBody(body.toString())
+            }
+        }.then { page ->
+            page["id"]?.stringOrNull()?.let { NotionResult.Ok(it) } ?: NotionResult.Malformed("no page id")
+        }
+    }
+
+    /** Updates a row in place. Only the properties named are touched; everything else is left alone. */
+    suspend fun updatePage(pageId: String, properties: JsonObject): NotionResult<Unit> = write { token ->
+        client.patch("$ApiBase/pages/$pageId") {
+            notionHeaders(token)
+            contentType(ContentType.Application.Json)
+            setBody(buildJsonObject { put("properties", properties) }.toString())
+        }
+    }.then { NotionResult.Ok(Unit) }
+
+    /**
+     * A write, paced.
+     *
+     * Notion allows roughly three requests a second, and a first push is one
+     * request per saved link — enough to walk straight into the limiter. The
+     * 429 handling in [request] is a recovery; this is the policy that means
+     * it rarely has to fire. Reads are not paced because there is only ever
+     * one of them per sync.
+     */
+    private suspend fun write(call: suspend (String) -> HttpResponse): NotionResult<JsonObject> {
+        delay(WriteSpacingMs)
+        return request(call)
+    }
+
+    /**
      * One call, with the token attached and the two failure shapes Notion
      * imposes handled: a status code that means something specific, and a 429
      * that wants waiting out.
@@ -183,6 +239,9 @@ class NotionClient(
         const val PageSize = 100
         const val MaxAttempts = 3
         const val InitialBackoffMs = 1_000L
+
+        /** Just under Notion's ~3 requests a second, so a long push never reaches the limiter. */
+        const val WriteSpacingMs = 350L
     }
 }
 

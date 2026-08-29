@@ -25,6 +25,16 @@ class NotionPrefs(private val store: KeyValueStore) {
     var sourcesDatabaseId: String? by mutableStateOf(store.getString(SourcesKey))
         private set
 
+    /**
+     * The `Reading List` database saved links sync against.
+     *
+     * Optional and separate from [sourcesDatabaseId]: the two halves are
+     * independent, and a reader who only wants their followed blogs pulled
+     * down should not have to configure the half that writes.
+     */
+    var readingDatabaseId: String? by mutableStateOf(store.getString(ReadingKey))
+        private set
+
     /** When the last successful pull finished, for the "synced 2m ago" line. */
     var lastSyncAt: Long? by mutableStateOf(store.getString(LastSyncKey)?.toLongOrNull())
         private set
@@ -44,6 +54,12 @@ class NotionPrefs(private val store: KeyValueStore) {
         store.putString(SourcesKey, trimmed)
     }
 
+    fun updateReadingDatabaseId(id: String?) {
+        val trimmed = id?.trim()?.takeIf { it.isNotBlank() }
+        readingDatabaseId = trimmed
+        store.putString(ReadingKey, trimmed)
+    }
+
     fun recordConnection(name: String) {
         databaseName = name
         store.putString(NameKey, name)
@@ -57,13 +73,15 @@ class NotionPrefs(private val store: KeyValueStore) {
     /** The other half of a disconnect; the token half is `NotionAuth.disconnect`. */
     fun clear() {
         sourcesDatabaseId = null
+        readingDatabaseId = null
         lastSyncAt = null
         databaseName = null
-        listOf(SourcesKey, LastSyncKey, NameKey).forEach { store.putString(it, null) }
+        listOf(SourcesKey, ReadingKey, LastSyncKey, NameKey).forEach { store.putString(it, null) }
     }
 
     private companion object {
         const val SourcesKey = "notion.database.sources"
+        const val ReadingKey = "notion.database.reading"
         const val LastSyncKey = "notion.sync.last"
         const val NameKey = "notion.database.name"
     }

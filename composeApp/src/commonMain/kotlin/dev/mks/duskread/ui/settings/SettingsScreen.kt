@@ -55,6 +55,7 @@ import dev.mks.duskread.notion.PastedTokenAuth
 import dev.mks.duskread.notion.applySources
 import dev.mks.duskread.notion.pullSources
 import dev.mks.duskread.notion.rememberNotionPrefs
+import dev.mks.duskread.notion.syncReadingList
 import dev.mks.duskread.summary.SummariserState
 import dev.mks.duskread.summary.SummaryLength
 import dev.mks.duskread.summary.rememberSummariser
@@ -166,7 +167,7 @@ fun SettingsScreen(
 
                 EyebrowHeader(text = "NOTION")
                 Spacer(Modifier.height(14.dp))
-                NotionSettings(feeds = feeds, feedPosts = feedPosts, client = feedClient)
+                NotionSettings(library = library, feeds = feeds, feedPosts = feedPosts, client = feedClient)
 
                 Spacer(Modifier.height(28.dp))
 
@@ -509,7 +510,7 @@ private fun lengthNote(length: SummaryLength): String = when (length) {
  */
 @OptIn(ExperimentalTime::class)
 @Composable
-private fun NotionSettings(feeds: FeedLibrary, feedPosts: FeedPostCache, client: HttpClient) {
+private fun NotionSettings(library: LinkLibrary, feeds: FeedLibrary, feedPosts: FeedPostCache, client: HttpClient) {
     val secrets = rememberSecretStore()
     val notion = rememberNotionPrefs()
     val auth = remember(secrets) { PastedTokenAuth(secrets) }
@@ -521,6 +522,7 @@ private fun NotionSettings(feeds: FeedLibrary, feedPosts: FeedPostCache, client:
     var connected by remember { mutableStateOf(secrets.get(NotionTokenKey) != null) }
     var token by remember { mutableStateOf("") }
     var databaseId by remember(notion.sourcesDatabaseId) { mutableStateOf(notion.sourcesDatabaseId.orEmpty()) }
+    var readingId by remember(notion.readingDatabaseId) { mutableStateOf(notion.readingDatabaseId.orEmpty()) }
     var busy by remember { mutableStateOf(false) }
     var note by remember { mutableStateOf<String?>(null) }
 
@@ -535,7 +537,7 @@ private fun NotionSettings(feeds: FeedLibrary, feedPosts: FeedPostCache, client:
 
     Column(Modifier.fillMaxWidth()) {
         Text(
-            text = "Follow the blogs listed in a Notion database. Read-only — nothing here writes back.",
+            text = "Follow the blogs listed in a Notion database, and keep saved links in step with it.",
             fontSize = 12.5.sp,
             lineHeight = 17.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -595,6 +597,32 @@ private fun NotionSettings(feeds: FeedLibrary, feedPosts: FeedPostCache, client:
             },
         )
 
+        Spacer(Modifier.height(8.dp))
+
+        AppTextField(
+            value = readingId,
+            onValueChange = { readingId = it },
+            placeholder = "Reading List database ID (optional)",
+            fontSize = 13.5.sp,
+            mono = true,
+            trailing = {
+                AnimatedVisibility(readingId.trim() != notion.readingDatabaseId.orEmpty()) {
+                    Text(
+                        text = "Save",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .clickable {
+                                notion.updateReadingDatabaseId(readingId)
+                                note = "Reading list saved"
+                            }
+                            .padding(start = 10.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
+                    )
+                }
+            },
+        )
+
         Spacer(Modifier.height(14.dp))
 
         // The state line, shaped like every other two-line settings row. The
@@ -644,7 +672,7 @@ private fun NotionSettings(feeds: FeedLibrary, feedPosts: FeedPostCache, client:
                 if (busy) return@TransferAction
                 busy = true
                 scope.launch {
-                    note = runNotionSync(api, databaseId, feeds, feedPosts, client, notion::recordSync)
+                    note = runNotionSync(api, databaseId, notion.readingDatabaseId, library, feeds, feedPosts, client, notion::recordSync)
                     busy = false
                 }
             }
@@ -679,6 +707,8 @@ private fun NotionSettings(feeds: FeedLibrary, feedPosts: FeedPostCache, client:
 private suspend fun runNotionSync(
     api: NotionClient,
     databaseId: String,
+    readingDatabaseId: String?,
+    library: LinkLibrary,
     feeds: FeedLibrary,
     feedPosts: FeedPostCache,
     client: HttpClient,
@@ -690,9 +720,21 @@ private suspend fun runNotionSync(
         val summary = applySources(client, sources.value, feeds)
         // The second half is the part that already shipped: Home's own "Sync
         // now" and its pull-to-refresh both end here too.
-        val pulled = syncFeeds(client, feeds.feeds, feedPosts)
+        val fetched = syncFeeds(client, feeds.feeds, feedPosts)
+
+        // The reading list is optional and reported separately. A failure
+        // there is worth saying out loud rather than folding into the feed
+        // count, but it must not discard the sources sync that already
+        // succeeded — those feeds are followed whatever Notion says next.
+        val reading = readingDatabaseId?.let { syncReadingList(api, it, library) }
         recordSync(Clock.System.now().toEpochMilliseconds())
-        "${summary.line} · $pulled fetched"
+
+        val head = "${summary.line} · $fetched fetched"
+        when (reading) {
+            null -> head
+            is NotionResult.Failure -> "$head · saved links: ${reading.message}"
+            is NotionResult.Ok -> reading.value.line?.let { "$head · $it" } ?: head
+        }
     }
 }
 

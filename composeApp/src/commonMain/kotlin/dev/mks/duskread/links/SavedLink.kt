@@ -5,8 +5,10 @@ package dev.mks.duskread.links
  * a browser.
  *
  * This is the one thing in the app the *user* writes. Readback is a read-only
- * view of a synced audio library; a saved link has no source of truth
- * anywhere else, so this record is it.
+ * view of a synced audio library, and a followed feed is re-fetched from its
+ * publisher — a saved link is the only record the reader made themselves. It
+ * has a copy in Notion once the reading-list sync has run, but the phone is
+ * where it is created and it has to stand on its own without a network.
  *
  * [title] and [description] start as whatever the URL alone can tell us and
  * are replaced once the page has been fetched, so a link is usable the instant
@@ -24,6 +26,24 @@ data class SavedLink(
     val fetched: Boolean = false,
     /** Whether the last fetch attempt couldn't reach the page — [fetched] is still true, so the loop won't retry it on its own. */
     val fetchFailed: Boolean = false,
+    /**
+     * When anything about this link last changed here.
+     *
+     * Exists for one job: deciding who wins when the same link changed on the
+     * phone and in Notion. [savedAt] says when it arrived and [readAt] is null
+     * on exactly the rows that need comparing, so neither can answer it.
+     * Compared against Notion's `last_edited_time`, newest taking the row.
+     */
+    val changedAt: Long = 0L,
+    /**
+     * The subject, when Notion supplied one.
+     *
+     * The ranking otherwise infers a topic by matching [host] against a
+     * followed feed, which works for a blog post and fails for exactly the
+     * newsletters that arrive by mail and are filed in Notion rather than
+     * fetched from a feed.
+     */
+    val topic: String? = null,
 ) {
     val read: Boolean
         get() = readAt != null

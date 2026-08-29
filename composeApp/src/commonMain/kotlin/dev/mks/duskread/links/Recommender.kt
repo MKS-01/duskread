@@ -137,7 +137,10 @@ fun pool(links: LinkLibrary, cache: FeedPostCache, feeds: List<Feed> = emptyList
             host = link.host,
             date = link.savedAt,
             body = link.description,
-            tag = topicByHost[link.host],
+            // What Notion filed beats what the host implies: a newsletter
+            // arriving by mail has a topic and no followed feed to match on,
+            // which is exactly the case the host lookup cannot serve.
+            tag = link.topic ?: topicByHost[link.host],
             savedId = link.id,
         )
     }

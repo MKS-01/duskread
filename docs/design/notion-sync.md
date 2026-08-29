@@ -516,3 +516,76 @@ hides the three that decided it. Plus **Re-rank** and **Clear signals**.
 
 The weights above are a starting point chosen by arithmetic, not a final
 answer. They get tuned here, on the phone, against real candidates.
+
+---
+
+# Part 3 — Saved links, both directions
+
+Parts 1 and 2 ran one way: `Sources` → `FeedLibrary` → posts on Home. Saved
+links stayed on one phone, in one key/value blob, with no copy anywhere.
+
+## Saved is the deliberate subset
+
+The constraint that shapes this: ~210 feed posts pass through each sync and 47
+articles sit in `Reading List` from the digest backfill. Almost none of those
+are things anyone chose. **Saved links are the favourites, not the firehose**,
+so the sync cannot mirror the table.
+
+That is what the one new column is for.
+
+| Need | Column | State before |
+| --- | --- | --- |
+| Match a row without duplicating it | `Duskread ID` | existed, empty on all 65 rows |
+| Read / unread | `Status` | existed |
+| Subject, for ranking | `Topic` | added in Part 1 |
+| Who changed last | `last_edited_time` | free on every page |
+| **Which rows belong on the phone** | **`Saved`** | **new, a checkbox** |
+
+Only ticked rows come down. The 47 backfilled articles stay in Notion as a
+browsable archive. Saving on the phone ticks the box; ticking one by hand puts
+that article on the phone at the next sync — which is also how a newsletter
+filed from Gmail reaches the reader.
+
+## Two new local fields
+
+- **`SavedLink.changedAt`** — nothing else can resolve a conflict. `savedAt`
+  says when a link arrived, and `readAt` is null on exactly the rows that need
+  comparing. Compared against `last_edited_time`, newest takes the row.
+- **`SavedLink.topic`** — the ranking otherwise infers a topic by matching a
+  link's host against a followed feed, which fails for precisely the mailed
+  newsletters this brings in.
+
+Both are positional and decoded with `getOrNull`, so existing records load
+unchanged. A record with no change stamp falls back to `savedAt`.
+
+## Conflicts, and the two things it refuses to do
+
+**Whole-row last-write-wins** on read state. Per row rather than per field: a
+rule that fits in one sentence is one that can be reasoned about on a phone at
+midnight, and read state is the only field that realistically diverges. Title
+and description are taken only to fill a gap — the phone fetches the real page,
+so overwriting a fetched title with a filed one is a downgrade even when the
+row is newer.
+
+**It never deletes or archives a Notion row.** The app is a working set over an
+archive it does not own. That leaves a deleted link still ticked in Notion and
+ready to return, so `LinkLibrary.removedUrls` remembers refusals — bounded to
+200, oldest evicted, the same shape as the skip list.
+
+**It never rewrites a row that has not changed.** A sync that touched every row
+every time would make `last_edited_time` meaningless, and the whole
+reconciliation rests on it.
+
+## Status names are read, not assumed
+
+Notion ships `Not started` / `In progress` / `Done`, and its DDL refuses to
+rename them — so a table that says `Unread` / `Read` gets renamed by hand. The
+sync reads the option names out of the schema's own `to_do` and `complete`
+groups, so either spelling works and neither is hard-coded. Renaming them in
+Notion is safe.
+
+## Rate limiting
+
+Notion allows ~3 requests/second and a first push is one request per saved
+link. The 429 backoff from Part 1 is a recovery; writes are now spaced 350 ms
+so it rarely has to fire.
