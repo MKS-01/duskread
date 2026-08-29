@@ -3,6 +3,7 @@ package dev.mks.duskread.notion
 import dev.mks.duskread.links.LinkLibrary
 import dev.mks.duskread.links.SavedLink
 import dev.mks.duskread.links.normaliseUrl
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
@@ -30,6 +31,10 @@ data class NotionArticle(
     val topic: String?,
     val read: Boolean,
     val saved: Boolean,
+    /** When Notion says it was filed, as opposed to when the row was last touched. */
+    val savedAt: Long?,
+    /** When it was read, where that is recorded. [read] says whether; this says when. */
+    val readAt: Long?,
     val lastEditedAt: Long,
 )
 
@@ -99,8 +104,12 @@ suspend fun syncReadingList(
                 url = url,
                 title = row.title,
                 description = row.excerpt,
-                savedAt = row.lastEditedAt,
-                readAt = if (row.read) row.lastEditedAt else null,
+                // Notion's own dates where it has them. Falling back to the
+                // edit time made an article filed months ago read as "saved 2
+                // minutes ago" the moment it was pulled, because the edit time
+                // is when the row was last touched, not when it was filed.
+                savedAt = row.savedAt ?: row.lastEditedAt,
+                readAt = row.readAt ?: row.lastEditedAt.takeIf { row.read },
                 changedAt = row.lastEditedAt,
                 topic = row.topic,
             ),
@@ -226,6 +235,17 @@ private fun properties(link: SavedLink, status: StatusNames, includeUrl: Boolean
         "Status",
         buildJsonObject { put("status", buildJsonObject { put("name", JsonPrimitive(if (link.read) status.read else status.unread)) }) },
     )
+    // Paired with Status rather than folded into it: Status answers whether,
+    // this answers when, and a reading history that survives a replaced phone
+    // needs the second one written down somewhere that is not the phone.
+    // Cleared explicitly when a link goes back to unread, since a stale date
+    // beside "Unread" is worse than no date.
+    put(
+        "Read At",
+        buildJsonObject {
+            put("date", link.readAt?.takeIf { link.read && it > 0L }?.let { at -> buildJsonObject { put("start", JsonPrimitive(isoDate(at))) } } ?: JsonNull)
+        },
+    )
     link.description?.let { put("Excerpt", richText(it.take(1_900))) }
     // Only when known. Writing a null select would clear a topic someone
     // filed by hand in Notion, and the app's silence about a subject is not
@@ -260,6 +280,9 @@ private fun richText(value: String): JsonObject = buildJsonObject {
     )
 }
 
+/** A Notion date property's start, or null for an unset one. */
+private fun JsonObject.dateStart(): Long? = (this["date"] as? JsonObject)?.get("start")?.stringOrNull()?.let(::parseIso)
+
 /** Reads one queried row. Null for anything without an address, which is not a link. */
 fun parseArticle(row: JsonObject): NotionArticle? {
     val props = row["properties"]?.jsonObject ?: return null
@@ -282,6 +305,8 @@ fun parseArticle(row: JsonObject): NotionArticle? {
         // reading list would rename it to, so the rename is safe either way.
         read = statusName == "Done" || statusName == "Read",
         saved = (prop("Saved")?.get("checkbox") as? JsonPrimitive)?.content?.toBooleanStrictOrNull() ?: false,
+        savedAt = prop("Saved At")?.dateStart(),
+        readAt = prop("Read At")?.dateStart(),
         lastEditedAt = row["last_edited_time"]?.stringOrNull()?.let(::parseIso) ?: 0L,
     )
 }

@@ -143,6 +143,14 @@ Everything else visual is specified on the page — **[mks-01.github.io/duskread
 
 ---
 
+## Architecture
+
+How the pieces connect — the Notion schema, what the device stores, and the
+end-to-end flows for following blogs, syncing saved links, and getting
+newsletters from Gmail to the phone: **[docs/architecture.md](docs/architecture.md)**.
+
+---
+
 ## Licence
 
 MIT — see [LICENSE](LICENSE).
