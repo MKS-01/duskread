@@ -7,14 +7,19 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -136,6 +141,19 @@ fun SettingsScreen(
             Column(
                 Modifier
                     .fillMaxSize()
+                    // Before verticalScroll, not after: the inset has to
+                    // shrink the *viewport* for the focused field to be
+                    // scrolled into view. Applied inside the scroll it would
+                    // only pad the content and the keyboard would still cover
+                    // the field it was opened for.
+                    //
+                    // union rather than navigationBarsPadding().imePadding():
+                    // the two overlap — an open keyboard already covers the
+                    // navigation bar — so applying both in turn pads twice and
+                    // leaves a gap the height of the bar under the keyboard.
+                    // union takes the larger, which is what is actually in the
+                    // way.
+                    .windowInsetsPadding(WindowInsets.navigationBars.union(WindowInsets.ime))
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 16.dp, vertical = 8.dp),
             ) {
@@ -521,8 +539,6 @@ private fun NotionSettings(library: LinkLibrary, feeds: FeedLibrary, feedPosts: 
     // keystore is cheap but not free, and the answer only changes here.
     var connected by remember { mutableStateOf(secrets.get(NotionTokenKey) != null) }
     var token by remember { mutableStateOf("") }
-    var databaseId by remember(notion.sourcesDatabaseId) { mutableStateOf(notion.sourcesDatabaseId.orEmpty()) }
-    var readingId by remember(notion.readingDatabaseId) { mutableStateOf(notion.readingDatabaseId.orEmpty()) }
     var busy by remember { mutableStateOf(false) }
     var note by remember { mutableStateOf<String?>(null) }
 
@@ -573,53 +589,23 @@ private fun NotionSettings(library: LinkLibrary, feeds: FeedLibrary, feedPosts: 
 
         Spacer(Modifier.height(8.dp))
 
-        AppTextField(
-            value = databaseId,
-            onValueChange = { databaseId = it },
+        DatabaseField(
+            stored = notion.sourcesDatabaseId,
             placeholder = "Sources database ID",
-            fontSize = 13.5.sp,
-            mono = true,
-            trailing = {
-                AnimatedVisibility(databaseId.trim() != notion.sourcesDatabaseId.orEmpty()) {
-                    Text(
-                        text = "Save",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier
-                            .clip(CircleShape)
-                            .clickable {
-                                notion.updateDatabaseId(databaseId)
-                                note = "Database saved"
-                            }
-                            .padding(start = 10.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
-                    )
-                }
+            onSave = {
+                notion.updateDatabaseId(it)
+                note = "Sources database saved"
             },
         )
 
         Spacer(Modifier.height(8.dp))
 
-        AppTextField(
-            value = readingId,
-            onValueChange = { readingId = it },
+        DatabaseField(
+            stored = notion.readingDatabaseId,
             placeholder = "Reading List database ID (optional)",
-            fontSize = 13.5.sp,
-            mono = true,
-            trailing = {
-                AnimatedVisibility(readingId.trim() != notion.readingDatabaseId.orEmpty()) {
-                    Text(
-                        text = "Save",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier
-                            .clip(CircleShape)
-                            .clickable {
-                                notion.updateReadingDatabaseId(readingId)
-                                note = "Reading list saved"
-                            }
-                            .padding(start = 10.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
-                    )
-                }
+            onSave = {
+                notion.updateReadingDatabaseId(it)
+                note = "Reading list saved"
             },
         )
 
@@ -656,7 +642,7 @@ private fun NotionSettings(library: LinkLibrary, feeds: FeedLibrary, feedPosts: 
                 if (busy) return@TransferAction
                 busy = true
                 scope.launch {
-                    note = when (val result = api.databaseTitle(databaseId)) {
+                    note = when (val result = api.databaseTitle(notion.sourcesDatabaseId.orEmpty())) {
                         is NotionResult.Ok -> {
                             notion.recordConnection(result.value)
                             "Connected to ${result.value}"
@@ -672,7 +658,16 @@ private fun NotionSettings(library: LinkLibrary, feeds: FeedLibrary, feedPosts: 
                 if (busy) return@TransferAction
                 busy = true
                 scope.launch {
-                    note = runNotionSync(api, databaseId, notion.readingDatabaseId, library, feeds, feedPosts, client, notion::recordSync)
+                    note = runNotionSync(
+                        api,
+                        notion.sourcesDatabaseId.orEmpty(),
+                        notion.readingDatabaseId,
+                        library,
+                        feeds,
+                        feedPosts,
+                        client,
+                        notion::recordSync,
+                    )
                     busy = false
                 }
             }
@@ -844,3 +839,50 @@ private fun Float.format(): String {
     val sign = if (this < 0) "-" else ""
     return "$sign${hundredths / 100}.${(hundredths % 100).toString().padStart(2, '0')}"
 }
+
+/**
+ * A Notion database ID: paste once, then masked.
+ *
+ * Not a credential — an ID grants nothing without the token — but it names a
+ * private workspace, and this app's own repository is public. A settings
+ * screen ends up in screenshots and screen-shares, and there is no reason for
+ * a workspace identifier to travel in either.
+ *
+ * The last four characters survive, unlike the token's full mask. Two of these
+ * fields sit one above the other and the only question anyone asks of a saved
+ * one is "is that the right database" — four characters answer it, and answer
+ * nothing else.
+ */
+@Composable
+private fun DatabaseField(stored: String?, placeholder: String, onSave: (String) -> Unit) {
+    // Keyed on `stored` so saving clears the field back to the mask rather
+    // than leaving what was typed sitting in plain sight.
+    var typed by remember(stored) { mutableStateOf("") }
+
+    AppTextField(
+        value = if (typed.isEmpty() && !stored.isNullOrBlank()) maskId(stored) else typed,
+        onValueChange = { typed = it },
+        placeholder = placeholder,
+        fontSize = 13.5.sp,
+        mono = true,
+        trailing = {
+            AnimatedVisibility(typed.isNotBlank()) {
+                Text(
+                    text = "Save",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .clickable {
+                            onSave(typed)
+                            typed = ""
+                        }
+                        .padding(start = 10.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
+                )
+            }
+        },
+    )
+}
+
+/** A fixed run of dots and the last four characters — never the real length, which is itself a hint. */
+private fun maskId(id: String): String = "•".repeat(12) + id.takeLast(4)
