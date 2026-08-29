@@ -292,6 +292,7 @@ private fun TopicPreview(feed: Feed, posts: List<FeedPost>, linkLibrary: LinkLib
                 // always follows, so every preview row keeps its hairline.
                 last = false,
                 linkLibrary = linkLibrary,
+                topic = feed.topic,
             )
         }
 

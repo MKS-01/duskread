@@ -131,9 +131,9 @@ class LinkLibrary(private val store: KeyValueStore) {
      * looking at right now is not the same "did I mean that" risk a row
      * already filed away is.
      */
-    fun toggleSaved(url: String, title: String?) {
+    fun toggleSaved(url: String, title: String?, topic: String? = null) {
         val existing = links.firstOrNull { it.url.equals(url, ignoreCase = true) }
-        if (existing != null) remove(existing.id) else save(url, title)
+        if (existing != null) remove(existing.id) else save(url, title, topic)
     }
 
     /** Replaces the URL-derived guess once the page itself has answered. */

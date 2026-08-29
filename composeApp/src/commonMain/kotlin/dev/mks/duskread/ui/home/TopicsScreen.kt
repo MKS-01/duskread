@@ -119,6 +119,7 @@ fun TopicsScreen(
                         host = feed.host,
                         last = index == posts.lastIndex,
                         linkLibrary = linkLibrary,
+                        topic = feed.topic,
                     )
                 }
             }
