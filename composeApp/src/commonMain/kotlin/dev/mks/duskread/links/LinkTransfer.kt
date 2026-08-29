@@ -63,7 +63,7 @@ fun parseImport(text: String): List<ImportedLink> {
         // will say "https://example.com/x".
         val token = extractUrl(line) ?: return@mapNotNull null
         val url = normaliseUrl(token)
-        if (!seen.add(url.lowercase())) return@mapNotNull null
+        if (!seen.add(canonicalUrl(url))) return@mapNotNull null
 
         val marked = TickMarks.any { line.contains(it, ignoreCase = true) }
         ImportedLink(

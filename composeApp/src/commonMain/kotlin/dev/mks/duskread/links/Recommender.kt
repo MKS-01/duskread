@@ -145,10 +145,12 @@ fun pool(links: LinkLibrary, cache: FeedPostCache, feeds: List<Feed> = emptyList
         )
     }
 
-    val known = links.links.mapTo(mutableSetOf()) { it.url.lowercase() }
+    // Canonical, so a feed post already saved under a slightly different
+    // address is recognised rather than offered a second time.
+    val known = links.links.mapTo(mutableSetOf()) { canonicalUrl(it.url) }
     val posts = cache.postsByFeed.values.asSequence().flatten()
-        .filterNot { it.url.lowercase() in known }
-        .distinctBy { it.url.lowercase() }
+        .filterNot { canonicalUrl(it.url) in known }
+        .distinctBy { canonicalUrl(it.url) }
         .map { post ->
             Candidate(
                 url = post.url,

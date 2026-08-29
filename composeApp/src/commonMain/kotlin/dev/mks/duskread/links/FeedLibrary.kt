@@ -35,7 +35,9 @@ class FeedLibrary(private val store: KeyValueStore) {
         if (!looksLikeUrl(rawUrl)) return null
 
         val url = normaliseUrl(rawUrl).trim()
-        feeds.firstOrNull { it.url.equals(url, ignoreCase = true) }?.let { existing ->
+        // Same rule as a saved link: `…/feed` and `…/feed/` are one blog, and
+        // following it twice would double every post it publishes.
+        feeds.firstOrNull { sameArticle(it.url, url) }?.let { existing ->
             val filled = existing.copy(
                 title = existing.title?.takeIf { it.isNotBlank() } ?: title?.takeIf { it.isNotBlank() },
                 topic = existing.topic?.takeIf { it.isNotBlank() } ?: topic?.takeIf { it.isNotBlank() },
