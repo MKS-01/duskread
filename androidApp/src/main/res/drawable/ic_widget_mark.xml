@@ -1,0 +1,29 @@
+<!--
+    The mark as one filled silhouette: the bar with the crescent already taken
+    out of it, rather than a bar plus a crescent painted in the background
+    colour.
+
+    ic_duskread_mark_ink builds the shape from two paths and relies on the
+    second one matching whatever is behind it. That works on an opaque launcher
+    icon and stops working the moment the widget's card goes translucent and
+    the wallpaper shows through — the crescent would sit there as a solid dark
+    blob. An evenOdd hole is no good either: the crescent is wider than the bar
+    and crosses its edge, and evenOdd only subtracts a shape fully inside the
+    one below it, so the overhanging part would fill in instead.
+
+    So the outline is traced once, through the two points where the crescent
+    actually meets the bar's boundary: (4.613, 3.613) on the top cap, and
+    (28, 21.856) on the right edge. Those are computed, not eyeballed. The
+    viewport is the silhouette's own bounding box, so the shape fills whatever
+    box it is given, and being one path it takes a tint.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="28dp"
+    android:height="64dp"
+    android:viewportWidth="28"
+    android:viewportHeight="64">
+
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M0,50 L0,14 A14,14 0 0 1 4.613,3.613 A16,16 0 0 0 28,21.856 L28,50 A14,14 0 0 1 0,50 Z" />
+</vector>

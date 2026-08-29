@@ -81,6 +81,42 @@
         </activity>
 
         <!--
+            The home-screen widget. exported="true" is not a choice: the
+            provider is a broadcast receiver and the system delivers
+            APPWIDGET_UPDATE to it from outside the app. The two custom actions
+            beside it are package-scoped when sent, so nothing else can reach
+            them.
+        -->
+        <receiver
+            android:name="dev.mks.duskread.android.widget.DuskReadWidget"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="dev.mks.duskread.widget.REFRESH" />
+                <action android:name="dev.mks.duskread.widget.CLEAR_FLASH" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/dusk_widget_info" />
+        </receiver>
+
+        <!--
+            The clipboard read, which since Android 10 only the focused app is
+            allowed to do — so this is an activity, and everything here is
+            about making an activity that is never seen. Transparent, no
+            animation, no history and no Recents entry, with an empty
+            taskAffinity so it cannot join the app's own task and leave the
+            reader somewhere unexpected when they next open DuskRead.
+        -->
+        <activity
+            android:name="dev.mks.duskread.android.widget.ClipboardSaveActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@style/Theme.DuskRead.Invisible" />
+
+        <!--
             No official foreground-service type fits a countdown timer, so this
             uses "specialUse" (API 34+) with the required justification below;
             harmless no-op on older versions where the type is not enforced.

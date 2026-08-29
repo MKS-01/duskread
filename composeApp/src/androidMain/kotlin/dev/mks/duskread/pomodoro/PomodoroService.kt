@@ -8,6 +8,7 @@ import android.app.Service
 import android.content.Intent
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
+import dev.mks.duskread.widget.WidgetState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -44,6 +45,7 @@ class PomodoroService : Service() {
         val total = minutes * 60
         PomodoroClock.set(PomodoroState(total, total, running = true))
         startForeground(NotificationId, buildNotification(PomodoroClock.state.value))
+        publishToWidget()
         tick()
     }
 
@@ -53,18 +55,21 @@ class PomodoroService : Service() {
         if (current.idle) return
         PomodoroClock.set(current.copy(running = false))
         updateNotification()
+        publishToWidget()
     }
 
     private fun resume() {
         val current = PomodoroClock.state.value
         if (current.idle || current.running) return
         PomodoroClock.set(current.copy(running = true))
+        publishToWidget()
         tick()
     }
 
     private fun stopAndReset() {
         tickJob?.cancel()
         PomodoroClock.set(PomodoroState())
+        publishToWidget()
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
     }
@@ -79,6 +84,7 @@ class PomodoroService : Service() {
                 if (remaining == 0) {
                     PomodoroClock.set(current.copy(remainingSeconds = 0, running = false))
                     updateNotification(done = true)
+                    publishToWidget()
                     stopForeground(STOP_FOREGROUND_DETACH)
                     stopSelf()
                     break
@@ -87,6 +93,22 @@ class PomodoroService : Service() {
                 updateNotification()
             }
         }
+    }
+
+    /**
+     * Hands the home-screen widget the session's deadline so it can draw a
+     * countdown the system ticks for itself.
+     *
+     * Called only from the five transitions — start, pause, resume, reset,
+     * finish — and deliberately *not* from [tick]. The notification has to be
+     * rewritten every second because it shows a number we compute; the widget
+     * does not, because it shows a number the launcher computes from a
+     * deadline. Publishing here per-second would throw that away and make the
+     * widget the most expensive thing in the app.
+     */
+    private fun publishToWidget() {
+        val state = PomodoroClock.state.value
+        WidgetState.setFocus(this, state.remainingSeconds, state.running)
     }
 
     private fun updateNotification(done: Boolean = false) {

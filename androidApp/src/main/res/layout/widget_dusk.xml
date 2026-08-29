@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    One card, one shape, two states.
+
+    The idle bar used to be its own layout — two labelled cells of equal
+    weight — and next to the running one it read as a different widget: no
+    hierarchy, everything at one size, and a stretch of bar left over at the
+    end. This is the running layout, used for both. The number sits in the
+    same place whether it is a session counting down or the length of the one
+    you have not started; the caption under it says which; and the two slots
+    at the right are always controls, only ever changing what they do.
+
+    Nothing moves when a session starts. That is the whole idea.
+
+        idle     ◗   15:00              ⧉    ▶
+                     READY
+
+        running  ◗   14:55              ⏸    ✕
+                     FOCUSING
+
+    The mark is a badge at the head of the bar, not a column of its own. It
+    earns its place — nothing else on a home screen says which app a row of
+    grey glyphs belongs to — but a sixth of the width and a divider was far
+    too much rent, so it sits inline at the size of a piece of punctuation,
+    on the same 24dp optical band as everything else.
+
+    It is drawn as one filled silhouette rather than the two-colour mark: that
+    one paints its crescent in the card's own fill, which stops working the
+    moment the card is translucent and the wallpaper shows through it. See
+    ic_widget_mark.
+
+    No rules between the cells. Three hairlines across a 64dp bar chopped it
+    into pieces and read as scaffolding. Spacing does the separating, which is
+    what this app does everywhere the colour is drained out — in Ink,
+    lightness, weight and space are all that is left to tell elements apart.
+
+    The card is a fixed 64dp tall, and nine tenths of its footprint wide,
+    rather than filling the cell it is given. Launchers hand out about 100dp
+    for "one row" and a control bar stretched to that stops reading as a bar;
+    the width is the same idea, and gets past the grid only offering 60% or
+    40%. The leftover is transparent margin, not a gap.
+
+    Only views RemoteViews can inflate appear here: FrameLayout, LinearLayout,
+    TextView, ImageView, Chronometer. The idle number is a TextView rather
+    than the Chronometer holding a frozen value, because a stopped Chronometer
+    re-deriving its own text after a re-layout is a bug waiting for a quiet
+    afternoon.
+
+    Every colour is set at render time, not here, because the widget follows
+    the app's Ink / Paper Black toggle. The values below are Ink's, so the
+    picker's preview is right before any code runs.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:baselineAligned="false">
+
+    <LinearLayout
+        android:id="@+id/card"
+        android:layout_width="0dp"
+        android:layout_height="64dp"
+        android:layout_weight="90"
+        android:background="@drawable/widget_card_ink"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="16dp"
+        android:paddingEnd="8dp">
+
+        <ImageView
+            android:id="@+id/brand_mark"
+            android:layout_width="11dp"
+            android:layout_height="24dp"
+            android:src="@drawable/ic_widget_mark"
+            android:contentDescription="@string/app_name" />
+
+        <FrameLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:paddingStart="17dp">
+
+            <!-- The number and its caption: the same block in both states. -->
+            <LinearLayout
+                android:id="@+id/state_main"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:orientation="vertical">
+
+                <FrameLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content">
+
+                    <TextView
+                        android:id="@+id/clock_idle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/jost_semibold"
+                        android:letterSpacing="-0.02"
+                        android:maxLines="1"
+                        android:text="@string/widget_focus_clock"
+                        android:textColor="#FFDCDCDC"
+                        android:textSize="22sp" />
+
+                    <Chronometer
+                        android:id="@+id/clock_focus"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/jost_semibold"
+                        android:letterSpacing="-0.02"
+                        android:maxLines="1"
+                        android:textColor="#FFDCDCDC"
+                        android:textSize="22sp"
+                        android:visibility="gone" />
+                </FrameLayout>
+
+                <TextView
+                    android:id="@+id/label_caption"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/jost_semibold"
+                    android:letterSpacing="0.09"
+                    android:maxLines="1"
+                    android:text="@string/widget_ready"
+                    android:textColor="#FF9C9C9C"
+                    android:textSize="9sp" />
+            </LinearLayout>
+
+            <!-- CAPTURED: takes the number's place for a few seconds. -->
+            <LinearLayout
+                android:id="@+id/state_flash"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/label_flash_host"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:fontFamily="@font/jost_medium"
+                    android:maxLines="1"
+                    android:textColor="#FFDCDCDC"
+                    android:textSize="15sp" />
+
+                <TextView
+                    android:id="@+id/label_flash"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/jost_semibold"
+                    android:letterSpacing="0.09"
+                    android:maxLines="1"
+                    android:textColor="#FF9C9C9C"
+                    android:textSize="9sp" />
+            </LinearLayout>
+        </FrameLayout>
+
+        <!--
+            The two control slots. Capture and start when nothing is running,
+            pause and reset when something is — the same pair the session's
+            notification offers, so the two agree on what a session can be
+            told to do.
+        -->
+        <FrameLayout
+            android:id="@+id/cell_a"
+            android:layout_width="48dp"
+            android:layout_height="match_parent">
+
+            <ImageView
+                android:id="@+id/icon_a"
+                android:layout_width="19dp"
+                android:layout_height="19dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_widget_paste"
+                android:contentDescription="@string/widget_a11y_paste" />
+        </FrameLayout>
+
+        <FrameLayout
+            android:id="@+id/cell_b"
+            android:layout_width="48dp"
+            android:layout_height="match_parent">
+
+            <ImageView
+                android:id="@+id/icon_b"
+                android:layout_width="19dp"
+                android:layout_height="19dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_widget_play"
+                android:contentDescription="@string/widget_a11y_start" />
+        </FrameLayout>
+    </LinearLayout>
+
+    <!--
+        The last tenth of the footprint, left empty.
+
+        The launcher snaps a widget to whole grid cells, and on a five-column
+        home screen a cell is a fifth of the width — so the choices are 60% or
+        40%, and 40% cannot hold the number and two controls. This takes the
+        60% footprint and gives the card nine tenths of it, which lands at
+        about 55%. The strip is transparent and invisible against any
+        wallpaper; it does absorb a tap that lands on it, the same way the
+        margin above and below the card already does.
+    -->
+    <FrameLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="10" />
+</LinearLayout>

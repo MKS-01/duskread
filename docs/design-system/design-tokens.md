@@ -223,3 +223,56 @@ New icons go in this file as vector paths, at the same spec.
 The launcher icon and splash are Ink's, always. The terracotta pair the app
 used to swap between at runtime is gone — an icon that changes colour behind
 the user's back is a bug report waiting to happen.
+
+---
+
+## Home-screen widget
+
+`androidApp/src/main/res/`, rendered by
+`androidApp/src/main/kotlin/dev/mks/duskread/android/widget/DuskReadWidget.kt`.
+
+A 3×1 bar — about 60% of the phone's width — with two things on it: capture the
+URL on the clipboard, and start a 15-minute focus session.
+
+**One layout, two states.** The idle bar was once its own arrangement and read
+as a different widget beside the running one. It is now the same shape with
+different content: the number holds its place whether it is a session counting
+down or the length of one not yet started, the caption says which, and the two
+slots at the right are always controls.
+
+```
+idle     ◗   15:00              ⧉    ▶
+             READY
+
+running  ◗   14:55              ⏸    ✕
+             FOCUSING
+```
+
+Nothing moves when a session starts.
+
+Values are repeated here rather than read from `Theme.kt` because a
+`RemoteViews` tree is built outside composition and has no scheme to read —
+**these must be changed with `Theme.kt`, not after it.**
+
+| Token | Value | Notes |
+| --- | --- | --- |
+| Card | `drawable/widget_card_ink.xml`, `widget_card_paper.xml` | `Radius.Card` 14dp over `surface` at **90% opacity**, hairline in **`outline`** — not `outlineVariant`. In the app a card sits on `background` and the fill does half the separating; on a wallpaper the edge is the only thing defining the shape. Enough wallpaper comes through to place the bar on the home screen rather than on top of it. |
+| Card size | `64dp` tall, 9/10 of the footprint wide | Fixed rather than filling the cell: launchers hand out ~100dp for "one row" and a control bar stretched to that stops reading as a bar. The width is the same idea, and gets past a five-column grid only offering 60% or 40% — 40% cannot hold the number and two controls. The leftover is transparent margin, not a gap. |
+| Mark | `drawable/ic_widget_mark.xml` | 11×24dp badge at the head of the bar, tinted `primary`. One filled silhouette — the bar with the crescent already taken out — not two paths with the crescent painted in the ground, which stops working the instant the card is translucent. An `evenOdd` hole is no good either: the crescent overhangs the bar's edge. The two crossing points are computed, not eyeballed. |
+| Number | Jost SemiBold 22sp, `onSurface` | Deliberately *not* the accent. The mark is the one accented thing on the bar and it is always there. Idle draws a plain `TextView`; only a live session gets the `Chronometer`. |
+| Caption | Jost SemiBold 9sp, `letterSpacing 0.09`, `onSurfaceVariant` | `READY` / `FOCUSING` / `PAUSED`. |
+| Glyphs | `ic_widget_paste`, `_clock`, `_pause`, `_play`, `_close` | 19dp in 48dp slots, drawn white and tinted at render. Copies of `DuskReadIcons` at the same 24×24 / 2.4 / round-cap spec, because RemoteViews cannot render an `ImageVector`. |
+| Fonts | `res/font/jost_*.ttf` | Copies — Compose Resources fonts are not addressable as `R.font`. |
+| Separation | Space only | Hairline rules between the cells were tried and cut: three of them across 64dp read as scaffolding. Lightness, weight and space are what Ink separates with. |
+| Rhythm | One 24dp optical band | Mark, glyphs and caption cap-height all sit on it. |
+
+Both schemes are mirrored in `DuskReadWidget.Palette`, and the widget follows
+the app's Ink / Paper Black toggle by reading `theme.mono` from the same
+preferences the app writes. `MainActivity.onStop` repaints it, which is what
+makes a toggle take effect.
+
+**Nothing here polls.** `updatePeriodMillis` is `0`; the countdown is a
+`Chronometer` the launcher ticks in its own process, so DuskRead is never woken
+to redraw it; and the only repaints are the ones `PomodoroService` pushes at a
+session's transitions, plus one non-repeating alarm to retire a capture
+confirmation.

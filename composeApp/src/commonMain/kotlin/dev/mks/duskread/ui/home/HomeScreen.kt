@@ -45,7 +45,9 @@ import androidx.compose.ui.unit.dp
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 import dev.mks.duskread.data.UserPrefs
+import dev.mks.duskread.data.rememberKeyValueStore
 import dev.mks.duskread.links.Feed
+import dev.mks.duskread.links.LinkInbox
 import dev.mks.duskread.links.SharedLinkRequest
 import dev.mks.duskread.links.createHttpClient
 import dev.mks.duskread.links.rememberFeedLibrary
@@ -128,6 +130,26 @@ fun HomeScreen(
             links.save(it)
             ToastRequest.show("Saved")
             SharedLinkRequest.consume()
+        }
+    }
+
+    // Links captured from the home-screen widget while the app was closed.
+    // Drained here for the same reason a share is saved here — it should land
+    // whichever tab happens to be showing — and *only* here: the widget can
+    // never write to the library itself without racing this copy of it, so
+    // this is the single point where a captured link becomes a saved one.
+    //
+    // The effect keys on a counter rather than on the inbox's contents, so it
+    // runs once on a cold start and again on every resume. `save` returns the
+    // existing entry for a URL already in the list, which makes a double
+    // drain harmless.
+    val store = rememberKeyValueStore()
+    val inboxPokes by LinkInbox.pokes.collectAsState()
+    LaunchedEffect(inboxPokes) {
+        val captured = LinkInbox.drain(store)
+        captured.forEach { links.save(it) }
+        if (captured.isNotEmpty()) {
+            ToastRequest.show(if (captured.size == 1) "Saved" else "Saved ${captured.size} links")
         }
     }
 

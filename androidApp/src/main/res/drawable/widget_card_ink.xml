@@ -1,0 +1,25 @@
+<!--
+    The widget's one and only border: Radius.Card's 14dp corners and
+    Stroke.Hairline's 1dp edge over MonoScheme.surface.
+
+    One card, not four. The two buttons inside it are separated by hairline
+    rules rather than given borders of their own — nesting a bordered box
+    inside a bordered box is a texture this app's design system does not have
+    anywhere, and at widget size it reads as clutter immediately.
+
+    The stroke is `outline` (#464646), not the `outlineVariant` an in-app card
+    uses. In the app a card sits on `background` and the fill difference does
+    half the work of separating it; on a home screen it sits on an unknown
+    wallpaper, where the edge is the only thing defining the shape and the
+    quieter hairline disappears into the fill.
+
+    The fill is 90% opaque, not solid. Enough wallpaper comes through to
+    place the bar on the home screen rather than on top of it, and not
+    enough to cost the glyphs any contrast.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="#E6202020" />
+    <stroke android:width="1dp" android:color="#FF464646" />
+    <corners android:radius="14dp" />
+</shape>

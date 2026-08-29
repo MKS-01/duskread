@@ -1,0 +1,32 @@
+<!--
+    A clipboard, drawn to the set's spec — 24x24 viewport, 2.4 weight, round
+    terminals — but with no counterpart in DuskReadIcons, because nothing in
+    the app itself renders a paste glyph. The others here are copies of icons
+    that do exist in Compose; RemoteViews cannot render an ImageVector, so
+    those have to be drawn twice. This one only exists once.
+
+    White, and tinted at render time, because the widget picks its colours
+    from whichever scheme the app is currently in.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <!-- Body, with a gap in the top edge where the clip crosses it. -->
+    <path
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="2.4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M8.5,6.2 H6.8 A1.8,1.8 0 0 0 5,8 V18.7 A1.8,1.8 0 0 0 6.8,20.5 H17.2 A1.8,1.8 0 0 0 19,18.7 V8 A1.8,1.8 0 0 0 17.2,6.2 H15.5" />
+
+    <!-- The clip. -->
+    <path
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="2.4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M10,3.5 H14 A1.5,1.5 0 0 1 15.5,5 V6.5 A1.5,1.5 0 0 1 14,8 H10 A1.5,1.5 0 0 1 8.5,6.5 V5 A1.5,1.5 0 0 1 10,3.5 Z" />
+</vector>

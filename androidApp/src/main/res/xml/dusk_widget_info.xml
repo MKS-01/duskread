@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    updatePeriodMillis is 0 on purpose, and it is the single most important
+    line here. Anything else asks the system to wake the app on a schedule to
+    redraw a widget that has nothing new to say. This widget is only ever
+    redrawn by something the reader did: a capture, or a session starting or
+    ending. The countdown in between is a Chronometer the launcher ticks
+    itself — see DuskReadWidget.
+
+    previewLayout rather than a previewImage: the picker then renders the real
+    layout, so the preview cannot drift from what actually gets placed, and a
+    layout mistake shows up in the picker before it shows up on a home screen.
+-->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="180dp"
+    android:minHeight="72dp"
+    android:targetCellWidth="3"
+    android:targetCellHeight="1"
+    android:minResizeWidth="140dp"
+    android:resizeMode="horizontal"
+    android:widgetCategory="home_screen"
+    android:description="@string/widget_description"
+    android:previewLayout="@layout/widget_dusk"
+    android:initialLayout="@layout/widget_dusk"
+    android:updatePeriodMillis="0" />

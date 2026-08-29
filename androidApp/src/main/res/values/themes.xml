@@ -32,4 +32,25 @@
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowBackground">@color/splash_background_ink</item>
     </style>
+
+    <!--
+        The theme for a window whose whole job is to not be a window. Used by
+        ClipboardSaveActivity, which exists only because the clipboard is
+        readable by the focused app and nothing else; it appears for about as
+        long as it takes to read one string.
+
+        windowIsTranslucent keeps the home screen drawn behind it,
+        windowDisablePreview stops the system painting a placeholder before
+        the activity starts (which would flash), and windowAnimationStyle
+        removes the enter/exit transitions that would otherwise make an
+        invisible activity visible.
+    -->
+    <style name="Theme.DuskRead.Invisible" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowDisablePreview">true</item>
+        <item name="android:windowAnimationStyle">@null</item>
+        <item name="android:backgroundDimEnabled">false</item>
+    </style>
 </resources>

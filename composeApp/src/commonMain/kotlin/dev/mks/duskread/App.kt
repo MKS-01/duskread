@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -21,6 +23,7 @@ import dev.mks.duskread.ui.home.HomeScreen
 import dev.mks.duskread.ui.home.HomeTab
 import dev.mks.duskread.ui.layout.WindowClassProvider
 import dev.mks.duskread.ui.onboarding.Onboarding
+import dev.mks.duskread.ui.pomodoro.FocusRequest
 import dev.mks.duskread.ui.pomodoro.FocusScreen
 import dev.mks.duskread.ui.summary.SummaryOverlay
 import dev.mks.duskread.ui.theme.DuskReadTheme
@@ -55,6 +58,18 @@ fun App() {
 
                 var homeTab by remember { mutableStateOf(HomeTab.HOME) }
                 var focusMode by remember { mutableStateOf(false) }
+
+                // Tapping a running session on the home-screen widget should
+                // land on the timer rather than on whichever tab the app was
+                // last showing. Focus is an overlay rather than a tab, so it
+                // needs its own way in from outside Compose; see FocusRequest.
+                val focusRequested by FocusRequest.open.collectAsState()
+                LaunchedEffect(focusRequested) {
+                    if (focusRequested) {
+                        focusMode = true
+                        FocusRequest.consume()
+                    }
+                }
 
                 Box(Modifier.fillMaxSize()) {
                     HomeScreen(

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        The only strings in the project that live in resources rather than in
+        Kotlin: a RemoteViews layout is XML, and the widget picker reads its
+        description straight out of the manifest's metadata.
+    -->
+    <string name="app_name">DuskRead</string>
+    <string name="widget_description">Save the link on your clipboard, or start a 15-minute focus session.</string>
+
+    <!-- On the bar. The number is written out rather than derived so the
+         layout the widget picker previews is the layout that gets placed. -->
+    <string name="widget_focus_clock">15:00</string>
+    <string name="widget_ready">READY</string>
+    <string name="widget_focusing">FOCUSING</string>
+    <string name="widget_paused">PAUSED</string>
+    <string name="widget_saved">SAVED</string>
+    <string name="widget_already_saved">ALREADY SAVED</string>
+
+    <!--
+        Spoken, not shown. Both control slots change what they do with the
+        session's state, so their descriptions are set at render time
+        alongside the glyph — a play button announced as "15 MIN" is worse
+        than no description at all.
+    -->
+    <string name="widget_a11y_paste">Save the link on the clipboard</string>
+    <string name="widget_a11y_start">Start a 15-minute focus session</string>
+    <string name="widget_a11y_pause">Pause the session</string>
+    <string name="widget_a11y_resume">Resume the session</string>
+    <string name="widget_a11y_stop">Stop the session</string>
+
+    <!--
+        The toast says the same thing as the widget's eyebrow, in sentence
+        case: the widget is a label on a surface, the toast is a sentence to
+        the reader, and they should not be the same string bent into two
+        shapes.
+    -->
+    <string name="widget_toast_saved">Saved</string>
+    <string name="widget_toast_already_saved">Already saved</string>
+    <string name="widget_no_link">No link on the clipboard</string>
+</resources>

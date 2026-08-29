@@ -19,10 +19,22 @@ private class AndroidStore(private val prefs: SharedPreferences) : KeyValueStore
     }
 }
 
+/**
+ * The same store, reachable without composition.
+ *
+ * Everything in the app proper goes through [rememberKeyValueStore], but the
+ * home-screen widget and the Pomodoro service both need to read and write
+ * this state from outside any Compose tree. They must land in the *same*
+ * preferences file as the app, so the file name lives here and only here —
+ * two spellings of it would be two silently separate stores.
+ *
+ * ("algo_atlas" is a pre-rename holdover. Renaming it now would orphan every
+ * existing reader's saved links for no gain.)
+ */
+fun keyValueStore(context: Context): KeyValueStore = AndroidStore(context.getSharedPreferences("algo_atlas", Context.MODE_PRIVATE))
+
 @Composable
 actual fun rememberKeyValueStore(): KeyValueStore {
     val context = LocalContext.current
-    return remember(context) {
-        AndroidStore(context.getSharedPreferences("algo_atlas", Context.MODE_PRIVATE))
-    }
+    return remember(context) { keyValueStore(context) }
 }

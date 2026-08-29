@@ -1,0 +1,18 @@
+<!--
+    The widget's copy of DuskReadIcons.Pause — same geometry, same 2.4 weight and
+    round terminals. RemoteViews cannot render a Compose ImageVector, so the
+    set has to exist twice; see ic_widget_paste.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <path
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="2.4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M9,5 L9,19 M15,5 L15,19" />
+</vector>
