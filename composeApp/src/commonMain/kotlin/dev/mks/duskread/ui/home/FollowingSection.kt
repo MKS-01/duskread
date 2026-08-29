@@ -38,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
@@ -57,7 +58,6 @@ import dev.mks.duskread.ui.common.AppTextField
 import dev.mks.duskread.ui.common.CompactEmptyState
 import dev.mks.duskread.ui.common.EyebrowHeader
 import dev.mks.duskread.ui.common.HairlineDivider
-import dev.mks.duskread.ui.common.MonogramBadge
 import dev.mks.duskread.ui.common.ToastRequest
 import dev.mks.duskread.ui.rememberUrlOpener
 import dev.mks.duskread.ui.theme.DuskReadIcons
@@ -99,6 +99,12 @@ fun FollowingDigest(
     var syncing by remember { mutableStateOf(false) }
     var note by remember { mutableStateOf<String?>(null) }
     var expanded by remember { mutableStateOf<String?>(null) }
+    var searching by remember { mutableStateOf(false) }
+    var query by remember { mutableStateOf("") }
+    // Most-new-first by default — the same bias NEXT UP ranks by, so the feed
+    // most worth a look leads the list rather than whichever was followed
+    // first.
+    var sortNewest by remember { mutableStateOf(true) }
 
     // Following a blog by its homepage rather than its exact feed address is
     // the common case — this is what turns "swmansion.com/blog/" into the
@@ -136,13 +142,35 @@ fun FollowingDigest(
         }
     }
 
-    val topics = feedLibrary.feeds.filter { postCache.postsByFeed[it.id].orEmpty().isNotEmpty() }
+    // Blank leaves every feed and every post exactly as they were; a query
+    // narrows both — a feed whose name matches keeps its usual posts, one
+    // that doesn't is kept only for the posts inside it that do, so a topic
+    // typed here can surface a single article from a blog followed for
+    // something else entirely.
+    val topics = feedLibrary.feeds.filter { feed ->
+        val posts = postCache.postsByFeed[feed.id].orEmpty()
+        if (posts.isEmpty()) return@filter false
+        if (query.isBlank()) return@filter true
+        feed.matches(query) || posts.any { it.matches(query) }
+    }.let { filtered ->
+        if (sortNewest) {
+            filtered.sortedByDescending { feed ->
+                postCache.postsByFeed[feed.id].orEmpty().count { !linkLibrary.isSaved(it.url) }
+            }
+        } else {
+            filtered.sortedBy { it.label.lowercase() }
+        }
+    }
 
     Column(modifier.fillMaxWidth()) {
         EyebrowHeader(
             text = "FOLLOWING",
             trailing = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    FollowingAction(icon = DuskReadIcons.Search, label = "Search") {
+                        searching = !searching
+                        if (!searching) query = ""
+                    }
                     if (feedLibrary.feeds.isNotEmpty()) {
                         FollowingAction(if (syncing) "Syncing…" else "Sync now", onClick = ::sync)
                     }
@@ -151,6 +179,24 @@ fun FollowingDigest(
             },
         )
         Spacer(Modifier.height(12.dp))
+
+        if (feedLibrary.feeds.isNotEmpty()) {
+            Row(horizontalArrangement = Arrangement.spacedBy(7.dp), modifier = Modifier.padding(bottom = 12.dp)) {
+                FollowingSortChip("Newest", sortNewest) { sortNewest = true }
+                FollowingSortChip("A–Z", !sortNewest) { sortNewest = false }
+            }
+        }
+
+        AnimatedVisibility(searching) {
+            AppTextField(
+                value = query,
+                onValueChange = { query = it },
+                placeholder = "Search by blog, host or topic",
+                fontSize = 14.5.sp,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                modifier = Modifier.padding(bottom = 12.dp),
+            )
+        }
 
         AnimatedVisibility(managing) {
             FeedManagePanel(
@@ -177,24 +223,39 @@ fun FollowingDigest(
 
         if (topics.isEmpty() && !managing) {
             CompactEmptyState(
-                title = if (feedLibrary.feeds.isEmpty()) "Follow a blog" else "Nothing synced yet",
-                message = if (feedLibrary.feeds.isEmpty()) {
-                    "Follow a blog's RSS or Atom feed to see its posts here."
-                } else {
-                    "Tap Sync now to pull in its latest posts."
+                title = when {
+                    query.isNotBlank() -> "Nothing matches “$query”"
+                    feedLibrary.feeds.isEmpty() -> "Follow a blog"
+                    else -> "Nothing synced yet"
+                },
+                message = when {
+                    query.isNotBlank() -> "Try a different blog, host or topic."
+                    feedLibrary.feeds.isEmpty() -> "Follow a blog's RSS or Atom feed to see its posts here."
+                    else -> "Tap Sync now to pull in its latest posts."
                 },
             )
         }
 
         topics.forEachIndexed { index, feed ->
-            val posts = postCache.postsByFeed[feed.id].orEmpty()
+            val all = postCache.postsByFeed[feed.id].orEmpty()
+            // A feed matched by its own name keeps its usual posts; one that
+            // only surfaced because a post inside it matched shows just that
+            // post, so a topic search doesn't dump an unrelated blog's whole
+            // archive onto the screen.
+            val posts = if (query.isBlank() || feed.matches(query)) all else all.filter { it.matches(query) }
+            val isOpen = expanded == feed.id || query.isNotBlank()
             DigestLine(
                 feed = feed,
                 newCount = posts.count { !linkLibrary.isSaved(it.url) },
-                open = expanded == feed.id,
+                // The newest post's own title, not shown once the row is open
+                // and that same post is sitting right underneath it — the
+                // hint's whole job is answering "is this worth opening" before
+                // you do.
+                hint = if (isOpen) null else posts.firstOrNull()?.title,
+                open = isOpen,
                 onToggle = { expanded = if (expanded == feed.id) null else feed.id },
             )
-            AnimatedVisibility(expanded == feed.id) {
+            AnimatedVisibility(expanded == feed.id || query.isNotBlank()) {
                 TopicPreview(
                     feed = feed,
                     posts = posts,
@@ -202,10 +263,43 @@ fun FollowingDigest(
                     onOpenAll = { onOpenTopics(feed) },
                 )
             }
-            if (index != topics.lastIndex) Spacer(Modifier.height(7.dp))
+            // A hairline, not a gap — the same divider every other list in
+            // the app puts between its rows, so a page of feeds reads as a
+            // list rather than a stack of paragraphs with nothing between
+            // them.
+            if (index != topics.lastIndex) HairlineDivider()
         }
     }
 }
+
+/**
+ * The same bordered pill Readback's Newest/Oldest chips use (`ReaderTab.kt`)
+ * — this app's one sort pattern, not a second one invented for this list.
+ */
+@Composable
+private fun FollowingSortChip(label: String, active: Boolean, onClick: () -> Unit) {
+    val tone = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+    Text(
+        text = label.uppercase(),
+        fontFamily = Mono,
+        fontSize = 11.sp,
+        letterSpacing = 0.4.sp,
+        color = tone,
+        modifier = Modifier
+            .clip(RoundedCornerShape(Radius.Chip))
+            .border(Stroke.Hairline, tone, RoundedCornerShape(Radius.Chip))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 11.dp, vertical = 6.dp),
+    )
+}
+
+/** A blog's own fields, searched by [FollowingDigest]'s query field. */
+private fun Feed.matches(query: String): Boolean = label.contains(query, ignoreCase = true) ||
+    host.contains(query, ignoreCase = true) ||
+    topic?.contains(query, ignoreCase = true) == true
+
+/** One post's title, searched the same way as its feed. */
+private fun FeedPost.matches(query: String): Boolean = title.contains(query, ignoreCase = true)
 
 @Composable
 private fun FollowingAction(label: String, onClick: () -> Unit) {
@@ -220,49 +314,95 @@ private fun FollowingAction(label: String, onClick: () -> Unit) {
     )
 }
 
+/** The icon-only sibling — Search sits with the other actions but has no word for one. */
+@Composable
+private fun FollowingAction(icon: ImageVector, label: String, onClick: () -> Unit) {
+    Icon(
+        imageVector = icon,
+        contentDescription = label,
+        modifier = Modifier
+            .size(26.dp)
+            .clip(CircleShape)
+            .clickable(onClick = onClick)
+            .padding(4.dp),
+        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+}
+
 /**
- * One line of the digest: "host — N new", the count in the accent when
- * there's something unsaved and a plain dash otherwise. Tapping it expands
- * the carousel below in place, rather than navigating anywhere — a digest
- * line is a summary of a thread, not a link to a different screen.
+ * One line of the digest — "host — N new", the count in the accent when
+ * there's something unsaved and a plain dash otherwise — plus a second,
+ * quieter one: the newest post's own title, the fact that answers "is this
+ * worth opening" before the tap that finds out. Tapping the row expands the
+ * carousel below in place, rather than navigating anywhere — a digest line is
+ * a summary of a thread, not a link to a different screen.
  */
 @Composable
-private fun DigestLine(feed: Feed, newCount: Int, open: Boolean, onToggle: () -> Unit) {
+private fun DigestLine(feed: Feed, newCount: Int, hint: String?, open: Boolean, onToggle: () -> Unit) {
     // A right chevron is "expand" everywhere else in the app (Chevron, on a
     // row that opens something); rotating it to point down is what says
     // "this one is already open" without a second glyph to learn.
     val rotation by animateFloatAsState(if (open) 90f else 0f, tween(Motion.Chip), label = "chevron")
 
-    Row(
+    Column(
         Modifier
             .fillMaxWidth()
             .clickable(onClick = onToggle)
-            .padding(vertical = 5.dp),
-        verticalAlignment = Alignment.CenterVertically,
+            .padding(vertical = 9.dp),
     ) {
-        Text(
-            // The publisher's name when the Notion sync supplied one, the
-            // host when it did not — see Feed.label.
-            text = feed.label,
-            fontFamily = Mono,
-            fontSize = 12.sp,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.weight(1f),
-        )
-        Text(
-            text = if (newCount > 0) "$newCount new" else "—",
-            fontFamily = Mono,
-            fontSize = 11.sp,
-            fontWeight = if (newCount > 0) FontWeight.SemiBold else FontWeight.Normal,
-            color = if (newCount > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Spacer(Modifier.width(6.dp))
-        Icon(
-            imageVector = DuskReadIcons.Chevron,
-            contentDescription = if (open) "Collapse" else "Expand",
-            modifier = Modifier.size(11.dp).rotate(rotation),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                // The publisher's name when the Notion sync supplied one, the
+                // host when it did not — see Feed.label.
+                //
+                // Jost, not Inconsolata — the tokens doc is explicit that mono
+                // is for a value, not a name: "if a label names a section
+                // rather than reporting a value, it is not mono." A feed's
+                // name is a name, the same as every post title underneath it
+                // once this opens, so it needs the same family [TopicRow]
+                // draws those in (`bodyLarge`) — but SemiBold (`titleSmall`)
+                // next to Regular read as shouting rather than a header,
+                // since the row above it is smaller than what it introduces.
+                // Medium is the one step this set actually has between the
+                // two.
+                text = feed.label,
+                style = MaterialTheme.typography.bodyLarge,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f),
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = if (newCount > 0) "$newCount new" else "—",
+                fontFamily = Mono,
+                fontSize = 11.sp,
+                fontWeight = if (newCount > 0) FontWeight.SemiBold else FontWeight.Normal,
+                color = if (newCount > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.width(6.dp))
+            Icon(
+                imageVector = DuskReadIcons.Chevron,
+                contentDescription = if (open) "Collapse" else "Expand",
+                modifier = Modifier.size(11.dp).rotate(rotation),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+
+        hint?.let {
+            Spacer(Modifier.height(4.dp))
+            Text(
+                // Same family as the title above it, one notch down in size
+                // and colour — a hint, not a second heading. Mono would read
+                // it as a fact rather than a name, and a headline is a name.
+                text = it,
+                style = MaterialTheme.typography.bodyLarge,
+                fontSize = 12.5.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
 

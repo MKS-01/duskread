@@ -41,6 +41,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
@@ -64,8 +66,9 @@ import dev.mks.duskread.ui.theme.Motion
 
 enum class HomeTab(val label: String, val icon: ImageVector) {
     HOME("Home", DuskReadIcons.Home),
-    READBACK("Readback", DuskReadIcons.Waveform),
+    FOLLOWING("Following", DuskReadIcons.Feed),
     SAVED("Saved", DuskReadIcons.Bookmark),
+    READBACK("Readback", DuskReadIcons.Waveform),
 }
 
 /** The visible scrub line at the foot of the player face. */
@@ -79,6 +82,9 @@ private val CollapseRun = 52.dp
 
 /** And how far back up to earn its place again — deliberately shorter, see [BarCollapse]. */
 private val ExpandRun = 18.dp
+
+/** How small the collapsed pill gets — a shrink you register, not a shrink you have to squint for. */
+private const val CollapsedScale = 0.82f
 
 /**
  * Which of the bar's two faces is on screen.
@@ -148,12 +154,14 @@ fun rememberBarCollapse(): BarCollapse {
  * The floating pill at the bottom of the home screen.
  *
  * It sits within thumb reach, which is the whole argument for moving
- * navigation and search down here from a top app bar.
+ * navigation down here from a top app bar. Search stays off it — a fifth icon
+ * would cost more width than a search field is worth, so it lives inside the
+ * Following tab instead, the one screen that actually needs it.
  *
- * Icons carry it alone — with three destinations and a search button there is
- * nothing to disambiguate, and the labels were costing width on the one axis a
- * phone cannot spare. The active tab is marked by a filled disc instead.
- * Labels remain in [HomeTab] for the accessibility contentDescription.
+ * Icons carry it alone — with four destinations and nothing else on the row,
+ * there is nothing to disambiguate, and labels were costing width on the one
+ * axis a phone cannot spare. The active tab is marked by a filled disc
+ * instead. Labels remain in [HomeTab] for the accessibility contentDescription.
  *
  * The transport lives *inside* this pill rather than on a second pill above
  * it. Two stacked glass slabs ate a third of the reachable zone and pushed
@@ -198,11 +206,14 @@ fun FloatingBar(
         else -> BarFace.TABS
     }
 
-    // Out of the way, not gone. Sliding beats shrinking here: the bar's
-    // buttons are 42dp against a 56dp bar, so any real reduction in height
-    // takes the touch targets under the size a thumb can hit. Translation
-    // costs them nothing — what is still on screen is still the same size it
-    // always was.
+    // Out of the way, not gone: it slides down and shrinks toward the edge
+    // it's sinking into, the way a MacBook's dock or Safari's toolbar recedes
+    // rather than merely vanishing. Shrinking used to be rejected here on its
+    // own — the buttons are 42dp against a 56dp bar, so shrinking a *tappable*
+    // bar would take them under thumb size — but collapsed, they already
+    // aren't individually tappable: the whole pill becomes one target for
+    // [collapse]'s `expand()` below. Nothing here is losing precision that
+    // wasn't already gone.
     //
     // Deliberate to leave, cheap to return, the same asymmetry [BarCollapse]
     // already applies to the scroll runs that trigger it.
@@ -214,14 +225,34 @@ fun FloatingBar(
         ),
         label = "barPeek",
     )
+    val scale by animateFloatAsState(
+        targetValue = if (collapse.collapsed) CollapsedScale else 1f,
+        animationSpec = tween(
+            durationMillis = if (collapse.collapsed) Motion.Chip else Motion.Fade,
+            easing = LinearOutSlowInEasing,
+        ),
+        label = "barShrink",
+    )
 
     Box(
         modifier = modifier
-            // `offset` with a lambda, not `graphicsLayer`: this has to move
-            // the bar's hit area with it, or the buttons stay tappable at a
-            // position they are no longer drawn in.
+            // `offset` with a lambda, not folded into the `graphicsLayer`
+            // below: this has to move the bar's hit area with it, or the
+            // still-tappable expanded state stops lining up with where it's
+            // drawn. The shrink is purely visual — it runs after layout, in
+            // the same `graphicsLayer` step as the blur clip — so it never
+            // fights the offset for which one owns the bar's position.
             .offset { IntOffset(0, drop.roundToPx()) }
             .height(Layout.BarHeight)
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+                // Bottom-centre, not the pill's own centre: shrinking toward
+                // the middle reads as the bar deflating in place, shrinking
+                // toward the edge it's already sliding into reads as one
+                // continuous motion of sinking away.
+                transformOrigin = TransformOrigin(0.5f, 1f)
+            }
             .clip(CircleShape)
             .hazeEffect(
                 state = hazeState,

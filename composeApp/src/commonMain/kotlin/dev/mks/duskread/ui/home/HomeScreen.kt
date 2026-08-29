@@ -340,20 +340,29 @@ fun HomeScreen(
                     onOpenFocus = onOpenFocus,
                     onOpenSaved = { onTabChange(HomeTab.SAVED) },
                     onOpenReadback = { onTabChange(HomeTab.READBACK) },
+                    onOpenFollowing = { onTabChange(HomeTab.FOLLOWING) },
                     onOpenSettings = { showSettings = true },
-                    onOpenTopics = { topicsFeed = it },
                     contentPadding = listPadding,
                 )
 
-                HomeTab.READBACK -> ReaderTab(
-                    repository = readRepository,
-                    player = player,
+                HomeTab.FOLLOWING -> FollowingTab(
+                    feeds = feeds,
+                    feedPosts = feedPosts,
+                    links = links,
+                    client = feedClient,
+                    onOpenTopics = { topicsFeed = it },
                     contentPadding = listPadding,
                 )
 
                 HomeTab.SAVED -> LinksTab(
                     library = links,
                     signals = signals,
+                    contentPadding = listPadding,
+                )
+
+                HomeTab.READBACK -> ReaderTab(
+                    repository = readRepository,
+                    player = player,
                     contentPadding = listPadding,
                 )
             }
