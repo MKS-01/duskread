@@ -46,6 +46,7 @@ import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 import dev.mks.duskread.data.UserPrefs
 import dev.mks.duskread.data.rememberKeyValueStore
+import dev.mks.duskread.data.rememberSecretStore
 import dev.mks.duskread.links.Feed
 import dev.mks.duskread.links.LinkInbox
 import dev.mks.duskread.links.SharedLinkRequest
@@ -54,6 +55,10 @@ import dev.mks.duskread.links.rememberFeedLibrary
 import dev.mks.duskread.links.rememberFeedPostCache
 import dev.mks.duskread.links.rememberLinkLibrary
 import dev.mks.duskread.links.rememberReadingSignals
+import dev.mks.duskread.notion.NotionClient
+import dev.mks.duskread.notion.PastedTokenAuth
+import dev.mks.duskread.notion.rememberNotionPrefs
+import dev.mks.duskread.notion.runFullSync
 import dev.mks.duskread.reader.rememberAudioPlayer
 import dev.mks.duskread.reader.rememberReadRepository
 import dev.mks.duskread.ui.common.ToastHost
@@ -64,6 +69,8 @@ import dev.mks.duskread.ui.reader.ReaderTab
 import dev.mks.duskread.ui.settings.SettingsScreen
 import dev.mks.duskread.ui.theme.Layout
 import dev.mks.duskread.ui.theme.Motion
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
 /**
  * Bottom inset for the three tab lists with the bar at rest.
@@ -81,6 +88,7 @@ private val FullClearance = Layout.BarHeight + Layout.BarInset + 32.dp
  * Everything reachable sits in the lower third of the screen — this is a
  * phone-first app and the top of a 6-inch display is a stretch for one thumb.
  */
+@OptIn(ExperimentalTime::class)
 @Composable
 fun HomeScreen(
     onOpenFocus: () -> Unit,
@@ -160,6 +168,58 @@ fun HomeScreen(
     val feedPosts = rememberFeedPostCache()
     val feedClient = remember { createHttpClient() }
     DisposableEffect(feedClient) { onDispose { feedClient.close() } }
+
+    // Hoisted here and passed into Settings rather than built there, for the
+    // same reason FeedLibrary is: NotionPrefs writes `notion.sync.last`, and
+    // two instances over one key would disagree the moment either wrote.
+    val notionPrefs = rememberNotionPrefs()
+    val secrets = rememberSecretStore()
+    val notionAuth = remember(secrets) { PastedTokenAuth(secrets) }
+    val notionApi = remember(feedClient, notionAuth) { NotionClient(feedClient, notionAuth) }
+
+    /*
+     * The sync that happens without being asked.
+     *
+     * Once per launch, and only if the last one is older than
+     * `AutoSyncAfterMs` — so opening the app four times in an evening costs
+     * one sync, not four. It runs in the background with no spinner and no
+     * toast: a reader who opens the app to read should not be shown the
+     * machinery, and the result appears as feeds and posts simply being
+     * current.
+     *
+     * Failures are silent on purpose. There is nothing useful to say about a
+     * sync nobody asked for, and a network error banner on launch would be
+     * the first thing a reader sees on a train. Settings' own button is where
+     * a sync reports for itself.
+     */
+    LaunchedEffect(Unit) {
+        val now = Clock.System.now().toEpochMilliseconds()
+
+        // Anything saved, read or retitled since the last sync has not reached
+        // Notion yet. `changedAt` is stamped by every mutator, so comparing it
+        // to the last sync is an exact answer with nothing extra to track.
+        //
+        // Deletions have to be asked about separately: a removed link is no
+        // longer in `links` to carry a `changedAt`, so on its own a delete
+        // would sit unsynced until something else happened to be pending.
+        val since = notionPrefs.lastSyncAt ?: 0L
+        val unpushed = links.links.any { it.changedAt > since } || links.removedUrls.values.any { it > since }
+        if (!notionPrefs.dueForSync(now, unpushed)) return@LaunchedEffect
+        if (notionAuth.bearer() == null) return@LaunchedEffect
+
+        runCatching {
+            runFullSync(
+                api = notionApi,
+                sourcesDatabaseId = notionPrefs.sourcesDatabaseId.orEmpty(),
+                readingDatabaseId = notionPrefs.readingDatabaseId,
+                library = links,
+                feeds = feeds,
+                feedPosts = feedPosts,
+                http = feedClient,
+                recordSync = notionPrefs::recordSync,
+            )
+        }
+    }
 
     // Wide windows get the rail-and-transport plan instead of the floating
     // bar; see `ui/layout/WindowClass.kt` and the design system's "Wide"
@@ -294,10 +354,6 @@ fun HomeScreen(
                 HomeTab.SAVED -> LinksTab(
                     library = links,
                     signals = signals,
-                    // For the topic strip's vocabulary: every followed feed
-                    // carries a subject, which is how the curated set reaches
-                    // the picker without a request.
-                    feeds = feeds,
                     contentPadding = listPadding,
                 )
             }
@@ -435,6 +491,9 @@ fun HomeScreen(
                 // explains the picks actually on screen rather than a second
                 // reading of the same store.
                 signals = signals,
+                notion = notionPrefs,
+                auth = notionAuth,
+                api = notionApi,
             )
         }
     }

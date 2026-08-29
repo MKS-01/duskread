@@ -53,14 +53,11 @@ import dev.mks.duskread.links.ReadingSignals
 import dev.mks.duskread.links.pool
 import dev.mks.duskread.links.rank
 import dev.mks.duskread.links.savedAgo
-import dev.mks.duskread.links.syncFeeds
 import dev.mks.duskread.notion.NotionClient
+import dev.mks.duskread.notion.NotionPrefs
 import dev.mks.duskread.notion.NotionResult
 import dev.mks.duskread.notion.PastedTokenAuth
-import dev.mks.duskread.notion.applySources
-import dev.mks.duskread.notion.pullSources
-import dev.mks.duskread.notion.rememberNotionPrefs
-import dev.mks.duskread.notion.syncReadingList
+import dev.mks.duskread.notion.runFullSync
 import dev.mks.duskread.summary.SummariserState
 import dev.mks.duskread.summary.SummaryLength
 import dev.mks.duskread.summary.rememberSummariser
@@ -106,6 +103,9 @@ fun SettingsScreen(
     feedPosts: FeedPostCache,
     feedClient: HttpClient,
     signals: ReadingSignals,
+    notion: NotionPrefs,
+    auth: PastedTokenAuth,
+    api: NotionClient,
     modifier: Modifier = Modifier,
 ) {
     PlatformBackHandler(enabled = true, onBack = onClose)
@@ -185,7 +185,15 @@ fun SettingsScreen(
 
                 EyebrowHeader(text = "NOTION")
                 Spacer(Modifier.height(14.dp))
-                NotionSettings(library = library, feeds = feeds, feedPosts = feedPosts, client = feedClient)
+                NotionSettings(
+                    library = library,
+                    feeds = feeds,
+                    feedPosts = feedPosts,
+                    client = feedClient,
+                    notion = notion,
+                    auth = auth,
+                    api = api,
+                )
 
                 Spacer(Modifier.height(28.dp))
 
@@ -528,11 +536,16 @@ private fun lengthNote(length: SummaryLength): String = when (length) {
  */
 @OptIn(ExperimentalTime::class)
 @Composable
-private fun NotionSettings(library: LinkLibrary, feeds: FeedLibrary, feedPosts: FeedPostCache, client: HttpClient) {
+private fun NotionSettings(
+    library: LinkLibrary,
+    feeds: FeedLibrary,
+    feedPosts: FeedPostCache,
+    client: HttpClient,
+    notion: NotionPrefs,
+    auth: PastedTokenAuth,
+    api: NotionClient,
+) {
     val secrets = rememberSecretStore()
-    val notion = rememberNotionPrefs()
-    val auth = remember(secrets) { PastedTokenAuth(secrets) }
-    val api = remember(client, auth) { NotionClient(client, auth) }
     val scope = rememberCoroutineScope()
 
     // Read once into state rather than on every recomposition: reaching the
@@ -658,16 +671,16 @@ private fun NotionSettings(library: LinkLibrary, feeds: FeedLibrary, feedPosts: 
                 if (busy) return@TransferAction
                 busy = true
                 scope.launch {
-                    note = runNotionSync(
-                        api,
-                        notion.sourcesDatabaseId.orEmpty(),
-                        notion.readingDatabaseId,
-                        library,
-                        feeds,
-                        feedPosts,
-                        client,
-                        notion::recordSync,
-                    )
+                    note = runFullSync(
+                        api = api,
+                        sourcesDatabaseId = notion.sourcesDatabaseId.orEmpty(),
+                        readingDatabaseId = notion.readingDatabaseId,
+                        library = library,
+                        feeds = feeds,
+                        feedPosts = feedPosts,
+                        http = client,
+                        recordSync = notion::recordSync,
+                    ).line
                     busy = false
                 }
             }
@@ -686,49 +699,6 @@ private fun NotionSettings(library: LinkLibrary, feeds: FeedLibrary, feedPosts: 
                     note = "Disconnected — feeds kept"
                 }
             }
-        }
-    }
-}
-
-/**
- * Pull the sources, follow them, then run the feed sync that already exists.
- *
- * Written as a plain function rather than inline in the button so the whole
- * chain reads in one place: what fails, where it stops, and what the reader
- * is told. Any failure returns before touching [feeds] — a bad response
- * should leave the followed list exactly as it was.
- */
-@OptIn(ExperimentalTime::class)
-private suspend fun runNotionSync(
-    api: NotionClient,
-    databaseId: String,
-    readingDatabaseId: String?,
-    library: LinkLibrary,
-    feeds: FeedLibrary,
-    feedPosts: FeedPostCache,
-    client: HttpClient,
-    recordSync: (Long) -> Unit,
-): String = when (val sources = pullSources(api, databaseId)) {
-    is NotionResult.Failure -> sources.message
-
-    is NotionResult.Ok -> {
-        val summary = applySources(client, sources.value, feeds)
-        // The second half is the part that already shipped: Home's own "Sync
-        // now" and its pull-to-refresh both end here too.
-        val fetched = syncFeeds(client, feeds.feeds, feedPosts)
-
-        // The reading list is optional and reported separately. A failure
-        // there is worth saying out loud rather than folding into the feed
-        // count, but it must not discard the sources sync that already
-        // succeeded — those feeds are followed whatever Notion says next.
-        val reading = readingDatabaseId?.let { syncReadingList(api, it, library) }
-        recordSync(Clock.System.now().toEpochMilliseconds())
-
-        val head = "${summary.line} · $fetched fetched"
-        when (reading) {
-            null -> head
-            is NotionResult.Failure -> "$head · saved links: ${reading.message}"
-            is NotionResult.Ok -> reading.value.line?.let { "$head · $it" } ?: head
         }
     }
 }

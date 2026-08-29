@@ -70,6 +70,23 @@ class NotionPrefs(private val store: KeyValueStore) {
         store.putString(LastSyncKey, at.toString())
     }
 
+    /**
+     * Whether an automatic sync is due.
+     *
+     * False when nothing is configured, so a reader who has never connected
+     * never pays for a network call they did not ask for.
+     *
+     * [hasUnpushedWork] overrides the timer, and that is the point of it: the
+     * clock is there to stop four openings in an evening costing four syncs,
+     * not to make something just pasted in wait four hours to exist anywhere
+     * else. Fresh feeds can wait; a link the reader deliberately saved cannot.
+     */
+    fun dueForSync(now: Long, hasUnpushedWork: Boolean): Boolean {
+        if (sourcesDatabaseId.isNullOrBlank()) return false
+        val last = lastSyncAt ?: return true
+        return hasUnpushedWork || now - last >= AutoSyncAfterMs
+    }
+
     /** The other half of a disconnect; the token half is `NotionAuth.disconnect`. */
     fun clear() {
         sourcesDatabaseId = null
@@ -84,6 +101,14 @@ class NotionPrefs(private val store: KeyValueStore) {
         const val ReadingKey = "notion.database.reading"
         const val LastSyncKey = "notion.sync.last"
         const val NameKey = "notion.database.name"
+
+        /**
+         * Four hours. Long enough that opening the app repeatedly in an
+         * evening costs one sync, short enough that a morning's reading is
+         * current. A feed publishes a few times a week; there is nothing to
+         * gain from checking more often than a meal.
+         */
+        const val AutoSyncAfterMs = 4L * 60 * 60 * 1000
     }
 }
 

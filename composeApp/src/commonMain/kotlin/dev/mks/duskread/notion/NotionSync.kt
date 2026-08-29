@@ -1,8 +1,13 @@
 package dev.mks.duskread.notion
 
 import dev.mks.duskread.links.FeedLibrary
+import dev.mks.duskread.links.FeedPostCache
+import dev.mks.duskread.links.LinkLibrary
 import dev.mks.duskread.links.discoverFeedUrl
+import dev.mks.duskread.links.syncFeeds
 import io.ktor.client.HttpClient
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
 /**
  * What one pull did, in the three numbers Settings reports.
@@ -60,4 +65,49 @@ suspend fun applySources(
     }
 
     return SourceSyncSummary(found = active.size, added = added, skipped = skipped)
+}
+
+/** Everything one sync did, and whether it got far enough to be worth recording. */
+data class SyncOutcome(val line: String, val ok: Boolean)
+
+/**
+ * The whole sync, in the order the halves depend on each other.
+ *
+ * Lives here rather than in Settings because it now has two callers: the
+ * button, and the automatic run when the app opens. A copy in each would be
+ * two chances to fix a bug once.
+ *
+ * The reading list is reported separately and never allowed to discard the
+ * sources half: those feeds are followed whatever Notion says about saved
+ * links a moment later.
+ */
+@OptIn(ExperimentalTime::class)
+suspend fun runFullSync(
+    api: NotionClient,
+    sourcesDatabaseId: String,
+    readingDatabaseId: String?,
+    library: LinkLibrary,
+    feeds: FeedLibrary,
+    feedPosts: FeedPostCache,
+    http: HttpClient,
+    recordSync: (Long) -> Unit,
+): SyncOutcome = when (val sources = pullSources(api, sourcesDatabaseId)) {
+    is NotionResult.Failure -> SyncOutcome(sources.message, ok = false)
+
+    is NotionResult.Ok -> {
+        val summary = applySources(http, sources.value, feeds)
+        val fetched = syncFeeds(http, feeds.feeds, feedPosts)
+        val reading = readingDatabaseId?.let { syncReadingList(api, it, library) }
+        recordSync(Clock.System.now().toEpochMilliseconds())
+
+        val head = "${summary.line} · $fetched fetched"
+        SyncOutcome(
+            line = when (reading) {
+                null -> head
+                is NotionResult.Failure -> "$head · saved links: ${reading.message}"
+                is NotionResult.Ok -> reading.value.line?.let { "$head · $it" } ?: head
+            },
+            ok = true,
+        )
+    }
 }
