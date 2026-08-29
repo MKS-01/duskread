@@ -45,6 +45,7 @@ import dev.mks.duskread.links.Scored
 import dev.mks.duskread.links.pool
 import dev.mks.duskread.links.rank
 import dev.mks.duskread.links.syncFeeds
+import dev.mks.duskread.links.topPicks
 import dev.mks.duskread.pomodoro.PickableMinutes
 import dev.mks.duskread.pomodoro.clockLabel
 import dev.mks.duskread.pomodoro.rememberPomodoroController
@@ -163,7 +164,7 @@ fun DashboardTab(
             // Leads the screen — a specific thing to read, ahead of the general
             // habit prompt below it.
             item("next-up") {
-                NextUpSection(links = links, signals = signals, feedPosts = feedPosts, onOpenSaved = onOpenSaved)
+                NextUpSection(links = links, signals = signals, feeds = feeds, feedPosts = feedPosts, onOpenSaved = onOpenSaved)
             }
             item("readback") { ReadbackSection(player = player, onOpen = onOpenReadback) }
             item("focus") { FocusSection(onOpen = onOpenFocus) }
@@ -397,6 +398,7 @@ private fun ReadbackSection(
 private fun NextUpSection(
     links: LinkLibrary,
     signals: ReadingSignals,
+    feeds: FeedLibrary,
     feedPosts: FeedPostCache,
     onOpenSaved: () -> Unit,
     modifier: Modifier = Modifier,
@@ -419,9 +421,18 @@ private fun NextUpSection(
     var shuffles by remember { mutableStateOf(0) }
     val day = remember { (Clock.System.now().toEpochMilliseconds() / 86_400_000L).toInt() }
 
-    val ranked = remember(links.links, feedPosts.postsByFeed, signals.byHost, signals.topicReads, shuffles, focusMinutes) {
+    val ranked = remember(
+        links.links,
+        feedPosts.postsByFeed,
+        feeds.feeds,
+        signals.byHost,
+        signals.topicReads,
+        signals.skippedPosts,
+        shuffles,
+        focusMinutes,
+    ) {
         rank(
-            candidates = pool(links, feedPosts),
+            candidates = pool(links, feedPosts, feeds.feeds),
             signals = signals,
             now = Clock.System.now().toEpochMilliseconds(),
             seed = day + shuffles,
@@ -429,8 +440,12 @@ private fun NextUpSection(
         )
     }
 
-    val hero = ranked.firstOrNull()
-    val runnersUp = ranked.drop(1).take(2)
+    // At most one row per source. Two followed blogs can be near-duplicates by
+    // design — JetBrains publishes both a general and a Kotlin feed — so a
+    // straight take(3) can spend the whole section on one publisher.
+    val picks = remember(ranked) { topPicks(ranked, count = 3) }
+    val hero = picks.firstOrNull()
+    val runnersUp = picks.drop(1)
 
     Column(modifier.fillMaxWidth().padding(bottom = SectionGap)) {
         EyebrowHeader(
@@ -507,6 +522,10 @@ private fun openCandidate(
     val id = candidate.savedId ?: links.save(candidate.url, candidate.title)?.id
     id?.let { links.toggleRead(it) }
     signals.recordRead(candidate.url)
+    // The other half of the topic term: without this, tags are read on every
+    // candidate and never credited to anything, and topic affinity stays the
+    // zero it has always been.
+    candidate.tag?.let { signals.recordTopicRead(it) }
 }
 
 /**
@@ -514,9 +533,10 @@ private fun openCandidate(
  * the difference in weight is what makes the first one a recommendation and
  * the rest alternatives, without either of them needing a label saying so.
  *
- * The meta line is the house's two facts: host, and how long this will take.
- * The estimate is the new fact the ranking makes possible, and it takes the
- * second slot rather than adding a third.
+ * The meta line is the house's two facts, three when a topic is known: host,
+ * subject, and how long this will take. The subject takes the middle slot
+ * because it is the one that says *why this*, and it is simply absent for a
+ * candidate from a feed Notion has not filed.
  */
 @Composable
 private fun NextUpRow(scored: Scored, hero: Boolean, last: Boolean, onOpen: () -> Unit) {
@@ -528,6 +548,7 @@ private fun NextUpRow(scored: Scored, hero: Boolean, last: Boolean, onOpen: () -
         titleMaxLines = if (hero) 2 else 1,
     ) {
         RowMeta(scored.candidate.host)
+        scored.candidate.tag?.let { RowMeta(it.lowercase()) }
         RowMeta("${scored.minutes} min")
     }
 }

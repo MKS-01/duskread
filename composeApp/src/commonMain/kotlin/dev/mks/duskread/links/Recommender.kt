@@ -29,17 +29,43 @@ private const val TopicAffinityWeight = 0.7f
 /** Length against the focus timer. A five-minute timer should not be offered a twenty-minute essay. */
 private const val FitWeight = 0.45f
 
-/** Deliberately small: a skip is "not right now", not a dislike. See [HostSignal]. */
-private const val SkipPenaltyWeight = 0.3f
+/**
+ * A weak hint that a source is not landing. Halved when the per-post term
+ * below arrived and took over the job this was being asked to do alone.
+ */
+private const val SkipPenaltyWeight = 0.15f
 
 /** And it wears off. A week is long enough to have meant it, short enough to forgive. */
 private const val SkipHalfLifeMs = 7L * 24 * 60 * 60 * 1000
 
-/** The shuffle. Large enough to reorder the top of a close field, too small to promote a bad candidate. */
-private const val JitterWeight = 0.35f
+/**
+ * Stepping past *this* post. Large enough to sink it outright, because that is
+ * exactly what the reader just asked for by tapping shuffle.
+ */
+private const val PostSkipWeight = 1.4f
 
-/** Freshness half-life. About a fortnight — a blog post is still worth reading a week later. */
-private const val FreshnessHalfLifeMs = 14L * 24 * 60 * 60 * 1000
+/** Two days: long enough that a shuffle-through does not loop, short enough that nothing is buried. */
+private const val PostSkipHalfLifeMs = 2L * 24 * 60 * 60 * 1000
+
+/**
+ * The shuffle. Large enough to reorder a genuinely close field, small enough
+ * not to outvote freshness.
+ *
+ * Was 0.35, which was wrong once the pool grew: across the three days holding
+ * most of a fresh sync, freshness only spans about 0.41 (see below), so a
+ * jitter of 0.35 meant the top of the list was mostly noise.
+ */
+private const val JitterWeight = 0.18f
+
+/**
+ * Freshness half-life. Four days, not the fortnight this started at.
+ *
+ * A fortnight is the right answer to "is this still worth reading" and the
+ * wrong one to "which of these forty posts from this week". At 14 days a
+ * three-day-old post scores 0.86 against a new one's 1.0 — a spread too
+ * narrow to order anything. At four days the same pair spans 1.0 to 0.59.
+ */
+private const val FreshnessHalfLifeMs = 4L * 24 * 60 * 60 * 1000
 
 /** How long a saved link has to sit untouched before the rescue term starts paying out. */
 private const val StaleAfterMs = 30L * 24 * 60 * 60 * 1000
@@ -71,6 +97,8 @@ data class Candidate(
     val date: Long?,
     /** The publisher's body or the link's description — only ever used to estimate length. */
     val body: String?,
+    /** Counted at sync time where a feed supplied one; see [FeedPost.words]. */
+    val words: Int? = null,
     /** From the tagging layer, absent until it exists. */
     val tag: String? = null,
     /** Non-null when this is already a [SavedLink]. */
@@ -95,7 +123,13 @@ data class Scored(
  * copy carries the read state, and two rows for one article would be a bug
  * the reader can see.
  */
-fun pool(links: LinkLibrary, cache: FeedPostCache, tagFor: (String) -> String? = { null }): List<Candidate> {
+fun pool(links: LinkLibrary, cache: FeedPostCache, feeds: List<Feed> = emptyList()): List<Candidate> {
+    val topicByFeed = feeds.associate { it.id to it.topic }
+    // A saved link belongs to no feed, but it often comes from a blog that is
+    // followed — so fall back to matching on host. Costs one small map and
+    // covers most of what anyone saves.
+    val topicByHost = feeds.filter { it.topic != null }.associate { it.host to it.topic }
+
     val saved = links.links.filterNot { it.read }.map { link ->
         Candidate(
             url = link.url,
@@ -103,7 +137,7 @@ fun pool(links: LinkLibrary, cache: FeedPostCache, tagFor: (String) -> String? =
             host = link.host,
             date = link.savedAt,
             body = link.description,
-            tag = tagFor(link.url),
+            tag = topicByHost[link.host],
             savedId = link.id,
         )
     }
@@ -119,7 +153,8 @@ fun pool(links: LinkLibrary, cache: FeedPostCache, tagFor: (String) -> String? =
                 host = hostOf(post.url),
                 date = post.publishedAt,
                 body = post.content,
-                tag = tagFor(post.url),
+                words = post.words,
+                tag = topicByFeed[post.feedId],
             )
         }
 
@@ -180,6 +215,11 @@ fun rank(
             raw * (it.lastSkipAt?.let { at -> decay(now - at, SkipHalfLifeMs) } ?: 1f)
         } ?: 0f
 
+        // The one signal here about an article rather than a source. Tapping
+        // shuffle is an explicit "not this one", so it is answered by sinking
+        // this one and nothing else.
+        val postSkip = signals.skippedPosts[candidate.url]?.let { at -> decay(now - at, PostSkipHalfLifeMs) } ?: 0f
+
         val terms = mapOf(
             "freshness" to freshness * FreshnessWeight,
             "stale" to stale * StaleRescueWeight,
@@ -187,6 +227,7 @@ fun rank(
             "topic" to topicAffinity * TopicAffinityWeight,
             "fit" to fit * FitWeight,
             "skip" to -skip * SkipPenaltyWeight,
+            "skipped" to -postSkip * PostSkipWeight,
             "jitter" to jitter(candidate.url, seed) * JitterWeight,
         )
 
@@ -220,9 +261,51 @@ private fun jitter(url: String, seed: Int): Float {
     return (h.toLong() and 0xFFFFL).toFloat() / 0xFFFF
 }
 
-/** Body words over [WordsPerMinute], falling back to a flat guess for a candidate with no body cached. */
+/**
+ * Body words over [WordsPerMinute], falling back to a flat guess for a
+ * candidate whose length nothing knows.
+ *
+ * [Candidate.words] first, because a feed post counted its own at sync time —
+ * this runs for every candidate on every re-rank, and splitting the cached
+ * markup here is what a shuffle tap used to cost. Splitting is kept only for a
+ * saved link's description, which is a sentence or two.
+ */
 internal fun estimatedMinutes(candidate: Candidate): Float {
-    val words = candidate.body?.split(' ', '\n', '\t')?.count { it.isNotBlank() } ?: 0
+    val words = candidate.words ?: candidate.body?.split(' ', '\n', '\t')?.count { it.isNotBlank() } ?: 0
     if (words < 40) return DefaultMinutes
     return max(1f, words.toFloat() / WordsPerMinute)
+}
+
+/**
+ * The [count] to actually show, at most one per source.
+ *
+ * Applied *after* ranking rather than as another term inside it, on purpose.
+ * Every score has to stay explicable on its own — "why is that at the top" is
+ * a question that gets asked on the phone with no debugger, and a diversity
+ * penalty folded into the arithmetic would make the honest answer "because of
+ * what else happened to be in the list", which is no answer at all.
+ *
+ * Two followed blogs can be near-duplicates by design — JetBrains publishes a
+ * general feed and a Kotlin one, and the same post appears in both — so
+ * without this a good day at one publisher fills every row.
+ *
+ * Falls back to filling from the remainder rather than returning short: three
+ * rows from two sources is worse than three rows from three, and much better
+ * than one row and a gap.
+ */
+fun topPicks(ranked: List<Scored>, count: Int): List<Scored> {
+    val seen = mutableSetOf<String>()
+    val picked = mutableListOf<Scored>()
+
+    for (scored in ranked) {
+        if (picked.size == count) break
+        if (seen.add(scored.candidate.host)) picked += scored
+    }
+
+    if (picked.size < count) {
+        val taken = picked.mapTo(mutableSetOf()) { it.candidate.url }
+        picked += ranked.filterNot { it.candidate.url in taken }.take(count - picked.size)
+    }
+
+    return picked
 }

@@ -444,3 +444,75 @@ Compiling proves nothing here, so:
 - **iOS/desktop/Wasm Settings entry.** The section is built in `commonMain` and
   will compile everywhere, but `SecretStore` is only properly encrypted on
   Android and that is the only target being exercised.
+
+---
+
+# Part 2 — Home discovery at scale
+
+The sync changed the problem it fed into. `NEXT UP` was calibrated when the
+pool was a handful of saved links; it now chooses three rows out of roughly
+**210 feed posts** (`EntriesPerFeed = 15` × 14 active feeds) plus every unread
+saved link. Four of its terms behaved differently at that size, and a fifth had
+never done anything at all.
+
+The architecture did not change. `Recommender.rank` stays a pure function of
+named, bounded, individually explicable terms.
+
+## What was wrong, with the arithmetic
+
+**Jitter out-voted freshness.** At a 14-day half-life, three days of a fresh
+sync spanned `1.0 → 0.86` — a range of 0.14 — against a jitter of 0.35. The top
+of the list was mostly noise. Freshness is now a **4-day** half-life (same three
+days span `1.0 → 0.59`) and jitter is **0.18**.
+
+**A skip punished the wrong thing.** `recordSkip` resolved `hostOf(url)` and
+wrote a `HostSignal`, so stepping past one JetBrains post penalised every post
+that blog had published and did nothing to the one on screen — which could
+return on the next tap. With the shuffle as the main way through a 210-item
+pool, its primary signal was backwards. `ReadingSignals` now also keeps
+`signals.skipped` (url → time, most recent 60, oldest evicted) and a
+`PostSkipWeight` term sinks that exact post, decaying over two days. The host
+term stays at half its old weight as the weak hint it always should have been.
+
+**Nothing enforced variety.** `topPicks` takes the best candidate per host,
+after ranking rather than as a scoring penalty — every score has to stay
+explicable on its own, and a diversity term folded into the arithmetic makes
+the honest answer "because of what else was in the list".
+
+**Every re-rank re-split every body.** `estimatedMinutes` split cached
+`<content:encoded>` for all candidates on each shuffle tap, on the main thread.
+`FeedPost.words` is now counted once at sync time — from the *whole* body,
+before the cache truncates it to 24k chars and drops it entirely past the sixth
+entry per feed. So the estimate also got more accurate: most posts used to fall
+back to a flat 7-minute guess.
+
+**Topic affinity was a socket with nothing in it.** `recordTopicRead`,
+`signals.topicReads` and `TopicAffinityWeight = 0.7` were all built and read by
+`rank()`, but `pool()`'s `tagFor` defaulted to `{ null }` and no caller passed
+one. A seventh of the scoring function was permanently zero.
+
+## Topics come from Notion, not a model
+
+`Sources.Topic` is already curated per feed, and `NotionSource.topic` was
+already parsed and then discarded. It now rides through `Feed.topic` (fifth
+positional field, tolerant decode) into every post that feed carries, and
+`openCandidate` credits it on read.
+
+Zero inference, no new dependency, every platform, editable by hand. It does
+the one thing host affinity structurally cannot: **pool across hosts.** Three
+security posts read from three different blogs credit `Security` once, so a
+fourth from a blog never opened still ranks.
+
+It is per-**source**, not per-article — a general-interest blog gets one topic
+for everything. That is the known cost of not running a model, and the
+`tagFor`-shaped seam is where per-article tagging would later override it.
+
+## The Discovery block
+
+`Settings ▸ DISCOVERY`. Pool size, how many carry a topic, read and skip
+counts, and the top five with their score broken out per term — only the terms
+that actually contributed, since a row of seven values where four are `0.00`
+hides the three that decided it. Plus **Re-rank** and **Clear signals**.
+
+The weights above are a starting point chosen by arithmetic, not a final
+answer. They get tuned here, on the phone, against real candidates.

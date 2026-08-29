@@ -16,6 +16,17 @@ data class Feed(
      * defaulted to the host so the two cases stay distinguishable.
      */
     val title: String? = null,
+    /**
+     * The subject this blog is about, curated in Notion's `Sources` table
+     * rather than inferred here — "Security", "Languages & Tooling".
+     *
+     * Per-source and not per-article, so a general-interest blog gets one
+     * topic for everything it publishes. That is the known cost of not
+     * running a model, and it buys the thing host affinity structurally
+     * cannot: reading three security posts from three different blogs
+     * credits one subject, so a fourth from a blog never read still ranks.
+     */
+    val topic: String? = null,
 ) {
     /** "arstechnica.com" — the label a topic row shows itself under. */
     val host: String

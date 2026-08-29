@@ -24,6 +24,19 @@ data class FeedPost(
     val content: String? = null,
     /** When the publisher dated it, or null for a feed that dates nothing. */
     val publishedAt: Long? = null,
+    /**
+     * How long the article is, counted once at sync time.
+     *
+     * Kept as a number rather than recomputed from [content] because the
+     * ranking needs it for every candidate on every re-rank, and splitting a
+     * couple of megabytes of cached markup on the draw path is what a shuffle
+     * tap used to cost.
+     *
+     * It is also more accurate than [content] could be: this is counted from
+     * the publisher's whole body, before the cache truncates it and before it
+     * is dropped entirely for all but the newest few per feed.
+     */
+    val words: Int? = null,
 )
 
 /** The cached post for [url], if some followed feed carried it. */
@@ -66,14 +79,15 @@ class FeedPostCache(private val store: KeyValueStore) {
             post.imageUrl.orEmpty(),
             post.content.orEmpty().clean(),
             post.publishedAt?.toString().orEmpty(),
+            post.words?.toString().orEmpty(),
         ).joinToString(FieldSeparator.toString())
     }
 
     private fun decode(record: String): FeedPost? {
-        // Still three, not six: records written before posts carried an image,
-        // a body or a date decode as they always did rather than being
-        // dropped, so a reader who updates the app keeps their feed lists
-        // until the next sync fills the new fields in.
+        // Still three, not seven: records written before posts carried an
+        // image, a body, a date or a word count decode as they always did
+        // rather than being dropped, so a reader who updates the app keeps
+        // their feed lists until the next sync fills the new fields in.
         val fields = record.split(FieldSeparator)
         if (fields.size < 3) return null
 
@@ -84,6 +98,7 @@ class FeedPostCache(private val store: KeyValueStore) {
             imageUrl = fields.getOrNull(3)?.takeIf { it.isNotBlank() },
             content = fields.getOrNull(4)?.takeIf { it.isNotBlank() },
             publishedAt = fields.getOrNull(5)?.toLongOrNull(),
+            words = fields.getOrNull(6)?.toIntOrNull(),
         )
     }
 

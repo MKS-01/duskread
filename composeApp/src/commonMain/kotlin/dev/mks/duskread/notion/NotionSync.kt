@@ -55,7 +55,7 @@ suspend fun applySources(
         // could not confirm.
         val resolved = runCatching { discoverFeedUrl(http, source.feedUrl) }.getOrDefault(source.feedUrl)
 
-        feeds.add(resolved, source.name) ?: return@forEach
+        feeds.add(resolved, source.name, source.topic) ?: return@forEach
         if (feeds.feeds.size > before) added++ else skipped++
     }
 

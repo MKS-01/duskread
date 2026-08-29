@@ -34,6 +34,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.mks.duskread.AppVersion
@@ -43,6 +44,9 @@ import dev.mks.duskread.data.rememberSecretStore
 import dev.mks.duskread.links.FeedLibrary
 import dev.mks.duskread.links.FeedPostCache
 import dev.mks.duskread.links.LinkLibrary
+import dev.mks.duskread.links.ReadingSignals
+import dev.mks.duskread.links.pool
+import dev.mks.duskread.links.rank
 import dev.mks.duskread.links.savedAgo
 import dev.mks.duskread.links.syncFeeds
 import dev.mks.duskread.notion.NotionClient
@@ -68,6 +72,8 @@ import dev.mks.duskread.ui.theme.Space
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.math.abs
+import kotlin.math.roundToInt
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
@@ -93,6 +99,7 @@ fun SettingsScreen(
     feeds: FeedLibrary,
     feedPosts: FeedPostCache,
     feedClient: HttpClient,
+    signals: ReadingSignals,
     modifier: Modifier = Modifier,
 ) {
     PlatformBackHandler(enabled = true, onBack = onClose)
@@ -160,6 +167,12 @@ fun SettingsScreen(
                 EyebrowHeader(text = "NOTION")
                 Spacer(Modifier.height(14.dp))
                 NotionSettings(feeds = feeds, feedPosts = feedPosts, client = feedClient)
+
+                Spacer(Modifier.height(28.dp))
+
+                EyebrowHeader(text = "DISCOVERY")
+                Spacer(Modifier.height(14.dp))
+                Discovery(library = library, feeds = feeds, feedPosts = feedPosts, signals = signals)
 
                 Spacer(Modifier.height(28.dp))
 
@@ -685,3 +698,107 @@ private suspend fun runNotionSync(
 
 /** Enough to show a token is held without showing the token. */
 private const val MaskedToken = "ntn_••••••••••••••••"
+
+/**
+ * Why the ranking picked what it picked.
+ *
+ * Home shows three rows chosen from a pool of a couple of hundred, and the
+ * weights behind that choice are wrong until they are seen to be wrong. They
+ * cannot be judged from the source — only from real candidates on a real
+ * phone — and "why is *that* at the top" has to be answerable in the room,
+ * without a debugger. So the score is broken out per term rather than shown as
+ * one number, for the same reason `Summariser.android.kt` refuses to flatten
+ * an error code into "something went wrong".
+ *
+ * A developer tool living in a shipped Settings screen, deliberately: it costs
+ * one section, it is the only way to tune the thing, and a reader who opens it
+ * sees a list of what the app is about to suggest, which is not a bad answer
+ * to a question nobody asked.
+ */
+@OptIn(ExperimentalTime::class)
+@Composable
+private fun Discovery(
+    library: LinkLibrary,
+    feeds: FeedLibrary,
+    feedPosts: FeedPostCache,
+    signals: ReadingSignals,
+) {
+    // Re-rank is a button rather than something that happens on its own: the
+    // point of this block is to compare two rankings, which is impossible if
+    // it moves while being read.
+    var reranks by remember { mutableStateOf(0) }
+
+    val ranked = remember(reranks, library.links, feedPosts.postsByFeed, feeds.feeds, signals.byHost, signals.skippedPosts) {
+        val candidates = pool(library, feedPosts, feeds.feeds)
+        candidates to rank(
+            candidates = candidates,
+            signals = signals,
+            now = Clock.System.now().toEpochMilliseconds(),
+            seed = reranks,
+            focusMinutes = null,
+        )
+    }
+
+    val (candidates, scored) = ranked
+    val tagged = candidates.count { it.tag != null }
+
+    Column(Modifier.fillMaxWidth()) {
+        Text(
+            text = "${candidates.size} candidates · $tagged tagged · ${signals.totalReads} reads · " +
+                "${signals.skippedPosts.size} skipped",
+            fontFamily = Mono,
+            fontSize = 11.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        Spacer(Modifier.height(12.dp))
+
+        scored.take(5).forEach { item ->
+            Column(Modifier.fillMaxWidth().padding(bottom = 10.dp)) {
+                Text(
+                    text = item.candidate.title,
+                    fontSize = 12.5.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    // Only the terms that actually contributed. A row of
+                    // seven values where four are 0.00 hides the three that
+                    // decided it.
+                    text = item.terms.entries
+                        .filter { abs(it.value) >= 0.005f }
+                        .sortedByDescending { abs(it.value) }
+                        .joinToString("  ") { (name, value) -> "$name ${value.format()}" }
+                        .ifBlank { "no signal" },
+                    fontFamily = Mono,
+                    fontSize = 10.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+
+        if (scored.isEmpty()) {
+            Text(
+                text = "Nothing to rank — follow a blog or save a link.",
+                fontSize = 12.5.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+
+        Row(Modifier.offset(x = (-12).dp), verticalAlignment = Alignment.CenterVertically) {
+            TransferAction("Re-rank") { reranks++ }
+            TransferAction("Clear signals") {
+                signals.clear()
+                reranks++
+            }
+        }
+    }
+}
+
+/** Two decimals, with the sign, because a negative term is the interesting one. */
+private fun Float.format(): String {
+    val hundredths = (abs(this) * 100).roundToInt()
+    val sign = if (this < 0) "-" else ""
+    return "$sign${hundredths / 100}.${(hundredths % 100).toString().padStart(2, '0')}"
+}

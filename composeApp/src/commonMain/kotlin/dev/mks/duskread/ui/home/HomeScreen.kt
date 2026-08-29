@@ -427,6 +427,10 @@ fun HomeScreen(
                 feeds = feeds,
                 feedPosts = feedPosts,
                 feedClient = feedClient,
+                // Same instance Home ranks with, so the Discovery block
+                // explains the picks actually on screen rather than a second
+                // reading of the same store.
+                signals = signals,
             )
         }
     }

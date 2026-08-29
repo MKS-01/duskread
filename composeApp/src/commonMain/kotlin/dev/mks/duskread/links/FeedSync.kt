@@ -237,7 +237,25 @@ private fun FeedEntry.asPost(feedId: String, index: Int): FeedPost = FeedPost(
     imageUrl = imageUrl,
     publishedAt = publishedAt,
     content = content?.take(MaxCachedContentChars)?.takeIf { index < EntriesWithContent },
+    // Counted from the whole body, before the two lines above truncate it and
+    // drop it for all but the newest few. The cache keeps a prefix; the length
+    // estimate should describe the article. An int costs nothing to keep for
+    // every entry, and it is the difference between a real reading time and
+    // the flat guess most posts fall back to today.
+    words = content?.let(::countWords),
 )
+
+/**
+ * Roughly how many words a body holds.
+ *
+ * Tags are stripped first because a feed body is markup and counting `<p>` as
+ * a word inflates a short post into a long one. Rough on purpose — this feeds
+ * a minutes estimate shown as "6 min", where being out by one is invisible and
+ * being out by three is not.
+ */
+private fun countWords(markup: String): Int = markup.replace(TagPattern, " ").split(' ', '\n', '\t', '\r').count { it.isNotBlank() }
+
+private val TagPattern = Regex("<[^>]*>")
 
 private val CdataPattern = Regex("""<!\[CDATA\[(.*?)]]>""", RegexOption.DOT_MATCHES_ALL)
 
