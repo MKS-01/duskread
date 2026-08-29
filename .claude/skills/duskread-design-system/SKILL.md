@@ -28,9 +28,10 @@ screen rather than introducing a second system next to the first.
   role in both schemes, the type scale, layout values, radii, durations and
   the icon list, each with the file it lives in. Look values up here; look at
   them on the page.
-- **`docs/design/amplitude-migration.md`** — the day-by-day log of how the app
-  got here, screen by screen. Read it for *why* a pattern exists; read the
-  design-system doc for *what* the pattern is.
+- **`docs/architecture.md`** — the one engineering document: storage, the
+  Notion flows, ranking, offline, and a "The UI layer" section holding the
+  architectural half of the design system. Read it for *why* a pattern exists;
+  read the design-system doc for *what* the pattern is.
 - **`CLAUDE.md`**'s "Colour and design tokens" and "Icons" sections carry the
   house rules this skill assumes: colour only from `MaterialTheme.colorScheme`
   (never a hard-coded `Color(0x…)`), icons only from `ui/theme/DuskReadIcons.kt`

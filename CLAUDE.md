@@ -36,11 +36,10 @@ construction (bar, crescent, mark), its size ramp and the splash live in the
 Design system deck's "App icon" slide, not Concept — Concept argues the
 identity, the deck is reference on how the mark is built. Keep it that way — **no code
 paths, no class names, no TODO lists in it.** That material
-lives in `docs/design/amplitude-migration.md`, which holds the state of the
-system and what is still open. A feature large enough to need its own plan
-gets its own file beside it — `docs/design/notion-sync.md` is the first, on
-pulling followed blogs from a Notion database and the ranking that reads
-their topics.
+lives in `docs/architecture.md`, the one engineering document: storage, the
+Notion flows both ways, ranking, offline, the UI layer, the invariants and
+the known limits. There are no per-feature plan files — a new feature is
+folded into that doc, not given one of its own.
 `docs/design-system/design-tokens.md` is the reference half: every colour
 role, type style, radius, duration and layout value, with the file it lives
 in. The page shows the language, the tokens file lists it — a table of hex
