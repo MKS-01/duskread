@@ -1,24 +1,22 @@
 package dev.mks.duskread.links
 
 /*
- * Getting the reading list out of the app and back in, as text.
+ * Getting a reading list into the app, as text.
  *
- * The store is a private key/value blob on one device, which makes the saved
- * links the only thing in the app that cannot be recovered if that device is
- * wiped — the readback library syncs, but a saved link has no copy anywhere
- * else. So there has to be a way out.
+ * The carrier is the clipboard, because it is universal: a list of links
+ * pastes in from wherever it already lives — a notes app, a bookmarks dump, a
+ * mail from a friend — without either end needing to agree a format first.
  *
- * The carrier is the clipboard and the format is a Markdown list, for the same
- * reason: both are universal. Text pastes into whatever the reader already
- * keeps notes in, survives being mailed to yourself, and can be read and
- * hand-edited without this app present — which a file format, however tidy,
- * cannot promise a year from now.
+ * There used to be an export beside this, writing the library back out as
+ * Markdown. It was removed once Notion became where a reading list is kept:
+ * a second, hand-driven copy of the same list is a thing to keep in sync
+ * rather than a safety net.
  *
- * [parseImport] is deliberately far more permissive than [exportLinks] is
- * strict. It pulls links out of *any* text: an export from here, a bookmarks
- * dump, a list a friend sent, a page of prose with three URLs in it. Anything
- * it recognises as a title it keeps, and anything it does not it drops, so the
- * worst outcome of pasting the wrong thing is nothing happening.
+ * [parseImport] is deliberately permissive. It pulls links out of *any* text,
+ * including the Markdown the old export produced, so nothing already saved
+ * out of the app has become unreadable. Anything it recognises as a title it
+ * keeps, anything it does not it drops, so the worst outcome of pasting the
+ * wrong thing is nothing happening.
  */
 
 /** One link recovered from pasted text, before the library has decided what to do with it. */
@@ -37,38 +35,6 @@ data class ImportSummary(
     val duplicates: Int
         get() = found - added
 }
-
-/**
- * The whole list as Markdown, newest first, unread above read.
- *
- * The header line is a comment to the parser and a label to a human — pasted
- * into a notes app six months later it still says what this is and how much of
- * it there was.
- */
-fun exportLinks(links: List<SavedLink>): String {
-    val (read, unread) = links.partition { it.read }
-    val header = "# DuskRead — ${links.size} saved, ${unread.size} unread"
-
-    val body = buildList {
-        add(header)
-        if (unread.isNotEmpty()) {
-            add("")
-            unread.forEach { add(it.asLine()) }
-        }
-        if (read.isNotEmpty()) {
-            add("")
-            add("## Read")
-            read.sortedByDescending { it.readAt ?: it.savedAt }.forEach { add(it.asLine()) }
-        }
-    }
-
-    return body.joinToString("\n")
-}
-
-// The em dash separates title from URL because it is the one character that
-// reads as punctuation to a person and never appears inside a URL, so the
-// parser can split on it without escaping anything.
-private fun SavedLink.asLine(): String = if (read) "- [x] $title — $url" else "- $title — $url"
 
 /**
  * Every link the text contains, in the order it contains them.

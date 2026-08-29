@@ -34,20 +34,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.mks.duskread.AppVersion
 import dev.mks.duskread.data.NotionTokenKey
 import dev.mks.duskread.data.UserPrefs
 import dev.mks.duskread.data.rememberSecretStore
-import dev.mks.duskread.links.ExportFileName
-import dev.mks.duskread.links.ExportSink
 import dev.mks.duskread.links.FeedLibrary
 import dev.mks.duskread.links.FeedPostCache
 import dev.mks.duskread.links.LinkLibrary
-import dev.mks.duskread.links.exportLinks
-import dev.mks.duskread.links.rememberExportSink
 import dev.mks.duskread.links.savedAgo
 import dev.mks.duskread.links.syncFeeds
 import dev.mks.duskread.notion.NotionClient
@@ -79,11 +74,10 @@ import kotlin.time.ExperimentalTime
 /**
  * Everything that isn't a tab of its own, gathered behind a gear rather than
  * scattered across whichever screen happens to own a given piece of state:
- * the profile name onboarding asked for once, and the saved-links backup —
- * the only thing in DuskRead with no copy anywhere else, since the readback
- * library is readback's own backup and a followed feed is trivially re-added
- * by URL. If more settles here later, this is where it goes, not a second
- * button bar bolted onto some other tab.
+ * the profile name onboarding asked for once, the Notion connection that
+ * supplies the followed blogs, and a way to paste a list of links in. If more
+ * settles here later, this is where it goes, not a second button bar bolted
+ * onto some other tab.
  *
  * Flat, same as every other screen in the Amplitude direction: an eyebrow
  * with its inline rule opens each section, and nothing here sits in a boxed
@@ -169,9 +163,9 @@ fun SettingsScreen(
 
                 Spacer(Modifier.height(28.dp))
 
-                EyebrowHeader(text = "SAVED LINKS")
+                EyebrowHeader(text = "IMPORT LINKS")
                 Spacer(Modifier.height(14.dp))
-                DataTransfer(library)
+                LinkImport(library)
 
                 // Last, unheaded, and mono like every other fact in the app.
                 // A version number is not a setting — it earns a line because
@@ -349,10 +343,8 @@ private fun SummarySettings(prefs: UserPrefs) {
  * in whatever they already keep things in.
  */
 @Composable
-private fun DataTransfer(library: LinkLibrary) {
+private fun LinkImport(library: LinkLibrary) {
     val clipboard = LocalClipboardManager.current
-    val sink = rememberExportSink()
-    var exporting by remember { mutableStateOf(false) }
     var importing by remember { mutableStateOf(false) }
     var pasted by remember { mutableStateOf("") }
     var note by remember { mutableStateOf<String?>(null) }
@@ -380,16 +372,6 @@ private fun DataTransfer(library: LinkLibrary) {
         }
     }
 
-    // One destination and no menu is better than a menu of one, so a platform
-    // that can only reach the clipboard exports straight to it.
-    val hasChoice = sink.canSaveFile || sink.canSend
-
-    fun copyExport() {
-        clipboard.setText(AnnotatedString(exportLinks(library.links)))
-        note = "Copied ${library.links.size} links to the clipboard."
-        exporting = false
-    }
-
     Column(Modifier.fillMaxWidth()) {
         Text(
             text = "${library.links.size} link${if (library.links.size == 1) "" else "s"} saved.",
@@ -398,31 +380,9 @@ private fun DataTransfer(library: LinkLibrary) {
         )
         Spacer(Modifier.height(10.dp))
 
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            if (library.links.isNotEmpty()) {
-                TransferAction(if (exporting) "Export ✕" else "Export…") {
-                    if (hasChoice) exporting = !exporting else copyExport()
-                }
-            }
-            TransferAction(if (importing) "Cancel" else "Import…") {
-                importing = !importing
-                if (!importing) pasted = ""
-            }
-        }
-
-        AnimatedVisibility(exporting) {
-            ExportDestinations(
-                sink = sink,
-                onCopy = ::copyExport,
-                onSaveFile = {
-                    sink.saveFile(ExportFileName, exportLinks(library.links))
-                    exporting = false
-                },
-                onSend = {
-                    sink.send(ExportFileName, exportLinks(library.links))
-                    exporting = false
-                },
-            )
+        TransferAction(if (importing) "Cancel" else "Import…") {
+            importing = !importing
+            if (!importing) pasted = ""
         }
 
         AnimatedVisibility(importing) {
@@ -442,68 +402,6 @@ private fun DataTransfer(library: LinkLibrary) {
                 modifier = Modifier.padding(top = 8.dp),
             )
         }
-    }
-}
-
-/**
- * Where the export goes.
- *
- * Each row says what the destination *is* rather than naming an app: "Save to
- * Drive" would be a lie on a phone without Drive installed, while the picker
- * behind "Save as file" lists Drive, Files and everything else the reader
- * actually has. The second line is there because the difference between these
- * two is not obvious from four words.
- */
-@Composable
-private fun ExportDestinations(
-    sink: ExportSink,
-    onCopy: () -> Unit,
-    onSaveFile: () -> Unit,
-    onSend: () -> Unit,
-) {
-    Column(Modifier.fillMaxWidth().padding(top = 10.dp)) {
-        DestinationRow(
-            title = "Copy to clipboard",
-            detail = "Paste it anywhere — notes, mail, a document.",
-            onClick = onCopy,
-        )
-        if (sink.canSaveFile) {
-            DestinationRow(
-                title = "Save as file",
-                detail = "Choose where: Drive, Files, or anywhere else on the device.",
-                onClick = onSaveFile,
-            )
-        }
-        if (sink.canSend) {
-            DestinationRow(
-                title = "Send…",
-                detail = "Hand it to another app through the share sheet.",
-                onClick = onSend,
-            )
-        }
-    }
-}
-
-@Composable
-private fun DestinationRow(title: String, detail: String, onClick: () -> Unit) {
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(vertical = 8.dp),
-    ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleSmall,
-            fontSize = 14.sp,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-        Text(
-            text = detail,
-            fontSize = 11.5.sp,
-            lineHeight = 15.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
     }
 }
 
