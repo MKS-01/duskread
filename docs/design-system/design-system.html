@@ -1110,9 +1110,20 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
     <h1>A reading habit that survives the news cycle</h1>
     <p class="standfirst">
       You find something good at eleven in the morning and you are not going
-      to read it at eleven in the morning. DuskRead takes the link, keeps the
-      blogs you follow beside it, and has the pile sorted out by the evening
-      — one screen to open when you finally sit down.
+      to read it at eleven in the morning. DuskRead takes the link — from the
+      share sheet, or a one-tap home-screen widget — keeps the blogs you
+      follow beside it, and has the pile sorted out by the evening: titles
+      filled in, new posts pulled down, most of them cached whole so they
+      open with no signal at all. One screen to open when you finally sit
+      down.
+    </p>
+    <p class="standfirst">
+      <strong>The list itself can be kept somewhere else.</strong> Point the
+      app at a Notion database and it follows what is listed there, syncing
+      saved links back the other way — so an automation that files a
+      newsletter into that table has already put it on the phone. Optional,
+      and the app is whole without it: there is no account, and no server of
+      its own.
     </p>
     <p class="standfirst">
       Two schemes. <strong>Paper Black</strong>, the one you are looking at,
@@ -2118,7 +2129,8 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
     <div data-reveal>
     <p class="section-note">
       Android is the app, built and tested on a phone day to day. Saved
-      links, feeds, the timer and both schemes work the moment it opens.
+      links, feeds, the widget, the timer and both schemes work the moment
+      it opens; everything below is opt-in.
     </p>
 
     <div class="cmd">
@@ -2130,6 +2142,9 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
       <tr><th>Android</th><td>12 and up. The target that is finished.</td></tr>
       <tr><th>Summaries</th><td>Need a phone with AICore — Pixel 9 and up, Galaxy S24 and up, and similar. Everywhere else the control simply is not drawn.</td></tr>
       <tr><th>Readback</th><td>Audio comes from the separate <a href="https://github.com/MKS-01/readback">readback</a> project, synced onto the device. Without it the tab is empty rather than hidden.</td></tr>
+      <tr><th>Widget</th><td>Saves whatever is on the clipboard, or starts a focus session, without opening the app. Idle it costs nothing — the countdown is ticked by the launcher, not by this app.</td></tr>
+      <tr><th>Offline</th><td>Posts whose feed carries the whole article are cached at sync time and open with no network. A row says which ones, and the badge is drawn by the same code the reader uses.</td></tr>
+      <tr><th>Notion</th><td>Optional. A token and a database ID in Settings, and the app follows what that table lists, syncing saved links both ways. Anything that can write a row — an automation, a script, a mail rule — reaches the phone the same way. It never deletes a row.</td></tr>
       <tr><th>Desktop, web, iOS</th><td>Build from the same source and exist to prove it travels. The workshop, not the product.</td></tr>
     </table>
 
