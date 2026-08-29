@@ -35,10 +35,27 @@ Nothing in the app writes to Notion.
   `ExportSink.kt`'s KDoc explicitly rejected Google Drive because it would mean
   "an OAuth flow, a Cloud project and API keys shipped in the binary" — that
   reasoning applies here and is honoured below.
-- **Notion OAuth cannot work client-only.** `/v1/oauth/token` requires HTTP
-  Basic auth with `CLIENT_ID:CLIENT_SECRET` and supports no PKCE, so a
-  phone-only app would have to ship an extractable secret. Hence a pasted
-  token now, behind a seam that OAuth can later replace.
+- **Notion OAuth cannot work client-only.** Notion does offer OAuth — it is one
+  of the two authentication methods when creating a connection — but
+  `/v1/oauth/token` authorises with HTTP Basic auth over
+  `CLIENT_ID:CLIENT_SECRET` and accepts no `code_verifier`. Without PKCE a
+  phone-only app would have to ship an extractable secret. The browser redirect
+  is fine; it is the exchange on the far side that needs a server this project
+  does not have.
+
+  **Open-sourcing this strengthens the case rather than weakening it.** A
+  public repo is not a hosted service: whoever clones DuskRead runs it on their
+  own phone against their own workspace, so they are their own operator, which
+  is exactly what a personal access token is for. OAuth would mean either
+  routing strangers' authorisation codes through a server the author pays for
+  and is liable for, or asking every user to register an integration and deploy
+  their own — to read a database. It would also make the build
+  non-reproducible from source, since the secret could never be in the repo.
+
+  The one trigger that would flip this is not publishing the code; it is
+  *hosting* it, so other people sign in to someone else's instance. `NotionAuth`
+  is an interface for that day, and nothing in `NotionClient`,
+  `syncReadingList` or Settings would change.
 - **A personal access token beats an internal integration secret here.** Both
   are `ntn_…` bearer tokens and the client code is identical, but a PAT "acts
   as the user who created it and uses that user's permissions in the selected
