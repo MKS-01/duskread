@@ -5,13 +5,13 @@
 <h1 align="center">DuskRead</h1>
 
 <p align="center">
-  <strong>A reading habit that survives the news cycle.</strong><br>
-  Save the link, follow the blog, hear it read back on the walk — summarised<br>
-  on-device by Gemini Nano, so everything you read stays yours.
+  <strong>A reading habit, automated around a Notion database.</strong><br>
+  Claude files what lands in Gmail, feeds pull themselves, and the phone<br>
+  only ever shows what you actually chose to keep.
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Gemini_Nano_·_on--device-b45f3c?style=flat-square&logo=googlegemini&logoColor=white" alt="On-device AI via Gemini Nano">
+  <img src="https://img.shields.io/badge/Notion_·_curation-b45f3c?style=flat-square&logo=notion&logoColor=white" alt="Curated through Notion">
   <img src="https://img.shields.io/badge/Kotlin_·_Compose_Multiplatform-1a1a1a?style=flat-square&logo=kotlin&logoColor=white" alt="Kotlin and Compose Multiplatform">
   <img src="https://img.shields.io/badge/Android_12+-1a1a1a?style=flat-square&logo=android&logoColor=white" alt="Android 12 and up">
   <img src="https://img.shields.io/badge/MIT-1a1a1a?style=flat-square" alt="MIT License">
@@ -21,7 +21,7 @@
 
 ---
 
-You find something good at eleven in the morning and you are not going to read it at eleven in the morning. So you share it here and forget it. It goes in with the blogs you follow, and by the evening the pile has sorted itself out: titles filled in, new posts pulled down, the whole lot waiting on one screen. Some of it you read. Some of it you hand to [readback](https://github.com/MKS-01/readback) and listen to on the walk, thumb on a transport bar that keeps playing once the screen is off. The long ones you ask about first, and Gemini Nano tells you what's in them without the article ever leaving the phone. Then you set the timer, put the phone face-down, and actually read for twenty-five minutes — on **Paper Black**, a page rather than a screen, warm-white ink on matte near-black lit by one terracotta accent, or on **Ink**, the same page with the hue drained out entirely, which is where it starts.
+Curation happens before you ever open the app. Claude works through Gmail on a schedule and files what's worth keeping, the blogs you follow pull their own new posts down unasked, and what rises to the top of Home is ranked against your own reading habit — the sources you return to, the topics you finish — rather than whatever landed last. By the time you open it, the list is already sorted, titled and cached, most of it readable with the phone in aeroplane mode because it was fetched hours earlier, not the moment you tapped it. Pasting a link in by hand still works; it simply isn't what carries the habit any more. Then you set the timer, put the phone face-down, and read for twenty-five minutes — on **Paper Black**, a page rather than a screen, warm-white ink on matte near-black lit by one terracotta accent, or on **Ink**, the same page with the hue drained out entirely, which is where it starts.
 
 ---
 
@@ -68,31 +68,37 @@ that.
 
 ## What it does
 
-### Saved links and feeds
+### Curated automatically, through Notion
 
-**Save it however it reaches you.** Paste a URL into the field, or share one straight from Chrome — DuskRead is in the share sheet. Either way the row appears immediately with the host as its stand-in title, then a fetch fills in the real one behind it. A link that can't be fetched keeps a retry glyph rather than pretending it worked.
+The actual habit this app automates: a **[Notion](https://www.notion.com/product/dev)
+database** is the single place subscriptions and saves are curated, and
+**Claude** sits in front of it so the curation doesn't need you at all. Newsletters
+that arrive in Gmail with no public feed are read and filed by Claude
+straight into the reading list; blogs with a working feed are fetched by
+the app itself and never touch Notion. Either way, the phone only pulls
+rows that were ticked `Saved` — everything else stays archived, not shown.
 
-**Follow blogs by feed.** RSS and Atom, synced on open, cached so the list is instant. Posts land in Following on Home and read back exactly like a saved link does.
+<p align="center">
+  <img src="docs/media/notion-flow.png" alt="Gmail and RSS feed into Claude and Notion; Notion and RSS both feed the DuskRead app, which caches everything for offline reading">
+</p>
+
+Notion is the curation layer, not a dependency — the device works whether
+or not it can reach it. The full schema, the sync rules and the reasoning
+behind each of them are in **[docs/architecture.md](docs/architecture.md)**.
+
+**Save it however it reaches you, too.** Paste a URL into the field, or share one straight from Chrome — DuskRead is in the share sheet. Either way the row appears immediately with the host as its stand-in title, then a fetch fills in the real one behind it.
+
+### Reading, offline first
+
+**Almost everything opens with no network at all.** Every screen renders from local storage, and the reader tries its own cache before the wire — a feed that publishes full-content RSS is cached whole at sync time, so the article was already on the phone before you tapped it. A post that will open offline carries its own badge on the meta line, computed the same way the reader itself decides, so it never claims something it can't deliver.
+
+The page itself stays out of the way: **Paper Black** and **Ink**, warm ink on near-black or the same layout with the hue drained out, swapped at runtime, one terracotta accent spent only to mean *there is sound here*. No chrome, no feed of unread counts — one article at a time.
+
+**Long ones get a one-tap summary first**, generated on-device by Gemini Nano so nothing leaves the phone; the control is simply absent on hardware that can't run it.
 
 ### Readback
 
-**Generation happens elsewhere; this app just listens.** [readback](https://github.com/MKS-01/readback) runs on a Mac and turns articles into neural-TTS audio, writing a `library.db` and an `audio/` folder. You sync that folder to the phone yourself — its own script, run whenever you like.
-
-Point DuskRead at it once, through the system folder picker in the Readback tab:
-
-- **Pick the `readback-audio-db` root**, not `audio/` inside it. Choose wrong and you get a message saying so, rather than a permanently-empty list.
-- **The grant persists.** Android's scoped storage means a folder is opened once and remembered; there's nothing to re-do after a reboot.
-- **Strictly read-only.** DuskRead copies `library.db` into its cache to query it and never writes back — the sync direction is one-way by design.
-
-Playback runs in a foreground service with a media notification, so it survives leaving the app, and the floating bar at the foot of Home turns into the transport when something's playing.
-
-### On-device summaries
-
-Summaries go through [ML Kit GenAI](https://developer.android.com/ai), which routes to **Gemini Nano** via AICore on supported hardware. The app asks for article summarisation only — one bullet or three, folded into a paragraph — and lets the system pick the register. There's no prompt to write and nothing to configure beyond how long a summary you want.
-
-- **First run downloads the model.** AICore handles it; it takes a moment once and never again.
-- **Two ways in** — swipe a row in Saved, or the toolbar control inside the reader.
-- **Off Android it's simply absent.** The same UI compiles against a stub that reports itself unavailable, so the control just isn't drawn and nothing upstream has to care.
+Turning an article into audio happens outside this app entirely, in the separate **[readback](https://github.com/MKS-01/readback)** project — DuskRead only reads what a sync step puts on the device, strictly read-only, and never writes back.
 
 ### Focus timer
 
@@ -113,18 +119,22 @@ control that could only disappoint is never drawn.
 
 ### Tech stack
 
-[Compose Multiplatform](https://www.jetbrains.com/compose-multiplatform/) 1.11
-and Material 3 on Kotlin 2.3, one source set for all four targets — everything
-but the leaf nodes is shared, and the platform seams are `expect`/`actual`
-pairs: storage, audio, the summariser, the timer, the HTTP client. State is a
-`HomeTab` enum and overlays in one `Box`, hoisted into `App.kt` over a flat
-key/value store; no nav library, no ViewModel, no DI, no database.
-[Ktor](https://ktor.io/) 3.1 does the network with a different engine per
-target, [ML Kit GenAI](https://developer.android.com/ai) routes summaries to
-Gemini Nano, [sqlite-jdbc](https://github.com/xerial/sqlite-jdbc) and SAF read
-the readback library, [KCEF](https://github.com/DatL4g/KCEF) is the desktop
-browser, and [Haze](https://github.com/chrisbanes/haze) is the blur behind the
-floating bar. Built with AGP 9's `androidLibrary` KMP DSL on Gradle 9.3.1.
+One `commonMain` source set for all four targets — everything but the leaf
+nodes is shared, and the platform seams are `expect`/`actual` pairs: storage,
+audio, the summariser, the timer, the HTTP client. State is a `HomeTab` enum
+and overlays in one `Box`, hoisted into `App.kt` over a flat key/value store;
+no nav library, no ViewModel, no DI, no database.
+
+| Layer | What's used | For |
+| --- | --- | --- |
+| UI | [Compose Multiplatform](https://www.jetbrains.com/compose-multiplatform/) 1.11, Material 3, [Haze](https://github.com/chrisbanes/haze) | one shared UI across all four targets; Haze is the blur behind the floating bar |
+| Language | [Kotlin](https://kotlinlang.org/) 2.3 | `expect`/`actual` platform seams instead of per-platform apps |
+| Network | [Ktor](https://ktor.io/) 3.1 | RSS/Atom fetches, the Notion REST API — a different engine per target |
+| Curation | [Notion](https://www.notion.com/product/dev) API, Claude via the Gmail + Notion MCP | subscriptions and the reading list live in Notion; Claude files newsletters into it |
+| Summaries | [ML Kit GenAI](https://developer.android.com/ai) → Gemini Nano | on-device, Android only, absent elsewhere |
+| Readback | [sqlite-jdbc](https://github.com/xerial/sqlite-jdbc) + SAF | read-only query of readback's `library.db` |
+| Desktop shell | [KCEF](https://github.com/DatL4g/KCEF) | the embedded Chromium browser |
+| Build | AGP 9's `androidLibrary` KMP DSL, Gradle 9.3.1 | |
 
 ```bash
 ./gradlew ktlintCheck    # lint; several rules deliberately off, see .editorconfig
