@@ -1,6 +1,7 @@
 package dev.mks.duskread.ui.home
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.animateDpAsState
@@ -112,6 +113,13 @@ class BarCollapse(private val collapseRun: Float, private val expandRun: Float) 
 
     override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
         val dy = available.y
+        // A zero delta is not a direction. Nested scroll delivers them —
+        // a fling settling, a list already at its end, a gesture that turns
+        // out to be horizontal — and treating one as a reversal reset the run
+        // to nothing, so a genuine scroll could fail to move the bar at all.
+        // That was the bar feeling like it ignored you.
+        if (dy == 0f) return Offset.Zero
+
         // Direction change restarts the run rather than merely subtracting
         // from it, otherwise a long scroll down leaves a debt that swallows
         // the first flick back up.
@@ -245,7 +253,21 @@ fun FloatingBar(
 
         AnimatedContent(
             targetState = face,
-            transitionSpec = { fadeIn(tween(Motion.Chip)) togetherWith fadeOut(tween(Motion.Fade)) },
+            // The size transform is stated rather than left to the default,
+            // because the two faces are different widths on purpose — tabs
+            // wrap their icons, the transport fills the bar — so this swap is
+            // a resize as much as a crossfade. Unspecified, the width moved on
+            // a spring while the opacity moved on a tween, and the pill
+            // arrived at its new size before the face that wanted it had
+            // finished appearing.
+            //
+            // clip = false because the Box already clips to CircleShape; a
+            // second clip animating its own bounds inside that one is what
+            // made the contents look sheared mid-swap.
+            transitionSpec = {
+                fadeIn(tween(Motion.Chip)) togetherWith fadeOut(tween(Motion.Fade)) using
+                    SizeTransform(clip = false) { _, _ -> tween(Motion.Chip) }
+            },
             label = "bar-face",
         ) { current ->
             when (current) {
@@ -284,15 +306,38 @@ fun FloatingBar(
         // about where a drag on the title would land.
         if (face == BarFace.PLAYER) {
             val duration = playback.durationSec.takeIf { it > 0f } ?: 1f
-            val fraction = (playback.positionSec / duration).coerceIn(0f, 1f)
+
+            // Where the finger is, while it is down. Without this the fill is
+            // drawn straight from the player's reported position, so a drag
+            // fought the playhead: every pixel asked the player to seek, the
+            // player answered a few frames later with wherever it had actually
+            // landed, and the line snapped back and forth between the two.
+            var scrub by remember { mutableStateOf<Float?>(null) }
+            val fraction = scrub ?: (playback.positionSec / duration).coerceIn(0f, 1f)
+
             Box(
                 Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
                     .height(SeekTouchHeight)
                     .pointerInput(duration) {
-                        detectHorizontalDragGestures { change, _ ->
-                            onSeek((change.position.x / size.width).coerceIn(0f, 1f) * duration)
+                        detectHorizontalDragGestures(
+                            onDragStart = { offset -> scrub = (offset.x / size.width).coerceIn(0f, 1f) },
+                            // One seek, on release. Asking a MediaPlayer to
+                            // seek on every drag event is what makes a scrub
+                            // stutter — each one interrupts the decode it just
+                            // started for the last.
+                            onDragEnd = {
+                                scrub?.let { onSeek(it * duration) }
+                                scrub = null
+                            },
+                            onDragCancel = { scrub = null },
+                        ) { change, _ ->
+                            // Consumed, or the list underneath treats the same
+                            // drag as its own scroll and the bar collapses
+                            // while you are scrubbing on it.
+                            change.consume()
+                            scrub = (change.position.x / size.width).coerceIn(0f, 1f)
                         }
                     },
                 contentAlignment = Alignment.BottomStart,
