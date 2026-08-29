@@ -294,6 +294,10 @@ fun HomeScreen(
                 HomeTab.SAVED -> LinksTab(
                     library = links,
                     signals = signals,
+                    // For the topic strip's vocabulary: every followed feed
+                    // carries a subject, which is how the curated set reaches
+                    // the picker without a request.
+                    feeds = feeds,
                     contentPadding = listPadding,
                 )
             }

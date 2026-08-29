@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -45,17 +46,21 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dev.mks.duskread.links.FeedLibrary
 import dev.mks.duskread.links.LinkLibrary
 import dev.mks.duskread.links.ReadingSignals
 import dev.mks.duskread.links.SavedLink
 import dev.mks.duskread.links.createHttpClient
 import dev.mks.duskread.links.fetchLinkMetadata
+import dev.mks.duskread.links.knownTopics
 import dev.mks.duskread.links.looksLikeUrl
 import dev.mks.duskread.links.savedAgo
 import dev.mks.duskread.summary.SummaryRequest
 import dev.mks.duskread.summary.SummaryTarget
 import dev.mks.duskread.summary.summariesSupported
 import dev.mks.duskread.ui.common.AppTextField
+import dev.mks.duskread.ui.common.Chip
+import dev.mks.duskread.ui.common.ChipSize
 import dev.mks.duskread.ui.common.EmptyState
 import dev.mks.duskread.ui.common.EyebrowHeader
 import dev.mks.duskread.ui.common.ListRowBody
@@ -96,10 +101,17 @@ import dev.mks.duskread.ui.theme.SectionLabel
 fun LinksTab(
     library: LinkLibrary,
     signals: ReadingSignals,
+    feeds: FeedLibrary,
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
 ) {
     val open = rememberUrlOpener()
+
+    // One row open at a time, held here rather than in each row: opening a
+    // second strip should close the first, and a list of independently
+    // expanded rows is how a tidy list turns into a wall.
+    var expandedTopic by remember { mutableStateOf<String?>(null) }
+    val topics = remember(feeds.feeds, library.links) { knownTopics(feeds.feeds, library.links) }
     val client = remember { createHttpClient() }
     DisposableEffect(client) { onDispose { client.close() } }
 
@@ -182,6 +194,13 @@ fun LinksTab(
                                 library.remove(link.id)
                                 ToastRequest.show("Removed")
                             },
+                            topics = topics,
+                            expanded = expandedTopic == link.id,
+                            onToggleTopics = { expandedTopic = if (expandedTopic == link.id) null else link.id },
+                            onPickTopic = { topic ->
+                                library.setTopic(link.id, topic)
+                                expandedTopic = null
+                            },
                         )
                     }
                 }
@@ -212,6 +231,13 @@ fun LinksTab(
                             onRemove = {
                                 library.remove(link.id)
                                 ToastRequest.show("Removed")
+                            },
+                            topics = topics,
+                            expanded = expandedTopic == link.id,
+                            onToggleTopics = { expandedTopic = if (expandedTopic == link.id) null else link.id },
+                            onPickTopic = { topic ->
+                                library.setTopic(link.id, topic)
+                                expandedTopic = null
                             },
                         )
                     }
@@ -323,6 +349,10 @@ private fun LinkRow(
     onToggleRead: () -> Unit,
     onRetry: () -> Unit,
     onRemove: () -> Unit,
+    topics: List<String>,
+    expanded: Boolean,
+    onToggleTopics: () -> Unit,
+    onPickTopic: (String) -> Unit,
 ) {
     val scheme = MaterialTheme.colorScheme
     val dismiss = rememberSwipeToDismissBoxState(
@@ -400,6 +430,18 @@ private fun LinkRow(
                         )
                     }
                 },
+                // The strip lives in ListRow's own content slot, under the
+                // row, so an expanding row needs no new layout and no panel —
+                // the same slot ReaderTab already uses.
+                content = {
+                    AnimatedVisibility(expanded) {
+                        TopicStrip(
+                            topics = topics,
+                            current = link.topic,
+                            onPick = onPickTopic,
+                        )
+                    }
+                },
             ) {
                 RowMeta(
                     text = when {
@@ -408,6 +450,18 @@ private fun LinkRow(
                         link.readAt != null && link.readAt > 0L -> "${link.host} · ${savedAgo(link.readAt)}"
                         else -> "${link.host} · ${savedAgo(link.savedAt)}"
                     },
+                )
+
+                // The subject, or the offer to give it one. Its own meta child
+                // rather than part of the string above, because it is the only
+                // part of this line that does anything when touched.
+                RowMeta(
+                    text = link.topic ?: "+ topic",
+                    accent = expanded,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(Radius.Chip))
+                        .clickable(onClick = onToggleTopics)
+                        .padding(horizontal = 4.dp, vertical = 2.dp),
                 )
             }
         }
@@ -439,6 +493,68 @@ private fun RemoveBackground(progress: Float) {
             contentDescription = null,
             modifier = Modifier.size(15.dp),
             tint = MaterialTheme.colorScheme.onPrimaryContainer,
+        )
+    }
+}
+
+/**
+ * The subjects to choose from, plus a way to invent one.
+ *
+ * Chips rather than a menu because the vocabulary is small and stays small —
+ * six or so — and a closed set is what makes topic affinity mean anything in
+ * the ranking. Forty one-off subjects would make every affinity count equal
+ * one, so picking an existing chip is deliberately the easiest thing to do and
+ * typing is the deliberate act.
+ *
+ * The current topic takes the accent; the rest stay muted. One accented thing
+ * per group, the rule the pill already carries in its own KDoc.
+ */
+@Composable
+private fun TopicStrip(topics: List<String>, current: String?, onPick: (String) -> Unit) {
+    var typed by remember { mutableStateOf("") }
+
+    Column(Modifier.fillMaxWidth().padding(top = 12.dp, start = ChipSize + 10.dp)) {
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            topics.forEach { topic ->
+                Chip(
+                    label = topic,
+                    tone = if (topic.equals(current, ignoreCase = true)) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                    onClick = { onPick(topic) },
+                )
+            }
+        }
+
+        Spacer(Modifier.height(10.dp))
+
+        AppTextField(
+            value = typed,
+            onValueChange = { typed = it },
+            placeholder = "New topic…",
+            fontSize = 12.5.sp,
+            mono = true,
+            trailing = {
+                AnimatedVisibility(typed.isNotBlank()) {
+                    Text(
+                        text = "Add",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .clickable {
+                                onPick(typed.trim())
+                                typed = ""
+                            }
+                            .padding(start = 10.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
+                    )
+                }
+            },
         )
     }
 }

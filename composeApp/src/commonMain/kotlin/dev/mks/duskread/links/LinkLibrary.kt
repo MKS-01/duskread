@@ -204,6 +204,22 @@ class LinkLibrary(private val store: KeyValueStore) {
     }
 
     /**
+     * Files this link under a subject.
+     *
+     * Stamps [SavedLink.changedAt] like every other mutator, which is the
+     * whole mechanism by which the next sync carries it to Notion — there is
+     * no separate "needs pushing" flag anywhere, and adding one would be a
+     * second source of truth about the same fact.
+     */
+    fun setTopic(id: String, topic: String?) {
+        val cleaned = topic?.clean()?.trim()?.takeIf { it.isNotBlank() }
+        links = links.map {
+            if (it.id != id) it else it.copy(topic = cleaned, changedAt = Clock.System.now().toEpochMilliseconds())
+        }
+        persist()
+    }
+
+    /**
      * The only way a record leaves. Deliberately not on a tap target on the
      * card — a mis-tap should never cost a saved article — so the UI puts it
      * behind a long press.
