@@ -6,6 +6,7 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
 import android.webkit.WebChromeClient
+import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -71,6 +72,7 @@ import dev.mks.duskread.links.postFor
 import dev.mks.duskread.links.rememberFeedPostCache
 import dev.mks.duskread.summary.SummaryTarget
 import dev.mks.duskread.summary.summariesSupported
+import dev.mks.duskread.ui.common.EmptyState
 import dev.mks.duskread.ui.summary.SummaryPanel
 import dev.mks.duskread.ui.theme.DuskReadIcons
 import dev.mks.duskread.ui.theme.Motion
@@ -113,6 +115,10 @@ fun InAppBrowserScreen(url: String, mono: Boolean, onClose: () -> Unit, modifier
     var title by remember { mutableStateOf(hostOf(url)) }
     var currentUrl by remember { mutableStateOf(url) }
     var progress by remember { mutableStateOf(0f) }
+
+    // Set only when the *main frame* fails. A page whose analytics script
+    // cannot load has not failed; a page that cannot load has.
+    var loadFailed by remember { mutableStateOf(false) }
 
     var article by remember(url) { mutableStateOf<Article?>(null) }
     var extracting by remember(url) { mutableStateOf(true) }
@@ -157,6 +163,7 @@ fun InAppBrowserScreen(url: String, mono: Boolean, onClose: () -> Unit, modifier
         val key = readable?.let { "reader:${it.url}" } ?: "live:$currentUrl"
         if (key == loaded) return@LaunchedEffect
         loaded = key
+        loadFailed = false
 
         if (readable != null) {
             progress = 1f
@@ -202,6 +209,19 @@ fun InAppBrowserScreen(url: String, mono: Boolean, onClose: () -> Unit, modifier
                 )
             }
             Box(Modifier.fillMaxSize()) {
+                // The article could not be built from cache and could not be
+                // fetched. Saying so in the app's own voice beats handing the
+                // reader a browser error page they cannot act on.
+                if (loadFailed && article == null) {
+                    Box(Modifier.fillMaxSize().padding(horizontal = 20.dp), contentAlignment = Alignment.Center) {
+                        EmptyState(
+                            title = "Not saved for offline",
+                            message = "This blog's feed carries only a summary, so the article itself " +
+                                "was never cached. Open it again when you have signal.",
+                        )
+                    }
+                }
+
                 AndroidView(
                     modifier = Modifier.fillMaxSize(),
                     factory = { ctx ->
@@ -232,6 +252,19 @@ fun InAppBrowserScreen(url: String, mono: Boolean, onClose: () -> Unit, modifier
                                 }
                             }
                             webViewClient = object : WebViewClient() {
+                                // Without this the WebView renders Chrome's own
+                                // "Webpage not available" inside a reading app,
+                                // which is both ugly and unhelpful — it names a
+                                // net:: error code at someone who wanted to read
+                                // an article on a train.
+                                override fun onReceivedError(
+                                    view: WebView,
+                                    request: WebResourceRequest,
+                                    error: WebResourceError,
+                                ) {
+                                    if (request.isForMainFrame) loadFailed = true
+                                }
+
                                 // Anything that isn't itself a page — a mailto:,
                                 // an intent: link, an app deep link — has no
                                 // business loading inside this WebView.

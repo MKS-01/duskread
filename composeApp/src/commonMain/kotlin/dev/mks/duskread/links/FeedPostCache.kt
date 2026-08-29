@@ -24,6 +24,31 @@ data class FeedPost(
     val content: String? = null,
     /** When the publisher dated it, or null for a feed that dates nothing. */
     val publishedAt: Long? = null,
+    /**
+     * Whether this post can be read with no network.
+     *
+     * Decided at sync time by [dev.mks.duskread.links.articleFromFeed] — the
+     * *same* function the reader calls, given the same truncated body it will
+     * be given. A cheaper approximation would eventually disagree with it, and
+     * a badge that lies about what opens offline is worse than no badge.
+     *
+     * False for a feed that publishes only a teaser: three of the followed
+     * blogs do, and no amount of caching at sync time can fix that.
+     */
+    val offline: Boolean = false,
+    /**
+     * How long the article is, counted once at sync time.
+     *
+     * Kept as a number rather than recomputed from [content] because the
+     * ranking needs it for every candidate on every re-rank, and splitting a
+     * couple of megabytes of cached markup on the draw path is what a shuffle
+     * tap used to cost.
+     *
+     * It is also more accurate than [content] could be: this is counted from
+     * the publisher's whole body, before the cache truncates it and before it
+     * is dropped entirely for all but the newest few per feed.
+     */
+    val words: Int? = null,
 )
 
 /** The cached post for [url], if some followed feed carried it. */
@@ -48,6 +73,22 @@ class FeedPostCache(private val store: KeyValueStore) {
         persist()
     }
 
+    /**
+     * Every feed that answered, in one write.
+     *
+     * [persist] re-encodes the whole catalogue, so calling [replace] once per
+     * feed meant a fourteen-feed sync serialised roughly a megabyte fourteen
+     * times over to store it once. Merged rather than assigned, because a feed
+     * that failed this time is absent from [byFeed] and has to keep what it
+     * last had — the same contract [replace] has always honoured by being
+     * called only for a feed that actually answered.
+     */
+    fun replaceAll(byFeed: Map<String, List<FeedPost>>) {
+        if (byFeed.isEmpty()) return
+        postsByFeed = postsByFeed + byFeed
+        persist()
+    }
+
     /** Drops a feed's cached posts once it's unfollowed — nothing should surface for a blog no longer synced. */
     fun removeFeed(feedId: String) {
         postsByFeed = postsByFeed - feedId
@@ -66,14 +107,16 @@ class FeedPostCache(private val store: KeyValueStore) {
             post.imageUrl.orEmpty(),
             post.content.orEmpty().clean(),
             post.publishedAt?.toString().orEmpty(),
+            post.words?.toString().orEmpty(),
+            if (post.offline) "1" else "0",
         ).joinToString(FieldSeparator.toString())
     }
 
     private fun decode(record: String): FeedPost? {
-        // Still three, not six: records written before posts carried an image,
-        // a body or a date decode as they always did rather than being
-        // dropped, so a reader who updates the app keeps their feed lists
-        // until the next sync fills the new fields in.
+        // Still three, not seven: records written before posts carried an
+        // image, a body, a date or a word count decode as they always did
+        // rather than being dropped, so a reader who updates the app keeps
+        // their feed lists until the next sync fills the new fields in.
         val fields = record.split(FieldSeparator)
         if (fields.size < 3) return null
 
@@ -84,6 +127,8 @@ class FeedPostCache(private val store: KeyValueStore) {
             imageUrl = fields.getOrNull(3)?.takeIf { it.isNotBlank() },
             content = fields.getOrNull(4)?.takeIf { it.isNotBlank() },
             publishedAt = fields.getOrNull(5)?.toLongOrNull(),
+            words = fields.getOrNull(6)?.toIntOrNull(),
+            offline = fields.getOrNull(7) == "1",
         )
     }
 

@@ -62,6 +62,13 @@ internal fun TopicRow(
     // something the list continues into.
     last: Boolean,
     linkLibrary: LinkLibrary,
+    /**
+     * The subject of the blog this came from, so bookmarking a post keeps it.
+     * Without this a post saved from Following arrives in the reading list
+     * with no topic — and the ranking's inference from the host only works
+     * while that blog is still followed.
+     */
+    topic: String? = null,
     modifier: Modifier = Modifier,
 ) {
     val open = rememberUrlOpener()
@@ -87,7 +94,7 @@ internal fun TopicRow(
         enableDismissFromEndToStart = false,
         backgroundContent = { SummariseBackground(dismiss.progress) },
     ) {
-        TopicRowBody(post = post, host = host, last = last, saved = saved, linkLibrary = linkLibrary, onOpen = { open(post.url) })
+        TopicRowBody(post = post, host = host, last = last, saved = saved, linkLibrary = linkLibrary, topic = topic, onOpen = { open(post.url) })
     }
 }
 
@@ -103,6 +110,7 @@ private fun TopicRowBody(
     last: Boolean,
     saved: Boolean,
     linkLibrary: LinkLibrary,
+    topic: String?,
     onOpen: () -> Unit,
 ) {
     ListRow(
@@ -123,7 +131,7 @@ private fun TopicRowBody(
                 modifier = Modifier
                     .size(26.dp)
                     .clickable {
-                        linkLibrary.toggleSaved(post.url, post.title)
+                        linkLibrary.toggleSaved(post.url, post.title, topic)
                         ToastRequest.show(if (saved) "Removed" else "Saved")
                     }
                     .padding(6.dp),
@@ -132,5 +140,12 @@ private fun TopicRowBody(
         },
     ) {
         RowMeta(post.publishedAt?.let(::savedAgo) ?: host)
+
+        // Marking what works rather than what does not: most posts carry this,
+        // so it reads as quiet reassurance instead of a warning on a row that
+        // is perfectly fine whenever there is signal. Its absence is the
+        // signal — and the three followed blogs that publish only a teaser are
+        // the ones that will never have it.
+        if (post.offline) RowMeta("offline")
     }
 }

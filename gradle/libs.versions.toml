@@ -20,6 +20,7 @@ composeMultiplatform = "1.11.0"
 haze = "1.7.2"
 kotlin = "2.3.21"
 kotlinx-coroutines = "1.10.2"
+kotlinx-serialization = "1.9.0"
 # Not 3.2.x: its ktor-client-core-jvm carries a synthetic name containing
 # spaces, which D8 rejects below DEX 040 ("Space characters in SimpleName
 # 'use streaming syntax' are not allowed"), so the Android build cannot dex it.
@@ -44,6 +45,10 @@ androidx-media = { module = "androidx.media:media", version.ref = "androidx-medi
 androidx-lifecycle-runtimeCompose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose", version.ref = "androidx-lifecycle" }
 haze = { module = "dev.chrisbanes.haze:haze", version.ref = "haze" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
+# Notion answers in JSON, the first thing in this app that does. Only the JSON
+# artifact, and only for reading: the responses are variant-typed enough that
+# navigating a JsonElement beats modelling twenty property shapes.
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
 # ML Kit GenAI: the client for AICore, which holds the on-device model.
 mlkit-genai-summarization = { module = "com.google.mlkit:genai-summarization", version = "1.0.0-beta1" }
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
@@ -60,4 +65,5 @@ androidMultiplatformLibrary = { id = "com.android.kotlin.multiplatform.library",
 composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 composeMultiplatform = { id = "org.jetbrains.compose", version.ref = "composeMultiplatform" }
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlintGradle" }

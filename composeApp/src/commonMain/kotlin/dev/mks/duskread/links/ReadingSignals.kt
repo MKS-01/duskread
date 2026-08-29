@@ -41,14 +41,28 @@ data class HostSignal(
  * ceremony. Two keys rather than one because the topic half is written by a
  * different layer on a different schedule, and a device with no on-device
  * model never writes it at all — an absent topic map is the normal case, not
- * a degraded one.
+ * a degraded one. A third key holds skipped posts, which are the only signal
+ * here that is about one article rather than about a source.
  */
 class ReadingSignals(private val store: KeyValueStore) {
     var byHost: Map<String, HostSignal> by mutableStateOf(loadHosts())
         private set
 
-    /** tag -> reads. Empty until the tagging layer exists; every term that reads it is then zero. */
+    /** tag -> reads. Empty until something tags the candidates; every term that reads it is then zero. */
     var topicReads: Map<String, Int> by mutableStateOf(loadTopics())
+        private set
+
+    /**
+     * url -> when the shuffle stepped past it.
+     *
+     * Separate from [byHost] because a skip is about *this article*, and
+     * folding it into the host record — which is what this class used to do —
+     * meant shuffling past one post penalised every post that blog had ever
+     * published while doing nothing at all to the one on screen, which could
+     * return on the very next tap. At a pool of two hundred, where the shuffle
+     * is how the pool is navigated, that is backwards.
+     */
+    var skippedPosts: Map<String, Long> by mutableStateOf(loadSkips())
         private set
 
     /** Total reads across every host — the denominator source affinity is smoothed against. */
@@ -67,9 +81,29 @@ class ReadingSignals(private val store: KeyValueStore) {
      */
     fun recordOpen(url: String) = update(url) { it.copy(opens = it.opens + 1) }
 
-    /** Shuffle stepped past this one. See [HostSignal.skips] for why this barely counts. */
-    fun recordSkip(url: String) = update(url) {
-        it.copy(skips = it.skips + 1, lastSkipAt = Clock.System.now().toEpochMilliseconds())
+    /**
+     * Shuffle stepped past this one.
+     *
+     * Written twice, deliberately: once against the exact url, which is what
+     * actually suppresses this post for a day or so, and once against the host
+     * as the weak "this source is not landing today" hint it always should
+     * have been on its own.
+     */
+    fun recordSkip(url: String) {
+        val now = Clock.System.now().toEpochMilliseconds()
+
+        // Oldest-first eviction on a bounded map. A skip is short-lived and
+        // the pool is finite, so an unbounded list would only ever grow —
+        // and the entries that matter are the recent ones by definition.
+        val current = loadSkips() + (url to now)
+        skippedPosts = if (current.size <= MaxSkippedPosts) {
+            current
+        } else {
+            current.entries.sortedByDescending { it.value }.take(MaxSkippedPosts).associate { it.key to it.value }
+        }
+        store.putString(SkipKey, encodeSkips(skippedPosts).takeIf { it.isNotEmpty() })
+
+        update(url) { it.copy(skips = it.skips + 1, lastSkipAt = now) }
     }
 
     fun recordTopicRead(tag: String) {
@@ -82,8 +116,10 @@ class ReadingSignals(private val store: KeyValueStore) {
     fun clear() {
         byHost = emptyMap()
         topicReads = emptyMap()
+        skippedPosts = emptyMap()
         store.putString(HostKey, null)
         store.putString(TopicKey, null)
+        store.putString(SkipKey, null)
     }
 
     /**
@@ -140,11 +176,26 @@ class ReadingSignals(private val store: KeyValueStore) {
         )
     }
 
+    private fun loadSkips(): Map<String, Long> = store.getString(SkipKey)?.split(RecordSeparator)?.mapNotNull { record ->
+        val fields = record.split(FieldSeparator)
+        val url = fields.getOrNull(0)?.ifBlank { null } ?: return@mapNotNull null
+        val at = fields.getOrNull(1)?.toLongOrNull() ?: return@mapNotNull null
+        url to at
+    }?.toMap().orEmpty()
+
+    private fun encodeSkips(skips: Map<String, Long>): String = skips.entries.joinToString(RecordSeparator.toString()) { (url, at) ->
+        listOf(url.clean(), at.toString()).joinToString(FieldSeparator.toString())
+    }
+
     private fun String.clean() = filterNot { it == FieldSeparator || it == RecordSeparator }.trim()
 
     private companion object {
         const val HostKey = "signals.hosts"
         const val TopicKey = "signals.topics"
+        const val SkipKey = "signals.skipped"
+
+        /** Enough to cover a long shuffle session over a pool of a few hundred, and no more. */
+        const val MaxSkippedPosts = 60
         const val FieldSeparator = ''
         const val RecordSeparator = ''
     }

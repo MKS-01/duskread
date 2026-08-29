@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.androidMultiplatformLibrary)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
+    alias(libs.plugins.kotlinSerialization)
 }
 
 /**
@@ -96,6 +97,12 @@ kotlin {
             // is shared — every target brings its own engine below, since
             // there is no engine that works on all five.
             implementation(libs.ktor.client.core)
+            // Notion's API, the only JSON this app reads. Deliberately not
+            // ktor's ContentNegotiation: installing a plugin would mean
+            // touching all four `createHttpClient()` actuals, and the
+            // responses are variant-typed enough that walking a JsonElement
+            // is smaller and more honest than a @Serializable model.
+            implementation(libs.kotlinx.serialization.json)
         }
 
         androidMain.dependencies {

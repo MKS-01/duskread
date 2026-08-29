@@ -102,8 +102,20 @@ internal fun parsePostDate(raw: String): Long? {
 
     val zone = match.groupValues[7]
     val offset = if (zone.length == 5 && (zone[0] == '+' || zone[0] == '-')) "${zone.take(3)}:${zone.drop(3)}" else "Z"
+    // RFC-822 allows a two-digit year and real feeds use one — Google Bug
+    // Hunters dates every post "24 Aug 26". Padding that to "0026" put a
+    // whole feed in the first century, where the freshness term decays it to
+    // zero and none of it can ever surface. RFC 2822 §4.3 is the rule: 00–49
+    // is the 2000s, 50–99 the 1900s, and a three-digit year is 1900 + n.
+    val rawYear = match.groupValues[3]
+    val year = when (rawYear.length) {
+        1, 2 -> rawYear.toInt().let { if (it < 50) 2000 + it else 1900 + it }
+        3 -> 1900 + rawYear.toInt()
+        else -> rawYear.toInt()
+    }
+
     val iso = buildString {
-        append(match.groupValues[3].padStart(4, '0')).append('-')
+        append(year.toString().padStart(4, '0')).append('-')
         append(month.toString().padStart(2, '0')).append('-')
         append(match.groupValues[1].padStart(2, '0')).append('T')
         append(match.groupValues[4].padStart(2, '0')).append(':')
@@ -112,8 +124,19 @@ internal fun parsePostDate(raw: String): Long? {
         append(offset)
     }
 
-    return runCatching { Instant.parse(iso).toEpochMilliseconds() }.getOrNull()
+    return runCatching { Instant.parse(iso).toEpochMilliseconds() }.getOrNull()?.takeIf { it >= EarliestPlausiblePost }
 }
+
+/**
+ * 1995 — before the web had feeds at all.
+ *
+ * A regex over dates written by hundreds of different generators will
+ * eventually produce something absurd, and an absurd date is worse than none:
+ * a post dated in the first century sorts last and decays to zero freshness
+ * for ever, silently, where a null simply means "undated" and is handled. So
+ * anything implausible is treated as unparsed rather than believed.
+ */
+private const val EarliestPlausiblePost = 788_918_400_000L
 
 /**
  * A feed's own copy of the post, unwrapped.
@@ -208,16 +231,20 @@ internal fun resolveAgainst(pageUrl: String, href: String): String = when {
  * yielded posts, for the caller to report.
  */
 suspend fun syncFeeds(client: HttpClient, feeds: List<Feed>, cache: FeedPostCache): Int {
-    var synced = 0
+    // Gathered, then written once. The cache re-encodes its whole catalogue on
+    // every write, so committing per feed made a fourteen-feed sync serialise
+    // the lot fourteen times — the cost grew with the square of the catalogue,
+    // which is the wrong shape for something that only ever grows.
+    val fetched = mutableMapOf<String, List<FeedPost>>()
 
     for (feed in feeds) {
         val entries = runCatching { fetchFeed(client, feed.url) }.getOrNull()
         if (entries.isNullOrEmpty()) continue
-        cache.replace(feed.id, entries.take(EntriesPerFeed).mapIndexed { index, entry -> entry.asPost(feed.id, index) })
-        synced++
+        fetched[feed.id] = entries.take(EntriesPerFeed).map { it.asPost(feed.id) }
     }
 
-    return synced
+    cache.replaceAll(fetched)
+    return fetched.size
 }
 
 /**
@@ -230,14 +257,42 @@ suspend fun syncFeeds(client: HttpClient, feeds: List<Feed>, cache: FeedPostCach
  * from a feed list, and everything past it simply falls through to fetching
  * and extracting the page, which is the same path a saved link takes.
  */
-private fun FeedEntry.asPost(feedId: String, index: Int): FeedPost = FeedPost(
-    feedId = feedId,
-    url = url,
-    title = title ?: titleFromUrl(url),
-    imageUrl = imageUrl,
-    publishedAt = publishedAt,
-    content = content?.take(MaxCachedContentChars)?.takeIf { index < EntriesWithContent },
-)
+private fun FeedEntry.asPost(feedId: String): FeedPost {
+    // Every entry keeps its body now, not just the newest few. The cap is
+    // per-post and generous; what used to make this expensive was writing the
+    // whole catalogue once per feed, which syncFeeds no longer does.
+    val cached = content?.take(MaxCachedContentChars)
+
+    return FeedPost(
+        feedId = feedId,
+        url = url,
+        title = title ?: titleFromUrl(url),
+        imageUrl = imageUrl,
+        publishedAt = publishedAt,
+        content = cached,
+        // Counted from the whole body, before the line above truncates it: the
+        // cache keeps a prefix, but the length estimate should describe the
+        // article.
+        words = content?.let(::countWords),
+        // The reader's own predicate, asked at sync time with exactly the body
+        // the reader will be handed. Anything cheaper would drift out of step
+        // with it, and a badge that disagrees with what opens is worse than
+        // none. One sanitise per post per sync, nowhere near the draw path.
+        offline = articleFromFeed(url, title, cached) != null,
+    )
+}
+
+/**
+ * Roughly how many words a body holds.
+ *
+ * Tags are stripped first because a feed body is markup and counting `<p>` as
+ * a word inflates a short post into a long one. Rough on purpose — this feeds
+ * a minutes estimate shown as "6 min", where being out by one is invisible and
+ * being out by three is not.
+ */
+private fun countWords(markup: String): Int = markup.replace(TagPattern, " ").split(' ', '\n', '\t', '\r').count { it.isNotBlank() }
+
+private val TagPattern = Regex("<[^>]*>")
 
 private val CdataPattern = Regex("""<!\[CDATA\[(.*?)]]>""", RegexOption.DOT_MATCHES_ALL)
 
@@ -310,7 +365,6 @@ private val CommonFeedPaths = listOf("/feed", "/feed/", "/rss.xml", "/rss", "/at
 // sync — the point of following a blog is what's new, not its backlog.
 private const val EntriesPerFeed = 15
 
-// See [asPost]: what the cache is allowed to hold.
-private const val EntriesWithContent = 6
+// See [asPost]: the most one post's markup may take up.
 private const val MaxCachedContentChars = 24_000
 private const val MaxBytesScanned = 500_000

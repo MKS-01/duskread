@@ -241,7 +241,9 @@ private fun DigestLine(feed: Feed, newCount: Int, open: Boolean, onToggle: () ->
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = feed.host,
+            // The publisher's name when the Notion sync supplied one, the
+            // host when it did not — see Feed.label.
+            text = feed.label,
             fontFamily = Mono,
             fontSize = 12.sp,
             color = MaterialTheme.colorScheme.onSurface,
@@ -290,6 +292,7 @@ private fun TopicPreview(feed: Feed, posts: List<FeedPost>, linkLibrary: LinkLib
                 // always follows, so every preview row keeps its hairline.
                 last = false,
                 linkLibrary = linkLibrary,
+                topic = feed.topic,
             )
         }
 

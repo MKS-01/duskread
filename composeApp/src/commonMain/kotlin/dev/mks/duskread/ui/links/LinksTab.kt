@@ -409,8 +409,14 @@ private fun LinkRow(
                         else -> "${link.host} · ${savedAgo(link.savedAt)}"
                     },
                 )
+
+                // The subject, when something knew it — Notion filed it, or the
+                // feed it came from carries one. A fact on the line, the same
+                // as it is on Home; assigning one is Notion's job.
+                link.topic?.let { RowMeta(it) }
             }
         }
+
         ListRowDivider(last)
     }
 }

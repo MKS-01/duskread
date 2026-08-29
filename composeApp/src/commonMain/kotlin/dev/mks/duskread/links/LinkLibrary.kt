@@ -28,6 +28,32 @@ class LinkLibrary(private val store: KeyValueStore) {
     var links: List<SavedLink> by mutableStateOf(load())
         private set
 
+    /**
+     * URLs deleted here, so the reading-list sync does not hand them back.
+     *
+     * The app never deletes a Notion row — it is the archive, and destroying
+     * upstream data on a mis-tap is not a trade worth making. But that leaves
+     * a deleted link sitting in Notion still ticked as saved, ready to return
+     * on the very next pull, so the refusal has to be remembered locally.
+     *
+     * Bounded and oldest-evicted for the same reason the skip list is: what
+     * matters is recent intent, and an unbounded set of every link ever
+     * deleted would outgrow the list it protects.
+     *
+     * Keyed by the **address as saved**, not by its canonical form. Storing a
+     * canonical key looked tidier and was a trap: the canonicaliser's list of
+     * tracking parameters is expected to grow, and the day it does, every
+     * stored key stops matching the row it was written for. A key whose
+     * algorithm can change cannot be persisted — so the raw address is kept
+     * and [removedKeys] derives the comparison form on demand.
+     */
+    var removedUrls: Map<String, Long> by mutableStateOf(loadRemoved())
+        private set
+
+    /** The canonical forms of [removedUrls], derived rather than stored. */
+    val removedKeys: Set<String>
+        get() = removedUrls.keys.mapTo(mutableSetOf(), ::canonicalUrl)
+
     val unreadCount: Int
         get() = links.count { !it.read }
 
@@ -39,18 +65,30 @@ class LinkLibrary(private val store: KeyValueStore) {
      * [title] lets a caller that already knows the headline — a feed entry
      * carries its own — skip the URL-slug guess. It still improves once the
      * page itself is fetched, same as any other saved link.
+     *
+     * [topic] is the same idea for the subject: a post saved from a followed
+     * blog knows what that blog is about, and recording it here is what lets
+     * it survive the trip to Notion and back to another device. Inferring it
+     * from the host works only while the feed is still followed.
      */
-    fun save(rawUrl: String, title: String? = null): SavedLink? {
+    fun save(rawUrl: String, title: String? = null, topic: String? = null): SavedLink? {
         if (!looksLikeUrl(rawUrl)) return null
 
         val url = normaliseUrl(rawUrl).clean()
-        links.firstOrNull { it.url.equals(url, ignoreCase = true) }?.let { return it }
+        // Matched on the canonical form, not the address as typed: the same
+        // article reaches this app from a feed, from a newsletter carrying
+        // `?utm_source=`, and from a share with a trailing slash.
+        val key = canonicalUrl(url)
+        links.firstOrNull { canonicalUrl(it.url) == key }?.let { return it }
 
+        val now = Clock.System.now().toEpochMilliseconds()
         val link = SavedLink(
-            id = Clock.System.now().toEpochMilliseconds().toString(36) + "-" + links.size,
+            id = now.toString(36) + "-" + links.size,
             url = url,
             title = title?.clean()?.takeIf { it.isNotBlank() } ?: titleFromUrl(url),
-            savedAt = Clock.System.now().toEpochMilliseconds(),
+            savedAt = now,
+            changedAt = now,
+            topic = topic?.takeIf { it.isNotBlank() },
         )
         links = listOf(link) + links
         persist()
@@ -71,15 +109,16 @@ class LinkLibrary(private val store: KeyValueStore) {
      */
     fun import(text: String): ImportSummary {
         val found = parseImport(text)
-        val known = links.mapTo(mutableSetOf()) { it.url.lowercase() }
+        val known = links.mapTo(mutableSetOf()) { canonicalUrl(it.url) }
         val now = Clock.System.now().toEpochMilliseconds()
 
-        val fresh = found.filterNot { it.url.lowercase() in known }.mapIndexed { index, imported ->
+        val fresh = found.filterNot { canonicalUrl(it.url) in known }.mapIndexed { index, imported ->
             SavedLink(
                 id = now.toString(36) + "-i" + (links.size + index),
                 url = imported.url.clean(),
                 title = imported.title?.clean()?.takeIf { it.isNotBlank() } ?: titleFromUrl(imported.url),
                 savedAt = now,
+                changedAt = now,
                 // Restored, not re-read: the import knows it was read but not
                 // when, and 0L is already how the decoder says exactly that.
                 readAt = if (imported.read) 0L else null,
@@ -98,7 +137,7 @@ class LinkLibrary(private val store: KeyValueStore) {
     }
 
     /** Whether [url] is already in the reading list — the state a save button on a feed card renders itself from. */
-    fun isSaved(url: String): Boolean = links.any { it.url.equals(url, ignoreCase = true) }
+    fun isSaved(url: String): Boolean = links.any { sameArticle(it.url, url) }
 
     /**
      * The feed-card save button: tapping it once adds [url] to the reading
@@ -107,9 +146,9 @@ class LinkLibrary(private val store: KeyValueStore) {
      * looking at right now is not the same "did I mean that" risk a row
      * already filed away is.
      */
-    fun toggleSaved(url: String, title: String?) {
-        val existing = links.firstOrNull { it.url.equals(url, ignoreCase = true) }
-        if (existing != null) remove(existing.id) else save(url, title)
+    fun toggleSaved(url: String, title: String?, topic: String? = null) {
+        val existing = links.firstOrNull { sameArticle(it.url, url) }
+        if (existing != null) remove(existing.id) else save(url, title, topic)
     }
 
     /** Replaces the URL-derived guess once the page itself has answered. */
@@ -123,6 +162,7 @@ class LinkLibrary(private val store: KeyValueStore) {
                     description = description?.clean()?.takeIf { it.isNotBlank() } ?: link.description,
                     fetched = true,
                     fetchFailed = false,
+                    changedAt = Clock.System.now().toEpochMilliseconds(),
                 )
             }
         }
@@ -171,8 +211,9 @@ class LinkLibrary(private val store: KeyValueStore) {
      * which is half of why a record is worth keeping at all.
      */
     fun toggleRead(id: String) {
+        val now = Clock.System.now().toEpochMilliseconds()
         links = links.map {
-            if (it.id != id) it else it.copy(readAt = if (it.read) null else Clock.System.now().toEpochMilliseconds())
+            if (it.id != id) it else it.copy(readAt = if (it.read) null else now, changedAt = now)
         }
         persist()
     }
@@ -183,8 +224,76 @@ class LinkLibrary(private val store: KeyValueStore) {
      * behind a long press.
      */
     fun remove(id: String) {
+        links.firstOrNull { it.id == id }?.let { gone -> tombstone(gone.url) }
         links = links.filterNot { it.id == id }
         persist()
+    }
+
+    /**
+     * What the reading-list sync writes back down.
+     *
+     * Separate from [save] because this is reconciliation, not capture: it
+     * carries an id chosen elsewhere, a read state that may already be set,
+     * and a topic no local code could have known. [save] would discard all
+     * three and stamp a fresh `savedAt`, which would make the next sync think
+     * the phone had just changed the row.
+     *
+     * A tombstoned URL is refused outright — a link deleted here is deleted,
+     * and a row still ticked in Notion is not an argument.
+     */
+    fun upsertFromNotion(incoming: SavedLink): Boolean {
+        if (canonicalUrl(incoming.url) in removedKeys) return false
+
+        val existing = links.firstOrNull {
+            it.id == incoming.id || sameArticle(it.url, incoming.url)
+        }
+
+        links = if (existing == null) {
+            listOf(incoming) + links
+        } else {
+            links.map { if (it.id == existing.id) existing.merge(incoming) else it }
+        }
+        persist()
+        return existing == null
+    }
+
+    /**
+     * Notion wins only where it is newer, and only on what it actually knows.
+     *
+     * Whole-row last-write-wins on read state, which is the one field that
+     * realistically diverges. Title and description are taken only to fill a
+     * gap: the phone fetches the real page and Notion holds whatever was typed
+     * or scraped, so overwriting a fetched title with a filed one would be a
+     * downgrade even when the row is newer.
+     */
+    private fun SavedLink.merge(incoming: SavedLink): SavedLink = copy(
+        title = if (fetched) title else incoming.title.ifBlank { title },
+        description = description ?: incoming.description,
+        readAt = if (incoming.changedAt > changedAt) incoming.readAt else readAt,
+        topic = incoming.topic ?: topic,
+        changedAt = maxOf(changedAt, incoming.changedAt),
+    )
+
+    private fun tombstone(url: String) {
+        val now = Clock.System.now().toEpochMilliseconds()
+        val current = removedUrls + (url to now)
+        removedUrls = if (current.size <= MaxRemembered) {
+            current
+        } else {
+            current.entries.sortedByDescending { it.value }.take(MaxRemembered).associate { it.key to it.value }
+        }
+        store.putString(RemovedKey, encodeRemoved(removedUrls).takeIf { it.isNotEmpty() })
+    }
+
+    private fun loadRemoved(): Map<String, Long> = store.getString(RemovedKey)?.split(RecordSeparator)?.mapNotNull { record ->
+        val fields = record.split(FieldSeparator)
+        val url = fields.getOrNull(0)?.ifBlank { null } ?: return@mapNotNull null
+        val at = fields.getOrNull(1)?.toLongOrNull() ?: return@mapNotNull null
+        url to at
+    }?.toMap().orEmpty()
+
+    private fun encodeRemoved(urls: Map<String, Long>): String = urls.entries.joinToString(RecordSeparator.toString()) { (url, at) ->
+        listOf(url.clean(), at.toString()).joinToString(FieldSeparator.toString())
     }
 
     private fun persist() = store.putString(Key, encode(links).takeIf { it.isNotEmpty() })
@@ -201,6 +310,8 @@ class LinkLibrary(private val store: KeyValueStore) {
             link.readAt?.toString().orEmpty(),
             if (link.fetched) "1" else "0",
             if (link.fetchFailed) "1" else "0",
+            link.changedAt.toString(),
+            link.topic.orEmpty(),
         ).joinToString(FieldSeparator.toString())
     }
 
@@ -224,6 +335,11 @@ class LinkLibrary(private val store: KeyValueStore) {
             // A record written before this field existed has no 8th field —
             // absent reads as "not failed", the same as it did implicitly before.
             fetchFailed = fields.getOrNull(7) == "1",
+            // Likewise for the two the reading-list sync added. A record with
+            // no change stamp falls back to when it was saved, which is the
+            // truth for a link nothing has touched since.
+            changedAt = fields.getOrNull(8)?.toLongOrNull() ?: fields[4].toLongOrNull() ?: 0L,
+            topic = fields.getOrNull(9)?.takeIf { it.isNotBlank() },
         )
     }
 
@@ -231,6 +347,10 @@ class LinkLibrary(private val store: KeyValueStore) {
 
     private companion object {
         const val Key = "links.saved"
+        const val RemovedKey = "links.removed"
+
+        /** Deep enough to cover any plausible clear-out, shallow enough to stay a few kilobytes. */
+        const val MaxRemembered = 200
         const val FieldSeparator = ''
         const val RecordSeparator = ''
     }
