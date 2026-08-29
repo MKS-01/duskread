@@ -120,14 +120,38 @@ suspend fun syncReadingList(
             return@forEach
         }
 
-        // Only when the phone is the newer of the two, and only when something
-        // would actually change. A sync that rewrites every row every time
-        // would make `last_edited_time` meaningless, which is the one thing
-        // this whole reconciliation rests on.
-        val stale = link.changedAt > row.lastEditedAt
-        val differs = row.read != link.read || !row.saved || row.duskreadId != link.id
-        if (stale && differs) {
-            val result = client.updatePage(row.pageId, properties(link, statusNames, includeUrl = false))
+        // Two different writes, because they answer to different rules.
+        //
+        // Claiming a row — stamping the id the app knows it by, and ticking
+        // Saved for a link the app is holding — cannot conflict with anything
+        // a person did in Notion, so it is not subject to the timestamp. That
+        // matters: a row filed from Gmail is pulled with `changedAt` set to
+        // its own `last_edited_time`, so it is never "newer" and would never
+        // be claimed at all.
+        //
+        // Changing its content can conflict, so it waits until the phone is
+        // genuinely the newer of the two.
+        val localIsNewer = link.changedAt > row.lastEditedAt
+
+        // Compared against what a write would actually set: a null description
+        // writes nothing, so counting it as a difference would rewrite the row
+        // on every sync forever and make `last_edited_time` meaningless — the
+        // one thing this whole reconciliation rests on.
+        val contentDiffers = row.read != link.read ||
+            row.title != link.title ||
+            (link.description != null && row.excerpt != link.description) ||
+            (link.topic != null && row.topic != link.topic)
+
+        val unclaimed = row.duskreadId != link.id || !row.saved
+
+        val properties = when {
+            localIsNewer && contentDiffers -> properties(link, statusNames, includeUrl = false)
+            unclaimed -> claim(link)
+            else -> null
+        }
+
+        if (properties != null) {
+            val result = client.updatePage(row.pageId, properties)
             if (result is NotionResult.Failure) return result
             updated++
         }
@@ -213,6 +237,18 @@ private fun properties(link: SavedLink, status: StatusNames, includeUrl: Boolean
             buildJsonObject { put("date", buildJsonObject { put("start", JsonPrimitive(isoDate(link.savedAt))) }) },
         )
     }
+}
+
+/**
+ * The two properties that say "this row is that link".
+ *
+ * Written on its own when nothing else needs to change, so a row someone
+ * filed in Notion gets adopted on the first sync that sees it rather than
+ * waiting for an edit on the phone that may never come.
+ */
+private fun claim(link: SavedLink): JsonObject = buildJsonObject {
+    put("Duskread ID", richText(link.id))
+    put("Saved", buildJsonObject { put("checkbox", JsonPrimitive(true)) })
 }
 
 private fun richText(value: String): JsonObject = buildJsonObject {
