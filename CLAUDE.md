@@ -186,8 +186,14 @@ with `/review-animations`.
 
 `duskread-design-system` for Compose UI work, `duskread-landing-page` for
 `docs/design-system/` (the page's four acts, the deck component, what belongs
-on the page versus in the tokens file), plus `duskread-verify` and
-`duskread-crash-audit`.
+on the page versus in the tokens file), `duskread-readme` for `README.md`
+(what belongs there versus in `docs/architecture.md`, the fixed section
+order, the facts to re-derive from `libs.versions.toml`), `duskread-setup`
+for standing the app up from a fresh clone (the two Notion databases and
+their exact property names, the PAT, readback's folder grant),
+`duskread-code-docs` for comments and KDoc (why not what, and when a
+decision outgrows a comment and belongs in `docs/architecture.md`), plus
+`duskread-verify` and `duskread-crash-audit`.
 
 ### Android
 
