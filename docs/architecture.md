@@ -19,7 +19,10 @@ things live before changing them.
 - [Flow 3 — newsletters, from inbox to phone](#flow-3--newsletters-from-inbox-to-phone)
 - [Flow 4 — capture](#flow-4--capture)
 - [Flow 5 — what Home suggests](#flow-5--what-home-suggests)
+- [When a sync happens](#when-a-sync-happens)
+- [Same article, different address](#same-article-different-address)
 - [Authentication](#authentication)
+- [Offline](#offline)
 - [Invariants](#invariants)
 - [Module map](#module-map)
 
@@ -51,7 +54,8 @@ Two rules that most of the design follows from:
 1. **The app never destroys anything upstream.** Not a Notion row, not a
    readback record. It is a working set over archives it does not own.
 2. **The device works offline.** Notion is where subscriptions are curated, not
-   a dependency for reading. Every screen renders from local storage.
+   a dependency for reading. Every screen renders from local storage, and most
+   articles open with no network at all — see [Offline](#offline).
 
 ---
 
@@ -63,9 +67,9 @@ Two rules that most of the design follows from:
 | **Device** | followed feeds, cached posts, saved links, signals | the app | the app |
 | **readback** | `library.db` + `audio/`, synced onto the device by a separate script | the readback project | the app, **read-only** |
 
-Feed *posts* are never uploaded anywhere. Roughly 210 pass through each sync
-(15 per feed × 14 feeds) and almost none are things anyone chose — only
-deliberately saved links reach Notion.
+Feed *posts* are never uploaded anywhere. Around 165 sit in the cache at any
+time (15 per feed, for the feeds that answer) and almost none are things anyone
+chose — only deliberately saved links reach Notion.
 
 ---
 
@@ -100,6 +104,7 @@ The only table the app writes to.
 | `URL` | URL | ↑ create only | the fallback match key; rewriting it would orphan the row |
 | `Duskread ID` | Text | ↑ | the app's own id for the link |
 | `Saved` | Checkbox | ↕ | **the gate — only ticked rows reach the phone** |
+| `Dismissed` | Checkbox | ↑ | "not interested" — never pulled, and nothing should re-file it |
 | `Status` | Status | ↕ | read / unread; option names are read from the schema |
 | `Read At` | Date | ↕ | when, as opposed to whether |
 | `Saved At` | Date | ↕ | when it was filed |
@@ -128,10 +133,10 @@ the reason the format survives schema changes without migrations.
 | Key | Holds |
 | --- | --- |
 | `links.saved` | saved links — id, url, title, description, savedAt, readAt, fetched, fetchFailed, changedAt, topic |
-| `links.removed` | deleted URLs, so a pull cannot resurrect them (bounded, oldest evicted) |
+| `links.removed` | deleted addresses, so a pull cannot resurrect them and a sync can refuse them upstream (bounded, oldest evicted) |
 | `links.inbox` | URLs captured by the widget, drained on next app open |
 | `feeds.followed` | id, url, addedAt, title, topic |
-| `feeds.posts` | cached posts — feedId, url, title, imageUrl, content, publishedAt, words |
+| `feeds.posts` | cached posts — feedId, url, title, imageUrl, content, publishedAt, words, offline |
 | `signals.hosts` | reads / opens / skips per host |
 | `signals.topics` | reads per topic |
 | `signals.skipped` | per-URL skips, bounded |
@@ -146,7 +151,7 @@ The Notion **token is not here.** It lives in a separate `SecretStore` —
 ## Flow 1 — following blogs
 
 ```
- Settings ▸ Sync now
+ Settings ▸ Sync now, or automatically on open
         │
         ▼
  GET  /v1/databases/{sources}                     read Status option names
@@ -181,10 +186,12 @@ The only two-way path, and the only place the app writes to Notion.
 ```
  query Reading List once, index by Duskread ID then by canonical URL
         │
-        ├── PULL  rows where Saved ☑
-        │     ├─ URL in links.removed?  skip — a delete is a delete
-        │     ├─ not present locally?   create it
-        │     └─ present?               reconcile
+        ├── DISMISS  every tombstoned address → Dismissed ☑, Saved ☐, once
+        │
+        ├── PULL  rows where Saved ☑ and not Dismissed
+        │     ├─ address in links.removed?  skip — a delete is a delete
+        │     ├─ not present locally?       create it
+        │     └─ present?                   reconcile
         │
         └── PUSH  every local saved link
               ├─ no matching row?          POST /v1/pages
@@ -208,6 +215,12 @@ Three refusals worth knowing:
   `last_edited_time` meaning something.
 - **A null never overwrites a value.** The app having nothing to say about a
   topic is not the same as knowing there is none.
+
+**Refusals go up first.** A row deleted on the phone is marked `Dismissed`
+before the pull could read it as still saved, and before the push could re-tick
+it. `Dismissed` is what makes a delete outlive the device: the local tombstone
+makes it instant, the column makes it survive a reinstall, a second phone, and
+anything filing into this table without asking.
 
 ---
 
@@ -258,7 +271,8 @@ another process would be clobbered. The inbox is a queue with one drain point.
 
 ## Flow 5 — what Home suggests
 
-`NEXT UP` ranks saved links and cached feed posts together as one pool of ~210.
+`NEXT UP` ranks saved links and cached feed posts together as one pool of
+roughly 165.
 
 ```
  pool(links, cache, feeds)     unread saved links + posts not already saved
@@ -285,6 +299,73 @@ Weights live in one block at the top of `links/Recommender.kt`. They are wrong
 until seen wrong on a phone, which is what **Settings ▸ Discovery** is for — it
 shows the pool, how many carry a topic, and the top five with each term broken
 out.
+
+---
+
+## When a sync happens
+
+Two triggers, one code path — `runFullSync` in `notion/NotionSync.kt`, called
+by the button in Settings and by `HomeScreen` on launch.
+
+```
+ app opens
+     │
+     ├─ nothing configured?           do nothing, ever
+     ├─ no token?                     do nothing
+     ├─ last sync < 4h and nothing
+     │  pending?                      do nothing
+     └─ otherwise                     sync, in the background, silently
+```
+
+**The clock is not the whole rule.** Four hours stops four openings in an
+evening costing four syncs, but anything saved, read, retitled or deleted since
+the last sync overrides it — a link just pasted in should not wait four hours to
+exist anywhere else. Local changes are found by comparing `SavedLink.changedAt`
+against the last sync; deletions have to be asked about separately, because a
+removed link is no longer in the list to carry a timestamp.
+
+**Automatic failures are silent.** There is nothing useful to say about a sync
+nobody asked for, and a network-error banner on launch is the first thing a
+reader would see on a train. The button in Settings reports for itself.
+
+A full sync is ~75 seconds, almost all of it the fourteen feed fetches; the
+Notion half is two or three requests.
+
+---
+
+## Same article, different address
+
+The same post reaches this app three ways — from its blog's feed, from a
+newsletter carrying `?utm_source=`, and shared from a browser with a trailing
+slash. Compared as written, those are three articles and become three rows in
+Notion.
+
+`links/CanonicalUrl.kt` reduces an address to the form used for comparison:
+scheme and `www.` dropped, fragment dropped, default port dropped, trailing
+slash dropped, known tracking parameters dropped, the rest sorted.
+
+```
+go.dev/blog/generic-methods
+  ← https://go.dev/blog/generic-methods/
+  ← http://www.go.dev/blog/generic-methods#intro
+  ← https://go.dev/blog/generic-methods?utm_source=substack
+```
+
+Two rules it lives by:
+
+- **It is a comparison key, never a destination.** The address a link was saved
+  with is what opens and what goes to Notion. Stripping a parameter to compare
+  is safe; stripping it to navigate is a guess about someone else's server.
+- **Tracking parameters are a blocklist, not an allowlist.** The meaningful
+  ones are unknowable — `?p=` is a WordPress post, `?v=` a YouTube video — and a
+  wrong guess silently merges two different articles. An extra duplicate is the
+  cheaper mistake.
+
+**A canonical form is never stored.** It was, briefly, as the key of
+`links.removed`; adding one parameter to the tracking list orphaned every
+tombstone from the row it was written for. A key whose algorithm is expected to
+change cannot be persisted, so the raw address is stored and the key derived on
+demand.
 
 ---
 
@@ -320,15 +401,61 @@ changes.
 
 Things that are true everywhere, and worth keeping true:
 
-1. **The app never deletes or archives a Notion row.**
+1. **The app never deletes or archives a Notion row.** Refusing an article
+   ticks `Dismissed` and leaves the row where it is — the refusal is the thing
+   worth remembering, and a deleted row is indistinguishable from one that was
+   never filed.
 2. **A sync never rewrites an unchanged row.**
 3. **Feed posts are never uploaded.** Only deliberate saves.
 4. **Every decoder tolerates a short record.** New fields append.
 5. **All colour comes from `MaterialTheme.colorScheme`** — the app swaps
    between two schemes at runtime and a literal survives the swap.
-6. **One writer per storage key.** A second instance of `LinkLibrary` or
-   `FeedLibrary` will clobber the first; they are hoisted and passed down.
-7. **No background sync.** The button is the whole mechanism.
+6. **One writer per storage key.** A second instance of `LinkLibrary`,
+   `FeedLibrary` or `NotionPrefs` will clobber the first; they are hoisted into
+   `HomeScreen` and passed down. `LinkInbox` exists solely because the widget
+   runs in another process and could not share one.
+7. **A canonical URL is never persisted.** It is derived wherever two addresses
+   are compared — see [Same article, different address](#same-article-different-address).
+8. **Syncing is never blocking and never noisy.** It runs in the background,
+   reports only when asked for by the button, and does nothing at all until
+   something is configured.
+
+---
+
+## Offline
+
+Every screen renders from local storage, so browsing never needs a network.
+Reading an article usually does not either.
+
+`loadArticle` tries the cache before the wire:
+
+```kotlin
+loadArticle(...) = articleFromFeed(url, feedTitle, feedContent) ?: fetchArticle(client, url)
+```
+
+`articleFromFeed` returns an article only when the feed carried a real body —
+at least 900 characters, because *a teaser is not an article*. When it does,
+the reader renders from `feeds.posts` and makes no request.
+
+**What that covers, measured on a device:** 134 of 165 cached posts. Every feed
+that publishes full-content RSS is cached completely, 15 posts deep. Three of
+the eighteen sources — Google Bug Hunters, Spotify Engineering, SwiftLee —
+publish only a summary, so none of their posts can be cached at sync time and
+all of them need a network.
+
+A post that will open offline is marked `offline` on its meta line. The flag is
+computed at sync time by **the same `articleFromFeed` the reader calls**, given
+the same truncated body — anything cheaper would eventually disagree, and a
+badge that lies about what opens offline is worse than no badge.
+
+**Cost.** Roughly 3 MB of `feeds.posts` for a fourteen-feed catalogue. The cache
+re-encodes itself whole on every write, so `syncFeeds` gathers every feed's
+posts and commits once via `replaceAll` — committing per feed made a sync
+serialise the whole catalogue fourteen times over, a cost that grew with the
+square of the number of feeds.
+
+**When there is nothing cached and no signal**, the reader shows the app's own
+empty state rather than letting the WebView render a `net::` error page.
 
 ---
 
@@ -336,11 +463,26 @@ Things that are true everywhere, and worth keeping true:
 
 ```
 composeApp/src/commonMain/kotlin/dev/mks/duskread/
-  data/       KeyValueStore, SecretStore, UserPrefs
-  links/      SavedLink, LinkLibrary, LinkInbox, Feed, FeedLibrary,
-              FeedSync, FeedPostCache, Recommender, ReadingSignals, Topics
-  notion/     NotionAuth, NotionClient, NotionSources, NotionSync,
-              NotionReadingList, NotionPrefs
+  data/       KeyValueStore  the plaintext store, expect/actual
+              SecretStore    the encrypted one, for the token alone
+              UserPrefs
+
+  links/      SavedLink · LinkLibrary · LinkInbox      the reading list
+              Feed · FeedLibrary · FeedSync · FeedPostCache   followed blogs
+              Article · ArticleDocument                extraction, and the
+                                                       reader's own HTML
+              CanonicalUrl                             what "the same article"
+                                                       means
+              Recommender · ReadingSignals             what NEXT UP picks
+              LinkMetadata · LinkTransfer · SharedLinkRequest
+
+  notion/     NotionAuth         the seam OAuth would replace
+              NotionClient       transport, paging, backoff, typed failures
+              NotionSources      Sources rows → followed feeds
+              NotionReadingList  the two-way saved-links reconciliation
+              NotionSync         runFullSync — the one entry point
+              NotionPrefs
+
   pomodoro/   the focus timer
   reader/     Reader, AudioPlayer — read-only over readback's library.db
   summary/    on-device summaries (Android only; ML Kit GenAI)
