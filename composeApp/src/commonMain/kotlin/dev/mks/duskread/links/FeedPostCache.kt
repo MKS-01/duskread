@@ -25,6 +25,18 @@ data class FeedPost(
     /** When the publisher dated it, or null for a feed that dates nothing. */
     val publishedAt: Long? = null,
     /**
+     * Whether this post can be read with no network.
+     *
+     * Decided at sync time by [dev.mks.duskread.links.articleFromFeed] — the
+     * *same* function the reader calls, given the same truncated body it will
+     * be given. A cheaper approximation would eventually disagree with it, and
+     * a badge that lies about what opens offline is worse than no badge.
+     *
+     * False for a feed that publishes only a teaser: three of the followed
+     * blogs do, and no amount of caching at sync time can fix that.
+     */
+    val offline: Boolean = false,
+    /**
      * How long the article is, counted once at sync time.
      *
      * Kept as a number rather than recomputed from [content] because the
@@ -61,6 +73,22 @@ class FeedPostCache(private val store: KeyValueStore) {
         persist()
     }
 
+    /**
+     * Every feed that answered, in one write.
+     *
+     * [persist] re-encodes the whole catalogue, so calling [replace] once per
+     * feed meant a fourteen-feed sync serialised roughly a megabyte fourteen
+     * times over to store it once. Merged rather than assigned, because a feed
+     * that failed this time is absent from [byFeed] and has to keep what it
+     * last had — the same contract [replace] has always honoured by being
+     * called only for a feed that actually answered.
+     */
+    fun replaceAll(byFeed: Map<String, List<FeedPost>>) {
+        if (byFeed.isEmpty()) return
+        postsByFeed = postsByFeed + byFeed
+        persist()
+    }
+
     /** Drops a feed's cached posts once it's unfollowed — nothing should surface for a blog no longer synced. */
     fun removeFeed(feedId: String) {
         postsByFeed = postsByFeed - feedId
@@ -80,6 +108,7 @@ class FeedPostCache(private val store: KeyValueStore) {
             post.content.orEmpty().clean(),
             post.publishedAt?.toString().orEmpty(),
             post.words?.toString().orEmpty(),
+            if (post.offline) "1" else "0",
         ).joinToString(FieldSeparator.toString())
     }
 
@@ -99,6 +128,7 @@ class FeedPostCache(private val store: KeyValueStore) {
             content = fields.getOrNull(4)?.takeIf { it.isNotBlank() },
             publishedAt = fields.getOrNull(5)?.toLongOrNull(),
             words = fields.getOrNull(6)?.toIntOrNull(),
+            offline = fields.getOrNull(7) == "1",
         )
     }
 

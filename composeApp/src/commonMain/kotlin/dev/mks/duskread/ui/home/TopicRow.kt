@@ -140,5 +140,12 @@ private fun TopicRowBody(
         },
     ) {
         RowMeta(post.publishedAt?.let(::savedAgo) ?: host)
+
+        // Marking what works rather than what does not: most posts carry this,
+        // so it reads as quiet reassurance instead of a warning on a row that
+        // is perfectly fine whenever there is signal. Its absence is the
+        // signal — and the three followed blogs that publish only a teaser are
+        // the ones that will never have it.
+        if (post.offline) RowMeta("offline")
     }
 }
