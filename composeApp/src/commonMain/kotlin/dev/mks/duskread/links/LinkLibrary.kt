@@ -54,8 +54,13 @@ class LinkLibrary(private val store: KeyValueStore) {
      * [title] lets a caller that already knows the headline — a feed entry
      * carries its own — skip the URL-slug guess. It still improves once the
      * page itself is fetched, same as any other saved link.
+     *
+     * [topic] is the same idea for the subject: a post saved from a followed
+     * blog knows what that blog is about, and recording it here is what lets
+     * it survive the trip to Notion and back to another device. Inferring it
+     * from the host works only while the feed is still followed.
      */
-    fun save(rawUrl: String, title: String? = null): SavedLink? {
+    fun save(rawUrl: String, title: String? = null, topic: String? = null): SavedLink? {
         if (!looksLikeUrl(rawUrl)) return null
 
         val url = normaliseUrl(rawUrl).clean()
@@ -68,6 +73,7 @@ class LinkLibrary(private val store: KeyValueStore) {
             title = title?.clean()?.takeIf { it.isNotBlank() } ?: titleFromUrl(url),
             savedAt = now,
             changedAt = now,
+            topic = topic?.takeIf { it.isNotBlank() },
         )
         links = listOf(link) + links
         persist()

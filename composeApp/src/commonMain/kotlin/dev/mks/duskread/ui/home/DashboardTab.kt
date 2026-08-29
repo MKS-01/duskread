@@ -519,7 +519,7 @@ private fun openCandidate(
     val candidate = scored.candidate
     open(candidate.url)
 
-    val id = candidate.savedId ?: links.save(candidate.url, candidate.title)?.id
+    val id = candidate.savedId ?: links.save(candidate.url, candidate.title, candidate.tag)?.id
     id?.let { links.toggleRead(it) }
     signals.recordRead(candidate.url)
     // The other half of the topic term: without this, tags are read on every

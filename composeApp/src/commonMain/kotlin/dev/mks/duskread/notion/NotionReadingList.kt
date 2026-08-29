@@ -203,6 +203,10 @@ private fun properties(link: SavedLink, status: StatusNames, includeUrl: Boolean
         buildJsonObject { put("status", buildJsonObject { put("name", JsonPrimitive(if (link.read) status.read else status.unread)) }) },
     )
     link.description?.let { put("Excerpt", richText(it.take(1_900))) }
+    // Only when known. Writing a null select would clear a topic someone
+    // filed by hand in Notion, and the app's silence about a subject is not
+    // the same as knowing it has none.
+    link.topic?.let { put("Topic", buildJsonObject { put("select", buildJsonObject { put("name", JsonPrimitive(it)) }) }) }
     if (includeUrl) {
         put(
             "Saved At",
