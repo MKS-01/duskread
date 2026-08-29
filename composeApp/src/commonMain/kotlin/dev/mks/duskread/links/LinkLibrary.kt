@@ -39,9 +39,20 @@ class LinkLibrary(private val store: KeyValueStore) {
      * Bounded and oldest-evicted for the same reason the skip list is: what
      * matters is recent intent, and an unbounded set of every link ever
      * deleted would outgrow the list it protects.
+     *
+     * Keyed by the **address as saved**, not by its canonical form. Storing a
+     * canonical key looked tidier and was a trap: the canonicaliser's list of
+     * tracking parameters is expected to grow, and the day it does, every
+     * stored key stops matching the row it was written for. A key whose
+     * algorithm can change cannot be persisted — so the raw address is kept
+     * and [removedKeys] derives the comparison form on demand.
      */
     var removedUrls: Map<String, Long> by mutableStateOf(loadRemoved())
         private set
+
+    /** The canonical forms of [removedUrls], derived rather than stored. */
+    val removedKeys: Set<String>
+        get() = removedUrls.keys.mapTo(mutableSetOf(), ::canonicalUrl)
 
     val unreadCount: Int
         get() = links.count { !it.read }
@@ -64,7 +75,11 @@ class LinkLibrary(private val store: KeyValueStore) {
         if (!looksLikeUrl(rawUrl)) return null
 
         val url = normaliseUrl(rawUrl).clean()
-        links.firstOrNull { it.url.equals(url, ignoreCase = true) }?.let { return it }
+        // Matched on the canonical form, not the address as typed: the same
+        // article reaches this app from a feed, from a newsletter carrying
+        // `?utm_source=`, and from a share with a trailing slash.
+        val key = canonicalUrl(url)
+        links.firstOrNull { canonicalUrl(it.url) == key }?.let { return it }
 
         val now = Clock.System.now().toEpochMilliseconds()
         val link = SavedLink(
@@ -94,10 +109,10 @@ class LinkLibrary(private val store: KeyValueStore) {
      */
     fun import(text: String): ImportSummary {
         val found = parseImport(text)
-        val known = links.mapTo(mutableSetOf()) { it.url.lowercase() }
+        val known = links.mapTo(mutableSetOf()) { canonicalUrl(it.url) }
         val now = Clock.System.now().toEpochMilliseconds()
 
-        val fresh = found.filterNot { it.url.lowercase() in known }.mapIndexed { index, imported ->
+        val fresh = found.filterNot { canonicalUrl(it.url) in known }.mapIndexed { index, imported ->
             SavedLink(
                 id = now.toString(36) + "-i" + (links.size + index),
                 url = imported.url.clean(),
@@ -122,7 +137,7 @@ class LinkLibrary(private val store: KeyValueStore) {
     }
 
     /** Whether [url] is already in the reading list — the state a save button on a feed card renders itself from. */
-    fun isSaved(url: String): Boolean = links.any { it.url.equals(url, ignoreCase = true) }
+    fun isSaved(url: String): Boolean = links.any { sameArticle(it.url, url) }
 
     /**
      * The feed-card save button: tapping it once adds [url] to the reading
@@ -132,7 +147,7 @@ class LinkLibrary(private val store: KeyValueStore) {
      * already filed away is.
      */
     fun toggleSaved(url: String, title: String?, topic: String? = null) {
-        val existing = links.firstOrNull { it.url.equals(url, ignoreCase = true) }
+        val existing = links.firstOrNull { sameArticle(it.url, url) }
         if (existing != null) remove(existing.id) else save(url, title, topic)
     }
 
@@ -204,22 +219,6 @@ class LinkLibrary(private val store: KeyValueStore) {
     }
 
     /**
-     * Files this link under a subject.
-     *
-     * Stamps [SavedLink.changedAt] like every other mutator, which is the
-     * whole mechanism by which the next sync carries it to Notion — there is
-     * no separate "needs pushing" flag anywhere, and adding one would be a
-     * second source of truth about the same fact.
-     */
-    fun setTopic(id: String, topic: String?) {
-        val cleaned = topic?.clean()?.trim()?.takeIf { it.isNotBlank() }
-        links = links.map {
-            if (it.id != id) it else it.copy(topic = cleaned, changedAt = Clock.System.now().toEpochMilliseconds())
-        }
-        persist()
-    }
-
-    /**
      * The only way a record leaves. Deliberately not on a tap target on the
      * card — a mis-tap should never cost a saved article — so the UI puts it
      * behind a long press.
@@ -243,10 +242,10 @@ class LinkLibrary(private val store: KeyValueStore) {
      * and a row still ticked in Notion is not an argument.
      */
     fun upsertFromNotion(incoming: SavedLink): Boolean {
-        if (incoming.url.lowercase() in removedUrls) return false
+        if (canonicalUrl(incoming.url) in removedKeys) return false
 
         val existing = links.firstOrNull {
-            it.id == incoming.id || it.url.equals(incoming.url, ignoreCase = true)
+            it.id == incoming.id || sameArticle(it.url, incoming.url)
         }
 
         links = if (existing == null) {
@@ -277,7 +276,7 @@ class LinkLibrary(private val store: KeyValueStore) {
 
     private fun tombstone(url: String) {
         val now = Clock.System.now().toEpochMilliseconds()
-        val current = removedUrls + (url.lowercase() to now)
+        val current = removedUrls + (url to now)
         removedUrls = if (current.size <= MaxRemembered) {
             current
         } else {

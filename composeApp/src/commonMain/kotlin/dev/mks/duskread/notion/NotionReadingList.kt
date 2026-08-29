@@ -2,6 +2,7 @@ package dev.mks.duskread.notion
 
 import dev.mks.duskread.links.LinkLibrary
 import dev.mks.duskread.links.SavedLink
+import dev.mks.duskread.links.canonicalUrl
 import dev.mks.duskread.links.normaliseUrl
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
@@ -31,6 +32,8 @@ data class NotionArticle(
     val topic: String?,
     val read: Boolean,
     val saved: Boolean,
+    /** Ticked = the reader said no. Never pulled down, and nothing should re-file it. */
+    val dismissed: Boolean,
     /** When Notion says it was filed, as opposed to when the row was last touched. */
     val savedAt: Long?,
     /** When it was read, where that is recorded. [read] says whether; this says when. */
@@ -41,6 +44,7 @@ data class NotionArticle(
 /** What one reading-list sync did, in the numbers Settings reports. */
 data class ReadingSyncSummary(
     val pushed: Int,
+    /** Rows changed, including any marked "not interested". */
     val updated: Int,
     val pulled: Int,
 ) {
@@ -90,10 +94,30 @@ suspend fun syncReadingList(
     // when it created the row, and — for a row Claude filed from mail before
     // the app ever saw it — by its address alone.
     val byId = rows.filter { it.duskreadId != null }.associateBy { it.duskreadId }
-    val byUrl = rows.associateBy { normaliseUrl(it.url).lowercase() }
+    val byUrl = rows.associateBy { canonicalUrl(it.url) }
+
+    // Refusals go up first. Running this after the pull left a window where a
+    // row could be read as still saved, and after the push it could be
+    // re-ticked by the very link that was just deleted.
+    var dismissed = 0
+    links.removedKeys.forEach { key ->
+        val row = byUrl[key] ?: return@forEach
+        // Only once. Without this every sync would rewrite the same rows for
+        // as long as the tombstone lives, and `last_edited_time` is what the
+        // whole reconciliation rests on.
+        if (row.dismissed && !row.saved) return@forEach
+
+        val result = client.updatePage(row.pageId, dismissal())
+        if (result is NotionResult.Failure) return result
+        dismissed++
+    }
 
     var pulled = 0
-    rows.filter { it.saved }.forEach { row ->
+    // A dismissed row is refused here as well as by the local tombstone list.
+    // The tombstones are what make a delete instant; this is what makes it
+    // survive a reinstall, a second device, and anything that files into this
+    // table without asking the phone.
+    rows.filter { it.saved && !it.dismissed }.forEach { row ->
         val url = normaliseUrl(row.url)
         val created = links.upsertFromNotion(
             SavedLink(
@@ -120,7 +144,7 @@ suspend fun syncReadingList(
     var pushed = 0
     var updated = 0
     links.links.forEach { link ->
-        val row = byId[link.id] ?: byUrl[normaliseUrl(link.url).lowercase()]
+        val row = byId[link.id] ?: byUrl[canonicalUrl(link.url)]
 
         if (row == null) {
             val result = client.createPage(databaseId, properties(link, statusNames, includeUrl = true))
@@ -166,7 +190,7 @@ suspend fun syncReadingList(
         }
     }
 
-    return NotionResult.Ok(ReadingSyncSummary(pushed = pushed, updated = updated, pulled = pulled))
+    return NotionResult.Ok(ReadingSyncSummary(pushed = pushed, updated = updated + dismissed, pulled = pulled))
 }
 
 /**
@@ -260,6 +284,20 @@ private fun properties(link: SavedLink, status: StatusNames, includeUrl: Boolean
 }
 
 /**
+ * "Not interested" — the only refusal this app can express upstream.
+ *
+ * The row is kept, not deleted or archived: the point is to remember the
+ * refusal, and a deleted row is indistinguishable from one that was never
+ * filed. Anything filling this table can skip a ticked row; without it, an
+ * article deleted on the phone is unknown to everything except that phone and
+ * arrives again on the next pass.
+ */
+private fun dismissal(): JsonObject = buildJsonObject {
+    put("Dismissed", buildJsonObject { put("checkbox", JsonPrimitive(true)) })
+    put("Saved", buildJsonObject { put("checkbox", JsonPrimitive(false)) })
+}
+
+/**
  * The two properties that say "this row is that link".
  *
  * Written on its own when nothing else needs to change, so a row someone
@@ -305,6 +343,7 @@ fun parseArticle(row: JsonObject): NotionArticle? {
         // reading list would rename it to, so the rename is safe either way.
         read = statusName == "Done" || statusName == "Read",
         saved = (prop("Saved")?.get("checkbox") as? JsonPrimitive)?.content?.toBooleanStrictOrNull() ?: false,
+        dismissed = (prop("Dismissed")?.get("checkbox") as? JsonPrimitive)?.content?.toBooleanStrictOrNull() ?: false,
         savedAt = prop("Saved At")?.dateStart(),
         readAt = prop("Read At")?.dateStart(),
         lastEditedAt = row["last_edited_time"]?.stringOrNull()?.let(::parseIso) ?: 0L,
