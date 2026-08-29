@@ -96,7 +96,7 @@ fun TopicsScreen(
             // than the eyebrow already has to say anyway.
             Column(Modifier.padding(horizontal = 16.dp)) {
                 EyebrowHeader(
-                    text = feed.host.uppercase(),
+                    text = feed.label.uppercase(),
                     trailing = {
                         Text(
                             text = "${posts.size} POSTS",

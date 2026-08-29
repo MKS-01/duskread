@@ -38,12 +38,24 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.mks.duskread.AppVersion
+import dev.mks.duskread.data.NotionTokenKey
 import dev.mks.duskread.data.UserPrefs
+import dev.mks.duskread.data.rememberSecretStore
 import dev.mks.duskread.links.ExportFileName
 import dev.mks.duskread.links.ExportSink
+import dev.mks.duskread.links.FeedLibrary
+import dev.mks.duskread.links.FeedPostCache
 import dev.mks.duskread.links.LinkLibrary
 import dev.mks.duskread.links.exportLinks
 import dev.mks.duskread.links.rememberExportSink
+import dev.mks.duskread.links.savedAgo
+import dev.mks.duskread.links.syncFeeds
+import dev.mks.duskread.notion.NotionClient
+import dev.mks.duskread.notion.NotionResult
+import dev.mks.duskread.notion.PastedTokenAuth
+import dev.mks.duskread.notion.applySources
+import dev.mks.duskread.notion.pullSources
+import dev.mks.duskread.notion.rememberNotionPrefs
 import dev.mks.duskread.summary.SummariserState
 import dev.mks.duskread.summary.SummaryLength
 import dev.mks.duskread.summary.rememberSummariser
@@ -58,8 +70,11 @@ import dev.mks.duskread.ui.summary.SummaryChip
 import dev.mks.duskread.ui.theme.DuskReadIcons
 import dev.mks.duskread.ui.theme.Mono
 import dev.mks.duskread.ui.theme.Space
+import io.ktor.client.HttpClient
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
 /**
  * Everything that isn't a tab of its own, gathered behind a gear rather than
@@ -81,6 +96,9 @@ fun SettingsScreen(
     mono: Boolean,
     onToggleTheme: () -> Unit,
     onClose: () -> Unit,
+    feeds: FeedLibrary,
+    feedPosts: FeedPostCache,
+    feedClient: HttpClient,
     modifier: Modifier = Modifier,
 ) {
     PlatformBackHandler(enabled = true, onBack = onClose)
@@ -144,6 +162,12 @@ fun SettingsScreen(
 
                     Spacer(Modifier.height(28.dp))
                 }
+
+                EyebrowHeader(text = "NOTION")
+                Spacer(Modifier.height(14.dp))
+                NotionSettings(feeds = feeds, feedPosts = feedPosts, client = feedClient)
+
+                Spacer(Modifier.height(28.dp))
 
                 EyebrowHeader(text = "SAVED LINKS")
                 Spacer(Modifier.height(14.dp))
@@ -557,3 +581,209 @@ private fun lengthNote(length: SummaryLength): String = when (length) {
     SummaryLength.Short -> "A sentence or two — just enough to decide."
     SummaryLength.Full -> "A short paragraph. The most this phone's model will give."
 }
+
+/**
+ * The Notion connection: a token, a database, and the two buttons that use
+ * them.
+ *
+ * Notion is where subscriptions are curated — a newsletter arrives by email,
+ * gets filed into a `Sources` table, and this pulls the result down. The
+ * direction only ever runs that way: nothing here writes to Notion, so no
+ * mistake in the app can damage the table it reads.
+ *
+ * Both fields are paste-once. The token is shown masked after it is saved and
+ * never revealed again, because the field is the way in, not a display — and
+ * Notion itself only shows a personal access token at the moment it is
+ * created.
+ */
+@OptIn(ExperimentalTime::class)
+@Composable
+private fun NotionSettings(feeds: FeedLibrary, feedPosts: FeedPostCache, client: HttpClient) {
+    val secrets = rememberSecretStore()
+    val notion = rememberNotionPrefs()
+    val auth = remember(secrets) { PastedTokenAuth(secrets) }
+    val api = remember(client, auth) { NotionClient(client, auth) }
+    val scope = rememberCoroutineScope()
+
+    // Read once into state rather than on every recomposition: reaching the
+    // keystore is cheap but not free, and the answer only changes here.
+    var connected by remember { mutableStateOf(secrets.get(NotionTokenKey) != null) }
+    var token by remember { mutableStateOf("") }
+    var databaseId by remember(notion.sourcesDatabaseId) { mutableStateOf(notion.sourcesDatabaseId.orEmpty()) }
+    var busy by remember { mutableStateOf(false) }
+    var note by remember { mutableStateOf<String?>(null) }
+
+    // Same self-clearing note the export/import block uses — a result worth
+    // reading once, not a status that lives on the screen forever.
+    LaunchedEffect(note) {
+        if (note != null) {
+            delay(5_000)
+            note = null
+        }
+    }
+
+    Column(Modifier.fillMaxWidth()) {
+        Text(
+            text = "Follow the blogs listed in a Notion database. Read-only — nothing here writes back.",
+            fontSize = 12.5.sp,
+            lineHeight = 17.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        Spacer(Modifier.height(12.dp))
+
+        AppTextField(
+            value = if (connected && token.isEmpty()) MaskedToken else token,
+            onValueChange = { token = it },
+            placeholder = "Personal access token",
+            fontSize = 13.5.sp,
+            mono = true,
+            trailing = {
+                AnimatedVisibility(token.isNotBlank()) {
+                    Text(
+                        text = "Save",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .clickable {
+                                auth.save(token)
+                                connected = true
+                                token = ""
+                                note = "Token saved"
+                            }
+                            .padding(start = 10.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
+                    )
+                }
+            },
+        )
+
+        Spacer(Modifier.height(8.dp))
+
+        AppTextField(
+            value = databaseId,
+            onValueChange = { databaseId = it },
+            placeholder = "Sources database ID",
+            fontSize = 13.5.sp,
+            mono = true,
+            trailing = {
+                AnimatedVisibility(databaseId.trim() != notion.sourcesDatabaseId.orEmpty()) {
+                    Text(
+                        text = "Save",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .clickable {
+                                notion.updateDatabaseId(databaseId)
+                                note = "Database saved"
+                            }
+                            .padding(start = 10.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
+                    )
+                }
+            },
+        )
+
+        Spacer(Modifier.height(14.dp))
+
+        // The state line, shaped like every other two-line settings row. The
+        // title is what is true now; the detail is when it was last true.
+        Text(
+            text = note ?: when {
+                !connected -> "Not connected"
+                notion.databaseName != null -> "${notion.databaseName} · ${feeds.feeds.size} feeds"
+                else -> "Token saved — test the connection"
+            },
+            style = MaterialTheme.typography.titleSmall,
+            fontSize = 14.sp,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Text(
+            text = notion.lastSyncAt?.let { "Last synced ${savedAgo(it)}" }
+                ?: "Paste a token from Notion's developer portal, then the database ID.",
+            fontSize = 11.5.sp,
+            lineHeight = 15.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        Spacer(Modifier.height(10.dp))
+
+        Row(
+            Modifier.offset(x = (-12).dp),
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            TransferAction(if (busy) "Working…" else "Test connection") {
+                if (busy) return@TransferAction
+                busy = true
+                scope.launch {
+                    note = when (val result = api.databaseTitle(databaseId)) {
+                        is NotionResult.Ok -> {
+                            notion.recordConnection(result.value)
+                            "Connected to ${result.value}"
+                        }
+
+                        is NotionResult.Failure -> result.message
+                    }
+                    busy = false
+                }
+            }
+
+            TransferAction(if (busy) "…" else "Sync now") {
+                if (busy) return@TransferAction
+                busy = true
+                scope.launch {
+                    note = runNotionSync(api, databaseId, feeds, feedPosts, client, notion::recordSync)
+                    busy = false
+                }
+            }
+
+            // Only once there is something to disconnect from, and never in
+            // the accent: the one coloured thing on a screen should not be
+            // the destructive one.
+            AnimatedVisibility(connected) {
+                TransferAction("Disconnect") {
+                    auth.disconnect()
+                    notion.clear()
+                    connected = false
+                    token = ""
+                    // Followed feeds stay. They are DuskRead's own data now,
+                    // and signing out of a source should not empty the app.
+                    note = "Disconnected — feeds kept"
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Pull the sources, follow them, then run the feed sync that already exists.
+ *
+ * Written as a plain function rather than inline in the button so the whole
+ * chain reads in one place: what fails, where it stops, and what the reader
+ * is told. Any failure returns before touching [feeds] — a bad response
+ * should leave the followed list exactly as it was.
+ */
+@OptIn(ExperimentalTime::class)
+private suspend fun runNotionSync(
+    api: NotionClient,
+    databaseId: String,
+    feeds: FeedLibrary,
+    feedPosts: FeedPostCache,
+    client: HttpClient,
+    recordSync: (Long) -> Unit,
+): String = when (val sources = pullSources(api, databaseId)) {
+    is NotionResult.Failure -> sources.message
+
+    is NotionResult.Ok -> {
+        val summary = applySources(client, sources.value, feeds)
+        // The second half is the part that already shipped: Home's own "Sync
+        // now" and its pull-to-refresh both end here too.
+        val pulled = syncFeeds(client, feeds.feeds, feedPosts)
+        recordSync(Clock.System.now().toEpochMilliseconds())
+        "${summary.line} · $pulled fetched"
+    }
+}
+
+/** Enough to show a token is held without showing the token. */
+private const val MaskedToken = "ntn_••••••••••••••••"

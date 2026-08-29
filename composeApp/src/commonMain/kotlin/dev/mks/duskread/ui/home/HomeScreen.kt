@@ -419,6 +419,14 @@ fun HomeScreen(
                 mono = mono,
                 onToggleTheme = onToggleTheme,
                 onClose = { showSettings = false },
+                // The same three Home's own sync uses, not fresh copies.
+                // FeedLibrary rewrites its whole blob on every mutation, so a
+                // second instance here would clobber whatever this one wrote
+                // the moment Home next persisted — the hazard LinkInbox
+                // exists to avoid on the links side.
+                feeds = feeds,
+                feedPosts = feedPosts,
+                feedClient = feedClient,
             )
         }
     }

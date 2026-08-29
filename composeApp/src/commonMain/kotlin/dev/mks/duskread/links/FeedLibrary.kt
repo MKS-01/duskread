@@ -21,17 +21,33 @@ class FeedLibrary(private val store: KeyValueStore) {
     var feeds: List<Feed> by mutableStateOf(load())
         private set
 
-    /** Follows [rawUrl], or returns the existing feed if it's already followed. Null if not a link at all. */
-    fun add(rawUrl: String): Feed? {
+    /**
+     * Follows [rawUrl], or returns the existing feed if it's already followed.
+     * Null if not a link at all.
+     *
+     * [title] is the publisher's name where the caller knows it — the Notion
+     * sync does, a hand-typed URL does not. An already-followed feed keeps
+     * whatever it has rather than being rewritten, so re-running a sync is
+     * genuinely idempotent, except that a feed with no name yet will take one.
+     */
+    fun add(rawUrl: String, title: String? = null): Feed? {
         if (!looksLikeUrl(rawUrl)) return null
 
         val url = normaliseUrl(rawUrl).trim()
-        feeds.firstOrNull { it.url.equals(url, ignoreCase = true) }?.let { return it }
+        feeds.firstOrNull { it.url.equals(url, ignoreCase = true) }?.let { existing ->
+            if (existing.title.isNullOrBlank() && !title.isNullOrBlank()) {
+                feeds = feeds.map { if (it.id == existing.id) it.copy(title = title) else it }
+                persist()
+                return feeds.first { it.id == existing.id }
+            }
+            return existing
+        }
 
         val feed = Feed(
             id = Clock.System.now().toEpochMilliseconds().toString(36) + "-" + feeds.size,
             url = url,
             addedAt = Clock.System.now().toEpochMilliseconds(),
+            title = title?.takeIf { it.isNotBlank() },
         )
         feeds = feeds + feed
         persist()
@@ -48,7 +64,7 @@ class FeedLibrary(private val store: KeyValueStore) {
     private fun load(): List<Feed> = store.getString(Key)?.split(RecordSeparator)?.mapNotNull(::decode).orEmpty()
 
     private fun encode(feeds: List<Feed>): String = feeds.joinToString(RecordSeparator.toString()) { feed ->
-        listOf(feed.id, feed.url, feed.addedAt.toString()).joinToString(FieldSeparator.toString())
+        listOf(feed.id, feed.url, feed.addedAt.toString(), feed.title.orEmpty()).joinToString(FieldSeparator.toString())
     }
 
     private fun decode(record: String): Feed? {
@@ -59,6 +75,9 @@ class FeedLibrary(private val store: KeyValueStore) {
             id = fields[0],
             url = fields[1].ifBlank { return null },
             addedAt = fields[2].toLongOrNull() ?: 0L,
+            // Positional and appended last, so records written before feeds
+            // carried a name still decode — the same tolerance SavedLink uses.
+            title = fields.getOrNull(3)?.takeIf { it.isNotBlank() },
         )
     }
 

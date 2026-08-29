@@ -10,8 +10,18 @@ data class Feed(
     val id: String,
     val url: String,
     val addedAt: Long,
+    /**
+     * The publisher's own name, when something knew it — a Notion `Sources`
+     * row does, a URL typed into Following does not. Null rather than
+     * defaulted to the host so the two cases stay distinguishable.
+     */
+    val title: String? = null,
 ) {
     /** "arstechnica.com" — the label a topic row shows itself under. */
     val host: String
         get() = hostOf(url)
+
+    /** What to put on screen: the real name if there is one, the host if not. */
+    val label: String
+        get() = title?.takeIf { it.isNotBlank() } ?: host
 }
