@@ -571,3 +571,71 @@ design system, get it) with the reference values split out into
   where the shapes overlap, so that overhang should fill back in as a lens,
   which is the exact failure the file's own comment warns about. Check it on a
   device with themed icons turned on.
+
+## Following becomes a tab (this pass)
+
+The digest outgrew the section it lived in. `FollowingDigest` was written to
+be "three lines and done" inside Home's own `LazyColumn` — fine for a
+handful of feeds, not for fourteen, where the digest was already the longest
+thing on the screen and still only showing a fraction of what following
+those blogs actually produced.
+
+- [x] `HomeTab` gains a fourth entry, `FOLLOWING`, and the order changes to
+  `HOME, FOLLOWING, SAVED, READBACK` — Readback moves last, in line with
+  `CLAUDE.md` calling it an add-on rather than the main feature. Both
+  `FloatingBar.kt`'s `TabsFace` and `NavRail.kt` already looped
+  `HomeTab.entries` rather than hardcoding three, so the fourth destination
+  needed no layout rework in either — the floating pill wraps its icon row
+  and the rail is a fixed-width column that just grew taller.
+- [x] New `ui/home/FollowingTab.kt`: `FollowingDigest` promoted into its own
+  `LazyColumn` with pull-to-refresh, the same shape `LinksTab.kt` already
+  established, so a long feed list finally gets a scroll of its own instead
+  of borrowing Home's.
+- [x] Home's own following section shrinks to `FollowingShortcut`
+  (`DashboardTab.kt`) — the total new-post count in the eyebrow, the feed
+  count, and the top three feeds by unread count as a named preview, tapping
+  through to the real tab. Not a bare number: naming the blogs is what makes
+  it read as a summary rather than an afterthought under Focus.
+- [x] `DuskReadIcons.Feed` redrawn. It used to be ascending bars — a signal
+  getting stronger, standing in for the RSS dot and its broadcast arcs — which
+  read as a literal signal-strength glyph once it sat in the tab bar next to
+  three other destinations. Redrawn as three bulleted rules (a short bar next
+  to a long one, the round line cap doing the bullet), unambiguously "a list."
+- [x] `DuskReadIcons.Search` added — a ring and a handle, the one shape in the
+  set that cannot be built from bars. Lives only inside the Following tab's
+  own header, not the bottom bar: a fifth icon there would cost more width
+  than a search field is worth, and search only has one screen that needs it.
+- [x] `FollowingDigest` gains: a search field (filters by feed name, host or
+  topic, and by post title when the feed itself doesn't match — narrows both,
+  doesn't just narrow the feed list), a Newest/A–Z sort pair styled as the
+  exact bordered pill Readback's own sort chips use rather than a second sort
+  language, and a one-line hint under each collapsed feed showing its newest
+  post's own title — already-cached data, not a generated summary, so it
+  costs nothing to show and nothing to keep current. The hint disappears once
+  a row is open, since the real post is sitting right underneath it by then.
+- [x] The feed name's type was wrong twice before it was right. First pass
+  gave it `titleSmall` (SemiBold) to stand apart from the plain-Mono line it
+  used to be — correct call on family (Jost, not Inconsolata: the tokens doc
+  reserves mono for a value, never a name) but SemiBold next to Regular read
+  as shouting, not a header, since the row is smaller than what it
+  introduces. Landed on `bodyLarge` + `FontWeight.Medium` — the one step this
+  type scale actually has between Regular and SemiBold. A `MonogramBadge` was
+  also tried on the collapsed row itself, matching the one every post row
+  carries once expanded; pulled back out because a parent row and a child row
+  wearing the same badge stopped reading as parent and child at all.
+- [x] The floating bar's scroll-collapse now shrinks as well as slides. It
+  used to only translate down, on the stated reasoning that the 42dp buttons
+  would go under thumb size if shrunk — true for a *tappable* bar, but the
+  collapsed bar isn't one: the whole pill becomes a single re-expand target
+  the moment it collapses, so nothing was actually protected by staying full
+  size. Scales to 0.82 from the bottom-centre, in the same tween as the
+  existing drop, so it reads as one motion sinking into the edge rather than
+  a slide and a separate shrink.
+
+### Still open from this pass
+
+- [ ] The landing page's Walkthrough deck still shows the old shape: a
+  "Following goes last" Home mockup with the digest as its final section, and
+  a standalone "03/07 · Following" slide built around the same digest
+  in-place-on-Home design. Both predate the tab. Deliberately left for its own
+  pass rather than rushed alongside the app change it documents.
