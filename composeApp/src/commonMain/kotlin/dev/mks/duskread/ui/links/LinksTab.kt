@@ -430,18 +430,6 @@ private fun LinkRow(
                         )
                     }
                 },
-                // The strip lives in ListRow's own content slot, under the
-                // row, so an expanding row needs no new layout and no panel —
-                // the same slot ReaderTab already uses.
-                content = {
-                    AnimatedVisibility(expanded) {
-                        TopicStrip(
-                            topics = topics,
-                            current = link.topic,
-                            onPick = onPickTopic,
-                        )
-                    }
-                },
             ) {
                 RowMeta(
                     text = when {
@@ -465,6 +453,15 @@ private fun LinkRow(
                 )
             }
         }
+
+        // Outside the SwipeToDismissBox, deliberately. Inside it the strip
+        // slid with the row, and — much worse — put a text field inside a
+        // gesture where a horizontal drag deletes the link. A field you have
+        // to type in has no business living on a swipe target.
+        AnimatedVisibility(expanded) {
+            TopicStrip(topics = topics, current = link.topic, onPick = onPickTopic)
+        }
+
         ListRowDivider(last)
     }
 }
