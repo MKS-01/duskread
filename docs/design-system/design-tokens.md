@@ -188,7 +188,7 @@ Material glyph mixed in is visible instantly.
 Home      Target    Clock      Chevron   Back      Close
 Play      Pause     Shuffle    Waveform  Folder    FolderConnect
 External  Bookmark  BookmarkFilled       Feed      Reader
-Summary   Check     Settings   Offline   Contrast
+Summary   Check     Settings   Offline   Contrast  Search
 ```
 
 Every glyph that can be built from evenly spaced vertical bars is —

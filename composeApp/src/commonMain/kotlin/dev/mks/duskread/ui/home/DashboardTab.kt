@@ -36,7 +36,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import dev.mks.duskread.links.Feed
 import dev.mks.duskread.links.FeedLibrary
 import dev.mks.duskread.links.FeedPostCache
 import dev.mks.duskread.links.LinkLibrary
@@ -67,6 +66,7 @@ import dev.mks.duskread.ui.theme.CodeStyle
 import dev.mks.duskread.ui.theme.DuskReadIcons
 import dev.mks.duskread.ui.theme.Mono
 import dev.mks.duskread.ui.theme.Radius
+import dev.mks.duskread.ui.theme.SectionLabel
 import dev.mks.duskread.ui.theme.Stroke
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -88,6 +88,7 @@ fun DashboardTab(
     onOpenFocus: () -> Unit,
     onOpenSaved: () -> Unit,
     onOpenReadback: () -> Unit,
+    onOpenFollowing: () -> Unit,
     links: LinkLibrary,
     signals: ReadingSignals,
     player: AudioPlayer,
@@ -96,7 +97,6 @@ fun DashboardTab(
     feedClient: HttpClient,
     greeting: String?,
     onOpenSettings: () -> Unit,
-    onOpenTopics: (Feed) -> Unit,
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
 ) {
@@ -169,13 +169,7 @@ fun DashboardTab(
             item("readback") { ReadbackSection(player = player, onOpen = onOpenReadback) }
             item("focus") { FocusSection(onOpen = onOpenFocus) }
             item("following") {
-                FollowingDigest(
-                    feedLibrary = feeds,
-                    postCache = feedPosts,
-                    linkLibrary = links,
-                    client = feedClient,
-                    onOpenTopics = onOpenTopics,
-                )
+                FollowingShortcut(feeds = feeds, feedPosts = feedPosts, links = links, onOpen = onOpenFollowing)
             }
         }
     }
@@ -375,6 +369,119 @@ private fun ReadbackSection(
         }
     }
 }
+
+/**
+ * The door to the Following tab: a summary, not the digest that used to sit
+ * here.
+ *
+ * That digest — every followed feed, each expandable into its own posts — is
+ * a real screen's worth of content once more than a couple of blogs are
+ * followed, and Home is not where a screen's worth of anything belongs. What
+ * stays here is the shape of what's waiting, not all of it: the total, and
+ * the two or three feeds actually carrying it. A single count line said the
+ * same thing in fewer words but read as an afterthought under Focus; naming
+ * the blogs is what makes this a summary rather than a number.
+ */
+@Composable
+private fun FollowingShortcut(
+    feeds: FeedLibrary,
+    feedPosts: FeedPostCache,
+    links: LinkLibrary,
+    onOpen: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    // Sorted rather than filtered to exactly the unread: a feed with nothing
+    // new yet is still worth naming if it's one of only two followed, so the
+    // cutoff is "the top few" rather than "only the ones with something new".
+    val byNewest = remember(feeds.feeds, feedPosts.postsByFeed, links.links) {
+        feeds.feeds.map { feed ->
+            feed to feedPosts.postsByFeed[feed.id].orEmpty().count { !links.isSaved(it.url) }
+        }.sortedByDescending { it.second }
+    }
+    val newCount = byNewest.sumOf { it.second }
+
+    Column(modifier.fillMaxWidth().padding(bottom = SectionGap)) {
+        EyebrowHeader(
+            text = "FOLLOWING",
+            trailing = if (feeds.feeds.isNotEmpty()) {
+                {
+                    Text(
+                        text = if (newCount > 0) "$newCount new" else "—",
+                        fontFamily = Mono,
+                        fontSize = 12.sp,
+                        fontWeight = if (newCount > 0) FontWeight.SemiBold else FontWeight.Normal,
+                        color = if (newCount > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            } else {
+                null
+            },
+        )
+        Spacer(Modifier.height(12.dp))
+
+        if (feeds.feeds.isEmpty()) {
+            CompactEmptyState(
+                title = "Follow a blog",
+                message = "Its new posts will show up here, and in full on the Following tab.",
+                onClick = onOpen,
+            )
+        } else {
+            Column(Modifier.fillMaxWidth().clickable(onClick = onOpen)) {
+                Text(
+                    text = "${feeds.feeds.size} feed${if (feeds.feeds.size == 1) "" else "s"} followed",
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Spacer(Modifier.height(10.dp))
+
+                byNewest.take(FollowingPreviewRows).forEach { (feed, count) ->
+                    Row(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                        Text(
+                            // Jost, not mono — a feed's name is a name, and
+                            // the tokens doc reserves Inconsolata for a
+                            // reported value, not a section's own label. See
+                            // the matching note on `DigestLine` in
+                            // FollowingSection.kt.
+                            text = feed.label,
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f),
+                        )
+                        Text(
+                            text = if (count > 0) "$count new" else "—",
+                            fontFamily = Mono,
+                            fontSize = 11.sp,
+                            color = if (count > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+
+                if (feeds.feeds.size > FollowingPreviewRows) {
+                    Spacer(Modifier.height(6.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "${feeds.feeds.size - FollowingPreviewRows} more",
+                            style = SectionLabel,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Icon(
+                            imageVector = DuskReadIcons.Chevron,
+                            contentDescription = "Open Following",
+                            modifier = Modifier.size(11.dp),
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** How many feeds [FollowingShortcut] names before handing over to [FollowingTab]. */
+private const val FollowingPreviewRows = 3
 
 /**
  * The one section on Home that makes a *choice* rather than reporting local

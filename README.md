@@ -6,8 +6,8 @@
 
 <p align="center">
   <strong>A reading habit, automated around a Notion database.</strong><br>
-  Claude files what lands in Gmail, feeds pull themselves, and the phone<br>
-  only ever shows what you actually chose to keep.
+  An AI agent files what lands in your inbox, feeds pull themselves, and<br>
+  the phone only ever shows what you actually chose to keep.
 </p>
 
 <p align="center">
@@ -21,7 +21,7 @@
 
 ---
 
-Curation happens before you ever open the app. Claude works through Gmail on a schedule and files what's worth keeping, the blogs you follow pull their own new posts down unasked, and what rises to the top of Home is ranked against your own reading habit — the sources you return to, the topics you finish — rather than whatever landed last. By the time you open it, the list is already sorted, titled and cached, most of it readable with the phone in aeroplane mode because it was fetched hours earlier, not the moment you tapped it. Pasting a link in by hand still works; it simply isn't what carries the habit any more. Then you set the timer, put the phone face-down, and read for twenty-five minutes — on **Paper Black**, a page rather than a screen, warm-white ink on matte near-black lit by one terracotta accent, or on **Ink**, the same page with the hue drained out entirely, which is where it starts.
+**Automated:** an AI agent catches newsletters in your inbox, and the blogs you follow add their own posts, without you lifting a finger. **Personalised:** what rises to the top is ranked by what you actually read, not by when it arrived. Then you put the phone face-down, set a timer for twenty-five minutes, and read: on **Paper Black**, warm-white ink on matte near-black lit by one terracotta accent, or on **Ink**, the same page with the colour drained out — the one it starts on.
 
 ---
 
@@ -70,19 +70,19 @@ that.
 
 ### Curated automatically, through Notion
 
-The actual habit this app automates: a **[Notion](https://www.notion.com/product/dev)
-database** is the single place subscriptions and saves are curated, and
-**Claude** sits in front of it so the curation doesn't need you at all. Newsletters
-that arrive in Gmail with no public feed are read and filed by Claude
-straight into the reading list; blogs with a working feed are fetched by
-the app itself and never touch Notion. Either way, the phone only pulls
-rows that were ticked `Saved` — everything else stays archived, not shown.
+A **[Notion](https://www.notion.com/product/dev) database** is the single
+place subscriptions and saves are curated, and **Claude** works through it
+so you don't have to. Newsletters that arrive in Gmail with no public feed
+are read and filed by Claude straight into the reading list; blogs with a
+working feed are fetched by the app itself and never touch Notion. Either
+way, the phone only pulls rows that were ticked `Saved`. Everything else
+stays archived, not shown.
 
 <p align="center">
   <img src="docs/media/notion-flow.png" alt="Gmail and RSS feed into Claude and Notion; Notion and RSS both feed the DuskRead app, which caches everything for offline reading">
 </p>
 
-Notion is the curation layer, not a dependency — the device works whether
+Notion is the curation layer, not a dependency. The device works whether
 or not it can reach it. The full schema, the sync rules and the reasoning
 behind each of them are in **[docs/architecture.md](docs/architecture.md)**.
 
@@ -110,20 +110,19 @@ A pomodoro that behaves like an alarm and not a widget: a real system notificati
 
 ### Platform support
 
-**Android is the app; desktop, web and iOS are how the shared code and the
-design system get exercised off a phone.** Everything runs everywhere, but
-readback needs a filesystem and summaries need AICore, so both are Android
-first and desktop second — `summariesSupported()` and `readbackSupported()`
-are `expect`/`actual` constants, and a screen asks before it offers, so a
-control that could only disappoint is never drawn.
+**Android is the app; desktop, web and iOS run the same code, mostly to
+prove it travels.** Readback needs a filesystem and summaries need AICore,
+so both are Android-first. `summariesSupported()` and `readbackSupported()`
+are `expect`/`actual` constants, and a screen just doesn't show a control
+it can't offer.
 
 ### Tech stack
 
-One `commonMain` source set for all four targets — everything but the leaf
-nodes is shared, and the platform seams are `expect`/`actual` pairs: storage,
-audio, the summariser, the timer, the HTTP client. State is a `HomeTab` enum
-and overlays in one `Box`, hoisted into `App.kt` over a flat key/value store;
-no nav library, no ViewModel, no DI, no database.
+One `commonMain` source set for all four targets. Storage, audio, the
+summariser, the timer and the HTTP client are `expect`/`actual` pairs.
+State is a `HomeTab` enum and overlays in one `Box`, hoisted into `App.kt`
+over a flat key/value store. No nav library, no ViewModel, no DI, no
+database.
 
 | Layer | What's used | For |
 | --- | --- | --- |
@@ -147,17 +146,13 @@ No tests yet.
 
 ## Design system
 
-Two schemes, one layout, both dark: **Paper Black**, warm-white ink on matte near-black lit by one terracotta accent that means only *there is sound here*, and **Ink**, the same page with the hue drained to luminance alone — the default, and what it persists to. The app swaps between them at runtime, so no screen hard-codes a colour: it comes from `MaterialTheme.colorScheme` (`ui/theme/Theme.kt`), sizes that carry a decision from `ui/theme/Tokens.kt`, icons from `ui/theme/DuskReadIcons.kt`.
-
-Everything else visual is specified on the page — **[mks-01.github.io/duskread](https://mks-01.github.io/duskread/)**, or `docs/design-system/design-system.html` in a checkout.
+Two schemes, one layout, both dark, **Paper Black** and **Ink** — see **[the design system](https://mks-01.github.io/duskread/)** for the full visual language and every token behind it.
 
 ---
 
 ## Architecture
 
-How the pieces connect — the Notion schema, what the device stores, and the
-end-to-end flows for following blogs, syncing saved links, and getting
-newsletters from Gmail to the phone: **[docs/architecture.md](docs/architecture.md)**.
+How the pieces connect, the Notion schema, and the end-to-end flows — see **[docs/architecture.md](docs/architecture.md)**.
 
 ---
 

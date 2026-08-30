@@ -571,3 +571,113 @@ design system, get it) with the reference values split out into
   where the shapes overlap, so that overhang should fill back in as a lens,
   which is the exact failure the file's own comment warns about. Check it on a
   device with themed icons turned on.
+
+## Following becomes a tab (this pass)
+
+The digest outgrew the section it lived in. `FollowingDigest` was written to
+be "three lines and done" inside Home's own `LazyColumn` — fine for a
+handful of feeds, not for fourteen, where the digest was already the longest
+thing on the screen and still only showing a fraction of what following
+those blogs actually produced.
+
+- [x] `HomeTab` gains a fourth entry, `FOLLOWING`, and the order changes to
+  `HOME, FOLLOWING, SAVED, READBACK` — Readback moves last, in line with
+  `CLAUDE.md` calling it an add-on rather than the main feature. Both
+  `FloatingBar.kt`'s `TabsFace` and `NavRail.kt` already looped
+  `HomeTab.entries` rather than hardcoding three, so the fourth destination
+  needed no layout rework in either — the floating pill wraps its icon row
+  and the rail is a fixed-width column that just grew taller.
+- [x] New `ui/home/FollowingTab.kt`: `FollowingDigest` promoted into its own
+  `LazyColumn` with pull-to-refresh, the same shape `LinksTab.kt` already
+  established, so a long feed list finally gets a scroll of its own instead
+  of borrowing Home's.
+- [x] Home's own following section shrinks to `FollowingShortcut`
+  (`DashboardTab.kt`) — the total new-post count in the eyebrow, the feed
+  count, and the top three feeds by unread count as a named preview, tapping
+  through to the real tab. Not a bare number: naming the blogs is what makes
+  it read as a summary rather than an afterthought under Focus.
+- [x] `DuskReadIcons.Feed` redrawn. It used to be ascending bars — a signal
+  getting stronger, standing in for the RSS dot and its broadcast arcs — which
+  read as a literal signal-strength glyph once it sat in the tab bar next to
+  three other destinations. Redrawn as three bulleted rules (a short bar next
+  to a long one, the round line cap doing the bullet), unambiguously "a list."
+- [x] `DuskReadIcons.Search` added — a ring and a handle, the one shape in the
+  set that cannot be built from bars. Lives only inside the Following tab's
+  own header, not the bottom bar: a fifth icon there would cost more width
+  than a search field is worth, and search only has one screen that needs it.
+- [x] `FollowingDigest` gains: a search field (filters by feed name, host or
+  topic, and by post title when the feed itself doesn't match — narrows both,
+  doesn't just narrow the feed list), a Newest/A–Z sort pair styled as the
+  exact bordered pill Readback's own sort chips use rather than a second sort
+  language, and a one-line hint under each collapsed feed showing its newest
+  post's own title — already-cached data, not a generated summary, so it
+  costs nothing to show and nothing to keep current. The hint disappears once
+  a row is open, since the real post is sitting right underneath it by then.
+- [x] The feed name's type was wrong twice before it was right. First pass
+  gave it `titleSmall` (SemiBold) to stand apart from the plain-Mono line it
+  used to be — correct call on family (Jost, not Inconsolata: the tokens doc
+  reserves mono for a value, never a name) but SemiBold next to Regular read
+  as shouting, not a header, since the row is smaller than what it
+  introduces. Landed on `bodyLarge` + `FontWeight.Medium` — the one step this
+  type scale actually has between Regular and SemiBold. A `MonogramBadge` was
+  also tried on the collapsed row itself, matching the one every post row
+  carries once expanded; pulled back out because a parent row and a child row
+  wearing the same badge stopped reading as parent and child at all.
+- [x] The floating bar's scroll-collapse now shrinks as well as slides. It
+  used to only translate down, on the stated reasoning that the 42dp buttons
+  would go under thumb size if shrunk — true for a *tappable* bar, but the
+  collapsed bar isn't one: the whole pill becomes a single re-expand target
+  the moment it collapses, so nothing was actually protected by staying full
+  size. Scales to 0.82 from the bottom-centre, in the same tween as the
+  existing drop, so it reads as one motion sinking into the edge rather than
+  a slide and a separate shrink.
+
+### Still open from this pass
+
+- [ ] The landing page's Walkthrough deck still shows the old shape: a
+  "Following goes last" Home mockup with the digest as its final section, and
+  a standalone "03/07 · Following" slide built around the same digest
+  in-place-on-Home design. Both predate the tab. Deliberately left for its own
+  pass rather than rushed alongside the app change it documents.
+
+## A second home-screen widget: one suggestion, not a control (this pass)
+
+`DuskReadWidget` is a control — start, pause, capture. `NEXT UP` on Home is
+the app's one already-ranked "here, read this" moment, but it only exists
+where the app is open. `DuskReadSuggestionWidget` puts that same pick on the
+home screen instead of a second control.
+
+- [x] New `androidApp` provider, `DuskReadSuggestionWidget`, registered
+  alongside `DuskReadWidget` for the same `APPWIDGET_UPDATE` and
+  `WidgetState.ActionRefresh` actions — a capture or a focus-session
+  transition already broadcasts a repaint, so the new widget rides that
+  broadcast rather than adding a trigger of its own. `MainActivity.onStop`
+  refreshes both for the same reason.
+- [x] A separate provider rather than a third state in the bar widget's 64dp
+  row — that bar is built around exactly two states on purpose, and an
+  article title has nowhere to go in a 9sp caption slot without displacing
+  the "start a session" affordance the bar exists to keep in reach.
+- [x] Ranks its own throwaway copy of the candidate pool
+  (`pool`/`rank`/`topPicks` over a fresh `LinkLibrary`/`FeedLibrary`/
+  `FeedPostCache`/`ReadingSignals`) with a random seed on every redraw, rather
+  than the day-stable seed Home's `NEXT UP` uses — Home is deliberately
+  stable across a morning of openings; this widget only redraws for a real
+  reason in the first place, so there is nothing to protect by not
+  re-rolling.
+- [x] Read-only ranking, but not a read-only tap: opening a pick has to go
+  through the app's own live `LinkLibrary`/`ReadingSignals`, not the widget's
+  throwaway copy, or it's two writers over the same storage key — exactly the
+  hazard `docs/architecture.md` warns about. New `ui/home/SuggestionOpenRequest`
+  hands the tapped URL to `HomeScreen`, which does the save, the read toggle
+  and the signal through the one live copy of each — the same four lines
+  `NextUpSection`'s own tap already runs.
+- [x] `widget_suggestion.xml` has one TextView pair, not two behind
+  visibility flags: "nothing to suggest yet" is the same title-and-meta shape
+  with different text, not a different layout. Borrows the bar widget's brand
+  mark at a smaller size in its eyebrow row rather than inventing a second
+  glyph.
+- [x] `dusk_suggestion_widget_info.xml` asks for `targetCellHeight="1"` —
+  two rows left the card's content centred in a lot of empty space on
+  launchers whose own row height runs 150dp or more. `updatePeriodMillis` is
+  `0`, same as the bar widget: nothing here polls, every redraw is a real
+  event.

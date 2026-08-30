@@ -43,6 +43,24 @@ happens. Verify claims against the real code before writing them; do not carry
 a stale note forward just because the old doc said so (see the doc's own
 history for two examples of exactly that mistake, caught and removed).
 
+## When a plan would go against the system
+
+Check a planned change against this doc and `design-tokens.md` **before**
+writing any code for it — at the plan stage, not mid-implementation. If what's
+being asked for conflicts with an established rule here (a colour outside the
+one-accent rule, mono used for a name rather than a value, a corner radius
+invented instead of reused, a component pattern duplicated instead of reused),
+say so and stop: name the specific rule, explain the conflict, and let the
+user decide whether to override it before any file gets touched. Don't
+silently follow the system instead of the request, and don't silently do what
+was asked while ignoring the system — surface the tension and wait.
+
+This applies to planning a change, not to reacting inside an already-approved
+piece of work — a quick follow-up fix requested mid-session ("that looks too
+bold", "shrink that spacing") is not a new plan to re-litigate against this
+doc every time; use judgement there the way the rest of this file already
+asks you to.
+
 ## The tokens (`ui/theme/Tokens.kt`)
 
 | Token | Value | Use |

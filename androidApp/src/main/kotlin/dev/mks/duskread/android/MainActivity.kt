@@ -12,12 +12,17 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import dev.mks.duskread.App
+import dev.mks.duskread.android.widget.DuskReadSuggestionWidget
 import dev.mks.duskread.android.widget.DuskReadWidget
 import dev.mks.duskread.links.LinkInbox
 import dev.mks.duskread.links.SharedLinkRequest
 import dev.mks.duskread.ui.home.HomeTab
 import dev.mks.duskread.ui.home.HomeTabRequest
 import dev.mks.duskread.ui.home.OpenReadbackTabExtra
+import dev.mks.duskread.ui.home.OpenSuggestionTitleExtra
+import dev.mks.duskread.ui.home.OpenSuggestionTopicExtra
+import dev.mks.duskread.ui.home.OpenSuggestionUrlExtra
+import dev.mks.duskread.ui.home.SuggestionOpenRequest
 import dev.mks.duskread.ui.pomodoro.FocusRequest
 import dev.mks.duskread.ui.pomodoro.OpenFocusExtra
 
@@ -70,10 +75,17 @@ class MainActivity : ComponentActivity() {
      * leaves the foreground catches every toggle, once, at the only moment
      * the reader could be looking at the widget instead. It also reconciles
      * a focus session that ended while the process was gone.
+     *
+     * The suggestion widget repaints here too — its one "app was just open"
+     * trigger, alongside the capture and focus-transition broadcasts
+     * `DuskReadSuggestionWidget` already shares with this one (see its own
+     * manifest entry). Nothing here is a poll; both only ever redraw because
+     * something just happened.
      */
     override fun onStop() {
         super.onStop()
         DuskReadWidget.refresh(this)
+        DuskReadSuggestionWidget.refresh(this)
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -83,11 +95,12 @@ class MainActivity : ComponentActivity() {
     }
 
     /**
-     * Three ways in that are not the launcher icon: the Readback
-     * notification, which should land on the Readback tab rather than
-     * whatever tab the app last showed; a shared link, which should be saved
-     * and then shown; and the home-screen widget's running-session cell,
-     * which should land on the timer.
+     * Four ways in that are not the launcher icon: the Readback notification,
+     * which should land on the Readback tab rather than whatever tab the app
+     * last showed; a shared link, which should be saved and then shown; the
+     * home-screen widget's running-session cell, which should land on the
+     * timer; and the reading-suggestion widget's own cell, which should open
+     * straight into the article it showed.
      */
     private fun handleIntent(intent: Intent?) {
         if (intent?.getBooleanExtra(OpenReadbackTabExtra, false) == true) {
@@ -96,6 +109,14 @@ class MainActivity : ComponentActivity() {
 
         if (intent?.getBooleanExtra(OpenFocusExtra, false) == true) {
             FocusRequest.request()
+        }
+
+        intent?.getStringExtra(OpenSuggestionUrlExtra)?.let { url ->
+            SuggestionOpenRequest.open(
+                url = url,
+                title = intent.getStringExtra(OpenSuggestionTitleExtra) ?: url,
+                topic = intent.getStringExtra(OpenSuggestionTopicExtra),
+            )
         }
 
         if (intent?.action == Intent.ACTION_SEND && intent.type == "text/plain") {

@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    One card, one action: tap it, open the pick.
+
+    Unlike widget_dusk.xml this has no second state to keep in step with a
+    running one — "nothing to suggest yet" is the same title-and-meta shape
+    with different text in it, not a different layout, so there is exactly
+    one TextView pair here rather than two hidden behind visibility flags.
+
+    The eyebrow row borrows the bar widget's brand mark at a smaller size —
+    a widget with no chrome around it still needs the one thing that says
+    which app placed it, and repeating the exact glyph is cheaper than
+    inventing a second one.
+
+    Only views RemoteViews can inflate appear here: FrameLayout, LinearLayout,
+    TextView, ImageView. Colours are set at render time, not here — see
+    DuskReadWidget.Palette and DuskReadSuggestionWidget's own build().
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!--
+        gravity="center_vertical", and every child below sized to its own
+        content rather than one of them stretched to fill — a placement
+        taller than the minimum (the launcher's default span is often more
+        than dusk_suggestion_widget_info.xml asks for) used to leave the
+        title pinned to the top and the meta line stranded at the bottom,
+        with a dead gap doing nothing between them. Centring the whole
+        wrap-content block is what stays right at any height the launcher
+        actually grants, instead of only the minimum.
+
+        Text is kept small and the title one line rather than sized up to
+        fill a taller-than-asked placement — a bigger size overflowed the
+        card on the very placement it was tuned against and clipped the meta
+        line outright, since RemoteViews has no scroll to fall back on. Small
+        and single-line is what stays inside the card at every size the
+        launcher might actually grant, with the ellipsis doing the
+        truncating rather than the layout doing the guessing.
+    -->
+    <LinearLayout
+        android:id="@+id/suggestion_card"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_margin="1dp"
+        android:background="@drawable/widget_card_ink"
+        android:gravity="center_vertical"
+        android:orientation="vertical"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingTop="10dp"
+        android:paddingBottom="10dp">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:id="@+id/suggestion_mark"
+                android:layout_width="8dp"
+                android:layout_height="18dp"
+                android:src="@drawable/ic_widget_mark"
+                android:contentDescription="@string/app_name" />
+
+            <TextView
+                android:id="@+id/suggestion_eyebrow"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:fontFamily="@font/jost_semibold"
+                android:letterSpacing="0.09"
+                android:maxLines="1"
+                android:text="@string/widget_suggestion_eyebrow"
+                android:textColor="#FFC6684A"
+                android:textSize="10sp" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/suggestion_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp"
+            android:ellipsize="end"
+            android:fontFamily="@font/jost_medium"
+            android:maxLines="1"
+            android:textColor="#FFE8E6E2"
+            android:textSize="13.5sp" />
+
+        <TextView
+            android:id="@+id/suggestion_meta"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="3dp"
+            android:ellipsize="end"
+            android:fontFamily="@font/jost_medium"
+            android:maxLines="1"
+            android:textColor="#FFA3A19D"
+            android:textSize="10sp" />
+    </LinearLayout>
+</FrameLayout>

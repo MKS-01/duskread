@@ -189,17 +189,6 @@ h2 {
 .contents a:active { transform: scale(0.97); }
 .contents a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-.frame-block { width: 100%; max-width: 320px; }
-.frame-cap {
-  font-family: var(--data); font-size: 11.5px; letter-spacing: 0.1em;
-  text-transform: uppercase; color: var(--faint); margin: 0 0 10px;
-}
-.rationale {
-  font-size: 14px; line-height: 1.6; color: var(--muted); margin: 14px 0 0;
-  padding-left: 13px; border-left: 2px solid var(--line-firm); max-width: 46ch;
-}
-.rationale b { color: var(--text); font-weight: 500; }
-
 /* ============================================================
    SCREEN ROW — every screen section is drawn the same way: the
    frames on the left, everything said about them in a column
@@ -277,7 +266,6 @@ h2 {
 .deck-copy h3 { font-size: 23px; line-height: 1.24; letter-spacing: -0.012em; font-weight: 600; margin: 0 0 12px; text-wrap: balance; }
 .deck-copy p { color: var(--muted); font-size: 15.5px; margin: 0 0 14px; }
 .deck-copy p:last-child { margin-bottom: 0; }
-.deck-copy .rationale { margin: 20px 0 0; max-width: none; }
 
 .deck-bar { display: flex; align-items: center; gap: 16px; margin-top: 24px; }
 .deck-nav {
@@ -319,7 +307,6 @@ h2 {
 .screen-row .notes > :first-child { margin-top: 0; }
 .screen-row .notes .section-note { max-width: none; margin-bottom: 18px; }
 .screen-row .notes .section-note:last-child { margin-bottom: 0; }
-.screen-row .notes .rationale { max-width: none; margin-top: 22px; }
 
 /* One threshold, and it is the width at which the prose column stops being
    a column and starts being a gutter. */
@@ -385,15 +372,6 @@ h2 {
 .i use, .i > * { fill: none; stroke: currentColor; }
 .v-amp .i { stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
 
-.iconwall {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
-  background: var(--bg); border: 1px solid var(--line);
-  border-radius: var(--radius); overflow: hidden; max-width: 760px;
-}
-.iconwall figure { outline: 1px solid var(--line); margin: 0; padding: 15px 6px 10px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
-.iconwall .i { font-size: 24px; }
-.iconwall figcaption { font-family: var(--data); font-size: 9.5px; letter-spacing: 0.05em; color: var(--faint); text-transform: uppercase; }
-
 .navstrip {
   display: inline-flex; align-items: center; gap: 4px; padding: 7px 9px;
   border-radius: 999px; background: rgb(23 24 27 / 0.92); border: 1px solid var(--a-line); color: var(--a-faint);
@@ -403,11 +381,6 @@ h2 {
 .navstrip .nb.sel { background: var(--a-raise); color: var(--a-ink); }
 .navstrip .i { font-size: 17px; }
 .navstrip.wide { width: 100%; max-width: 300px; }
-.navstrip .tt {
-  flex: 1; min-width: 0; font-size: 12px; color: var(--text);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.navstrip .playing { color: var(--a-sound); }
 
 /* ============================================================
    APP TOKENS — Paper Black, exactly as ui/theme/Theme.kt
@@ -478,10 +451,6 @@ h2 {
 
 /* Following's digest line: host, count, chevron. The count is the only
    thing that ever takes the accent, and only while it is non-zero. */
-/* The result of a sync, in the accent — it reports something that just
-   happened, which is the closest thing Following has to "live now". */
-.v-amp .syncnote { font-size: 11px; color: var(--a-sound); margin: 0 0 8px; }
-
 .v-amp .digest { display: flex; align-items: center; gap: 6px; padding: 6px 0; }
 .v-amp .digest .host { flex: 1; min-width: 0; font-family: var(--a-data); font-size: 12px; color: var(--a-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .v-amp .digest .count { font-family: var(--a-data); font-size: 11px; font-weight: 600; color: var(--a-sound); }
@@ -492,6 +461,12 @@ h2 {
 }
 .v-amp .digest .i { font-size: 11px; color: var(--a-faint); }
 .v-amp .digest .i.open { transform: rotate(90deg); }
+
+/* The bookmark on a post inside an expanded feed — filled once saved,
+   hollow otherwise. Two glyphs rather than a tint change: a colour swap
+   is invisible in Ink, where the accent has no hue left to spend. */
+.v-amp .bm { font-size: 14px; color: var(--a-mute); flex: none; margin-top: 1px; }
+.v-amp .bm.on { color: var(--a-sound); }
 
 .v-amp .pillrow { display: flex; gap: 6px; margin-bottom: 16px; }
 .v-amp .pill {
@@ -509,94 +484,17 @@ h2 {
 }
 
 .v-amp .navbar { background: rgb(23 24 27 / 0.92); border: 1px solid var(--a-line); color: var(--a-faint); }
-
-/* The bar has three faces and only ever shows one — playback wins it while
-   something is running, because it is the transient thing and navigation is
-   one tap away behind the trailing tab icon. Two stacked pills ate a third
-   of the reachable zone, so the transport moved inside this one. */
-.v-amp .navbar.player { left: 12px; right: 12px; transform: none; gap: 6px; padding: 6px 8px 9px; }
-.v-amp .navbar .tt {
-  flex: 1; min-width: 0; font-size: 11.5px; color: var(--a-ink);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.v-amp .navbar .rem { font-family: var(--a-data); font-size: 9.5px; color: var(--a-faint); flex: none; }
-.v-amp .navbar .nb.sm { width: 26px; height: 26px; }
-/* The visible scrub line along the pill's foot. 2.5dp drawn, but the real
-   touch target is the whole title above it. */
-.v-amp .navbar .seek {
-  position: absolute; left: 14px; right: 14px; bottom: 4px;
-  height: 2.5px; border-radius: 2px; background: var(--a-line);
-}
-.v-amp .navbar .seek i { display: block; height: 100%; width: 45%; border-radius: 2px; background: var(--a-sound); }
-
-/* The bookmark on a feed post — the only way a post from a followed blog
-   ever reaches Saved. Two glyphs rather than one glyph in two colours:
-   filled reads as "saved" at this size in a way a tint change does not, and
-   it is the only signal that survives Ink, where the accent is a grey. */
-.v-amp .bm { font-size: 14px; color: var(--a-mute); flex: none; margin-top: 1px; }
-.v-amp .bm.on { color: var(--a-sound); }
-
-/* Focus is a full-screen destination, not a tab: no bar at the foot, and the
-   only way out is this, top-left, clear of everything the thumb reaches. */
-.v-amp .focusclose {
-  position: absolute; top: 30px; left: 12px; width: 30px; height: 30px;
-  border-radius: 50%; display: grid; place-items: center; color: var(--a-mute);
-}
-.v-amp .focusclose .i { font-size: 14px; }
-
-/* A pointer at the transport, not a second copy of it. */
-.v-amp .nowtip {
-  display: flex; gap: 7px; align-items: flex-start; margin: 0 0 14px;
-  font-family: var(--a-data); font-size: 9.5px; line-height: 1.45; color: var(--a-mute);
-}
-.v-amp .nowtip .i { font-size: 11px; color: var(--a-sound); flex: none; margin-top: 1px; }
-
-/* Outside the row's own tap target: the row is "play this", this is "go to
-   where it came from". Its glyph keeps a permanent muted hint of the accent
-   because it marks "this leaves the app" whatever is playing. */
-.v-amp .extlink { display: flex; align-items: center; gap: 5px; margin-top: 9px; }
-.v-amp .extlink .i { font-size: 11px; color: color-mix(in srgb, var(--a-sound) 75%, transparent); flex: none; }
-.v-amp .extlink span { font-family: var(--a-data); font-size: 10.5px; color: var(--a-faint); }
 .v-amp .navbar .nb.sel { background: var(--a-raise); color: var(--a-ink); }
 .v-amp .navbar .i { font-size: 17px; }
 .v-amp .playing { color: var(--a-sound); }
 
-/* The field with something in it: AppTextField's caret is the accent, and
-   the Save action only exists once there is text to save — both are real
-   accent uses the empty-field drawing could never show. */
+/* The field with something already saved in it — Settings' masked Notion
+   fields are the one place left that draws this state. */
 .v-amp .fieldbox.typing {
   display: flex; align-items: center; gap: 8px; width: 100%;
   text-align: left; margin-bottom: 10px; font-size: 11.5px;
 }
 .v-amp .fieldbox.typing .txt { flex: 1; min-width: 0; color: var(--a-ink); overflow: hidden; white-space: nowrap; }
-.v-amp .caret {
-  display: inline-block; width: 1.5px; height: 12px; background: var(--a-sound);
-  vertical-align: -2px; margin-left: 1px;
-}
-.v-amp .fieldbox.typing .save {
-  font-family: var(--a-ui); font-weight: 700; font-size: 10px;
-  letter-spacing: 0.09em; text-transform: uppercase; color: var(--a-sound); flex: none;
-}
-
-/* The clipboard offer — one of the two filled surfaces left in the app, and
-   its label is accent inside the fill. */
-.v-amp .offer {
-  display: flex; align-items: center; gap: 8px; background: var(--a-raise);
-  border-radius: 10px; padding: 8px 12px; margin-bottom: 18px; overflow: hidden;
-}
-.v-amp .offer .lbl {
-  font-family: var(--a-ui); font-weight: 700; font-size: 9.5px;
-  letter-spacing: 0.09em; text-transform: uppercase; color: var(--a-sound); flex: none;
-}
-.v-amp .offer .url {
-  font-family: var(--a-data); font-size: 10.5px; color: var(--a-mute);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-
-.v-amp .fieldbox {
-  border: 1px solid var(--a-line); border-radius: 10px; padding: 9px 12px;
-  color: var(--a-mute); font-family: var(--a-data); font-size: 12px; text-align: center; width: 96px;
-}
 
 .cmd {
   font-family: var(--data); font-size: 13.5px; line-height: 1.8; margin: 0 0 18px;
@@ -717,10 +615,8 @@ body.ink .v-amp {
   .section-note { font-size: 14px; }
   .deck-copy h3 { font-size: 20px; }
   .deck-copy p { font-size: 14px; }
-  .rationale { font-size: 13px; }
-  .pillar-name { font-size: 15px; }
-  .pillar-note { font-size: 13px; }
-  .cstep-title { font-size: 15px; }
+  .quality-name { font-size: 14px; }
+  .quality-note { font-size: 13px; }
   .accentcard .cap2 { font-size: 12.5px; }
   .spec { font-size: 13px; }
   .wordmark { font-size: 20px; }
@@ -759,12 +655,9 @@ body.swapping .v-amp * {
    BRAND
    ============================================================ */
 
-.brandrow { display: flex; align-items: flex-end; gap: 26px; flex-wrap: wrap; }
 /* ============================================================
-   BRAND — laid out rather than stepped through. The mark, the
-   name and the construction all want to be seen at once: the
-   third panel of a deck is where you argue, not where you
-   introduce yourself.
+   BRAND — laid out rather than stepped through. The mark and the
+   name want to be seen at once.
    ============================================================ */
 
 .lockup-hero {
@@ -776,44 +669,22 @@ body.swapping .v-amp * {
 .hero-sub { font-family: var(--data); font-size: 12px; letter-spacing: 0.08em; color: var(--faint); margin: 0; }
 .hero-copy .section-note:last-child { margin-bottom: 0; }
 
-/* Three states of one drawing, left to right: what the shape is, what is
-   taken out of it, and what is left. */
-.concept {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1px; background: var(--line); border: 1px solid var(--line);
-  border-radius: var(--radius); overflow: hidden; max-width: 860px;
+/* FOUR QUALITIES — flush rows with their own bottom hairline, the same
+   language the app itself is drawn in (Saved, Following, Readback): no
+   boxed card, no background fill. A row reads as one claim rather than
+   a tile in a feature grid. */
+.qualities { border-top: 1px solid var(--line); }
+.quality {
+  display: flex; align-items: flex-start; gap: 20px;
+  padding: 20px 0; border-bottom: 1px solid var(--line);
 }
-.cstep { background: var(--bg); margin: 0; padding: 26px 22px 24px; }
-.cstep-art { display: flex; justify-content: center; margin-bottom: 20px; }
-.cstep-num { font-family: var(--data); font-size: 11px; letter-spacing: 0.14em; color: var(--accent); margin: 0 0 7px; }
-.cstep-title { font-size: 16px; font-weight: 500; margin: 0; color: var(--text); }
-
-/* THE FOUR PILLARS — the same hairline grid as the construction row
-   above, because it is the same kind of object: a set of claims that
-   have to be read across rather than down. Act one says what the app is
-   called and what it is for; the walkthrough below is the screens, and
-   the four never turn into five. Titles are <p>, not headings — the act
-   already has its own, and a fifth level of heading for a card label is
-   chrome. */
-/* Four explicit columns rather than auto-fit: auto-fit drops to three and
-   leaves the fourth claim sitting alone on a row of its own, which reads as
-   an afterthought rather than as the fourth of four. */
-.pillars {
-  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 1px; background: var(--line); border: 1px solid var(--line);
-  border-radius: var(--radius); overflow: hidden;
+.quality .i { font-size: 18px; color: var(--faint); flex: none; margin-top: 3px; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.quality-name { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; width: 140px; flex: none; margin: 0; color: var(--text); }
+.quality-note { font-size: 14px; line-height: 1.62; color: var(--muted); margin: 0; flex: 1; min-width: 0; }
+@media (max-width: 620px) {
+  .quality { flex-wrap: wrap; gap: 8px 20px; }
+  .quality-name { width: auto; }
 }
-.pillar { background: var(--bg); padding: 24px 22px 26px; }
-/* Muted rather than accent: the accent means sound, and three of these
-   four are not sound. */
-.pillar .i { font-size: 20px; color: var(--faint); margin-bottom: 16px; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
-.pillar-name { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; margin: 0 0 7px; color: var(--text); }
-.pillar-note { font-size: 14px; line-height: 1.62; color: var(--muted); margin: 0; }
-/* Two up where the decks already collapse, one up at the narrowest. These
-   live beside the rule they override rather than in the shared breakpoint
-   blocks further up the sheet, which come before it and would lose. */
-@media (max-width: 1120px) { .pillars { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 620px)  { .pillars { grid-template-columns: 1fr; } }
 
 /* The splash tile is phone-shaped, so it never belonged in a row that is
    otherwise a size ramp. */
@@ -836,67 +707,6 @@ body.swapping .v-amp * {
   .bigmark { font-size: clamp(30px, 9vw, 42px); }
 }
 .appicon { border-radius: 22.5%; display: block; flex: none; }
-.brand-label { font-family: var(--data); font-size: 10px; letter-spacing: 0.08em; color: var(--faint); text-align: center; margin-top: 6px; }
-.splash {
-  width: 100%; max-width: 210px; aspect-ratio: 9 / 16; border-radius: 14px;
-  border: 1px solid var(--line-firm); display: grid; place-items: center; position: relative; overflow: hidden;
-}
-
-/* ============================================================
-   ONBOARDING PANEL — centred, no nav bar, and the only place in
-   the app that draws a filled button. See ui/onboarding/Onboarding.kt.
-   ============================================================ */
-
-.v-amp .canvas.onb { padding: 8px 22px 16px; justify-content: space-between; }
-.v-amp .skiprow { display: flex; justify-content: flex-end; min-height: 22px; flex: none; }
-.v-amp .skip {
-  font-family: var(--a-ui); font-weight: 600; font-size: 11px;
-  color: var(--a-mute); padding: 3px 8px;
-}
-.v-amp .panel { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
-/* The art box is a fixed height in the app (150dp) so the label below it
-   lands in the same place on all four panels — the pager would otherwise
-   shuffle the type up and down as you swipe. */
-.v-amp .panel .art { height: 78px; display: grid; place-items: center; margin-bottom: 22px; }
-.v-amp .panel .lbl {
-  font-family: var(--a-ui); font-weight: 700; font-size: 10px;
-  letter-spacing: 0.09em; text-transform: uppercase; color: var(--a-sound); margin: 0 0 8px;
-}
-.v-amp .panel h3 { margin: 0 0 9px; font-size: 18px; line-height: 1.24; font-weight: 600; letter-spacing: -0.01em; }
-.v-amp .panel p { margin: 0; font-size: 11.5px; line-height: 1.58; color: var(--a-mute); }
-
-/* Saved's art: a list row reduced to the two things a row actually is —
-   a bookmark and a line of title. */
-.v-amp .savedart { display: flex; flex-direction: column; gap: 10px; }
-.v-amp .savedart .r { display: flex; align-items: center; gap: 10px; }
-.v-amp .savedart .r i { width: 6px; height: 6px; border-radius: 50%; background: var(--a-sound); flex: none; }
-.v-amp .savedart .r b { height: 10px; border-radius: 4px; background: var(--a-line); display: block; }
-
-.v-amp .footrow { display: flex; align-items: center; flex: none; padding-top: 12px; }
-.v-amp .dots { display: flex; gap: 6px; }
-.v-amp .dots i { width: 7px; height: 7px; border-radius: 999px; background: var(--a-line); display: block; }
-/* The active dot lengthens rather than lighting up alone: at 7px a colour
-   change is the only difference, and Ink has no colour to change. */
-.v-amp .dots i.on { width: 20px; background: var(--a-sound); }
-.v-amp .cta {
-  margin-left: auto; background: var(--a-sound); color: var(--a-on-sound);
-  font-family: var(--a-ui); font-weight: 600; font-size: 11px;
-  border-radius: 7px; padding: 7px 16px;
-}
-
-/* ============================================================
-   COLOUR — the token roles, both schemes, real values.
-   ============================================================ */
-
-/* Eight steps from ground to ink. The point of the section is that level is
-   carried by lightness alone, which a strip of adjacent tones makes in one
-   look and a table of hex values does not. */
-.ramps { display: flex; flex-wrap: wrap; gap: 34px; }
-.ramp { flex: 1 1 320px; max-width: 440px; }
-.ramp-label { font-family: var(--data); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint); margin: 0 0 9px; }
-.ramp-strip { display: flex; border-radius: 8px; overflow: hidden; box-shadow: inset 0 0 0 1px var(--line-firm); }
-.ramp-strip .step { flex: 1; height: 58px; }
-.ramp-ends { display: flex; justify-content: space-between; font-family: var(--data); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); margin: 7px 0 0; }
 
 .sw {
   display: inline-block; width: 20px; height: 20px; border-radius: 4px;
@@ -917,49 +727,29 @@ body.swapping .v-amp * {
 .accentcard .cap2 b { color: var(--text); font-weight: 500; display: block; margin-bottom: 3px; }
 
 /* ============================================================
-   IDENTITY — the mark at size, and the splash settle.
+   HOW IT WORKS — the automation pipeline and the client shell,
+   act three's other two slides. Built from the same hairline
+   chips and pills as every mockup, not a new diagram language.
    ============================================================ */
 
-/* The splash settle, played from the shipped animator: scaleY 0.08 -> 1,
-   decelerate_quint over 380ms after a 40ms hold. Click to see it again —
-   it runs once rather than looping, because a launch animation that
-   repeats on a documentation page reads as a spinner. */
-.splash .mark { transform-origin: 54px 54px; }
-.splash.play .mark { animation: settle 420ms cubic-bezier(0.23, 1, 0.32, 1) both; }
-@keyframes settle {
-  0%   { transform: scaleY(0.08); }
-  9.5% { transform: scaleY(0.08); }
-  100% { transform: scaleY(1); }
+.flow-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 0 22px; }
+.flow-row.secondary { margin-bottom: 8px; }
+.flow-step {
+  display: flex; align-items: center; gap: 8px; border: 1px solid var(--line);
+  border-radius: 10px; padding: 9px 14px; font-family: var(--ui); font-weight: 500;
+  font-size: 13px; color: var(--text); background: var(--bg);
 }
-.splash { cursor: pointer; }
+.flow-step .i { font-size: 15px; color: var(--faint); }
+.flow-step.accent { border-color: var(--accent); color: var(--accent); }
+.flow-step.accent .i { color: var(--accent); }
+.flow-arrow { width: 16px; height: 16px; color: var(--faint); flex: none; }
+.flow-note { font-size: 12.5px; color: var(--faint); margin: 0; }
 
-/* ============================================================
-   TYPE SPECIMEN
-   ============================================================ */
-
-.specimen { border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; max-width: 640px; }
-.specimen > div { padding: 15px 18px; border-bottom: 1px solid var(--line); }
-.specimen > div:last-child { border-bottom: 0; }
-.specimen .lbl { font-family: var(--data); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint); margin-bottom: 5px; }
-
-/* A radius and a duration are both things you can only judge by seeing
-   them next to each other, which is the one thing a table cannot do. */
-.decisions { max-width: 560px; }
-.dec-label {
-  font-family: var(--data); font-size: 11px; letter-spacing: 0.1em;
-  text-transform: uppercase; color: var(--faint); margin: 0 0 12px;
+.langgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 26px; max-width: 640px; }
+.langitem .lbl {
+  font-family: var(--data); font-size: 10px; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--faint); margin: 0 0 10px;
 }
-.radrow { display: flex; gap: 22px; margin: 0 0 30px; }
-.rad {
-  display: block; width: 78px; height: 78px;
-  background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--line-firm);
-}
-.durs { display: flex; flex-direction: column; gap: 10px; }
-.dur { display: flex; align-items: center; gap: 12px; font-family: var(--data); font-size: 11px; }
-.dur .name { width: 76px; flex: none; color: var(--muted); }
-/* One pixel per millisecond — the bar is the duration, not a picture of it. */
-.dur .bar { height: 6px; border-radius: 3px; background: var(--accent); flex: none; }
-.dur .ms { color: var(--faint); font-variant-numeric: tabular-nums; }
 
 /* ============================================================
    STATUS LISTS — "In use today" / "Next"
@@ -970,13 +760,12 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
 .foot-meta { font-family: var(--data); font-size: 12px; letter-spacing: 0.08em; color: var(--faint); margin: 18px 0 0; }
 
 /* Reduced motion is gentler, not none. What goes is movement — the
-   reveal's offset, the press scales, the thumb's travel, the splash
-   settle. What stays is colour and opacity, which carry meaning here: the
-   scheme swap without its cross-fade is a hard cut across fourteen frames
-   at once, which is the jarring change the transition exists to prevent. */
+   reveal's offset, the press scales, the thumb's travel. What stays is
+   colour and opacity, which carry meaning here: the scheme swap without
+   its cross-fade is a hard cut across fourteen frames at once, which is
+   the jarring change the transition exists to prevent. */
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  .splash.play .mark { animation: none; }
   .schemeswitch .thumb,
   .cdot { transition: none; }
   .schemeswitch button:active,
@@ -1009,7 +798,7 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
     <symbol id="w-wave" viewBox="0 0 24 24"><path d="M4 10 L4 14 M8 6.5 L8 17.5 M12 3.5 L12 20.5 M16 6.5 L16 17.5 M20 10 L20 14"/></symbol>
     <symbol id="w-saved" viewBox="0 0 24 24"><path d="M7 19.5 L7 5.5 L17 5.5 L17 19.5 L12 15 Z"/></symbol>
     <symbol id="w-folder" viewBox="0 0 24 24"><path d="M3 6 L9.5 6 L11.5 8.5 L21 8.5 L21 18 L3 18 Z"/></symbol>
-    <symbol id="w-feed" viewBox="0 0 24 24"><path d="M5 19.5 L5 18 M10 19.5 L10 14.5 M15 19.5 L15 10.5 M20 19.5 L20 6.5"/></symbol>
+    <symbol id="w-feed" viewBox="0 0 24 24"><path d="M4 7 L6 7 M9 7 L20 7 M4 12 L6 12 M9 12 L20 12 M4 17 L6 17 M9 17 L20 17"/></symbol>
     <symbol id="w-play" viewBox="0 0 24 24"><path d="M8.5 5.5 L18.5 12 L8.5 18.5 Z"/></symbol>
     <symbol id="w-pause" viewBox="0 0 24 24"><path d="M9 5 L9 19 M15 5 L15 19"/></symbol>
     <symbol id="w-back" viewBox="0 0 24 24"><path d="M19.5 12 L4.5 12 M11 5 L4 12 L11 19"/></symbol>
@@ -1018,6 +807,7 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
     <symbol id="w-external" viewBox="0 0 24 24"><path d="M13.5 4.5 L19.5 4.5 L19.5 10.5 M19.5 4.5 L11 13 M17 14.5 L17 19 a1.5 1.5 0 0 1 -1.5 1.5 L6 20.5 a1.5 1.5 0 0 1 -1.5 -1.5 L4.5 9 a1.5 1.5 0 0 1 1.5 -1.5 L10.5 7.5"/></symbol>
     <symbol id="w-settings" viewBox="0 0 24 24"><path d="M4.5 8 L19.5 8 M4.5 16 L19.5 16 M9 5 L9 11 M15 13 L15 19"/></symbol>
     <symbol id="w-contrast" viewBox="0 0 24 24"><path d="M3.6 12 a8.4 8.4 0 1 1 16.8 0 a8.4 8.4 0 1 1 -16.8 0 Z M12 5.5 L12 18.5 M15 8.5 L15 15.5 M18 11 L18 13"/></symbol>
+    <symbol id="w-search" viewBox="0 0 24 24"><path d="M4.5 11 a6.5 6.5 0 1 1 13 0 a6.5 6.5 0 1 1 -13 0 Z M15.8 15.8 L20 20"/></symbol>
     <symbol id="w-close" viewBox="0 0 24 24"><path d="M6.5 6.5 L17.5 17.5 M17.5 6.5 L6.5 17.5"/></symbol>
     <symbol id="w-chev" viewBox="0 0 24 24"><path d="M9.5 5.5 L16 12 L9.5 18.5"/></symbol>
     <symbol id="w-summary" viewBox="0 0 24 24"><path d="M4 7 L20 7 M4 12 L15 12 M4 17 L10 17"/></symbol>
@@ -1103,31 +893,24 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
       </svg>
       <div>
         <p class="wordmark">DuskRead</p>
-        <p class="kicker">The app, and the design system behind it</p>
+        <p class="kicker">The app, how it works, and the design system behind it</p>
       </div>
     </div>
 
-    <h1>A reading habit that survives the news cycle</h1>
+    <h1>A reading list that keeps itself, ranked by what you actually read</h1>
     <p class="standfirst">
-      You find something good at eleven in the morning and you are not going
-      to read it at eleven in the morning. DuskRead takes the link, keeps the
-      blogs you follow beside it, and has the pile sorted out by the evening
-      — one screen to open when you finally sit down.
-    </p>
-    <p class="standfirst">
-      Two schemes. <strong>Paper Black</strong>, the one you are looking at,
-      is a near-black ground with a single terracotta accent lit, and that
-      accent means one thing: <strong>there is sound here</strong>.
-      <strong>Ink</strong> is the same layout with the hue drained out
-      entirely, leaving lightness, weight and spacing to separate one
-      element from another. The switch in the corner repaints every
-      screen below — worth flipping once.
+      An <strong>AI agent</strong> checks your inbox and other sources on a
+      schedule and files what's worth keeping into a
+      <a href="https://www.notion.com/product/dev"><strong>Notion</strong></a>
+      database. Blogs you follow add their own posts the same way. Home
+      ranks all of it by your reading habits, and most of it is already
+      downloaded, so it opens with no connection.
     </p>
 
     <nav class="contents" aria-label="Contents">
       <a href="#concept">01 &middot; Concept</a>
       <a href="#walkthrough">02 &middot; Walkthrough</a>
-      <a href="#system">03 &middot; Design system</a>
+      <a href="#system">03 &middot; How it works</a>
       <a href="#get">04 &middot; Get it</a>
     </nav>
   </header>
@@ -1161,56 +944,49 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
         <p class="sublabel">The name</p>
         <p class="section-title" style="font-size:22px">Two halves that each do a job</p>
         <p class="section-note">
-          <em>Dusk</em> is the hour it is for &mdash; you find something good
-          at eleven in the morning and you are not going to read it at eleven
-          in the morning. <em>Read</em> is deliberately both senses: read it,
-          or have it read to you.
+          <em>Dusk</em> is the hour the reading list is finally sorted and
+          ready. <em>Read</em> means both senses: read it, or have it read
+          to you.
         </p>
       </div>
     </div>
 
     <div class="subsection" data-reveal>
       <p class="sublabel">What it does</p>
-      <p class="section-title" style="font-size:22px">Four things, and it has never wanted a fifth</p>
-      <p class="section-note">
-        Every screen in the act below is one of these four, or the way you
-        get between them.
-      </p>
+      <p class="section-title" style="font-size:22px">True on every screen</p>
 
-      <div class="pillars">
-        <div class="pillar">
-          <svg class="i" aria-hidden="true"><use href="#w-saved"/></svg>
-          <p class="pillar-name">Saved links</p>
-          <p class="pillar-note">
-            A pasted or shared URL is in the list before its title has
-            finished loading. Nothing to file and nothing to tag &mdash; the
-            pile is meant to be worked through, not curated.
+      <div class="qualities">
+        <div class="quality">
+          <svg class="i" aria-hidden="true"><use href="#w-summary"/></svg>
+          <p class="quality-name">Automated</p>
+          <p class="quality-note">
+            An AI agent files what&rsquo;s worth keeping from your inbox;
+            the blogs you follow pull their own new posts.
           </p>
         </div>
-        <div class="pillar">
-          <svg class="i" aria-hidden="true"><use href="#w-feed"/></svg>
-          <p class="pillar-name">Feeds</p>
-          <p class="pillar-note">
-            Follow a blog and its posts land beside the links you saved
-            yourself, in the same one list rather than in a second inbox to
-            keep up with.
+        <div class="quality">
+          <svg class="i" aria-hidden="true"><use href="#w-target"/></svg>
+          <p class="quality-name">Personalised</p>
+          <p class="quality-note">
+            What rises to the top of Home is ranked against your own
+            reading habit: the sources you return to, the topics you
+            finish.
           </p>
         </div>
-        <div class="pillar">
-          <svg class="i" aria-hidden="true"><use href="#w-wave"/></svg>
-          <p class="pillar-name">Readback</p>
-          <p class="pillar-note">
-            Some pieces are better heard than read. Audio plays from the row
-            it belongs to rather than from a player you have to go and find,
-            and it is the one thing the accent is ever spent on.
+        <div class="quality">
+          <svg class="i" aria-hidden="true"><use href="#w-offline"/></svg>
+          <p class="quality-name">Offline-first</p>
+          <p class="quality-note">
+            Every screen renders from local storage, and most articles were
+            already fetched hours before you tapped them.
           </p>
         </div>
-        <div class="pillar">
-          <svg class="i" aria-hidden="true"><use href="#w-focus"/></svg>
-          <p class="pillar-name">Focus</p>
-          <p class="pillar-note">
-            A timer wrapped around the reading rather than sitting beside it.
-            The pile was never the hard part; sitting down with it is.
+        <div class="quality">
+          <svg class="i" aria-hidden="true"><use href="#w-contrast"/></svg>
+          <p class="quality-name">Monochrome</p>
+          <p class="quality-note">
+            Ink by default, the hue drained to nothing. One terracotta
+            accent, spent to mean just one thing: there is sound here.
           </p>
         </div>
       </div>
@@ -1219,16 +995,16 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
   </section>
 
   <!-- ============================================================
-       ACT 2 — every screen, in the order you meet them.
+       ACT 2 — three screens, not a tour: what reading, Home and
+       connecting Notion each do.
        ============================================================ -->
   <section id="walkthrough" class="act">
     <div data-reveal>
       <h2>Act two &middot; Walkthrough</h2>
-      <p class="act-title">Seven screens, in the order you meet them</p>
+      <p class="act-title">Four screens</p>
       <p class="act-note">
-        First run, then Home, then the five screens it opens onto. Drag the
-        deck, or use the arrows &mdash; it advances on its own until you
-        touch it.
+        Reading, Home, Following, and the Settings screen that connects
+        Notion. Drag the deck, or use the arrows.
       </p>
     </div>
 
@@ -1237,257 +1013,6 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
         <div class="deck-window">
           <div class="deck-track">
       <article class="deck-slide">
-        <div class="v-amp deck-figure">
-          <div class="phone">
-            <div class="screen">
-              <div class="statusbar"><span>4:19</span><span class="bars"><i></i><i></i><i></i><i></i></span></div>
-              <div class="canvas onb">
-                <div class="skiprow"></div>
-                <div class="panel">
-                  <p class="lbl">One last thing</p>
-                  <h3>What should I call you?</h3>
-                  <p>
-                    Only used to say hello. It stays on this device &mdash;
-                    there is no account and nothing leaves the app.
-                  </p>
-                  <div class="fieldbox" style="width:100%;margin-top:22px">Your name<span class="caret"></span></div>
-                  <p style="margin-top:11px;font-size:10.5px">You can leave this blank.</p>
-                </div>
-                <div class="footrow">
-                  <span class="dots"><i></i><i></i><i></i><i class="on"></i></span>
-                  <span class="cta">Get started</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="deck-copy">
-          <p class="num">01 / 07 &nbsp;&middot;&nbsp; Onboarding</p>
-          <h3>What should I call you?</h3>
-          <p>
-            First run is four panels &mdash; one per pillar of the app &mdash;
-            and then this. The name is optional, stays on the device, and is
-            only ever used to say hello on Home. There is no account.
-          </p>
-          <p class="rationale"><b>The dot lengthens, it does not just light up</b> &mdash; 20dp
-            against 7dp, because at that size hue is the only other difference
-            and Ink has none to spend. <b>Get started</b> is the one filled
-            button in the app, at <code>Radius.Inline</code> rather than
-            Material&rsquo;s pill.</p>
-        </div>
-      </article>
-      <article class="deck-slide" aria-hidden="true" inert>
-        <div class="v-amp deck-figure">
-          <div class="phone">
-          <div class="screen">
-            <div class="statusbar"><span>4:19</span><span class="bars"><i></i><i></i><i></i><i></i></span></div>
-            <div class="canvas">
-              <div class="greet">
-                <h3>Hello, MKS</h3>
-                <span class="iconbtn"><svg class="i" style="font-size:16px"><use href="#w-settings"/></svg></span>
-              </div>
-
-              <p class="eyebrow bare" style="gap:0">Next up<span style="flex:1;height:1px;background:var(--a-line);margin:0 8px"></span><svg class="i" style="font-size:13px;color:var(--a-faint)"><use href="#w-shuffle"/></svg></p>
-              <div class="row">
-                <div style="display:flex;gap:10px;align-items:flex-start">
-                  <span class="sourcechip">N</span>
-                  <div style="flex:1;min-width:0">
-                    <h4>A Tale of Two Flink Autoscalers</h4>
-                    <div class="meta"><span>netflixtechblog.com</span><span>9 min</span></div>
-                  </div>
-                </div>
-              </div>
-              <div class="row">
-                <div style="display:flex;gap:10px;align-items:flex-start">
-                  <span class="sourcechip">S</span>
-                  <div style="flex:1;min-width:0">
-                    <h4 style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">When Can LLMs Replace Humans&hellip;</h4>
-                    <div class="meta"><span>engineering.atspotify.com</span><span>12 min</span></div>
-                  </div>
-                </div>
-              </div>
-              <div class="row">
-                <div style="display:flex;gap:10px;align-items:flex-start">
-                  <span class="sourcechip">S</span>
-                  <div style="flex:1;min-width:0">
-                    <h4 style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Missing layer in live video&hellip;</h4>
-                    <div class="meta"><span>swmansion.com</span><span>4 min</span></div>
-                  </div>
-                </div>
-              </div>
-
-              <p class="eyebrow bare" style="gap:0"><svg class="i eb" style="margin-right:8px"><use href="#w-wave"/></svg>Today&rsquo;s readback<span style="flex:1;height:1px;background:var(--a-line);margin:0 8px"></span><svg class="i" style="font-size:12px;color:var(--a-faint)"><use href="#w-chev"/></svg></p>
-              <div class="row">
-                <div style="display:flex;gap:10px;align-items:flex-start">
-                  <div style="flex:1;min-width:0">
-                    <h4 class="playing">Gesture Handler&rsquo;s Touchable</h4>
-                    <div class="meta" style="margin-bottom:8px"><span class="playing">0:38 / 1:22</span></div>
-                  </div>
-                  <svg class="i playing" style="font-size:14px;margin-top:2px"><use href="#w-pause"/></svg>
-                </div>
-                <div class="wave part">
-                  <i class="p" style="height:7px"></i><i class="p" style="height:12px"></i><i class="p" style="height:15px"></i><i class="p" style="height:9px"></i><i class="p" style="height:13px"></i><i class="p" style="height:6px"></i><i class="p" style="height:11px"></i><i style="height:14px"></i><i style="height:8px"></i><i style="height:12px"></i><i style="height:5px"></i><i style="height:10px"></i><i style="height:15px"></i><i style="height:7px"></i><i style="height:11px"></i><i style="height:9px"></i><i style="height:13px"></i><i style="height:6px"></i>
-                </div>
-              </div>
-
-              <p class="eyebrow"><svg class="i eb"><use href="#w-play"/></svg>Focus</p>
-              <div class="row">
-                <div class="pillrow" style="margin:0">
-                  <span class="pill">15 min</span>
-                  <span class="pill">25 min</span>
-                  <span class="pill">30 min</span>
-                </div>
-              </div>
-
-              <p class="eyebrow bare" style="gap:0">Following<span style="flex:1;height:1px;background:var(--a-line);margin:0 8px"></span><span style="color:var(--a-faint);letter-spacing:0.09em">Sync now</span><span style="color:var(--a-faint);letter-spacing:0.09em;margin-left:10px">Manage</span></p>
-              <div class="digest">
-                <span class="host">engineering.atspotify.com</span>
-                <span class="count">3 new</span>
-                <svg class="i"><use href="#w-chev"/></svg>
-              </div>
-              <div class="digest">
-                <span class="host">netflixtechblog.com</span>
-                <span class="count">1 new</span>
-                <svg class="i"><use href="#w-chev"/></svg>
-              </div>
-            </div>
-
-            <div class="navbar">
-              <span class="nb sel"><svg class="i"><use href="#w-home"/></svg></span>
-              <span class="nb"><svg class="i"><use href="#w-wave"/></svg></span>
-              <span class="nb"><svg class="i"><use href="#w-saved"/></svg></span>
-              <span class="bardiv"></span>
-              <span class="nb"><svg class="i"><use href="#w-contrast"/></svg></span>
-            </div>
-          </div>
-          </div>
-        </div>
-        <div class="deck-copy">
-          <p class="num">02 / 07 &nbsp;&middot;&nbsp; Home</p>
-          <h3>What is there to read, without going to look</h3>
-          <p>
-            Four sections, in this order: <b>next up</b>, whatever is
-            mid-<b>readback</b>, the <b>focus</b> presets, and the
-            <b>following</b> digest. Everything the app knows, on one screen,
-            before you have chosen a tab.
-          </p>
-          <p>
-            <b>Next up</b> is the only one that makes a choice rather than
-            reporting state, and it chooses over both halves of the app: every
-            unread saved link and every cached post from a followed blog, one
-            pool. A hero and two runners-up &mdash; one row reads as a decree,
-            a list reads as a browse.
-          </p>
-          <p>
-            Flush on the background, separated by their own hairline. No
-            cards, and no horizontal strip of tiles nested inside a section.
-            Two eyebrows carry a glyph rather than text alone, so a running
-            timer is legible from the label.
-          </p>
-          <p class="rationale"><b>Following goes last.</b> It is the only section that can be
-            arbitrarily long, so growing costs nothing beneath it &mdash; and
-            two lines and a count are enough to decide whether the screen on
-            the right is worth opening.</p>
-        </div>
-      </article>
-      <article class="deck-slide" aria-hidden="true" inert>
-        <div class="v-amp deck-figure">
-          <div class="phone">
-            <div class="screen">
-              <div class="statusbar"><span>4:19</span><span class="bars"><i></i><i></i><i></i><i></i></span></div>
-              <div class="canvas">
-                <p class="eyebrow bare" style="gap:0">Following<span style="flex:1;height:1px;background:var(--a-line);margin:0 8px"></span><span style="color:var(--a-faint);letter-spacing:0.09em">Sync now</span><span style="color:var(--a-faint);letter-spacing:0.09em;margin-left:10px">Manage</span></p>
-
-                <p class="syncnote">Synced 3 feeds.</p>
-                <div class="digest">
-                  <span class="host">engineering.atspotify.com</span>
-                  <span class="count">3 new</span>
-                  <svg class="i open"><use href="#w-chev"/></svg>
-                </div>
-
-                <div style="padding:10px 0 12px">
-                  <div class="row">
-                    <div style="display:flex;gap:10px;align-items:flex-start">
-                      <span class="sourcechip">S</span>
-                      <div style="flex:1;min-width:0">
-                        <h4>When Can LLMs Replace Humans in A/B Tests?</h4>
-                        <div class="meta"><span>4d ago</span></div>
-                      </div>
-                      <svg class="i bm on"><use href="#w-bookmarkfilled"/></svg>
-                    </div>
-                  </div>
-                  <div class="row">
-                    <div style="display:flex;gap:10px;align-items:flex-start">
-                      <span class="sourcechip">S</span>
-                      <div style="flex:1;min-width:0">
-                        <h4>A Tale of Two Flink Autoscalers</h4>
-                        <div class="meta"><span>1w ago</span></div>
-                      </div>
-                      <svg class="i bm"><use href="#w-saved"/></svg>
-                    </div>
-                  </div>
-                  <div class="row">
-                    <div style="display:flex;gap:10px;align-items:flex-start">
-                      <span class="sourcechip">S</span>
-                      <div style="flex:1;min-width:0">
-                        <h4>Reducing tail latency at the edge</h4>
-                        <div class="meta"><span>2w ago</span></div>
-                      </div>
-                      <svg class="i bm"><use href="#w-saved"/></svg>
-                    </div>
-                  </div>
-                  <p class="eyebrow bare" style="margin:0;gap:6px">All 12 posts <svg class="i" style="font-size:11px"><use href="#w-chev"/></svg></p>
-                </div>
-
-                <div class="digest">
-                  <span class="host">swmansion.com</span>
-                  <span class="count none">&mdash;</span>
-                  <svg class="i"><use href="#w-chev"/></svg>
-                </div>
-                <div class="digest">
-                  <span class="host">netflixtechblog.com</span>
-                  <span class="count">1 new</span>
-                  <svg class="i"><use href="#w-chev"/></svg>
-                </div>
-              </div>
-
-              <div class="navbar">
-                <span class="nb sel"><svg class="i"><use href="#w-home"/></svg></span>
-                <span class="nb"><svg class="i"><use href="#w-wave"/></svg></span>
-                <span class="nb"><svg class="i"><use href="#w-saved"/></svg></span>
-                <span class="bardiv"></span>
-                <span class="nb"><svg class="i"><use href="#w-contrast"/></svg></span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="deck-copy">
-          <p class="num">03 / 07 &nbsp;&middot;&nbsp; Following</p>
-          <h3>A digest line per blog, opened in place</h3>
-          <p>
-            The dedicated screen behind Home&rsquo;s digest. One line per feed:
-            host, how many posts you have not saved, a chevron. The count is
-            the only accented thing, and only while there is something behind
-            it.
-          </p>
-          <p>
-            Expanded, each post carries a <b>bookmark</b>. Tapping it is what
-            moves the post into <b>Saved</b>; swiping it right asks for a
-            summary instead. The row itself opens the article.
-          </p>
-          <p class="rationale"><b>The bookmark is the only way out.</b> A feed post reaches Saved
-            by being bookmarked here and no other way &mdash; and it is two
-            glyphs, not one glyph in two colours, because filled reads as
-            &ldquo;saved&rdquo; at 14dp in a way a tint change does not, and
-            it is the only signal that survives Ink.
-            <br><br>
-            <b>Three, then a door.</b> Tapping expands the newest three as
-            the same flat rows the full screen is built from, then hands over
-            &mdash; so one section of Home cannot push everything under it
-            off the bottom.</p>
-        </div>
-      </article>
-      <article class="deck-slide" aria-hidden="true" inert>
         <div class="v-amp deck-figure">
           <div class="phone">
             <div class="screen">
@@ -1537,22 +1062,17 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
           </div>
         </div>
         <div class="deck-copy">
-          <p class="num">04 / 07 &nbsp;&middot;&nbsp; Reading</p>
-          <h3>Read it here, or ask what is in it</h3>
+          <p class="num">01 / 04 &nbsp;&middot;&nbsp; Reading</p>
+          <h3>Read it here, or ask what's in it</h3>
           <p>
-            The reader view strips the page to its text. From there the
-            <b>summary</b> button hands that same extracted text to Gemini
-            Nano, on the phone &mdash; nothing uploaded, no connection needed.
+            The reader strips the page down to its text. The
+            <b>summary</b> button sends that text to Gemini Nano, on the
+            phone. Nothing is uploaded.
           </p>
           <p>
-            The panel floats over the article and nothing else on screen
-            moves. Checking a summary never costs your place in the thing you
-            were reading.
+            The summary opens in a panel over the article. The article
+            itself doesn't move.
           </p>
-          <p class="rationale"><b>Prose, not bullets.</b> Fragments ask you to reassemble the
-            argument you opened the panel to avoid. One paragraph, one tone.
-            The button is hidden rather than greyed out until the reader has
-            text to give it.</p>
         </div>
       </article>
       <article class="deck-slide" aria-hidden="true" inert>
@@ -1561,43 +1081,85 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
           <div class="screen">
             <div class="statusbar"><span>4:19</span><span class="bars"><i></i><i></i><i></i><i></i></span></div>
             <div class="canvas">
-              <div class="fieldbox typing">
-                <span class="txt">swmansion.com/blog/live-video<span class="caret"></span></span>
-                <span class="save">Save</span>
-              </div>
-              <div class="offer">
-                <span class="lbl">From clipboard</span>
-                <span class="url">netflixtechblog.com/two-autoscalers</span>
+              <div class="greet">
+                <h3>Hello, MKS</h3>
+                <span class="iconbtn"><svg class="i" style="font-size:16px"><use href="#w-settings"/></svg></span>
               </div>
 
-              <p class="eyebrow">Unread · 1</p>
+              <p class="eyebrow bare" style="gap:0">Next up<span style="flex:1;height:1px;background:var(--a-line);margin:0 8px"></span><svg class="i" style="font-size:13px;color:var(--a-faint)"><use href="#w-shuffle"/></svg></p>
+              <div class="row">
+                <div style="display:flex;gap:10px;align-items:flex-start">
+                  <span class="sourcechip">N</span>
+                  <div style="flex:1;min-width:0">
+                    <h4>A Tale of Two Flink Autoscalers</h4>
+                    <div class="meta"><span>netflixtechblog.com</span><span>9 min</span></div>
+                  </div>
+                </div>
+              </div>
               <div class="row">
                 <div style="display:flex;gap:10px;align-items:flex-start">
                   <span class="sourcechip">S</span>
                   <div style="flex:1;min-width:0">
-                    <h4>When Can LLMs Replace Humans in A/B Tests?</h4>
-                    <div class="meta"><span>atspotify</span><span>7m ago</span></div>
+                    <h4 style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">When Can LLMs Replace Humans&hellip;</h4>
+                    <div class="meta"><span>engineering.atspotify.com</span><span>12 min</span></div>
                   </div>
                 </div>
               </div>
-
-              <p class="eyebrow muted">Read · 4</p>
-              <div class="row" style="opacity:0.5">
+              <div class="row">
                 <div style="display:flex;gap:10px;align-items:flex-start">
                   <span class="sourcechip">S</span>
                   <div style="flex:1;min-width:0">
-                    <h4>Missing layer in live video streaming APIs</h4>
-                    <div class="meta"><span>swmansion</span><span>2m ago</span></div>
+                    <h4 style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Idempotency keys, explained</h4>
+                    <div class="meta"><span>stripe.com</span><span>4 min</span></div>
                   </div>
-                  <svg class="i" style="font-size:13px;margin-top:2px"><use href="#w-done"/></svg>
                 </div>
               </div>
+
+              <p class="eyebrow bare" style="gap:0"><svg class="i eb" style="margin-right:8px"><use href="#w-wave"/></svg>Today&rsquo;s readback<span style="flex:1;height:1px;background:var(--a-line);margin:0 8px"></span><svg class="i" style="font-size:12px;color:var(--a-faint)"><use href="#w-chev"/></svg></p>
+              <div class="row">
+                <div style="display:flex;gap:10px;align-items:flex-start">
+                  <div style="flex:1;min-width:0">
+                    <h4 class="playing">Gesture Handler&rsquo;s Touchable</h4>
+                    <div class="meta" style="margin-bottom:8px"><span class="playing">0:38 / 1:22</span></div>
+                  </div>
+                  <svg class="i playing" style="font-size:14px;margin-top:2px"><use href="#w-pause"/></svg>
+                </div>
+                <div class="wave part">
+                  <i class="p" style="height:7px"></i><i class="p" style="height:12px"></i><i class="p" style="height:15px"></i><i class="p" style="height:9px"></i><i class="p" style="height:13px"></i><i class="p" style="height:6px"></i><i class="p" style="height:11px"></i><i style="height:14px"></i><i style="height:8px"></i><i style="height:12px"></i><i style="height:5px"></i><i style="height:10px"></i><i style="height:15px"></i><i style="height:7px"></i><i style="height:11px"></i><i style="height:9px"></i><i style="height:13px"></i><i style="height:6px"></i>
+                </div>
+              </div>
+
+              <p class="eyebrow"><svg class="i eb"><use href="#w-play"/></svg>Focus</p>
+              <div class="row">
+                <div class="pillrow" style="margin:0">
+                  <span class="pill">15 min</span>
+                  <span class="pill">25 min</span>
+                  <span class="pill">30 min</span>
+                </div>
+              </div>
+
+              <p class="eyebrow bare" style="gap:0">Following<span style="flex:1;height:1px;background:var(--a-line);margin:0 8px"></span><span style="font-family:var(--a-data);font-size:11px;font-weight:600;color:var(--a-sound)">7 new</span></p>
+              <p style="font-family:var(--a-ui);font-size:12.5px;color:var(--a-ink);margin:2px 0 8px">9 feeds followed</p>
+              <div style="display:flex;align-items:center;padding:4px 0">
+                <span style="flex:1;min-width:0;font-family:var(--a-ui);font-size:12px;color:var(--a-mute);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">engineering.atspotify.com</span>
+                <span style="font-family:var(--a-data);font-size:11px;color:var(--a-sound)">3 new</span>
+              </div>
+              <div style="display:flex;align-items:center;padding:4px 0">
+                <span style="flex:1;min-width:0;font-family:var(--a-ui);font-size:12px;color:var(--a-mute);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">netflixtechblog.com</span>
+                <span style="font-family:var(--a-data);font-size:11px;color:var(--a-sound)">1 new</span>
+              </div>
+              <div style="display:flex;align-items:center;padding:4px 0">
+                <span style="flex:1;min-width:0;font-family:var(--a-ui);font-size:12px;color:var(--a-mute);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">stripe.com</span>
+                <span style="font-family:var(--a-data);font-size:11px;color:var(--a-faint)">&mdash;</span>
+              </div>
+              <p class="eyebrow bare" style="margin:4px 0 0;gap:6px"><span style="color:var(--a-sound);font-family:var(--a-ui);font-weight:700;font-size:10px;letter-spacing:0.09em;text-transform:uppercase">6 more</span><svg class="i" style="font-size:11px;color:var(--a-sound)"><use href="#w-chev"/></svg></p>
             </div>
 
             <div class="navbar">
-              <span class="nb"><svg class="i"><use href="#w-home"/></svg></span>
+              <span class="nb sel"><svg class="i"><use href="#w-home"/></svg></span>
+              <span class="nb"><svg class="i"><use href="#w-feed"/></svg></span>
+              <span class="nb"><svg class="i"><use href="#w-saved"/></svg></span>
               <span class="nb"><svg class="i"><use href="#w-wave"/></svg></span>
-              <span class="nb sel"><svg class="i"><use href="#w-saved"/></svg></span>
               <span class="bardiv"></span>
               <span class="nb"><svg class="i"><use href="#w-contrast"/></svg></span>
             </div>
@@ -1605,52 +1167,18 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
           </div>
         </div>
         <div class="deck-copy">
-          <p class="num">05 / 07 &nbsp;&middot;&nbsp; Saved</p>
-          <h3>Unread and read, told apart without a heading</h3>
+          <p class="num">02 / 04 &nbsp;&middot;&nbsp; Home</p>
+          <h3>Everything on one screen</h3>
           <p>
-            A link arrives by paste or by the share sheet and is in the list
-            immediately, backfilling its real title when the fetch lands. Never
-            blocked on the network.
+            Four sections: <b>Next up</b>, whatever's playing in
+            <b>Readback</b>, the <b>Focus</b> timer, and a
+            <b>Following</b> summary that links to the full tab.
           </p>
-          <p class="rationale"><b>A read link recedes rather than being struck through</b> &mdash;
-            one alpha over the whole row, plus a trailing tick. <b>Read</b> is
-            the one section label that stays muted: it sits under an unread
-            list and should not compete with it.</p>
-        </div>
-      </article>
-      <article class="deck-slide" aria-hidden="true" inert>
-        <div class="v-amp deck-figure">
-          <div class="phone">
-            <div class="screen">
-              <div class="statusbar"><span>4:51</span><span class="bars"><i></i><i></i><i></i><i></i></span></div>
-              <span class="focusclose"><svg class="i"><use href="#w-close"/></svg></span>
-              <div class="canvas" style="justify-content:flex-end;padding-bottom:96px">
-                <p class="eyebrow muted">Focus &middot; 25 min</p>
-                <div style="font-family:var(--a-data);font-size:52px;line-height:1;font-weight:500;font-variant-numeric:tabular-nums;letter-spacing:-0.02em;margin-bottom:18px;text-align:center">18:24</div>
-                <div class="wave part" style="height:26px;gap:2px;margin-bottom:24px;justify-content:center">
-                  <i class="p" style="height:9px"></i><i class="p" style="height:16px"></i><i class="p" style="height:22px"></i><i class="p" style="height:12px"></i><i class="p" style="height:19px"></i><i class="p" style="height:26px"></i><i class="p" style="height:14px"></i><i style="height:20px"></i><i style="height:10px"></i><i style="height:17px"></i><i style="height:24px"></i><i style="height:13px"></i><i style="height:18px"></i><i style="height:8px"></i><i style="height:15px"></i><i style="height:21px"></i><i style="height:11px"></i><i style="height:16px"></i><i style="height:23px"></i><i style="height:9px"></i>
-                </div>
-                <div class="pillrow" style="margin:0;justify-content:center">
-                  <span class="pill sel">Pause</span>
-                  <span class="pill">Reset</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="deck-copy">
-          <p class="num">06 / 07 &nbsp;&middot;&nbsp; Focus</p>
-          <h3>A meter, not a word in a void</h3>
           <p>
-            Pick a length, put the phone down, read the thing. The countdown is
-            drawn with the same bars as every waveform in the app &mdash;
-            elapsed filled, remaining not &mdash; so a bar two-thirds lit means
-            the same thing on both screens.
+            <b>Next up</b> ranks every unread saved link and every cached
+            post from a blog you follow, together, and shows one main pick
+            plus two smaller ones.
           </p>
-          <p class="rationale">Bottom-anchored in the thumb zone rather than centred, and
-            glanceable from a metre away. A finished session alerts on its own
-            high-importance channel: the per-second countdown&rsquo;s has to
-            stay silent, so completion needed a second one.</p>
         </div>
       </article>
       <article class="deck-slide" aria-hidden="true" inert>
@@ -1659,85 +1187,153 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
           <div class="screen">
             <div class="statusbar"><span>4:19</span><span class="bars"><i></i><i></i><i></i><i></i></span></div>
             <div class="canvas">
-              <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
-                <span class="iconbtn"><svg class="i" style="font-size:16px"><use href="#w-folder"/></svg></span>
-              </div>
-              <div class="pillrow">
+              <p class="eyebrow bare" style="gap:0">Following<span style="flex:1;height:1px;background:var(--a-line);margin:0 8px"></span><svg class="i" style="font-size:13px;color:var(--a-faint);margin-right:10px"><use href="#w-search"/></svg><span style="color:var(--a-faint);letter-spacing:0.09em">Sync now</span><span style="color:var(--a-faint);letter-spacing:0.09em;margin-left:10px">Manage</span></p>
+              <div class="pillrow" style="margin-top:12px">
                 <span class="pill sel">Newest</span>
-                <span class="pill">Oldest</span>
+                <span class="pill">A&ndash;Z</span>
               </div>
 
-              <p class="nowtip">
-                <svg class="i"><use href="#w-wave"/></svg>
-                Playing &ldquo;Claude Code now supports artifacts&rdquo; &mdash; use the bar below to control it
-              </p>
-
-              <div class="row">
-                <div style="display:flex;gap:10px;align-items:flex-start">
-                  <span class="sourcechip">S</span>
-                  <div style="flex:1;min-width:0">
-                    <h4>Gesture Handler&rsquo;s Touchable: Button We Wish We Had Sooner</h4>
-                    <div class="meta"><span>1:22</span><span>682w</span></div>
+              <div style="margin-bottom:14px">
+                <div class="digest">
+                  <span class="host">engineering.atspotify.com</span>
+                  <span class="count">3 new</span>
+                  <svg class="i open"><use href="#w-chev"/></svg>
+                </div>
+                <div style="padding-top:8px">
+                  <div class="row">
+                    <div style="display:flex;gap:10px;align-items:flex-start">
+                      <span class="sourcechip">S</span>
+                      <div style="flex:1;min-width:0">
+                        <h4>When Can LLMs Replace Humans in A/B Tests?</h4>
+                        <div class="meta"><span>7m ago</span></div>
+                      </div>
+                      <svg class="i bm"><use href="#w-saved"/></svg>
+                    </div>
                   </div>
+                  <div class="row">
+                    <div style="display:flex;gap:10px;align-items:flex-start">
+                      <span class="sourcechip">S</span>
+                      <div style="flex:1;min-width:0">
+                        <h4>Why we moved off Kafka Streams</h4>
+                        <div class="meta"><span>2d ago</span></div>
+                      </div>
+                      <svg class="i bm on"><use href="#w-bookmarkfilled"/></svg>
+                    </div>
+                  </div>
+                  <div class="row">
+                    <div style="display:flex;gap:10px;align-items:flex-start">
+                      <span class="sourcechip">S</span>
+                      <div style="flex:1;min-width:0">
+                        <h4>Backfilling event streams safely</h4>
+                        <div class="meta"><span>5d ago</span></div>
+                      </div>
+                      <svg class="i bm"><use href="#w-saved"/></svg>
+                    </div>
+                  </div>
+                  <p class="eyebrow bare" style="margin:2px 0 0;gap:6px"><span style="color:var(--a-sound);font-family:var(--a-ui);font-weight:700;font-size:10px;letter-spacing:0.09em;text-transform:uppercase">All 8 posts</span><svg class="i" style="font-size:11px;color:var(--a-sound)"><use href="#w-chev"/></svg></p>
                 </div>
-                <div class="wave" style="margin-top:9px">
-                  <i style="height:5px"></i><i style="height:9px"></i><i style="height:13px"></i><i style="height:7px"></i><i style="height:11px"></i><i style="height:15px"></i><i style="height:8px"></i><i style="height:12px"></i><i style="height:6px"></i><i style="height:10px"></i><i style="height:14px"></i><i style="height:7px"></i><i style="height:11px"></i><i style="height:5px"></i><i style="height:9px"></i><i style="height:13px"></i><i style="height:6px"></i><i style="height:10px"></i>
-                </div>
-                <div class="extlink"><svg class="i"><use href="#w-external"/></svg><span>swmansion.com</span></div>
               </div>
-
-              <div class="row">
-                <div style="display:flex;gap:10px;align-items:flex-start">
-                  <span class="sourcechip" style="border-color:var(--a-sound);color:var(--a-sound)">A</span>
-                  <div style="flex:1;min-width:0">
-                    <h4 class="playing">Claude Code now supports artifacts</h4>
-                    <div class="meta"><span class="playing">0:41 / 1:31</span><span>538w</span></div>
-                  </div>
-                  <svg class="i playing" style="font-size:15px;margin-top:2px"><use href="#w-pause"/></svg>
+              <div style="margin-bottom:10px">
+                <div class="digest">
+                  <span class="host">netflixtechblog.com</span>
+                  <span class="count">1 new</span>
+                  <svg class="i"><use href="#w-chev"/></svg>
                 </div>
-                <div class="wave part" style="margin-top:9px">
-                  <i class="p" style="height:6px"></i><i class="p" style="height:11px"></i><i class="p" style="height:15px"></i><i class="p" style="height:8px"></i><i class="p" style="height:12px"></i><i class="p" style="height:14px"></i><i class="p" style="height:7px"></i><i style="height:10px"></i><i style="height:13px"></i><i style="height:6px"></i><i style="height:9px"></i><i style="height:15px"></i><i style="height:8px"></i><i style="height:11px"></i><i style="height:5px"></i><i style="height:12px"></i><i style="height:7px"></i><i style="height:10px"></i>
+                <p style="margin:0;font-family:var(--a-ui);font-size:10.5px;color:var(--a-faint)">A Tale of Two Flink Autoscalers</p>
+              </div>
+              <div style="margin-bottom:10px">
+                <div class="digest">
+                  <span class="host">stripe.com</span>
+                  <span class="count none">&mdash;</span>
+                  <svg class="i"><use href="#w-chev"/></svg>
                 </div>
-                <div class="extlink"><svg class="i"><use href="#w-external"/></svg><span>claude.com</span></div>
+                <p style="margin:0;font-family:var(--a-ui);font-size:10.5px;color:var(--a-faint)">Idempotency keys, explained</p>
+              </div>
+              <div>
+                <div class="digest">
+                  <span class="host">go.dev</span>
+                  <span class="count">2 new</span>
+                  <svg class="i"><use href="#w-chev"/></svg>
+                </div>
+                <p style="margin:0;font-family:var(--a-ui);font-size:10.5px;color:var(--a-faint)">Generic methods in Go</p>
               </div>
             </div>
 
-            <div class="navbar player">
-              <span class="nb playing"><svg class="i"><use href="#w-pause"/></svg></span>
-              <span class="tt">Claude Code now supports artifacts</span>
-              <span class="rem">0:50</span>
-              <span class="nb sm"><svg class="i" style="font-size:12px"><use href="#w-close"/></svg></span>
-              <span class="bardiv"></span>
+            <div class="navbar">
+              <span class="nb"><svg class="i"><use href="#w-home"/></svg></span>
+              <span class="nb sel"><svg class="i"><use href="#w-feed"/></svg></span>
+              <span class="nb"><svg class="i"><use href="#w-saved"/></svg></span>
               <span class="nb"><svg class="i"><use href="#w-wave"/></svg></span>
-              <span class="seek"><i></i></span>
+              <span class="bardiv"></span>
+              <span class="nb"><svg class="i"><use href="#w-contrast"/></svg></span>
             </div>
           </div>
           </div>
         </div>
         <div class="deck-copy">
-          <p class="num">07 / 07 &nbsp;&middot;&nbsp; Readback</p>
-          <h3>Where the accent earns its keep</h3>
+          <p class="num">03 / 04 &nbsp;&middot;&nbsp; Following</p>
+          <h3>Every blog you follow, one line each</h3>
           <p>
-            Audio a sync step has already put on the device, from the separate
-            <a href="https://github.com/MKS-01/readback">readback</a> project,
-            read-only. Two facts per row &mdash; the third, how long this is,
-            is drawn as a waveform.
+            Each feed shows its host, how many posts you haven't saved, and
+            its newest post title. Tap one to expand its latest three posts
+            in place, each with a bookmark to save it, and a link to the
+            rest.
           </p>
           <p>
-            The playing row is the only coloured thing on screen, and the
-            floating bar has given its width over to the transport.
+            The header has a search field and two sort options,
+            <b>Newest</b> and <b>A&ndash;Z</b>.
+          </p>
+        </div>
+      </article>
+      <article class="deck-slide" aria-hidden="true" inert>
+        <div class="v-amp deck-figure">
+          <div class="phone">
+          <div class="screen">
+            <div class="statusbar"><span>4:19</span><span class="bars"><i></i><i></i><i></i><i></i></span></div>
+            <div class="canvas">
+              <div class="toolbar">
+                <span class="title">Settings</span>
+                <span class="iconbtn" style="border:0"><svg class="i" style="font-size:15px"><use href="#w-close"/></svg></span>
+              </div>
+
+              <p class="eyebrow" style="margin-top:10px">Notion</p>
+              <div class="fieldbox typing">
+                <span class="txt" style="color:var(--a-mute)">ntn_&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;</span>
+              </div>
+              <div class="fieldbox typing">
+                <span class="txt" style="color:var(--a-mute)">&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;7c2a</span>
+              </div>
+              <div class="fieldbox typing">
+                <span class="txt" style="color:var(--a-mute)">&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;91fe</span>
+              </div>
+
+              <div style="margin:14px 0 18px">
+                <h4 style="margin:0 0 3px">Reading list &middot; 9 feeds</h4>
+                <div class="meta"><span>Last synced 2h ago</span></div>
+              </div>
+
+              <div style="display:flex;gap:16px;align-items:center">
+                <span style="color:var(--a-sound);font-family:var(--a-ui);font-weight:700;font-size:9.5px;letter-spacing:0.09em;text-transform:uppercase">Test connection</span>
+                <span style="color:var(--a-sound);font-family:var(--a-ui);font-weight:700;font-size:9.5px;letter-spacing:0.09em;text-transform:uppercase">Sync now</span>
+                <span style="color:var(--a-faint);font-family:var(--a-ui);font-weight:700;font-size:9.5px;letter-spacing:0.09em;text-transform:uppercase;margin-left:auto">Disconnect</span>
+              </div>
+            </div>
+          </div>
+          </div>
+        </div>
+        <div class="deck-copy">
+          <p class="num">04 / 04 &nbsp;&middot;&nbsp; Settings</p>
+          <h3>A token and two database IDs</h3>
+          <p>
+            Paste a personal access token once. Notion only shows it at
+            creation, so there's nothing to look up later. Add the
+            <b>Sources</b> database ID to follow blogs, and optionally a
+            <b>Reading List</b> ID to keep saved links in step too.
           </p>
           <p>
-            The tip above the list points at that bar rather than repeating
-            it: the controls stay where the thumb already is, whatever the
-            list is doing.
+            <b>Test connection</b> checks the token. <b>Sync now</b> pulls
+            whatever changed.
           </p>
-          <p class="rationale"><b>One pill, three faces.</b> The transport lives inside the
-            floating bar rather than on a second pill above it &mdash; two stacked
-            slabs ate a third of the reachable zone. Playback wins the bar
-            while it is running; the trailing icon is the tab you are already
-            on, so it reads as &ldquo;back to where you were&rdquo; rather
-            than a fourth destination.</p>
         </div>
       </article>
           </div>
@@ -1745,33 +1341,32 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
         <div class="deck-bar">
           <button type="button" class="deck-nav deck-prev" aria-label="Previous screen"><svg class="i"><use href="#w-back"/></svg></button>
           <div class="deck-dots" role="tablist" aria-label="Screens">
-          <button type="button" class="cdot is-on" aria-label="Onboarding"></button>
+          <button type="button" class="cdot is-on" aria-label="Reading"></button>
           <button type="button" class="cdot" aria-label="Home"></button>
           <button type="button" class="cdot" aria-label="Following"></button>
-          <button type="button" class="cdot" aria-label="Reading"></button>
-          <button type="button" class="cdot" aria-label="Saved"></button>
-          <button type="button" class="cdot" aria-label="Focus"></button>
-          <button type="button" class="cdot" aria-label="Readback"></button>
+          <button type="button" class="cdot" aria-label="Settings"></button>
           </div>
-          <span class="deck-count" aria-live="polite">01 / 07</span>
+          <span class="deck-count" aria-live="polite">01 / 04</span>
           <button type="button" class="deck-nav deck-next" aria-label="Next screen"><svg class="i"><use href="#w-chev"/></svg></button>
         </div>
       </div>
     </div>
   </section>
 
+
   <!-- ============================================================
-       ACT 3 — the language the screens above are drawn in. A deck,
-       because each slide is a decision worth stopping on; the
-       values themselves are in design-tokens.md, not here.
+       ACT 3 — how it works. Not the visual language (that lives in
+       design-tokens.md now) but the mechanism: where the reading
+       list comes from before the app ever opens, and the one shell
+       every screen above is drawn from.
        ============================================================ -->
   <section id="system" class="act">
     <div data-reveal>
-      <h2>Act three &middot; Design system</h2>
-      <p class="act-title">The language every screen above is drawn in</p>
+      <h2>Act three &middot; How it works</h2>
+      <p class="act-title">The automation, the shell, and the design language</p>
       <p class="act-note">
-        Six decisions, starting with the one the rest are tested against: drop
-        the hue and see whether the layout still works.
+        The full design reference is
+        <a href="design-tokens.md">design-tokens.md</a>.
       </p>
     </div>
 
@@ -1780,331 +1375,129 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
         <div class="deck-window">
           <div class="deck-track">
       <article class="deck-slide">
-        <div class="v-amp deck-figure">
-          <div class="v-amp mono frame-block">
-            <p class="frame-cap">Article &mdash; Ink</p>
-            <div class="phone">
-              <div class="screen">
-            <div class="statusbar"><span>4:19</span><span class="bars"><i></i><i></i><i></i><i></i></span></div>
-            <div class="canvas">
-              <div class="toolbar">
-                <span class="iconbtn" style="border:0"><svg class="i" style="font-size:16px"><use href="#w-back"/></svg></span>
-                <span class="title">A Tale of Two Flink Autoscalers</span>
-                <span class="iconbtn active"><svg class="i" style="font-size:15px"><use href="#w-reader"/></svg></span>
-                <span class="iconbtn"><svg class="i" style="font-size:15px"><use href="#w-summary"/></svg></span>
-                <span class="iconbtn"><svg class="i" style="font-size:15px"><use href="#w-external"/></svg></span>
+        <div class="v-amp deck-figure" style="max-width:520px">
+          <div class="flow-row">
+            <div class="flow-step"><svg class="i"><use href="#w-external"/></svg><span>Gmail</span></div>
+            <svg class="flow-arrow i"><use href="#w-chev"/></svg>
+            <div class="flow-step accent"><svg class="i"><use href="#w-summary"/></svg><span>Claude Cowork</span></div>
+            <svg class="flow-arrow i"><use href="#w-chev"/></svg>
+            <div class="flow-step"><svg class="i"><use href="#w-folderconnect"/></svg><span>Notion</span></div>
+            <svg class="flow-arrow i"><use href="#w-chev"/></svg>
+            <div class="flow-step"><svg class="i"><use href="#w-saved"/></svg><span>DuskRead</span></div>
+          </div>
+          <div class="flow-row secondary">
+            <div class="flow-step"><svg class="i"><use href="#w-feed"/></svg><span>RSS feeds</span></div>
+            <svg class="flow-arrow i"><use href="#w-chev"/></svg>
+            <div class="flow-step"><svg class="i"><use href="#w-saved"/></svg><span>DuskRead</span></div>
+          </div>
+          <p class="flow-note">Feeds are fetched by the app itself and never touch Notion.</p>
+        </div>
+        <div class="deck-copy">
+          <p class="num">01 / 03 &nbsp;&middot;&nbsp; Architecture</p>
+          <h3>Curation happens before the app ever opens</h3>
+        <p>
+          <a href="https://claude.com/product/cowork">Claude Cowork</a>
+          checks Gmail on a schedule and files what&rsquo;s worth keeping
+          into a Notion database. A blog with a working feed is fetched by
+          the app directly and never touches Notion.
+        </p>
+        <p>
+          The phone only pulls rows that were kept. Everything else stays
+          archived in Notion.
+        </p>
+        </div>
+      </article>
+      <article class="deck-slide" aria-hidden="true" inert>
+        <div class="v-amp deck-figure" style="max-width:520px">
+          <div class="navstrip wide" style="justify-content:center;margin:0 0 22px">
+            <span class="nb sel"><svg class="i"><use href="#w-home"/></svg></span>
+            <span class="nb"><svg class="i"><use href="#w-feed"/></svg></span>
+            <span class="nb"><svg class="i"><use href="#w-saved"/></svg></span>
+            <span class="nb"><svg class="i"><use href="#w-wave"/></svg></span>
+          </div>
+          <div class="v-amp pillrow" style="justify-content:center;margin:0">
+            <span class="pill sel">Android</span>
+            <span class="pill">Desktop</span>
+            <span class="pill">Web</span>
+            <span class="pill">iOS</span>
+          </div>
+        </div>
+        <div class="deck-copy">
+          <p class="num">02 / 03 &nbsp;&middot;&nbsp; The client app</p>
+          <h3>One shell, wherever it runs</h3>
+        <p>
+          Home, Following, Saved and Readback share one floating bar and
+          the same row and header components. None of them was built
+          separately.
+        </p>
+        <p>
+          Compose Multiplatform compiles that one shell to Android, desktop,
+          web and iOS. Android is the target built and tested day to day;
+          the other three exist to prove the code travels.
+        </p>
+        </div>
+      </article>
+      <article class="deck-slide" aria-hidden="true" inert>
+        <div class="v-amp deck-figure" style="max-width:520px">
+          <div class="langgrid">
+            <div class="langitem">
+              <p class="lbl">Colour</p>
+              <div class="accentrow" style="margin:0;gap:8px">
+                <div class="accentcard paper" style="flex:1 1 90px"><div class="band" style="background:#c6684a;color:#2b1006;height:44px"><span>#C6684A</span></div></div>
+                <div class="accentcard" style="flex:1 1 90px"><div class="band" style="background:#dcdcdc;color:#161616;height:44px"><span>#DCDCDC</span></div></div>
               </div>
-              <div style="font-size:13px;line-height:1.6;color:var(--a-mute)">
-                Netflix currently runs two different autoscalers for Apache
-                Flink, and they are actively moving toward replacing the
-                custom one with the open-source Kubernetes-native
-                autoscaler.<br><br>
-                The custom autoscaler predates the Kubernetes operator by
-                several years. It was built when the platform ran Flink on
-                its own scheduling layer, and it carries assumptions from
-                that era &mdash; most visibly that scaling decisions are made
-                from a single aggregated backlog metric rather than
-                per-vertex.<br><br>
-                Feature parity is the gating question. The open-source
-                autoscaler reached rough equivalence on throughput-based
-                scaling last year, but two things kept the custom one alive:
-                its handling of sources with irregular partition counts, and
-                the operational tooling built around it.<br><br>
-                What follows is a comparison of how each one reacts to the
-                same three production incidents, and what that implies for
-                the migration order.
+            </div>
+            <div class="langitem">
+              <p class="lbl">Type</p>
+              <div style="font-family:'Jost',sans-serif;font-weight:600;font-size:17px;color:var(--text)">Hear it read back</div>
+              <div style="font-family:'Inconsolata',monospace;font-size:11px;color:var(--muted);margin-top:6px">1:22&nbsp;&middot;&nbsp;682w</div>
+            </div>
+            <div class="langitem">
+              <p class="lbl">Icons</p>
+              <div style="display:flex;gap:14px;color:var(--text)">
+                <svg class="i"><use href="#w-home"/></svg>
+                <svg class="i"><use href="#w-wave"/></svg>
+                <svg class="i"><use href="#w-saved"/></svg>
+                <svg class="i"><use href="#w-focus"/></svg>
+                <svg class="i"><use href="#w-feed"/></svg>
               </div>
             </div>
-          </div>
+            <div class="langitem">
+              <p class="lbl">Motion</p>
+              <p style="font-size:12px;color:var(--muted);margin:0">Ease-out entrances, sub-300ms UI, a slower tween where a tone is teaching something.</p>
             </div>
           </div>
         </div>
         <div class="deck-copy">
-          <p class="num">01 / 06 &nbsp;&middot;&nbsp; Monochrome</p>
-          <h3>Ink &mdash; the default, not a colour stripped away</h3>
+          <p class="num">03 / 03 &nbsp;&middot;&nbsp; Design language</p>
+          <h3>One accent, two fonts, one icon set</h3>
         <p>
-          Hue drops to nothing and level is luminance alone. It is the
-          app&rsquo;s own default; this page opens in Paper Black because a
-          landing page has to be looked at first.
+          Terracotta means one thing: there is sound here. Ink drains it to
+          nothing. Jost is the type for language, Inconsolata for data, and
+          every icon is stroked to the same weight.
         </p>
         <p>
-          Paper Black is one tap on top of that &mdash; the contrast toggle
-          at the end of the floating bar, or Settings &mdash; for a reader
-          who wants the colour. This frame is pinned to Ink regardless of
-          the switch in the corner; every other mockup on the page follows
-          it.
+          Every hex, size, radius and duration, with the file it lives in, is
+          in <a href="design-tokens.md">design-tokens.md</a>.
         </p>
-          <p class="rationale"><b>One tap adds the accent, nothing else moves.</b> The
-          <b>reader</b> button is the one coloured thing on this screen
-          &mdash; active means &ldquo;this is the view you&rsquo;re
-          in,&rdquo; and that ring is terracotta in Paper Black, white here.
-          Reading itself was never waiting on colour to work.</p>
-        </div>
-      </article>
-      <article class="deck-slide" aria-hidden="true" inert>
-        <div class="v-amp deck-figure">
-          <div class="accentrow">
-            <div class="accentcard paper">
-              <div class="band" style="background:#c6684a;color:#2b1006"><span>#C6684A &middot; ON #2B1006</span></div>
-              <p class="cap2"><b>Paper Black &mdash; the accent</b>A terracotta, not a signal orange &mdash; it has to survive being the only coloured thing on a near-black page for an hour.</p>
-            </div>
-            <div class="accentcard">
-              <div class="band" style="background:#dcdcdc;color:#161616"><span>#DCDCDC &middot; ON #161616</span></div>
-              <p class="cap2"><b>Ink &mdash; no accent at all</b>With hue gone, the brightest ink on the page is the only thing left that can mean &ldquo;primary&rdquo;.</p>
-            </div>
-          </div>
-
-          <div class="ramps">
-              <div class="ramp">
-                <p class="ramp-label">Paper Black</p>
-                <div class="ramp-strip"><span class="step" style="background:#0D0D0D" title="surfaceVariant #0D0D0D"></span><span class="step" style="background:#101010" title="background #101010"></span><span class="step" style="background:#1A1A1A" title="surface #1A1A1A"></span><span class="step" style="background:#212121" title="surfaceContainer #212121"></span><span class="step" style="background:#242423" title="outlineVariant #242423"></span><span class="step" style="background:#3E3E3D" title="outline #3E3E3D"></span><span class="step" style="background:#A3A19D" title="onSurfaceVariant #A3A19D"></span><span class="step" style="background:#E8E6E2" title="onBackground #E8E6E2"></span></div>
-                <p class="ramp-ends"><span>ground</span><span>ink</span></p>
-              </div>
-              <div class="ramp">
-                <p class="ramp-label">Ink</p>
-                <div class="ramp-strip"><span class="step" style="background:#121212" title="surfaceVariant #121212"></span><span class="step" style="background:#161616" title="background #161616"></span><span class="step" style="background:#202020" title="surface #202020"></span><span class="step" style="background:#272727" title="surfaceContainer #272727"></span><span class="step" style="background:#2B2B2B" title="outlineVariant #2B2B2B"></span><span class="step" style="background:#464646" title="outline #464646"></span><span class="step" style="background:#9C9C9C" title="onSurfaceVariant #9C9C9C"></span><span class="step" style="background:#DCDCDC" title="onBackground #DCDCDC"></span></div>
-                <p class="ramp-ends"><span>ground</span><span>ink</span></p>
-              </div>
-          </div>
-        </div>
-        <div class="deck-copy">
-          <p class="num">02 / 06 &nbsp;&middot;&nbsp; Colour</p>
-          <h3>One accent, and it is only ever spent on sound</h3>
-        <p>
-          Terracotta means one thing: <b>there is sound here</b>. Nothing
-          else in the interface is ever allowed to be coloured.
-        </p>
-        <p>
-          Below it, eight steps from the ground to the ink &mdash; and the
-          only thing separating one from the next is lightness. Both schemes
-          run the same ladder; Ink simply has nothing else.
-        </p>
-          <p class="rationale">Every value comes from <code>ui/theme/Theme.kt</code>: a hard-coded
-          <code>Color(0x&hellip;)</code> in a screen survives the swap to Ink
-          and immediately looks wrong. The full table is in
-          <a href="design-tokens.md">design-tokens.md</a>.</p>
-        </div>
-      </article>
-      <article class="deck-slide" aria-hidden="true" inert>
-        <div class="v-amp deck-figure">
-          <div class="v-amp specimen" style="color:var(--text)">
-            <div>
-              <div class="lbl">Headline · Jost SemiBold · &minus;0.5 tracking</div>
-              <div style="font-family:'Jost',sans-serif;font-weight:600;font-size:28px;line-height:1.25;letter-spacing:-0.5px">Hear it read back</div>
-            </div>
-            <div>
-              <div class="lbl">Title · Jost SemiBold · 16</div>
-              <div style="font-family:'Jost',sans-serif;font-weight:600;font-size:16px;line-height:1.5">A Tale of Two Flink Autoscalers</div>
-            </div>
-            <div>
-              <div class="lbl">Body · Jost 400 · 15.5/25 and 14.5/22</div>
-              <div style="font-family:'Jost',sans-serif;font-weight:400;font-size:15.5px;line-height:25px;color:var(--muted)">Netflix currently runs two different autoscalers for Apache Flink, and they are actively moving toward replacing the custom one.</div>
-            </div>
-            <div>
-              <div class="lbl">Section label · Jost Bold · 11 · 1sp tracking</div>
-              <div style="font-family:'Jost',sans-serif;font-weight:700;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--faint)">From saved · Today&rsquo;s readback · Following</div>
-            </div>
-            <div>
-              <div class="lbl">Data · Inconsolata · tabular</div>
-              <div style="font-family:'Inconsolata',monospace;font-size:11px;font-variant-numeric:tabular-nums;color:var(--muted)">1:22&nbsp;&nbsp;682w&nbsp;&nbsp;&middot;&nbsp;&nbsp;1:37&nbsp;&nbsp;2020w&nbsp;&nbsp;&middot;&nbsp;&nbsp;3 new</div>
-            </div>
-          </div>
-        </div>
-        <div class="deck-copy">
-          <p class="num">03 / 06 &nbsp;&middot;&nbsp; Type</p>
-          <h3>Jost and Inconsolata, five roles</h3>
-        <p>
-          Jost for everything the eye reads as language, Inconsolata for
-          every number and meta line, so data never borrows the
-          platform&rsquo;s default mono.
-        </p>
-        <p>
-          Four static Jost weights and no light cut: at these sizes, on a
-          near-black ground, a light weight disappears.
-        </p>
-          <p class="rationale"><b>The section label is the one that gets confused.</b> Uppercase
-          and tightly tracked, so it reads as mono at a glance &mdash; but it
-          is Jost. Inconsolata marks <em>data</em>: a duration, a word count,
-          a host.</p>
-        </div>
-      </article>
-      <article class="deck-slide" aria-hidden="true" inert>
-        <div class="v-amp deck-figure">
-          <div class="iconwall">
-            <figure><svg class="i"><use href="#w-home"/></svg><figcaption>Home</figcaption></figure>
-            <figure><svg class="i"><use href="#w-target"/></svg><figcaption>Target</figcaption></figure>
-            <figure><svg class="i"><use href="#w-focus"/></svg><figcaption>Clock</figcaption></figure>
-            <figure><svg class="i"><use href="#w-chev"/></svg><figcaption>Chevron</figcaption></figure>
-            <figure><svg class="i"><use href="#w-back"/></svg><figcaption>Back</figcaption></figure>
-            <figure><svg class="i"><use href="#w-close"/></svg><figcaption>Close</figcaption></figure>
-            <figure><svg class="i"><use href="#w-play"/></svg><figcaption>Play</figcaption></figure>
-            <figure><svg class="i"><use href="#w-pause"/></svg><figcaption>Pause</figcaption></figure>
-            <figure><svg class="i"><use href="#w-shuffle"/></svg><figcaption>Shuffle</figcaption></figure>
-            <figure><svg class="i"><use href="#w-wave"/></svg><figcaption>Waveform</figcaption></figure>
-            <figure><svg class="i"><use href="#w-folder"/></svg><figcaption>Folder</figcaption></figure>
-            <figure><svg class="i"><use href="#w-folderconnect"/></svg><figcaption>FolderConnect</figcaption></figure>
-            <figure><svg class="i"><use href="#w-external"/></svg><figcaption>External</figcaption></figure>
-            <figure><svg class="i"><use href="#w-saved"/></svg><figcaption>Bookmark</figcaption></figure>
-            <figure><svg class="i"><use href="#w-bookmarkfilled"/></svg><figcaption>BookmarkFilled</figcaption></figure>
-            <figure><svg class="i"><use href="#w-feed"/></svg><figcaption>Feed</figcaption></figure>
-            <figure><svg class="i"><use href="#w-reader"/></svg><figcaption>Reader</figcaption></figure>
-            <figure><svg class="i"><use href="#w-summary"/></svg><figcaption>Summary</figcaption></figure>
-            <figure><svg class="i"><use href="#w-done"/></svg><figcaption>Check</figcaption></figure>
-            <figure><svg class="i"><use href="#w-settings"/></svg><figcaption>Settings</figcaption></figure>
-            <figure><svg class="i"><use href="#w-offline"/></svg><figcaption>Offline</figcaption></figure>
-            <figure><svg class="i"><use href="#w-contrast"/></svg><figcaption>Contrast</figcaption></figure>
-          </div>
-
-          <div>
-            <div class="navstrip">
-              <span class="nb"><svg class="i"><use href="#w-home"/></svg></span>
-              <span class="nb sel"><svg class="i"><use href="#w-wave"/></svg></span>
-              <span class="nb"><svg class="i"><use href="#w-saved"/></svg></span>
-              <span class="bardiv"></span>
-              <span class="nb"><svg class="i"><use href="#w-contrast"/></svg></span>
-            </div>
-            <div class="navstrip wide">
-              <span class="nb playing"><svg class="i"><use href="#w-pause"/></svg></span>
-              <span class="tt">Claude Code now supports artifacts</span>
-              <span class="nb"><svg class="i" style="font-size:13px"><use href="#w-close"/></svg></span>
-            </div>
-          </div>
-        </div>
-        <div class="deck-copy">
-          <p class="num">04 / 06 &nbsp;&middot;&nbsp; Icons</p>
-          <h3>Bar &mdash; the waveform is the alphabet</h3>
-        <p>
-          All twenty-two, drawn from <code>DuskReadIcons.kt</code>&rsquo;s own
-          path data. One spec throughout: 2.4 weight, round cap and join,
-          nothing filled.
-        </p>
-        <p>
-          Every glyph that can be built from evenly spaced vertical bars is,
-          so the set agrees with the data on screen rather than merely
-          sitting beside it.
-        </p>
-          <p class="rationale"><b>BookmarkFilled is the single filled glyph</b>, and only the
-          <em>on</em> half of a pair. Two states have to be told apart at
-          icon size, and a tint change is a colour difference &mdash; the one
-          thing Ink does not have.</p>
-        </div>
-      </article>
-
-      <article class="deck-slide" aria-hidden="true" inert>
-        <div class="v-amp deck-figure">
-          <div class="v-amp mono concept">
-          <figure class="cstep">
-            <div class="cstep-art"><svg class="appicon" width="120" height="120" viewBox="0 0 108 108" aria-hidden="true"><rect width="108" height="108" fill="#161616"/><g transform="translate(54,54) scale(0.85) translate(-54,-54)"><path fill="#dcdcdc" d="M40,38 a14,14 0 0 1 28,0 v36 a14,14 0 0 1 -28,0 z"/></g></svg></div>
-            <figcaption>
-              <p class="cstep-num">01</p>
-              <p class="cstep-title">The bar</p>
-            </figcaption>
-          </figure>
-          <figure class="cstep">
-            <div class="cstep-art"><svg class="appicon" width="120" height="120" viewBox="0 0 108 108" aria-hidden="true"><rect width="108" height="108" fill="#161616"/><g transform="translate(54,54) scale(0.85) translate(-54,-54)"><path fill="#dcdcdc" d="M40,38 a14,14 0 0 1 28,0 v36 a14,14 0 0 1 -28,0 z"/><path fill="none" stroke="#9c9c9c" stroke-width="2.4" stroke-dasharray="6 5" d="M44,32 a16,16 0 0 1 32,0 a16,16 0 0 1 -32,0 z"/></g></svg></div>
-            <figcaption>
-              <p class="cstep-num">02</p>
-              <p class="cstep-title">The crescent</p>
-            </figcaption>
-          </figure>
-          <figure class="cstep">
-            <div class="cstep-art"><svg class="appicon" width="120" height="120" viewBox="0 0 108 108" aria-hidden="true"><rect width="108" height="108" fill="#161616"/><g transform="translate(54,54) scale(0.85) translate(-54,-54)"><path fill="#dcdcdc" d="M40,38 a14,14 0 0 1 28,0 v36 a14,14 0 0 1 -28,0 z"/><path fill="#161616" d="M44,32 a16,16 0 0 1 32,0 a16,16 0 0 1 -32,0 z"/></g></svg></div>
-            <figcaption>
-              <p class="cstep-num">03</p>
-              <p class="cstep-title">The mark</p>
-            </figcaption>
-          </figure>
-      </div>
-
-          <div class="v-amp mono brandrow" style="margin-top:24px">
-          <div><svg class="appicon" width="96" height="96" viewBox="0 0 108 108" aria-hidden="true"><rect width="108" height="108" fill="#161616"/><g transform="translate(54,54) scale(0.85) translate(-54,-54)"><path fill="#dcdcdc" d="M40,38 a14,14 0 0 1 28,0 v36 a14,14 0 0 1 -28,0 z"/><path fill="#161616" d="M44,32 a16,16 0 0 1 32,0 a16,16 0 0 1 -32,0 z"/></g></svg><p class="brand-label">96</p></div>
-          <div><svg class="appicon" width="56" height="56" viewBox="0 0 108 108" aria-hidden="true"><rect width="108" height="108" fill="#161616"/><g transform="translate(54,54) scale(0.85) translate(-54,-54)"><path fill="#dcdcdc" d="M40,38 a14,14 0 0 1 28,0 v36 a14,14 0 0 1 -28,0 z"/><path fill="#161616" d="M44,32 a16,16 0 0 1 32,0 a16,16 0 0 1 -32,0 z"/></g></svg><p class="brand-label">56</p></div>
-          <div><svg class="appicon" width="28" height="28" viewBox="0 0 108 108" aria-hidden="true"><rect width="108" height="108" fill="#161616"/><g transform="translate(54,54) scale(0.85) translate(-54,-54)"><path fill="#dcdcdc" d="M40,38 a14,14 0 0 1 28,0 v36 a14,14 0 0 1 -28,0 z"/><path fill="#161616" d="M44,32 a16,16 0 0 1 32,0 a16,16 0 0 1 -32,0 z"/></g></svg><p class="brand-label">28</p></div>
-          <div style="width:64px">
-            <div class="splash" id="splashdemo" style="background:#161616" title="Replay">
-              <svg width="40" height="40" viewBox="0 0 108 108"><g class="mark"><g transform="translate(54,54) scale(0.85) translate(-54,-54)"><path fill="#dcdcdc" d="M40,38 a14,14 0 0 1 28,0 v36 a14,14 0 0 1 -28,0 z"/><path fill="#161616" d="M44,32 a16,16 0 0 1 32,0 a16,16 0 0 1 -32,0 z"/></g></g></svg>
-            </div>
-            <p class="brand-label">splash</p>
-          </div>
-      </div>
-        </div>
-        <div class="deck-copy">
-          <p class="num">05 / 06 &nbsp;&middot;&nbsp; App icon</p>
-          <h3>One mark, in Ink, everywhere it appears</h3>
-        <p>
-          The house rule &mdash; that the waveform is the alphabet &mdash;
-          carries into the launcher icon too: one wide bar, with a crescent
-          bitten from its top for dusk.
-        </p>
-        <p>
-          The terracotta launcher pair it used to swap between at runtime is
-          gone. An icon that changes colour behind the user&rsquo;s back is a
-          bug report waiting to happen.
-        </p>
-          <p class="rationale"><b>The bite is painted, not subtracted.</b> The circle overruns
-          the bar on two sides, so a hole that runs outside its own shape is
-          not a hole. The splash that launches it is a launch theme, not a
-          composable &mdash; up before the first frame, its ground the same
-          <code>#161616</code> as the tile and the app&rsquo;s own
-          background.</p>
-        </div>
-      </article>
-      <article class="deck-slide" aria-hidden="true" inert>
-        <div class="v-amp deck-figure">
-          <div class="decisions">
-            <p class="dec-label">Corner radii</p>
-            <div class="radrow">
-              <div><span class="rad" style="border-radius:14px"></span><p class="brand-label">Card &middot; 14</p></div>
-              <div><span class="rad" style="border-radius:10px"></span><p class="brand-label">Inline &middot; 10</p></div>
-              <div><span class="rad" style="border-radius:3px"></span><p class="brand-label">Chip &middot; 3</p></div>
-            </div>
-
-            <p class="dec-label">Durations</p>
-            <div class="durs">
-              <div class="dur"><span class="name">PushIn</span><span class="bar" style="width:260px"></span><span class="ms">260ms</span></div>
-              <div class="dur"><span class="name">Chip</span><span class="bar" style="width:220px"></span><span class="ms">220ms</span></div>
-              <div class="dur"><span class="name">Fade</span><span class="bar" style="width:180px"></span><span class="ms">180ms</span></div>
-              <div class="dur"><span class="name">PopFade</span><span class="bar" style="width:160px"></span><span class="ms">160ms</span></div>
-            </div>
-          </div>
-        </div>
-        <div class="deck-copy">
-          <p class="num">06 / 06 &nbsp;&middot;&nbsp; Shape and motion</p>
-          <h3>Values that carry a decision, not a measurement</h3>
-        <p>
-          Nothing in the app is fully round except an actual circular icon
-          button. Each radius is one step tighter than the surface holding
-          it, so a row never competes with its panel.
-        </p>
-        <p>
-          Navigation and the visualiser move at deliberately different
-          speeds: navigation should feel immediate, whereas a tone change is
-          teaching and has to be slow enough to follow.
-        </p>
-          <p class="rationale">An optical one-off stays a literal at its call site. Padding of
-          <code>top = 14.dp, bottom = 13.dp</code> is a nudge to make one
-          label sit right, not a rule, and naming it would imply a system
-          that is not there.</p>
         </div>
       </article>
           </div>
         </div>
         <div class="deck-bar">
           <button type="button" class="deck-nav deck-prev" aria-label="Previous"><svg class="i"><use href="#w-back"/></svg></button>
-          <div class="deck-dots" role="tablist" aria-label="Design system">
-          <button type="button" class="cdot is-on" aria-label="Monochrome"></button>
-          <button type="button" class="cdot" aria-label="Colour"></button>
-          <button type="button" class="cdot" aria-label="Type"></button>
-          <button type="button" class="cdot" aria-label="Icons"></button>
-          <button type="button" class="cdot" aria-label="App icon"></button>
-          <button type="button" class="cdot" aria-label="Shape and motion"></button>
+          <div class="deck-dots" role="tablist" aria-label="How it works">
+          <button type="button" class="cdot is-on" aria-label="Architecture"></button>
+          <button type="button" class="cdot" aria-label="The client app"></button>
+          <button type="button" class="cdot" aria-label="Design language"></button>
           </div>
-          <span class="deck-count" aria-live="polite">01 / 06</span>
+          <span class="deck-count" aria-live="polite">01 / 03</span>
           <button type="button" class="deck-nav deck-next" aria-label="Next"><svg class="i"><use href="#w-chev"/></svg></button>
         </div>
       </div>
     </div>
   </section>
+
 
   <!-- ============================================================
        ACT 4 — running it.
@@ -2343,43 +1736,10 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
   })();
   </script>
 
-  <script>
-  // The splash settle, played the first time it scrolls into view and again
-  // on click. Once, not on a loop: a launch animation that repeats forever
-  // on a documentation page stops reading as a launch and starts reading as
-  // a spinner.
-  (function () {
-    var demo = document.getElementById('splashdemo');
-    if (!demo) return;
-
-    function play() {
-      demo.classList.remove('play');
-      // Forces the class removal to land before it is re-added, which is the
-      // only way to restart a CSS animation from script.
-      void demo.offsetWidth;
-      demo.classList.add('play');
-    }
-
-    demo.addEventListener('click', play);
-
-    if (!('IntersectionObserver' in window)) return;
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-
-    var seen = new IntersectionObserver(function (entries) {
-      entries.forEach(function (entry) {
-        if (!entry.isIntersecting) return;
-        play();
-        seen.disconnect();
-      });
-    }, { threshold: 0.6 });
-    seen.observe(demo);
-  })();
-  </script>
-
   <footer>
     <p class="foot-line">
-      <b>DuskRead</b> &mdash; a personal reading app, and the design system
-      it is built from.
+      <b>DuskRead</b> &mdash; a reading list kept automatically by an AI
+      agent and Notion, and the design system it is built from.
     </p>
     <p class="foot-line">
       Built with AI. Written, drawn and argued out with

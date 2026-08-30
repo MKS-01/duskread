@@ -66,6 +66,7 @@ import dev.mks.duskread.ui.common.ToastRequest
 import dev.mks.duskread.ui.layout.LocalWindowClass
 import dev.mks.duskread.ui.links.LinksTab
 import dev.mks.duskread.ui.reader.ReaderTab
+import dev.mks.duskread.ui.rememberUrlOpener
 import dev.mks.duskread.ui.settings.SettingsScreen
 import dev.mks.duskread.ui.theme.Layout
 import dev.mks.duskread.ui.theme.Motion
@@ -138,6 +139,23 @@ fun HomeScreen(
             links.save(it)
             ToastRequest.show("Saved")
             SharedLinkRequest.consume()
+        }
+    }
+
+    // A pick tapped from the reading-suggestion widget. The widget only ever
+    // hands over a URL — see SuggestionOpenRequest — so the save, the read
+    // toggle and the signal all happen here, through the one live copy of
+    // each, the same four lines NextUpSection's own tap already runs.
+    val openSuggestion = rememberUrlOpener()
+    val pendingSuggestion by SuggestionOpenRequest.pending.collectAsState()
+    LaunchedEffect(pendingSuggestion) {
+        pendingSuggestion?.let { pick ->
+            openSuggestion(pick.url)
+            val id = links.save(pick.url, pick.title, pick.topic)?.id
+            id?.let { links.toggleRead(it) }
+            signals.recordRead(pick.url)
+            pick.topic?.let { signals.recordTopicRead(it) }
+            SuggestionOpenRequest.consume()
         }
     }
 
@@ -340,20 +358,29 @@ fun HomeScreen(
                     onOpenFocus = onOpenFocus,
                     onOpenSaved = { onTabChange(HomeTab.SAVED) },
                     onOpenReadback = { onTabChange(HomeTab.READBACK) },
+                    onOpenFollowing = { onTabChange(HomeTab.FOLLOWING) },
                     onOpenSettings = { showSettings = true },
-                    onOpenTopics = { topicsFeed = it },
                     contentPadding = listPadding,
                 )
 
-                HomeTab.READBACK -> ReaderTab(
-                    repository = readRepository,
-                    player = player,
+                HomeTab.FOLLOWING -> FollowingTab(
+                    feeds = feeds,
+                    feedPosts = feedPosts,
+                    links = links,
+                    client = feedClient,
+                    onOpenTopics = { topicsFeed = it },
                     contentPadding = listPadding,
                 )
 
                 HomeTab.SAVED -> LinksTab(
                     library = links,
                     signals = signals,
+                    contentPadding = listPadding,
+                )
+
+                HomeTab.READBACK -> ReaderTab(
+                    repository = readRepository,
+                    player = player,
                     contentPadding = listPadding,
                 )
             }

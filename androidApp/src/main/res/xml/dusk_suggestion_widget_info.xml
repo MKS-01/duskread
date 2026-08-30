@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    updatePeriodMillis is 0, the same as dusk_widget_info.xml and for the same
+    reason: this widget only ever redraws because something happened —
+    APPWIDGET_UPDATE, or the REFRESH broadcast it shares with the other
+    widget's provider (a capture, a focus-session transition, or the app
+    leaving the foreground; see DuskReadSuggestionWidget and MainActivity's
+    onStop). No alarm here asks the system to wake the app on a schedule to
+    repaint a pick nobody has looked at.
+
+    targetCellHeight is 1, not 2: most launchers place a widget at exactly
+    the cell span it asks for, and a launcher's own row height is often 150dp
+    or more — two rows made the default drop noticeably taller than the card
+    actually needs, with widget_suggestion.xml's content sitting centred in a
+    lot of empty card. One row plus maxResizeHeight keeps the default small
+    and stops a reader dragging it into something oversized; the title still
+    truncates at two lines rather than the card growing to fit a long one.
+-->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="250dp"
+    android:minHeight="80dp"
+    android:targetCellWidth="4"
+    android:targetCellHeight="1"
+    android:minResizeWidth="180dp"
+    android:minResizeHeight="72dp"
+    android:maxResizeHeight="140dp"
+    android:resizeMode="horizontal|vertical"
+    android:widgetCategory="home_screen"
+    android:description="@string/widget_suggestion_description"
+    android:previewLayout="@layout/widget_suggestion"
+    android:initialLayout="@layout/widget_suggestion"
+    android:updatePeriodMillis="0" />

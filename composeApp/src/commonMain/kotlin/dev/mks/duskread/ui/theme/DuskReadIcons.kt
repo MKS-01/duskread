@@ -332,21 +332,31 @@ object DuskReadIcons {
     }
 
     /**
-     * Feed: ascending bars, like a signal getting stronger — the RSS dot and
-     * broadcast arcs redrawn in the set's own vocabulary rather than
-     * borrowed from a glyph everyone else already uses.
+     * Feed: three bulleted rules, a list of things followed rather than a
+     * single article read.
+     *
+     * Used to be ascending bars — a signal getting stronger, standing in for
+     * the RSS dot and its broadcast arcs — but on the tab bar that read as a
+     * literal signal-strength glyph, not "following". A short bar next to a
+     * long one is still the set's own vocabulary (the round line cap turns
+     * the short one into a dot, so this is bars all the way down) but reads
+     * unambiguously as a list.
      */
     val Feed: ImageVector by lazy {
         icon("Feed") {
             stroked {
-                moveTo(5f, 19.5f)
-                lineTo(5f, 18f)
-                moveTo(10f, 19.5f)
-                lineTo(10f, 14.5f)
-                moveTo(15f, 19.5f)
-                lineTo(15f, 10.5f)
-                moveTo(20f, 19.5f)
-                lineTo(20f, 6.5f)
+                moveTo(4f, 7f)
+                lineTo(6f, 7f)
+                moveTo(9f, 7f)
+                lineTo(20f, 7f)
+                moveTo(4f, 12f)
+                lineTo(6f, 12f)
+                moveTo(9f, 12f)
+                lineTo(20f, 12f)
+                moveTo(4f, 17f)
+                lineTo(6f, 17f)
+                moveTo(9f, 17f)
+                lineTo(20f, 17f)
             }
         }
     }
@@ -470,6 +480,25 @@ object DuskReadIcons {
                 lineTo(15f, 15.5f)
                 moveTo(18f, 11f)
                 lineTo(18f, 13f)
+            }
+        }
+    }
+
+    /**
+     * Search: a ring and a handle, same as everywhere else — one of the few
+     * shapes in the set that cannot be built from bars, so it borrows the
+     * plain stroke weight and round terminal instead, the way Target and
+     * Shuffle already do.
+     */
+    val Search: ImageVector by lazy {
+        icon("Search") {
+            stroked {
+                moveTo(4.5f, 11f)
+                arcToRelative(6.5f, 6.5f, 0f, true, true, 13f, 0f)
+                arcToRelative(6.5f, 6.5f, 0f, true, true, -13f, 0f)
+                close()
+                moveTo(15.8f, 15.8f)
+                lineTo(20f, 20f)
             }
         }
     }
