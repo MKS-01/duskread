@@ -46,11 +46,13 @@ Licence         MIT
 ```
 
 **The opening paragraph is the piece to protect.** It is a single scene —
-morning share, evening pile, the walk, the summary, the timer, the theme — in
-second person, present tense, no feature names in bold, no bullets. A new
-feature joins it only if it changes the shape of the day. Most don't; they go
-in *What it does*. If you edit it, keep it one paragraph and read it back
-whole.
+the inbox, the followed blog, the timer, the theme — in second person,
+present tense, one paragraph. It leads with two bold-lead clauses,
+**Automated:** and **Personalised:**, the two qualities that decide what
+lands in the list before the scene gets to the reading itself; nothing else
+in it takes a bold label. A new feature joins it only if it changes the
+shape of the day. Most don't; they go in *What it does*. If you edit it,
+keep it one paragraph and read it back whole.
 
 **What it does** is the pillar list from `CLAUDE.md` — saved links and feeds
 (`links/`), readback (`reader/`), summaries (`summary/`), the focus timer
