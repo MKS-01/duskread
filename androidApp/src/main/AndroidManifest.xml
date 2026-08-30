@@ -101,6 +101,25 @@
         </receiver>
 
         <!--
+            The reading-suggestion widget. Registered for the same REFRESH
+            action as the widget above, on purpose: a capture or a
+            focus-session transition already broadcasts it, so this one gets
+            a fresh pick from the same event with no new trigger of its own.
+            See DuskReadSuggestionWidget's class comment.
+        -->
+        <receiver
+            android:name="dev.mks.duskread.android.widget.DuskReadSuggestionWidget"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="dev.mks.duskread.widget.REFRESH" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/dusk_suggestion_widget_info" />
+        </receiver>
+
+        <!--
             The clipboard read, which since Android 10 only the focused app is
             allowed to do — so this is an activity, and everything here is
             about making an activity that is never seen. Transparent, no

@@ -38,4 +38,11 @@
     <string name="widget_toast_saved">Saved</string>
     <string name="widget_toast_already_saved">Already saved</string>
     <string name="widget_no_link">No link on the clipboard</string>
+
+    <!-- The reading-suggestion widget: one NEXT UP pick, rendered where the app is not open. -->
+    <string name="widget_suggestion_description">One thing worth reading right now, picked the same way Home\'s NEXT UP is.</string>
+    <string name="widget_suggestion_eyebrow">NEXT UP</string>
+    <string name="widget_suggestion_empty_title">Nothing to suggest yet</string>
+    <string name="widget_suggestion_empty_meta">Follow a blog or save a link</string>
+    <string name="widget_suggestion_a11y_open">Open this article</string>
 </resources>

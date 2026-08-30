@@ -639,3 +639,45 @@ those blogs actually produced.
   a standalone "03/07 · Following" slide built around the same digest
   in-place-on-Home design. Both predate the tab. Deliberately left for its own
   pass rather than rushed alongside the app change it documents.
+
+## A second home-screen widget: one suggestion, not a control (this pass)
+
+`DuskReadWidget` is a control — start, pause, capture. `NEXT UP` on Home is
+the app's one already-ranked "here, read this" moment, but it only exists
+where the app is open. `DuskReadSuggestionWidget` puts that same pick on the
+home screen instead of a second control.
+
+- [x] New `androidApp` provider, `DuskReadSuggestionWidget`, registered
+  alongside `DuskReadWidget` for the same `APPWIDGET_UPDATE` and
+  `WidgetState.ActionRefresh` actions — a capture or a focus-session
+  transition already broadcasts a repaint, so the new widget rides that
+  broadcast rather than adding a trigger of its own. `MainActivity.onStop`
+  refreshes both for the same reason.
+- [x] A separate provider rather than a third state in the bar widget's 64dp
+  row — that bar is built around exactly two states on purpose, and an
+  article title has nowhere to go in a 9sp caption slot without displacing
+  the "start a session" affordance the bar exists to keep in reach.
+- [x] Ranks its own throwaway copy of the candidate pool
+  (`pool`/`rank`/`topPicks` over a fresh `LinkLibrary`/`FeedLibrary`/
+  `FeedPostCache`/`ReadingSignals`) with a random seed on every redraw, rather
+  than the day-stable seed Home's `NEXT UP` uses — Home is deliberately
+  stable across a morning of openings; this widget only redraws for a real
+  reason in the first place, so there is nothing to protect by not
+  re-rolling.
+- [x] Read-only ranking, but not a read-only tap: opening a pick has to go
+  through the app's own live `LinkLibrary`/`ReadingSignals`, not the widget's
+  throwaway copy, or it's two writers over the same storage key — exactly the
+  hazard `docs/architecture.md` warns about. New `ui/home/SuggestionOpenRequest`
+  hands the tapped URL to `HomeScreen`, which does the save, the read toggle
+  and the signal through the one live copy of each — the same four lines
+  `NextUpSection`'s own tap already runs.
+- [x] `widget_suggestion.xml` has one TextView pair, not two behind
+  visibility flags: "nothing to suggest yet" is the same title-and-meta shape
+  with different text, not a different layout. Borrows the bar widget's brand
+  mark at a smaller size in its eyebrow row rather than inventing a second
+  glyph.
+- [x] `dusk_suggestion_widget_info.xml` asks for `targetCellHeight="1"` —
+  two rows left the card's content centred in a lot of empty space on
+  launchers whose own row height runs 150dp or more. `updatePeriodMillis` is
+  `0`, same as the bar widget: nothing here polls, every redraw is a real
+  event.
