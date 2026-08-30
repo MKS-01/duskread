@@ -843,48 +843,6 @@ body.swapping .v-amp * {
 }
 
 /* ============================================================
-   ONBOARDING PANEL — centred, no nav bar, and the only place in
-   the app that draws a filled button. See ui/onboarding/Onboarding.kt.
-   ============================================================ */
-
-.v-amp .canvas.onb { padding: 8px 22px 16px; justify-content: space-between; }
-.v-amp .skiprow { display: flex; justify-content: flex-end; min-height: 22px; flex: none; }
-.v-amp .skip {
-  font-family: var(--a-ui); font-weight: 600; font-size: 11px;
-  color: var(--a-mute); padding: 3px 8px;
-}
-.v-amp .panel { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
-/* The art box is a fixed height in the app (150dp) so the label below it
-   lands in the same place on all four panels — the pager would otherwise
-   shuffle the type up and down as you swipe. */
-.v-amp .panel .art { height: 78px; display: grid; place-items: center; margin-bottom: 22px; }
-.v-amp .panel .lbl {
-  font-family: var(--a-ui); font-weight: 700; font-size: 10px;
-  letter-spacing: 0.09em; text-transform: uppercase; color: var(--a-sound); margin: 0 0 8px;
-}
-.v-amp .panel h3 { margin: 0 0 9px; font-size: 18px; line-height: 1.24; font-weight: 600; letter-spacing: -0.01em; }
-.v-amp .panel p { margin: 0; font-size: 11.5px; line-height: 1.58; color: var(--a-mute); }
-
-/* Saved's art: a list row reduced to the two things a row actually is —
-   a bookmark and a line of title. */
-.v-amp .savedart { display: flex; flex-direction: column; gap: 10px; }
-.v-amp .savedart .r { display: flex; align-items: center; gap: 10px; }
-.v-amp .savedart .r i { width: 6px; height: 6px; border-radius: 50%; background: var(--a-sound); flex: none; }
-.v-amp .savedart .r b { height: 10px; border-radius: 4px; background: var(--a-line); display: block; }
-
-.v-amp .footrow { display: flex; align-items: center; flex: none; padding-top: 12px; }
-.v-amp .dots { display: flex; gap: 6px; }
-.v-amp .dots i { width: 7px; height: 7px; border-radius: 999px; background: var(--a-line); display: block; }
-/* The active dot lengthens rather than lighting up alone: at 7px a colour
-   change is the only difference, and Ink has no colour to change. */
-.v-amp .dots i.on { width: 20px; background: var(--a-sound); }
-.v-amp .cta {
-  margin-left: auto; background: var(--a-sound); color: var(--a-on-sound);
-  font-family: var(--a-ui); font-weight: 600; font-size: 11px;
-  border-radius: 7px; padding: 7px 16px;
-}
-
-/* ============================================================
    COLOUR — the token roles, both schemes, real values.
    ============================================================ */
 
@@ -1108,12 +1066,14 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
       </div>
     </div>
 
-    <h1>A reading habit that survives the news cycle</h1>
+    <h1>A reading list, personalised to how you actually read</h1>
     <p class="standfirst">
-      You find something good at eleven in the morning and you are not going
-      to read it at eleven in the morning. DuskRead takes the link, keeps the
-      blogs you follow beside it, and has the pile sorted out by the evening
-      — one screen to open when you finally sit down.
+      Kept automatically by <strong>Claude</strong> and a
+      <strong>Notion</strong> database, not by you. Claude files what's
+      worth keeping out of Gmail; the blogs you follow pull their own new
+      posts. What surfaces on Home is ranked against your own reading habit
+      &mdash; the sources you return to, the topics you finish &mdash; not
+      whatever landed last.
     </p>
     <p class="standfirst">
       Two schemes. <strong>Paper Black</strong>, the one you are looking at,
@@ -1184,8 +1144,9 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
           <p class="pillar-name">Saved links</p>
           <p class="pillar-note">
             A pasted or shared URL is in the list before its title has
-            finished loading. Nothing to file and nothing to tag &mdash; the
-            pile is meant to be worked through, not curated.
+            finished loading &mdash; the same list Notion is quietly filing
+            newsletters into on its own. Pasting by hand still works; it
+            simply isn't what carries the habit any more.
           </p>
         </div>
         <div class="pillar">
@@ -1227,9 +1188,10 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
       <h2>Act two &middot; Walkthrough</h2>
       <p class="act-title">Seven screens, in the order you meet them</p>
       <p class="act-note">
-        First run, then Home, then the five screens it opens onto. Drag the
-        deck, or use the arrows &mdash; it advances on its own until you
-        touch it.
+        Reading first, then everywhere it leads back from: Home, Following,
+        Saved, connecting Notion, and the timer and audio around it all.
+        Drag the deck, or use the arrows &mdash; it advances on its own
+        until you touch it.
       </p>
     </div>
 
@@ -1242,39 +1204,67 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
           <div class="phone">
             <div class="screen">
               <div class="statusbar"><span>4:19</span><span class="bars"><i></i><i></i><i></i><i></i></span></div>
-              <div class="canvas onb">
-                <div class="skiprow"></div>
-                <div class="panel">
-                  <p class="lbl">One last thing</p>
-                  <h3>What should I call you?</h3>
-                  <p>
-                    Only used to say hello. It stays on this device &mdash;
-                    there is no account and nothing leaves the app.
-                  </p>
-                  <div class="fieldbox" style="width:100%;margin-top:22px">Your name<span class="caret"></span></div>
-                  <p style="margin-top:11px;font-size:10.5px">You can leave this blank.</p>
+              <div class="canvas">
+                <div class="toolbar">
+                  <span class="iconbtn" style="border:0"><svg class="i" style="font-size:16px"><use href="#w-back"/></svg></span>
+                  <span class="title">A Tale of Two Flink Autoscalers</span>
+                  <span class="iconbtn active"><svg class="i" style="font-size:15px"><use href="#w-reader"/></svg></span>
+                  <span class="iconbtn active"><svg class="i" style="font-size:15px"><use href="#w-summary"/></svg></span>
+                  <span class="iconbtn"><svg class="i" style="font-size:15px"><use href="#w-external"/></svg></span>
                 </div>
-                <div class="footrow">
-                  <span class="dots"><i></i><i></i><i></i><i class="on"></i></span>
-                  <span class="cta">Get started</span>
+                <div style="font-size:13px;line-height:1.6;color:var(--a-mute);filter:blur(1.5px);opacity:0.5">
+                  Netflix currently runs two different autoscalers for Apache
+                  Flink, and they are actively moving toward replacing the
+                  custom one with the open-source Kubernetes-native
+                  autoscaler.<br><br>
+                  The custom autoscaler predates the Kubernetes operator by
+                  several years. It was built when the platform ran Flink on
+                  its own scheduling layer, and it carries assumptions from
+                  that era — most visibly that scaling decisions are made
+                  from a single aggregated backlog metric rather than
+                  per-vertex.<br><br>
+                  Feature parity is the gating question. The open-source
+                  autoscaler reached rough equivalence on throughput-based
+                  scaling last year, but two things kept the custom one alive:
+                  its handling of sources with irregular partition counts, and
+                  the operational tooling built around it.<br><br>
+                  What follows is a comparison of how each one reacts to the
+                  same three production incidents, and what that implies for
+                  the migration order.
+                </div>
+              </div>
+              <div class="summarycard">
+                <div style="display:flex;align-items:center;margin-bottom:8px;font-family:var(--a-ui);font-weight:700;font-size:10px;letter-spacing:0.09em;text-transform:uppercase;color:var(--a-sound)">
+                  Summary
+                  <svg class="i" style="font-size:13px;margin-left:auto;color:var(--a-faint)"><use href="#w-close"/></svg>
+                </div>
+                <div style="font-size:12.5px;line-height:1.55;color:var(--a-ink)">
+                  Netflix runs two Flink autoscalers today and is consolidating
+                  on the open-source, Kubernetes-native one — the custom
+                  version is being retired once feature parity closes the
+                  remaining gap.
                 </div>
               </div>
             </div>
           </div>
         </div>
         <div class="deck-copy">
-          <p class="num">01 / 07 &nbsp;&middot;&nbsp; Onboarding</p>
-          <h3>What should I call you?</h3>
+          <p class="num">01 / 07 &nbsp;&middot;&nbsp; Reading</p>
+          <h3>Read it here, or ask what is in it</h3>
           <p>
-            First run is four panels &mdash; one per pillar of the app &mdash;
-            and then this. The name is optional, stays on the device, and is
-            only ever used to say hello on Home. There is no account.
+            The reader view strips the page to its text. From there the
+            <b>summary</b> button hands that same extracted text to Gemini
+            Nano, on the phone &mdash; nothing uploaded, no connection needed.
           </p>
-          <p class="rationale"><b>The dot lengthens, it does not just light up</b> &mdash; 20dp
-            against 7dp, because at that size hue is the only other difference
-            and Ink has none to spend. <b>Get started</b> is the one filled
-            button in the app, at <code>Radius.Inline</code> rather than
-            Material&rsquo;s pill.</p>
+          <p>
+            The panel floats over the article and nothing else on screen
+            moves. Checking a summary never costs your place in the thing you
+            were reading.
+          </p>
+          <p class="rationale"><b>Prose, not bullets.</b> Fragments ask you to reassemble the
+            argument you opened the panel to avoid. One paragraph, one tone.
+            The button is hidden rather than greyed out until the reader has
+            text to give it.</p>
         </div>
       </article>
       <article class="deck-slide" aria-hidden="true" inert>
@@ -1491,74 +1481,6 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
       <article class="deck-slide" aria-hidden="true" inert>
         <div class="v-amp deck-figure">
           <div class="phone">
-            <div class="screen">
-              <div class="statusbar"><span>4:19</span><span class="bars"><i></i><i></i><i></i><i></i></span></div>
-              <div class="canvas">
-                <div class="toolbar">
-                  <span class="iconbtn" style="border:0"><svg class="i" style="font-size:16px"><use href="#w-back"/></svg></span>
-                  <span class="title">A Tale of Two Flink Autoscalers</span>
-                  <span class="iconbtn active"><svg class="i" style="font-size:15px"><use href="#w-reader"/></svg></span>
-                  <span class="iconbtn active"><svg class="i" style="font-size:15px"><use href="#w-summary"/></svg></span>
-                  <span class="iconbtn"><svg class="i" style="font-size:15px"><use href="#w-external"/></svg></span>
-                </div>
-                <div style="font-size:13px;line-height:1.6;color:var(--a-mute);filter:blur(1.5px);opacity:0.5">
-                  Netflix currently runs two different autoscalers for Apache
-                  Flink, and they are actively moving toward replacing the
-                  custom one with the open-source Kubernetes-native
-                  autoscaler.<br><br>
-                  The custom autoscaler predates the Kubernetes operator by
-                  several years. It was built when the platform ran Flink on
-                  its own scheduling layer, and it carries assumptions from
-                  that era — most visibly that scaling decisions are made
-                  from a single aggregated backlog metric rather than
-                  per-vertex.<br><br>
-                  Feature parity is the gating question. The open-source
-                  autoscaler reached rough equivalence on throughput-based
-                  scaling last year, but two things kept the custom one alive:
-                  its handling of sources with irregular partition counts, and
-                  the operational tooling built around it.<br><br>
-                  What follows is a comparison of how each one reacts to the
-                  same three production incidents, and what that implies for
-                  the migration order.
-                </div>
-              </div>
-              <div class="summarycard">
-                <div style="display:flex;align-items:center;margin-bottom:8px;font-family:var(--a-ui);font-weight:700;font-size:10px;letter-spacing:0.09em;text-transform:uppercase;color:var(--a-sound)">
-                  Summary
-                  <svg class="i" style="font-size:13px;margin-left:auto;color:var(--a-faint)"><use href="#w-close"/></svg>
-                </div>
-                <div style="font-size:12.5px;line-height:1.55;color:var(--a-ink)">
-                  Netflix runs two Flink autoscalers today and is consolidating
-                  on the open-source, Kubernetes-native one — the custom
-                  version is being retired once feature parity closes the
-                  remaining gap.
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="deck-copy">
-          <p class="num">04 / 07 &nbsp;&middot;&nbsp; Reading</p>
-          <h3>Read it here, or ask what is in it</h3>
-          <p>
-            The reader view strips the page to its text. From there the
-            <b>summary</b> button hands that same extracted text to Gemini
-            Nano, on the phone &mdash; nothing uploaded, no connection needed.
-          </p>
-          <p>
-            The panel floats over the article and nothing else on screen
-            moves. Checking a summary never costs your place in the thing you
-            were reading.
-          </p>
-          <p class="rationale"><b>Prose, not bullets.</b> Fragments ask you to reassemble the
-            argument you opened the panel to avoid. One paragraph, one tone.
-            The button is hidden rather than greyed out until the reader has
-            text to give it.</p>
-        </div>
-      </article>
-      <article class="deck-slide" aria-hidden="true" inert>
-        <div class="v-amp deck-figure">
-          <div class="phone">
           <div class="screen">
             <div class="statusbar"><span>4:19</span><span class="bars"><i></i><i></i><i></i><i></i></span></div>
             <div class="canvas">
@@ -1606,7 +1528,7 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
           </div>
         </div>
         <div class="deck-copy">
-          <p class="num">05 / 07 &nbsp;&middot;&nbsp; Saved</p>
+          <p class="num">04 / 07 &nbsp;&middot;&nbsp; Saved</p>
           <h3>Unread and read, told apart without a heading</h3>
           <p>
             A link arrives by paste or by the share sheet and is in the list
@@ -1617,6 +1539,61 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
             one alpha over the whole row, plus a trailing tick. <b>Read</b> is
             the one section label that stays muted: it sits under an unread
             list and should not compete with it.</p>
+        </div>
+      </article>
+      <article class="deck-slide" aria-hidden="true" inert>
+        <div class="v-amp deck-figure">
+          <div class="phone">
+          <div class="screen">
+            <div class="statusbar"><span>4:19</span><span class="bars"><i></i><i></i><i></i><i></i></span></div>
+            <div class="canvas">
+              <div class="toolbar">
+                <span class="title">Settings</span>
+                <span class="iconbtn" style="border:0"><svg class="i" style="font-size:15px"><use href="#w-close"/></svg></span>
+              </div>
+
+              <p class="eyebrow" style="margin-top:10px">Notion</p>
+              <div class="fieldbox typing">
+                <span class="txt" style="color:var(--a-mute)">ntn_&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;</span>
+              </div>
+              <div class="fieldbox typing">
+                <span class="txt" style="color:var(--a-mute)">&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;7c2a</span>
+              </div>
+              <div class="fieldbox typing">
+                <span class="txt" style="color:var(--a-mute)">&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;91fe</span>
+              </div>
+
+              <div style="margin:14px 0 18px">
+                <h4 style="margin:0 0 3px">Reading list &middot; 9 feeds</h4>
+                <div class="meta"><span>Last synced 2h ago</span></div>
+              </div>
+
+              <div style="display:flex;gap:16px;align-items:center">
+                <span style="color:var(--a-sound);font-family:var(--a-ui);font-weight:700;font-size:9.5px;letter-spacing:0.09em;text-transform:uppercase">Test connection</span>
+                <span style="color:var(--a-sound);font-family:var(--a-ui);font-weight:700;font-size:9.5px;letter-spacing:0.09em;text-transform:uppercase">Sync now</span>
+                <span style="color:var(--a-faint);font-family:var(--a-ui);font-weight:700;font-size:9.5px;letter-spacing:0.09em;text-transform:uppercase;margin-left:auto">Disconnect</span>
+              </div>
+            </div>
+          </div>
+          </div>
+        </div>
+        <div class="deck-copy">
+          <p class="num">05 / 07 &nbsp;&middot;&nbsp; Settings</p>
+          <h3>Two pasted values, no OAuth screen</h3>
+          <p>
+            A personal access token and a database ID, pasted once each
+            &mdash; Notion only ever shows a token at the moment it is
+            created, so there is nothing to look up a second time. A second,
+            optional database ID keeps a separate reading list in step the
+            same way.
+          </p>
+          <p>
+            <b>Test connection</b> checks the token without touching a feed;
+            <b>Sync now</b> pulls whatever changed since the last run.
+          </p>
+          <p class="rationale"><b>Disconnect stays out of the accent.</b> Every other action on
+            this row is reversible; the one that is not never gets the colour
+            that means &ldquo;do this&rdquo; everywhere else on the screen.</p>
         </div>
       </article>
       <article class="deck-slide" aria-hidden="true" inert>
@@ -1746,11 +1723,11 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
         <div class="deck-bar">
           <button type="button" class="deck-nav deck-prev" aria-label="Previous screen"><svg class="i"><use href="#w-back"/></svg></button>
           <div class="deck-dots" role="tablist" aria-label="Screens">
-          <button type="button" class="cdot is-on" aria-label="Onboarding"></button>
+          <button type="button" class="cdot is-on" aria-label="Reading"></button>
           <button type="button" class="cdot" aria-label="Home"></button>
           <button type="button" class="cdot" aria-label="Following"></button>
-          <button type="button" class="cdot" aria-label="Reading"></button>
           <button type="button" class="cdot" aria-label="Saved"></button>
+          <button type="button" class="cdot" aria-label="Settings"></button>
           <button type="button" class="cdot" aria-label="Focus"></button>
           <button type="button" class="cdot" aria-label="Readback"></button>
           </div>
