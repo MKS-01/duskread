@@ -2,9 +2,11 @@ package dev.mks.duskread.ui.settings
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -38,7 +40,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -50,16 +51,19 @@ import dev.mks.duskread.links.FeedLibrary
 import dev.mks.duskread.links.FeedPostCache
 import dev.mks.duskread.links.LinkLibrary
 import dev.mks.duskread.links.ReadingSignals
-import dev.mks.duskread.links.pool
-import dev.mks.duskread.links.rank
 import dev.mks.duskread.links.savedAgo
 import dev.mks.duskread.notion.NotionClient
 import dev.mks.duskread.notion.NotionPrefs
 import dev.mks.duskread.notion.NotionResult
 import dev.mks.duskread.notion.PastedTokenAuth
 import dev.mks.duskread.notion.runFullSync
+import dev.mks.duskread.speech.SpeakerState
+import dev.mks.duskread.speech.VoiceChoice
+import dev.mks.duskread.speech.rememberSpeaker
+import dev.mks.duskread.speech.speechSupported
 import dev.mks.duskread.summary.SummariserState
 import dev.mks.duskread.summary.SummaryLength
+import dev.mks.duskread.summary.SwipeDefault
 import dev.mks.duskread.summary.rememberSummariser
 import dev.mks.duskread.summary.rememberSummaryCache
 import dev.mks.duskread.summary.summariesSupported
@@ -75,8 +79,6 @@ import dev.mks.duskread.ui.theme.Space
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlin.math.abs
-import kotlin.math.roundToInt
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
@@ -108,6 +110,34 @@ fun SettingsScreen(
     api: NotionClient,
     modifier: Modifier = Modifier,
 ) {
+    val secrets = rememberSecretStore()
+    var setupOpen by remember { mutableStateOf(false) }
+
+    // Bumped when the setup sheet changes the connection, so `NotionSettings`
+    // re-reads the keystore instead of showing what was true when it was first
+    // composed.
+    var connectionEpoch by remember { mutableStateOf(0) }
+
+    // Mounted here rather than inside `NotionSettings`, and the reason is a
+    // crash rather than tidiness: the section is rendered inside a
+    // `verticalScroll`, which measures its children with unbounded height, and
+    // the sheet scrolls itself. Nested that way Compose fatals with "Vertically
+    // scrollable component was measured with an infinity maximum height". It
+    // has to be a sibling of the scroll, never a descendant.
+    if (setupOpen) {
+        NotionSetupSheet(
+            prefs = notion,
+            auth = auth,
+            api = api,
+            hasToken = secrets.get(NotionTokenKey) != null,
+            onTokenSaved = { connectionEpoch++ },
+            onConnected = { connectionEpoch++ },
+            onClose = { setupOpen = false },
+            modifier = modifier,
+        )
+        return
+    }
+
     PlatformBackHandler(enabled = true, onBack = onClose)
 
     Surface(modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
@@ -157,18 +187,6 @@ fun SettingsScreen(
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 16.dp, vertical = 8.dp),
             ) {
-                EyebrowHeader(text = "PROFILE")
-                Spacer(Modifier.height(14.dp))
-                NameField(prefs)
-
-                Spacer(Modifier.height(28.dp))
-
-                EyebrowHeader(text = "APPEARANCE")
-                Spacer(Modifier.height(14.dp))
-                ThemeRow(mono = mono, onToggleTheme = onToggleTheme)
-
-                Spacer(Modifier.height(28.dp))
-
                 // Hidden, not disabled, off Android. The length chips choose
                 // between two shapes of a summary that this platform cannot
                 // produce at all, and `SummarySettings` binds the engine as
@@ -183,6 +201,30 @@ fun SettingsScreen(
                     Spacer(Modifier.height(28.dp))
                 }
 
+                // Same rule as SUMMARIES above: hidden where the platform has
+                // no engine, rather than shown as a choice between two voices
+                // that cannot speak.
+                if (speechSupported()) {
+                    EyebrowHeader(text = "VOICE")
+                    Spacer(Modifier.height(14.dp))
+                    VoiceSettings(prefs)
+
+                    Spacer(Modifier.height(28.dp))
+                }
+
+                // Only when the swipe genuinely has two things to choose
+                // between. With just one of summaries or speech working, the
+                // panel can only ever do that one thing regardless of this
+                // setting, and offering a choice with one dead option is
+                // worse than not offering it.
+                if (summariesSupported() && speechSupported()) {
+                    EyebrowHeader(text = "SWIPE")
+                    Spacer(Modifier.height(14.dp))
+                    SwipeSettings(prefs)
+
+                    Spacer(Modifier.height(28.dp))
+                }
+
                 EyebrowHeader(text = "NOTION")
                 Spacer(Modifier.height(14.dp))
                 NotionSettings(
@@ -193,31 +235,52 @@ fun SettingsScreen(
                     notion = notion,
                     auth = auth,
                     api = api,
+                    epoch = connectionEpoch,
+                    onOpenSetup = { setupOpen = true },
                 )
 
                 Spacer(Modifier.height(28.dp))
 
-                EyebrowHeader(text = "DISCOVERY")
+                // Below the reading settings and the connection, because both
+                // are things a reader came here to change and these two are
+                // things they set once. Appearance is the more nearly dead of
+                // the two: the same toggle sits in the bar on every screen, and
+                // this row is the explanation of it rather than the way to
+                // reach it.
+                EyebrowHeader(text = "APPEARANCE")
                 Spacer(Modifier.height(14.dp))
-                Discovery(library = library, feeds = feeds, feedPosts = feedPosts, signals = signals)
+                ThemeRow(mono = mono, onToggleTheme = onToggleTheme)
 
                 Spacer(Modifier.height(28.dp))
 
-                EyebrowHeader(text = "IMPORT LINKS")
+                EyebrowHeader(text = "PROFILE")
                 Spacer(Modifier.height(14.dp))
-                LinkImport(library)
+                NameField(prefs)
+
+                Spacer(Modifier.height(28.dp))
+
+                EyebrowHeader(text = "RESET", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(Modifier.height(14.dp))
+                ResetSettings(
+                    library = library,
+                    feeds = feeds,
+                    feedPosts = feedPosts,
+                    signals = signals,
+                    prefs = prefs,
+                    notion = notion,
+                    auth = auth,
+                    onErased = {
+                        connectionEpoch++
+                        onClose()
+                    },
+                )
 
                 // Last, unheaded, and mono like every other fact in the app.
                 // A version number is not a setting — it earns a line because
                 // it is the first thing anyone is asked for when something is
                 // wrong, and nowhere else in the app reports it.
                 Spacer(Modifier.height(36.dp))
-                Text(
-                    text = "DuskRead $AppVersion",
-                    fontFamily = Mono,
-                    fontSize = 10.5.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                VersionLine(prefs)
             }
         }
     }
@@ -375,76 +438,6 @@ private fun SummarySettings(prefs: UserPrefs) {
     }
 }
 
-/**
- * Backup, in both directions.
- *
- * Both halves go through the clipboard as Markdown: it needs no file picker
- * on five platforms, and what comes out is readable text the reader can keep
- * in whatever they already keep things in.
- */
-@Composable
-private fun LinkImport(library: LinkLibrary) {
-    val clipboard = LocalClipboardManager.current
-    var importing by remember { mutableStateOf(false) }
-    var pasted by remember { mutableStateOf("") }
-    var note by remember { mutableStateOf<String?>(null) }
-
-    // The confirmation clears itself. It is the receipt for an action already
-    // taken, and a receipt that needs dismissing is worse than none.
-    LaunchedEffect(note) {
-        if (note != null) {
-            delay(5_000)
-            note = null
-        }
-    }
-
-    fun runImport() {
-        val summary = library.import(pasted)
-        note = when {
-            summary.found == 0 -> "No links in that text."
-            summary.added == 0 -> "All ${summary.found} were already saved."
-            summary.duplicates > 0 -> "Added ${summary.added} · ${summary.duplicates} already saved."
-            else -> "Added ${summary.added} link${if (summary.added == 1) "" else "s"}."
-        }
-        if (summary.added > 0) {
-            pasted = ""
-            importing = false
-        }
-    }
-
-    Column(Modifier.fillMaxWidth()) {
-        Text(
-            text = "${library.links.size} link${if (library.links.size == 1) "" else "s"} saved.",
-            fontSize = 13.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Spacer(Modifier.height(10.dp))
-
-        TransferAction(if (importing) "Cancel" else "Import…") {
-            importing = !importing
-            if (!importing) pasted = ""
-        }
-
-        AnimatedVisibility(importing) {
-            ImportPanel(
-                text = pasted,
-                onTextChange = { pasted = it },
-                onPasteClipboard = { clipboard.getText()?.text?.let { pasted = it } },
-                onImport = ::runImport,
-            )
-        }
-
-        note?.let {
-            Text(
-                text = it,
-                fontSize = 11.5.sp,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(top = 8.dp),
-            )
-        }
-    }
-}
-
 @Composable
 private fun TransferAction(label: String, onClick: () -> Unit) {
     Text(
@@ -459,58 +452,6 @@ private fun TransferAction(label: String, onClick: () -> Unit) {
 }
 
 /**
- * The paste box.
- *
- * Deliberately a big empty field rather than a one-shot "import from
- * clipboard" button: what lands here is usually pasted by hand from a notes
- * app, and seeing it before committing is the whole difference between an
- * import and a surprise. The clipboard is offered, never read on its own —
- * the same bargain the save field on the Saved tab makes.
- */
-@Composable
-private fun ImportPanel(
-    text: String,
-    onTextChange: (String) -> Unit,
-    onPasteClipboard: () -> Unit,
-    onImport: () -> Unit,
-) {
-    Column(Modifier.padding(top = 10.dp)) {
-        AppTextField(
-            value = text,
-            onValueChange = onTextChange,
-            placeholder = "Paste an export, a bookmarks list, or any text with links in it. " +
-                "Anything already saved is skipped.",
-            singleLine = false,
-            minHeight = 84.dp,
-            mono = true,
-            fontSize = 11.5.sp,
-        )
-
-        Row(
-            Modifier.fillMaxWidth().padding(top = 8.dp),
-            horizontalArrangement = Arrangement.End,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            TransferAction("From clipboard", onPasteClipboard)
-            Spacer(Modifier.width(4.dp))
-            Text(
-                text = "Add links",
-                style = MaterialTheme.typography.labelLarge,
-                color = if (text.isBlank()) {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                } else {
-                    MaterialTheme.colorScheme.primary
-                },
-                modifier = Modifier
-                    .clip(CircleShape)
-                    .clickable(enabled = text.isNotBlank(), onClick = onImport)
-                    .padding(horizontal = 12.dp, vertical = 6.dp),
-            )
-        }
-    }
-}
-
-/**
  * Described by what you get to read, not by the number of points the engine
  * is configured with — that number is an implementation detail of AICore and
  * means nothing to someone deciding whether to open an article.
@@ -521,20 +462,17 @@ private fun lengthNote(length: SummaryLength): String = when (length) {
 }
 
 /**
- * The Notion connection: a token, a database, and the two buttons that use
- * them.
+ * The Notion connection, reduced to a state line and three actions.
  *
- * Notion is where subscriptions are curated — a newsletter arrives by email,
- * gets filed into a `Sources` table, and this pulls the result down. The
- * direction only ever runs that way: nothing here writes to Notion, so no
- * mistake in the app can damage the table it reads.
+ * Everything that used to be here — a token field, two database-ID fields and
+ * a "test connection" button — moved into [NotionSetupSheet], because none of
+ * it was a setting. They were the steps of a one-time setup laid out as if
+ * they were preferences, in an order the screen could not enforce and with no
+ * way to say which one had gone wrong.
  *
- * Both fields are paste-once. The token is shown masked after it is saved and
- * never revealed again, because the field is the way in, not a display — and
- * Notion itself only shows a personal access token at the moment it is
- * created.
+ * What is left is what a settings screen is actually for: what the state is
+ * now, and the small number of things to do about it.
  */
-@OptIn(ExperimentalTime::class)
 @Composable
 private fun NotionSettings(
     library: LinkLibrary,
@@ -544,14 +482,17 @@ private fun NotionSettings(
     notion: NotionPrefs,
     auth: PastedTokenAuth,
     api: NotionClient,
+    /** Changes whenever the setup sheet touched the connection; re-reads the keystore. */
+    epoch: Int,
+    onOpenSetup: () -> Unit,
 ) {
     val secrets = rememberSecretStore()
     val scope = rememberCoroutineScope()
 
-    // Read once into state rather than on every recomposition: reaching the
-    // keystore is cheap but not free, and the answer only changes here.
-    var connected by remember { mutableStateOf(secrets.get(NotionTokenKey) != null) }
-    var token by remember { mutableStateOf("") }
+    // Read into state rather than on every recomposition: reaching the
+    // keystore is cheap but not free, and the answer only changes here or in
+    // the setup sheet — which is what [epoch] reports.
+    var connected by remember(epoch) { mutableStateOf(secrets.get(NotionTokenKey) != null) }
     var busy by remember { mutableStateOf(false) }
     var note by remember { mutableStateOf<String?>(null) }
 
@@ -566,71 +507,34 @@ private fun NotionSettings(
 
     Column(Modifier.fillMaxWidth()) {
         Text(
-            text = "Follow the blogs listed in a Notion database, and keep saved links in step with it.",
+            text = "Optional. Connect Notion and the blogs you follow and the links you " +
+                "save are each kept in step with a database there — both built for you — " +
+                "so you can read and sort them on a laptop too.",
             fontSize = 12.5.sp,
             lineHeight = 17.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-
-        Spacer(Modifier.height(12.dp))
-
-        AppTextField(
-            value = if (connected && token.isEmpty()) MaskedToken else token,
-            onValueChange = { token = it },
-            placeholder = "Personal access token",
-            fontSize = 13.5.sp,
-            mono = true,
-            trailing = {
-                AnimatedVisibility(token.isNotBlank()) {
-                    Text(
-                        text = "Save",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier
-                            .clip(CircleShape)
-                            .clickable {
-                                auth.save(token)
-                                connected = true
-                                token = ""
-                                note = "Token saved"
-                            }
-                            .padding(start = 10.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
-                    )
-                }
-            },
-        )
-
-        Spacer(Modifier.height(8.dp))
-
-        DatabaseField(
-            stored = notion.sourcesDatabaseId,
-            placeholder = "Sources database ID",
-            onSave = {
-                notion.updateDatabaseId(it)
-                note = "Sources database saved"
-            },
-        )
-
-        Spacer(Modifier.height(8.dp))
-
-        DatabaseField(
-            stored = notion.readingDatabaseId,
-            placeholder = "Reading List database ID (optional)",
-            onSave = {
-                notion.updateReadingDatabaseId(it)
-                note = "Reading list saved"
-            },
         )
 
         Spacer(Modifier.height(14.dp))
 
         // The state line, shaped like every other two-line settings row. The
         // title is what is true now; the detail is when it was last true.
+        //
+        // Both ids, not just Sources: they are written together by `provision`
+        // and cannot actually diverge, but asking about one of them says that
+        // one *is* the connection, which is the misreading this whole screen
+        // used to invite. It reports both counts for the same reason.
         Text(
             text = note ?: when {
                 !connected -> "Not connected"
-                notion.databaseName != null -> "${notion.databaseName} · ${feeds.feeds.size} feeds"
-                else -> "Token saved — test the connection"
+                notion.sourcesDatabaseId == null || notion.readingDatabaseId == null ->
+                    "Token saved — finish setting up"
+
+                else -> {
+                    val followed = feeds.feeds.size
+                    val saved = library.links.size
+                    "Connected · $followed feed${if (followed == 1) "" else "s"} · $saved saved"
+                }
             },
             style = MaterialTheme.typography.titleSmall,
             fontSize = 14.sp,
@@ -638,7 +542,7 @@ private fun NotionSettings(
         )
         Text(
             text = notion.lastSyncAt?.let { "Last synced ${savedAgo(it)}" }
-                ?: "Paste a token from Notion's developer portal, then the database ID.",
+                ?: "DuskRead creates the databases itself — it only needs a token.",
             fontSize = 11.5.sp,
             lineHeight = 15.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -651,49 +555,36 @@ private fun NotionSettings(
             horizontalArrangement = Arrangement.spacedBy(2.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            TransferAction(if (busy) "Working…" else "Test connection") {
-                if (busy) return@TransferAction
-                busy = true
-                scope.launch {
-                    note = when (val result = api.databaseTitle(notion.sourcesDatabaseId.orEmpty())) {
-                        is NotionResult.Ok -> {
-                            notion.recordConnection(result.value)
-                            "Connected to ${result.value}"
-                        }
+            TransferAction(if (connected) "Set up again" else "Set up", onClick = onOpenSetup)
 
-                        is NotionResult.Failure -> result.message
+            // Only once there is something to sync. Before that the button
+            // could only ever report the setup that has not happened.
+            AnimatedVisibility(connected) {
+                TransferAction(if (busy) "Syncing…" else "Sync now") {
+                    if (busy) return@TransferAction
+                    busy = true
+                    scope.launch {
+                        note = runFullSync(
+                            api = api,
+                            prefs = notion,
+                            library = library,
+                            feeds = feeds,
+                            feedPosts = feedPosts,
+                            http = client,
+                            recordSync = notion::recordSync,
+                        ).line
+                        busy = false
                     }
-                    busy = false
                 }
             }
 
-            TransferAction(if (busy) "…" else "Sync now") {
-                if (busy) return@TransferAction
-                busy = true
-                scope.launch {
-                    note = runFullSync(
-                        api = api,
-                        sourcesDatabaseId = notion.sourcesDatabaseId.orEmpty(),
-                        readingDatabaseId = notion.readingDatabaseId,
-                        library = library,
-                        feeds = feeds,
-                        feedPosts = feedPosts,
-                        http = client,
-                        recordSync = notion::recordSync,
-                    ).line
-                    busy = false
-                }
-            }
-
-            // Only once there is something to disconnect from, and never in
-            // the accent: the one coloured thing on a screen should not be
-            // the destructive one.
+            // Never in the accent: the one coloured thing on a screen should
+            // not be the destructive one.
             AnimatedVisibility(connected) {
                 TransferAction("Disconnect") {
                     auth.disconnect()
                     notion.clear()
                     connected = false
-                    token = ""
                     // Followed feeds stay. They are DuskRead's own data now,
                     // and signing out of a source should not empty the app.
                     note = "Disconnected — feeds kept"
@@ -703,156 +594,258 @@ private fun NotionSettings(
     }
 }
 
-/** Enough to show a token is held without showing the token. */
-private const val MaskedToken = "ntn_••••••••••••••••"
-
 /**
- * Why the ranking picked what it picked.
+ * Erase everything, behind a confirmation that happens in place.
  *
- * Home shows three rows chosen from a pool of a couple of hundred, and the
- * weights behind that choice are wrong until they are seen to be wrong. They
- * cannot be judged from the source — only from real candidates on a real
- * phone — and "why is *that* at the top" has to be answerable in the room,
- * without a debugger. So the score is broken out per term rather than shown as
- * one number, for the same reason `Summariser.android.kt` refuses to flatten
- * an error code into "something went wrong".
+ * **Not a dialog.** This screen has no boxed card anywhere in it and the app
+ * has no dialog pattern at all — confirmations are `Toast` or an inline note —
+ * so a Material `AlertDialog` here would be the first rounded surface in the
+ * Amplitude direction, introduced by its most destructive control. The action
+ * swaps for a question and two answers instead, which is the same shape as
+ * `NotionSettings`' own note line one section up.
  *
- * A developer tool living in a shipped Settings screen, deliberately: it costs
- * one section, it is the only way to tune the thing, and a reader who opens it
- * sees a list of what the app is about to suggest, which is not a bad answer
- * to a question nobody asked.
+ * Neither answer takes the accent, for the reason `Disconnect` already gives:
+ * the one coloured thing on a screen should not be the destructive one. The
+ * *question* carries the weight instead, in `onSurface` against the muted
+ * actions beneath it.
+ *
+ * The order of the wipe matters. [UserPrefs.reset] goes last because it clears
+ * `introSeen`, and `App.kt` reads that reactively — the moment it flips, the
+ * whole app is Onboarding again and this screen no longer exists. Anything
+ * left to clear after it would be running inside a composable on its way out.
  */
-@OptIn(ExperimentalTime::class)
 @Composable
-private fun Discovery(
+private fun ResetSettings(
     library: LinkLibrary,
     feeds: FeedLibrary,
     feedPosts: FeedPostCache,
     signals: ReadingSignals,
+    prefs: UserPrefs,
+    notion: NotionPrefs,
+    auth: PastedTokenAuth,
+    onErased: () -> Unit,
 ) {
-    // Re-rank is a button rather than something that happens on its own: the
-    // point of this block is to compare two rankings, which is impossible if
-    // it moves while being read.
-    var reranks by remember { mutableStateOf(0) }
-
-    val ranked = remember(reranks, library.links, feedPosts.postsByFeed, feeds.feeds, signals.byHost, signals.skippedPosts) {
-        val candidates = pool(library, feedPosts, feeds.feeds)
-        candidates to rank(
-            candidates = candidates,
-            signals = signals,
-            now = Clock.System.now().toEpochMilliseconds(),
-            seed = reranks,
-            focusMinutes = null,
-        )
-    }
-
-    val (candidates, scored) = ranked
-    val tagged = candidates.count { it.tag != null }
+    val summaries = rememberSummaryCache()
+    var confirming by remember { mutableStateOf(false) }
 
     Column(Modifier.fillMaxWidth()) {
         Text(
-            text = "${candidates.size} candidates · $tagged tagged · ${signals.totalReads} reads · " +
-                "${signals.skippedPosts.size} skipped",
-            fontFamily = Mono,
-            fontSize = 11.sp,
+            text = "Saved links, followed blogs, cached posts, your name and the Notion " +
+                "connection — all removed from this phone, and the app starts over. Your " +
+                "Notion pages are left exactly as they are.",
+            fontSize = 12.5.sp,
+            lineHeight = 17.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(14.dp))
 
-        scored.take(5).forEach { item ->
-            Column(Modifier.fillMaxWidth().padding(bottom = 10.dp)) {
-                Text(
-                    text = item.candidate.title,
-                    fontSize = 12.5.sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                Text(
-                    // Only the terms that actually contributed. A row of
-                    // seven values where four are 0.00 hides the three that
-                    // decided it.
-                    text = item.terms.entries
-                        .filter { abs(it.value) >= 0.005f }
-                        .sortedByDescending { abs(it.value) }
-                        .joinToString("  ") { (name, value) -> "$name ${value.format()}" }
-                        .ifBlank { "no signal" },
-                    fontFamily = Mono,
-                    fontSize = 10.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-
-        if (scored.isEmpty()) {
+        if (confirming) {
             Text(
-                text = "Nothing to rank — follow a blog or save a link.",
-                fontSize = 12.5.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                text = "Erase everything? This cannot be undone.",
+                style = MaterialTheme.typography.titleSmall,
+                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.onSurface,
             )
+            Spacer(Modifier.height(4.dp))
         }
 
-        Row(Modifier.offset(x = (-12).dp), verticalAlignment = Alignment.CenterVertically) {
-            TransferAction("Re-rank") { reranks++ }
-            TransferAction("Clear signals") {
-                signals.clear()
-                reranks++
+        Row(
+            Modifier.offset(x = (-12).dp),
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (confirming) {
+                TransferAction("Erase") {
+                    library.clear()
+                    feeds.clear()
+                    feedPosts.replaceAll(emptyMap())
+                    signals.clear()
+                    summaries.clear()
+
+                    // The token and the ids it resolved, together — one without
+                    // the other is a connection that cannot be used or repaired.
+                    auth.disconnect()
+                    notion.clear()
+
+                    onErased()
+                    prefs.reset()
+                }
+                TransferAction("Cancel") { confirming = false }
+            } else {
+                TransferAction("Erase everything") { confirming = true }
             }
         }
     }
 }
 
-/** Two decimals, with the sign, because a negative term is the interesting one. */
-private fun Float.format(): String {
-    val hundredths = (abs(this) * 100).roundToInt()
-    val sign = if (this < 0) "-" else ""
-    return "$sign${hundredths / 100}.${(hundredths % 100).toString().padStart(2, '0')}"
+/**
+ * Which voice reads an article aloud.
+ *
+ * Chips rather than a list of rows, the same control `SummarySettings` uses
+ * directly above it — two mutually exclusive options with a one-line
+ * consequence underneath is exactly the shape that already exists on this
+ * screen, and a second shape for the same question would only make the screen
+ * less predictable. The selected chip takes the accent, which is the
+ * "selected control" exception to the one-accent rule rather than a new one.
+ *
+ * The readback chip only appears once its tab does, because choosing it
+ * otherwise would point playback at a library with no way to reach or
+ * configure it — see `UserPrefs.toggleReadback`, which is the other half of
+ * keeping those two in step.
+ */
+@Composable
+private fun VoiceSettings(prefs: UserPrefs) {
+    val speaker = rememberSpeaker(prefs.voice)
+    val state = speaker.state
+
+    val choices = VoiceChoice.entries.filter {
+        it != VoiceChoice.ReadbackLibrary || prefs.readbackEnabled
+    }
+
+    Column(Modifier.fillMaxWidth()) {
+        Text(
+            text = "Articles are read aloud on this phone. Nothing is sent anywhere to be spoken.",
+            fontSize = 12.5.sp,
+            lineHeight = 17.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(12.dp))
+
+        // A row that wraps rather than a plain `Row`: "Readback library" is
+        // long enough, next to "System voice", that the pair does not reliably
+        // fit one line on a narrower phone — a plain Row would run the second
+        // chip off the edge instead of giving it a line of its own.
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(Space.ChipGap),
+            verticalArrangement = Arrangement.spacedBy(Space.ChipGap),
+        ) {
+            choices.forEach { choice ->
+                SummaryChip(
+                    label = choice.label,
+                    tone = if (prefs.voice == choice) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    onClick = { prefs.updateVoice(choice) },
+                )
+            }
+        }
+        Spacer(Modifier.height(10.dp))
+
+        Text(
+            text = prefs.voice.detail,
+            fontSize = 11.5.sp,
+            lineHeight = 16.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        // The readback library's readiness is a folder grant, which the
+        // Readback tab already asks about in its own words; only the speaking
+        // voice has an engine worth reporting on.
+        if (prefs.voice != VoiceChoice.ReadbackLibrary) {
+            Spacer(Modifier.height(12.dp))
+            Text(
+                text = when (state) {
+                    is SpeakerState.Ready -> "Ready"
+                    is SpeakerState.NeedsVoice -> state.detail
+                    is SpeakerState.Unavailable -> state.reason
+                },
+                fontSize = 11.5.sp,
+                lineHeight = 16.sp,
+                color = if (state is SpeakerState.Ready) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
 }
 
 /**
- * A Notion database ID: paste once, then masked.
+ * Whether a left swipe opens speaking, or opens the summary and waits.
  *
- * Not a credential — an ID grants nothing without the token — but it names a
- * private workspace, and this app's own repository is public. A settings
- * screen ends up in screenshots and screen-shares, and there is no reason for
- * a workspace identifier to travel in either.
- *
- * The last four characters survive, unlike the token's full mask. Two of these
- * fields sit one above the other and the only question anyone asks of a saved
- * one is "is that the right database" — four characters answer it, and answer
- * nothing else.
+ * The same two-chip shape as [VoiceSettings] just above it, for the same
+ * reason: this is another "pick one of two, see a line about what it means"
+ * question, and it already has a shape on this screen.
  */
 @Composable
-private fun DatabaseField(stored: String?, placeholder: String, onSave: (String) -> Unit) {
-    // Keyed on `stored` so saving clears the field back to the mask rather
-    // than leaving what was typed sitting in plain sight.
-    var typed by remember(stored) { mutableStateOf("") }
+private fun SwipeSettings(prefs: UserPrefs) {
+    Column(Modifier.fillMaxWidth()) {
+        Text(
+            text = "Swiping a saved link or a post opens a panel that always both " +
+                "summarises and reads aloud. This picks which one it starts doing.",
+            fontSize = 12.5.sp,
+            lineHeight = 17.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(12.dp))
 
-    AppTextField(
-        value = if (typed.isEmpty() && !stored.isNullOrBlank()) maskId(stored) else typed,
-        onValueChange = { typed = it },
-        placeholder = placeholder,
-        fontSize = 13.5.sp,
-        mono = true,
-        trailing = {
-            AnimatedVisibility(typed.isNotBlank()) {
-                Text(
-                    text = "Save",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier
-                        .clip(CircleShape)
-                        .clickable {
-                            onSave(typed)
-                            typed = ""
-                        }
-                        .padding(start = 10.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
+        Row(horizontalArrangement = Arrangement.spacedBy(Space.ChipGap)) {
+            SwipeDefault.entries.forEach { choice ->
+                SummaryChip(
+                    label = choice.label,
+                    tone = if (prefs.swipeDefault == choice) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    onClick = { prefs.updateSwipeDefault(choice) },
                 )
             }
-        },
+        }
+        Spacer(Modifier.height(10.dp))
+
+        Text(
+            text = when (prefs.swipeDefault) {
+                SwipeDefault.Summary -> "Opens showing the summary. Press play to also hear it."
+                SwipeDefault.ReadAloud -> "Starts reading the moment it opens. The summary is still there to read."
+            },
+            fontSize = 11.5.sp,
+            lineHeight = 16.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+/**
+ * The version, and the way in to the Readback tab.
+ *
+ * Three taps inside [UnlockWindowMs] switches `readbackEnabled`. It reads as a
+ * plain mono fact and stays one — no ripple, no cursor, nothing that invites
+ * the tap — because a visible switch here would be a control most people
+ * cannot use: the tab browses a `library.db` that only exists on a device the
+ * separate readback project's sync script has written to.
+ *
+ * The window matters more than the count. Without it the three taps could be
+ * spread across three separate visits to Settings, and someone who prods the
+ * version line out of curiosity over a week would eventually unlock a tab they
+ * never asked for and cannot explain.
+ */
+@OptIn(ExperimentalTime::class)
+@Composable
+private fun VersionLine(prefs: UserPrefs) {
+    var taps by remember { mutableStateOf(0) }
+    var firstTapAt by remember { mutableStateOf(0L) }
+
+    Text(
+        text = "DuskRead $AppVersion",
+        fontFamily = Mono,
+        fontSize = 10.5.sp,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier
+            .clickable(
+                // No ripple and no pointer affordance: the whole point is that
+                // the line does not advertise itself.
+                indication = null,
+                interactionSource = remember { MutableInteractionSource() },
+            ) {
+                val now = Clock.System.now().toEpochMilliseconds()
+                // A late tap restarts the run rather than failing it, so the
+                // gesture is never in a state where it has to be waited out.
+                taps = if (now - firstTapAt > UnlockWindowMs) 1 else taps + 1
+                if (taps == 1) firstTapAt = now
+
+                if (taps >= UnlockTaps) {
+                    taps = 0
+                    ToastRequest.show(if (prefs.toggleReadback()) "Readback on" else "Readback off")
+                }
+            }
+            .padding(vertical = 6.dp),
     )
 }
 
-/** A fixed run of dots and the last four characters — never the real length, which is itself a hint. */
-private fun maskId(id: String): String = "•".repeat(12) + id.takeLast(4)
+private const val UnlockTaps = 3
+
+/** Two seconds — long enough for three deliberate taps, short enough that idle prodding never adds up. */
+private const val UnlockWindowMs = 2_000L

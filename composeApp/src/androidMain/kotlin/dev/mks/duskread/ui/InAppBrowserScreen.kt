@@ -11,7 +11,7 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -25,6 +25,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -54,12 +55,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.webkit.WebSettingsCompat
 import androidx.webkit.WebViewFeature
@@ -70,15 +73,21 @@ import dev.mks.duskread.links.createHttpClient
 import dev.mks.duskread.links.loadArticle
 import dev.mks.duskread.links.postFor
 import dev.mks.duskread.links.rememberFeedPostCache
+import dev.mks.duskread.speech.speechSupported
 import dev.mks.duskread.summary.SummaryTarget
 import dev.mks.duskread.summary.summariesSupported
 import dev.mks.duskread.ui.common.EmptyState
 import dev.mks.duskread.ui.summary.SummaryPanel
 import dev.mks.duskread.ui.theme.DuskReadIcons
+import dev.mks.duskread.ui.theme.Layout
 import dev.mks.duskread.ui.theme.Motion
+import dev.mks.duskread.ui.theme.Radius
 
 /** Which of the two things this screen can show is showing. */
 private enum class BrowserMode { Reader, Original }
+
+/** Which button opened the summary-and-listen panel, and so whether it should already be talking. */
+private enum class PanelIntent { Summary, ReadAloud }
 
 /**
  * A reference article, opened without leaving the app — as the article, not
@@ -124,8 +133,14 @@ fun InAppBrowserScreen(url: String, mono: Boolean, onClose: () -> Unit, modifier
     var extracting by remember(url) { mutableStateOf(true) }
     var mode by remember(url) { mutableStateOf(BrowserMode.Reader) }
     // Closed by default, and per article: following a link out of one piece
-    // into another should not carry the first one's summary with it.
-    var summarising by remember(url) { mutableStateOf(false) }
+    // into another should not carry the first one's panel with it.
+    //
+    // A nullable intent rather than a plain boolean, because the panel now
+    // has two doors onto the same card — the existing summary button and the
+    // read-aloud button beside it — and the only thing that differs between
+    // them is whether the panel starts speaking the instant it opens. Which
+    // door was used is the one thing a boolean cannot carry.
+    var panelIntent by remember(url) { mutableStateOf<PanelIntent?>(null) }
     var summaryBusy by remember(url) { mutableStateOf(false) }
     // What the WebView currently holds. Without it, every recomposition that
     // touches mode or article would reload the page underneath the reader.
@@ -188,9 +203,18 @@ fun InAppBrowserScreen(url: String, mono: Boolean, onClose: () -> Unit, modifier
                 // text, so on a page that yielded none there is nothing to
                 // summarise and the control could only disappoint.
                 summaryAvailable = article != null && summariesSupported(),
-                summaryActive = summarising,
+                summaryActive = panelIntent == PanelIntent.Summary,
                 summaryBusy = summaryBusy,
-                onToggleSummary = { summarising = !summarising },
+                onToggleSummary = {
+                    panelIntent = if (panelIntent == PanelIntent.Summary) null else PanelIntent.Summary
+                },
+                // Same gate, on speech rather than the summariser: without
+                // extracted text there is nothing to read aloud either.
+                readAloudAvailable = article != null && speechSupported(),
+                readAloudActive = panelIntent == PanelIntent.ReadAloud,
+                onToggleReadAloud = {
+                    panelIntent = if (panelIntent == PanelIntent.ReadAloud) null else PanelIntent.ReadAloud
+                },
                 onClose = onClose,
                 onOpenExternally = { context.openExternally(currentUrl) },
             )
@@ -313,22 +337,23 @@ fun InAppBrowserScreen(url: String, mono: Boolean, onClose: () -> Unit, modifier
                 // scrim: the page underneath stays legible, which is the
                 // point of floating over it, so the only sign this layer is
                 // there is that the first tap closes the summary.
-                if (summarising) {
+                if (panelIntent != null) {
                     Box(
                         Modifier
                             .fillMaxSize()
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = null,
-                                onClick = { summarising = false },
+                                onClick = { panelIntent = null },
                             ),
                     )
                 }
 
                 SummaryOverArticle(
                     article = article,
-                    visible = summarising,
-                    onClose = { summarising = false },
+                    visible = panelIntent != null,
+                    autoPlay = panelIntent == PanelIntent.ReadAloud,
+                    onClose = { panelIntent = null },
                     onBusyChange = { summaryBusy = it },
                     modifier = Modifier.align(Alignment.BottomCenter),
                 )
@@ -349,6 +374,7 @@ fun InAppBrowserScreen(url: String, mono: Boolean, onClose: () -> Unit, modifier
 private fun SummaryOverArticle(
     article: Article?,
     visible: Boolean,
+    autoPlay: Boolean,
     onClose: () -> Unit,
     onBusyChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
@@ -363,6 +389,7 @@ private fun SummaryOverArticle(
             SummaryPanel(
                 target = SummaryTarget(found.url, found.title, text = found.text),
                 onClose = onClose,
+                autoPlay = autoPlay,
                 hostShowsBusy = true,
                 onBusyChange = onBusyChange,
                 modifier = Modifier
@@ -379,77 +406,147 @@ private fun SummaryOverArticle(
 }
 
 /**
- * Stands in for [dev.mks.duskread.links.articleDocument]'s own shape — title,
- * byline, lead image, body copy — so the screen looks like a page arriving
- * rather than a blank one waiting to be told what to become. The fetching
- * icon and message live inside the lead-image block: that's the one shape
- * big enough to hold them without a line of body text running behind, and an
- * image is the thing a reader most expects to still be loading.
+ * Stands in for [dev.mks.duskread.links.articleDocument]'s own shape — source
+ * line, title, lead image, body copy — so the screen looks like a page
+ * arriving rather than a blank one waiting to be told what to become.
+ *
+ * **Drawn from the document's own measurements.** [Layout.ReadingGutter] and
+ * the 20dp top inset are `articleDocument`'s body padding, and the lead block
+ * carries [Radius.Inline] because its `.lead` rule does. A skeleton only works
+ * if nothing moves when the text lands, and that holds only while both sides
+ * read from the same numbers: this sat at a hand-written 20dp and shifted the
+ * whole page 2dp on arrival.
+ *
+ * **The status line replaces the source line.** It used to be an icon and a
+ * sentence centred in the lead block — which made a placeholder the one
+ * boxed, filled card left anywhere in the app, and put the only words on
+ * screen halfway down a page that had not arrived. In the slot where
+ * `.source` prints the hostname, uppercase and muted, it is where the eye
+ * already is and it is replaced by real content rather than vanishing.
+ *
+ * **The pulse travels rather than breathes.** One phase, offset per row, so
+ * the page reads as filling in from the top; a single alpha driving every bar
+ * at once made the whole screen throb in unison, which looks like a fault
+ * rather than work in progress.
  */
 @Composable
 private fun ArticleSkeleton(modifier: Modifier = Modifier) {
     val transition = rememberInfiniteTransition(label = "extracting")
-    val alpha by transition.animateFloat(
-        initialValue = 0.35f,
-        targetValue = 0.85f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(900, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "extractingAlpha",
-    )
-    val block = MaterialTheme.colorScheme.surfaceContainer
 
-    Column(modifier.padding(20.dp)) {
-        SkeletonBar(0.5f, 16.dp, block, alpha)
+    // Linear and restarting, not eased and reversing: the easing lives in the
+    // triangle wave below, and a reversing phase would run the highlight back
+    // up the page, which reads as undoing rather than loading.
+    val phase by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(SkeletonPulseMs, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "extractingPhase",
+    )
+
+    Column(
+        modifier
+            .padding(horizontal = Layout.ReadingGutter)
+            .padding(top = 20.dp),
+    ) {
+        Text(
+            // Uppercase and letter-spaced to match `.source`, whose slot this
+            // is standing in.
+            text = "FETCHING THE ARTICLE…",
+            style = MaterialTheme.typography.labelSmall,
+            letterSpacing = 0.08.em,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        // `.source`'s own margin-bottom, so the title starts where it will.
         Spacer(Modifier.height(22.dp))
-        SkeletonBar(0.92f, 22.dp, block, alpha)
+
+        SkeletonBar(0.92f, 22.dp, phase, index = 0)
         Spacer(Modifier.height(10.dp))
-        SkeletonBar(0.65f, 22.dp, block, alpha)
+        SkeletonBar(0.65f, 22.dp, phase, index = 1)
+
         Spacer(Modifier.height(24.dp))
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .height(180.dp)
-                .clip(RoundedCornerShape(10.dp))
-                .background(block.copy(alpha = alpha)),
-            contentAlignment = Alignment.Center,
-        ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(
-                    imageVector = DuskReadIcons.Reader,
-                    contentDescription = null,
-                    modifier = Modifier.size(26.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Text(
-                    text = "Fetching the article…",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 8.dp),
-                )
+        SkeletonBar(1f, 180.dp, phase, index = 2, shape = RoundedCornerShape(Radius.Inline))
+        Spacer(Modifier.height(24.dp))
+
+        // As many lines as there is room for, rather than a fixed eight that
+        // ran out half way down and left the rest of the screen blank — which
+        // read as an article that had finished loading and was mostly empty.
+        // An article is longer than a screen; its placeholder should be too.
+        BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
+            val rows = (maxHeight / BodyLineSlot).toInt().coerceAtLeast(1)
+            Column {
+                repeat(rows) { line ->
+                    // Cycled, so the short line that stands in for the end of
+                    // a paragraph keeps recurring instead of the page turning
+                    // into one unbroken block.
+                    SkeletonBar(BodyLineWidths[line % BodyLineWidths.size], BodyLineHeight, phase, index = 3 + line)
+                    Spacer(Modifier.height(BodyLineGap))
+                }
             }
-        }
-        Spacer(Modifier.height(28.dp))
-        val lineWidths = listOf(0.97f, 0.9f, 0.98f, 0.4f, 0.95f, 0.88f, 0.93f, 0.6f)
-        lineWidths.forEach { width ->
-            SkeletonBar(width, 12.dp, block, alpha)
-            Spacer(Modifier.height(14.dp))
         }
     }
 }
 
+/**
+ * [Radius.Chip] by default, the app's softened corner — a text placeholder is
+ * standing in for a line of prose, and a fully rounded pill would make it read
+ * as a control instead.
+ */
 @Composable
-private fun SkeletonBar(widthFraction: Float, height: Dp, color: Color, alpha: Float) {
+private fun SkeletonBar(
+    widthFraction: Float,
+    height: Dp,
+    phase: Float,
+    index: Int,
+    shape: Shape = RoundedCornerShape(Radius.Chip),
+) {
     Box(
         Modifier
             .fillMaxWidth(widthFraction)
             .height(height)
-            .alpha(alpha)
-            .clip(RoundedCornerShape(4.dp))
-            .background(color),
+            .alpha(pulseAlpha(phase, index))
+            .clip(shape)
+            .background(MaterialTheme.colorScheme.surfaceContainer),
     )
 }
+
+/**
+ * Where one row sits in the travelling pulse.
+ *
+ * A triangle wave rather than a sine or a raw phase: it has no seam where it
+ * wraps, so the highlight leaves the bottom of the page and re-enters the top
+ * without a visible jump.
+ */
+private fun pulseAlpha(phase: Float, index: Int): Float {
+    val shifted = (phase - index * SkeletonStagger).mod(1f)
+    val triangle = if (shifted < 0.5f) shifted * 2f else (1f - shifted) * 2f
+    return SkeletonDim + (SkeletonBright - SkeletonDim) * triangle
+}
+
+/** Ragged like set prose, with a short line where a paragraph ends. */
+private val BodyLineWidths = listOf(0.97f, 0.9f, 0.98f, 0.4f, 0.95f, 0.88f, 0.93f, 0.6f)
+
+private val BodyLineHeight = 12.dp
+private val BodyLineGap = 14.dp
+
+/** One line and the space under it — what a row of body copy costs vertically. */
+private val BodyLineSlot = BodyLineHeight + BodyLineGap
+
+/**
+ * Slow for UI — the sub-300ms rule in `Motion` is for a control answering a
+ * touch, and this is ambient. Fast enough to look alive, slow enough that it
+ * is not competing with the article for attention when it arrives.
+ */
+private const val SkeletonPulseMs = 1_400
+
+/** How far behind the row above each row runs. Small: the page fills, it does not chase. */
+private const val SkeletonStagger = 0.05f
+
+private const val SkeletonDim = 0.30f
+private const val SkeletonBright = 0.85f
 
 @Composable
 private fun BrowserToolbar(
@@ -461,6 +558,9 @@ private fun BrowserToolbar(
     summaryActive: Boolean,
     summaryBusy: Boolean,
     onToggleSummary: () -> Unit,
+    readAloudAvailable: Boolean,
+    readAloudActive: Boolean,
+    onToggleReadAloud: () -> Unit,
     onClose: () -> Unit,
     onOpenExternally: () -> Unit,
 ) {
@@ -511,6 +611,19 @@ private fun BrowserToolbar(
                     tint = if (summaryActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+        }
+        // Its own button rather than something found by first opening the
+        // summary: the swipe already taught the app to draw a line between
+        // "open this and see" and "start talking immediately", and the
+        // reader deserves the same direct route, not two taps to get there.
+        // It opens the same card either way — see `PanelIntent`.
+        if (readAloudAvailable) {
+            ToolbarButton(
+                icon = DuskReadIcons.Waveform,
+                label = if (readAloudActive) "Stop reading aloud" else "Read this aloud",
+                onClick = onToggleReadAloud,
+                tint = if (readAloudActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
         ToolbarButton(DuskReadIcons.External, "Open in browser", onOpenExternally)
     }
@@ -575,7 +688,7 @@ private fun darken(settings: android.webkit.WebSettings) {
 
 private fun hostOf(url: String): String = runCatching { Uri.parse(url).host }.getOrNull() ?: url
 
-private fun Context.openExternally(url: String) {
+internal fun Context.openExternally(url: String) {
     val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
     if (this !is Activity) intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     runCatching { startActivity(intent) }

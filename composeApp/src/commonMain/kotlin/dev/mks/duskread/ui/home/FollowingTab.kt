@@ -66,6 +66,13 @@ fun FollowingTab(
                     client = client,
                     onOpenTopics = onOpenTopics,
                     modifier = Modifier.fillMaxWidth(),
+                    // Only resolvable here: `fillParentMaxHeight` is a member
+                    // of `LazyItemScope`, which only this lambda has. Reserved
+                    // only for the true zero state — a reader who has feeds
+                    // but is mid-search or has the manage panel open for some
+                    // other reason should never have the list shoved down by
+                    // space held for an empty state that isn't showing.
+                    emptyStateModifier = if (feeds.feeds.isEmpty()) Modifier.fillParentMaxHeight(0.65f) else Modifier,
                 )
             }
         }

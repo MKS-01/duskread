@@ -83,10 +83,16 @@ stays archived, not shown.
 </p>
 
 Notion is the curation layer, not a dependency. The device works whether
-or not it can reach it. The full schema, the sync rules and the reasoning
-behind each of them are in **[docs/architecture.md](docs/architecture.md)**.
+or not it can reach it, and setup is one pasted token — the app finds or
+creates its own databases rather than asking you to type in an ID. The full
+schema, the sync rules and the reasoning behind each of them are in
+**[docs/architecture.md](docs/architecture.md)**.
 
 **Save it however it reaches you, too.** Paste a URL into the field, or share one straight from Chrome — DuskRead is in the share sheet. Either way the row appears immediately with the host as its stand-in title, then a fetch fills in the real one behind it.
+
+**Following a blog files it in Notion, too.** The one exception to the
+one-way pull above: `Sources` is written as well as read, so a blog followed
+on the phone is already there to edit the next time you open Notion.
 
 ### Reading, offline first
 
@@ -96,9 +102,11 @@ The page itself stays out of the way: **Paper Black** and **Ink**, warm ink on n
 
 **Long ones get a one-tap summary first**, generated on-device by Gemini Nano so nothing leaves the phone; the control is simply absent on hardware that can't run it.
 
-### Readback
+### Listening
 
-Turning an article into audio happens outside this app entirely, in the separate **[readback](https://github.com/MKS-01/readback)** project — DuskRead only reads what a sync step puts on the device, strictly read-only, and never writes back.
+**The phone reads an article aloud itself**, with its own text-to-speech —
+nothing to sync, nothing to download first. It keeps playing behind whatever
+screen you open next, in the same floating bar the timer uses.
 
 ### Focus timer
 
@@ -111,10 +119,11 @@ A pomodoro that behaves like an alarm and not a widget: a real system notificati
 ### Platform support
 
 **Android is the app; desktop, web and iOS run the same code, mostly to
-prove it travels.** Readback needs a filesystem and summaries need AICore,
-so both are Android-first. `summariesSupported()` and `readbackSupported()`
-are `expect`/`actual` constants, and a screen just doesn't show a control
-it can't offer.
+prove it travels.** Summaries need AICore, reading aloud needs a system
+text-to-speech engine, and readback needs a filesystem — all three are
+Android-first. `summariesSupported()`, `speechSupported()` and
+`readbackSupported()` are `expect`/`actual` constants, and a screen just
+doesn't show a control it can't offer.
 
 ### Tech stack
 
@@ -131,7 +140,8 @@ database.
 | Network | [Ktor](https://ktor.io/) 3.1 | RSS/Atom fetches, the Notion REST API — a different engine per target |
 | Curation | [Notion](https://www.notion.com/product/dev) API, Claude via the Gmail + Notion MCP | subscriptions and the reading list live in Notion; Claude files newsletters into it |
 | Summaries | [ML Kit GenAI](https://developer.android.com/ai) → Gemini Nano | on-device, Android only, absent elsewhere |
-| Readback | [sqlite-jdbc](https://github.com/xerial/sqlite-jdbc) + SAF | read-only query of readback's `library.db` |
+| Listening | Android `TextToSpeech` | reading aloud, on-device, Android only |
+| Readback | [sqlite-jdbc](https://github.com/xerial/sqlite-jdbc) + SAF | read-only query of readback's `library.db`; hidden until switched on |
 | Desktop shell | [KCEF](https://github.com/DatL4g/KCEF) | the embedded Chromium browser |
 | Build | AGP 9's `androidLibrary` KMP DSL, Gradle 9.3.1 | |
 
@@ -161,5 +171,6 @@ How the pieces connect, the Notion schema, and the end-to-end flows — see **[d
 MIT — see [LICENSE](LICENSE).
 
 <p align="center">
-  <sub>Built agent-first with <a href="https://claude.ai/code">Claude Code</a></sub>
+  <sub>Built agent-first with <a href="https://claude.ai/code">Claude Code</a></sub><br>
+  <sub>The synced-audio Readback tab is a separate, optional open-source project: <a href="https://github.com/MKS-01/readback">readback</a></sub>
 </p>

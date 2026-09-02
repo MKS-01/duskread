@@ -45,6 +45,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dev.mks.duskread.data.rememberUserPrefs
 import dev.mks.duskread.links.LinkLibrary
 import dev.mks.duskread.links.ReadingSignals
 import dev.mks.duskread.links.SavedLink
@@ -52,6 +53,7 @@ import dev.mks.duskread.links.createHttpClient
 import dev.mks.duskread.links.fetchLinkMetadata
 import dev.mks.duskread.links.looksLikeUrl
 import dev.mks.duskread.links.savedAgo
+import dev.mks.duskread.speech.speechSupported
 import dev.mks.duskread.summary.SummaryRequest
 import dev.mks.duskread.summary.SummaryTarget
 import dev.mks.duskread.summary.summariesSupported
@@ -325,14 +327,26 @@ private fun LinkRow(
     onRemove: () -> Unit,
 ) {
     val scheme = MaterialTheme.colorScheme
+    val swipeDefault = rememberUserPrefs().swipeDefault
+
+    // The two directions swapped when the summary panel learned to read aloud.
+    // Listening is the thing a saved row is reached for most, and it had ended
+    // up as the deep half of a metered pull; it gets the leftward swipe, which
+    // is the easier one for a right thumb, and Remove takes the other side.
+    //
+    // Nothing about removal got easier or harder in the move: it is the same
+    // single-threshold pull with the same worded warning, in the other
+    // direction.
     val dismiss = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->
             when (value) {
-                SwipeToDismissBoxValue.EndToStart -> onRemove()
-                // The mirror gesture: same commitment, nothing destroyed. The
-                // panel it opens does the fetching, so this hands over the
-                // little it knows and lets the row spring back.
-                SwipeToDismissBoxValue.StartToEnd -> SummaryRequest.open(SummaryTarget(link.url, link.title))
+                // Same commitment as removal, nothing destroyed. The panel
+                // does its own fetching, so this hands over the little the row
+                // knows and lets it spring back.
+                SwipeToDismissBoxValue.EndToStart ->
+                    SummaryRequest.open(SummaryTarget(link.url, link.title))
+
+                SwipeToDismissBoxValue.StartToEnd -> onRemove()
                 SwipeToDismissBoxValue.Settled -> Unit
             }
             // Never let the box settle into a dismissed state of its own: the
@@ -349,13 +363,15 @@ private fun LinkRow(
         // from over it — see `ListRowBody`.
         SwipeToDismissBox(
             state = dismiss,
-            // Only where there is a model to run: a gesture whose whole
+            // Only where there is something to run: a gesture whose whole
             // outcome is a panel explaining that it cannot work is worse than
-            // no gesture at all.
-            enableDismissFromStartToEnd = summariesSupported(),
+            // no gesture at all. Either half is enough — a phone with a voice
+            // and no on-device model still has a use for this panel, which is
+            // then a player with an explanation where the summary would be.
+            enableDismissFromEndToStart = summariesSupported() || speechSupported(),
             backgroundContent = {
-                if (dismiss.dismissDirection == SwipeToDismissBoxValue.StartToEnd) {
-                    SummariseBackground(dismiss.progress)
+                if (dismiss.dismissDirection == SwipeToDismissBoxValue.EndToStart) {
+                    SummariseBackground(dismiss.progress, swipeDefault)
                 } else {
                     RemoveBackground(dismiss.progress)
                 }
@@ -430,21 +446,24 @@ private fun RemoveBackground(progress: Float) {
             .height(52.dp)
             .background(MaterialTheme.colorScheme.primaryContainer)
             .padding(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.End,
+        // Start-aligned: this is the rightward pull now, so the background is
+        // uncovered from the left edge and a label at the far right would stay
+        // hidden under the row for most of the gesture.
+        horizontalArrangement = Arrangement.Start,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text = if (progress > 0.4f) "Release to remove" else "Remove",
-            style = MaterialTheme.typography.labelLarge,
-            fontSize = 12.sp,
-            color = MaterialTheme.colorScheme.onPrimaryContainer,
-        )
-        Spacer(Modifier.width(10.dp))
         Icon(
             DuskReadIcons.Close,
             contentDescription = null,
             modifier = Modifier.size(15.dp),
             tint = MaterialTheme.colorScheme.onPrimaryContainer,
+        )
+        Spacer(Modifier.width(10.dp))
+        Text(
+            text = if (progress > 0.4f) "Release to remove" else "Remove",
+            style = MaterialTheme.typography.labelLarge,
+            fontSize = 12.sp,
+            color = MaterialTheme.colorScheme.onPrimaryContainer,
         )
     }
 }

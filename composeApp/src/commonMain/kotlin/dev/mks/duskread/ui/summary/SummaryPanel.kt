@@ -1,5 +1,6 @@
 package dev.mks.duskread.ui.summary
 
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -19,6 +20,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -26,12 +28,15 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.mks.duskread.data.rememberUserPrefs
 import dev.mks.duskread.links.createHttpClient
 import dev.mks.duskread.links.loadArticle
 import dev.mks.duskread.links.rememberReadingSignals
+import dev.mks.duskread.speech.SpeechSession
+import dev.mks.duskread.speech.speechSupported
 import dev.mks.duskread.summary.ArticleSummary
 import dev.mks.duskread.summary.SummariserState
 import dev.mks.duskread.summary.SummaryTarget
@@ -69,13 +74,24 @@ private sealed interface Stage {
 /**
  * The summary itself: one panel, floating, wherever it was asked for.
  *
- * Everything the feature does lives here rather than in its two hosts, which
- * are both "put this panel on screen and hand it a target"; duplicating a
- * fetch-then-generate pipeline across them is how they would drift apart.
+ * Everything the summary side of the feature does lives here rather than in
+ * its two hosts, which are both "put this panel on screen and hand it a
+ * target"; duplicating a fetch-then-generate pipeline across them is how they
+ * would drift apart.
+ *
+ * The listening side does not live here any more. It used to — a `Speaker`,
+ * a flow collected inline, a meter drawn in the card — but that meant reading
+ * aloud stopped the moment this panel left composition, which is not what
+ * Readback playback does and there is no reason listening to an article
+ * should behave differently from listening to one. `SpeechSession` is what
+ * moved: this panel now only starts and stops it, and the actual transport —
+ * play state, progress, the stop button — lives in the same floating bar
+ * Readback already uses, which is also why it survives this panel closing.
  *
  * Order matters: a cached summary short-circuits the lot, then the caller's
  * own text if it had any (the reader always does), otherwise a fetch — then
- * generation, streamed, so the panel fills in rather than sits.
+ * generation, streamed, so the panel fills in rather than sits. Reading aloud
+ * shares that same fetched text rather than asking for the page twice.
  *
  * A downloadable model is *not* downloaded automatically. Hundreds of
  * megabytes over whatever connection the phone is on is the reader's call.
@@ -88,6 +104,15 @@ fun SummaryPanel(
     modifier: Modifier = Modifier,
     hostShowsBusy: Boolean = false,
     onBusyChange: (Boolean) -> Unit = {},
+    /**
+     * Speaks the instant the panel opens rather than waiting for the play
+     * button. The caller's call, not a preference the panel reads for
+     * itself — a swipe honours `UserPrefs.swipeDefault`, the reader's own
+     * dedicated read-aloud button always passes true, and its existing
+     * summary button always passes false; three different answers to the
+     * same question the panel has no way to guess on its own.
+     */
+    autoPlay: Boolean = false,
 ) {
     val prefs = rememberUserPrefs()
     val summariser = rememberSummariser(prefs.summaryLength)
@@ -98,6 +123,38 @@ fun SummaryPanel(
 
     var stage by remember(target.url, prefs.summaryLength) { mutableStateOf<Stage>(Stage.Waiting) }
     val engineState = summariser.state
+
+    // Held so pressing play does not refetch a page the summariser has already
+    // been out and got. It is also why the two halves belong on one panel: they
+    // want the same article, and asking for it twice was the cost of keeping
+    // them apart.
+    var articleText by remember(target.url) { mutableStateOf(target.text) }
+
+    // The listening half now runs in `HomeScreen`, not here — see
+    // `SpeechSession`. What used to be this panel's own `speaking` flag is
+    // "is *my* article the one playing", which the session's key answers
+    // without this panel having to own a `Speaker` of its own.
+    val speechNowPlaying by SpeechSession.state.collectAsState()
+    val isThisPlaying = speechNowPlaying?.let { it.key == target.url && it.playing } == true
+
+    fun togglePlay() {
+        if (isThisPlaying) {
+            SpeechSession.stop()
+            return
+        }
+        scope.launch {
+            val text = articleText ?: loadArticle(client, target.url, target.title, target.feedContent)?.text
+            if (text == null || text.length < MinSpeakableChars) return@launch
+            articleText = text
+            SpeechSession.start(target.url, target.title, text)
+        }
+    }
+
+    // The one thing autoPlay does — see the parameter's own KDoc for who
+    // decides it and why. `isThisPlaying` is deliberately not in the guard:
+    // this must fire once per fresh target regardless of what some earlier
+    // article happened to leave `SpeechSession` doing.
+    LaunchedEffect(target.url) { if (autoPlay) togglePlay() }
 
     LaunchedEffect(target.url, engineState, prefs.summaryLength) {
         cache.summaryFor(target.url, prefs.summaryLength)?.let {
@@ -116,8 +173,11 @@ fun SummaryPanel(
                 if (stage is Stage.Generating || stage is Stage.Done) return@LaunchedEffect
 
                 stage = if (target.text == null) Stage.Reading else Stage.Generating("")
-                val text = target.text
+                val text = articleText
                     ?: loadArticle(client, target.url, target.title, target.feedContent)?.text
+                // Kept whatever happens next, so the play button never repeats
+                // a fetch this one already paid for.
+                text?.let { articleText = it }
 
                 if (text == null || text.length < MinSummarisableChars) {
                     stage = Stage.Failed("There isn't enough text on this page to summarise.")
@@ -173,6 +233,14 @@ fun SummaryPanel(
                 else -> (engineState as? SummariserState.Ready)?.model.orEmpty()
             },
             busy = busy && !hostShowsBusy,
+            // Gated on the platform alone, the same question the reader's own
+            // read-aloud button asks — see `InAppBrowserScreen`. The finer
+            // question, whether a voice is actually installed, is one
+            // `SpeechSession` finds out when a read is actually attempted
+            // rather than one this panel checks in advance for itself.
+            canPlay = speechSupported(),
+            playing = isThisPlaying,
+            onTogglePlay = ::togglePlay,
             onClose = onClose,
         )
         Spacer(Modifier.height(8.dp))
@@ -197,7 +265,14 @@ fun SummaryPanel(
  * model's name.
  */
 @Composable
-private fun PanelHeader(note: String, busy: Boolean, onClose: () -> Unit) {
+private fun PanelHeader(
+    note: String,
+    busy: Boolean,
+    canPlay: Boolean,
+    playing: Boolean,
+    onTogglePlay: () -> Unit,
+    onClose: () -> Unit,
+) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
             text = "SUMMARY",
@@ -224,6 +299,26 @@ private fun PanelHeader(note: String, busy: Boolean, onClose: () -> Unit) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(Modifier.width(10.dp))
+        }
+        // Before the close, and bordered, because it is the one thing on this
+        // header anyone is meant to press. Close is furniture.
+        if (canPlay) {
+            Icon(
+                imageVector = if (playing) DuskReadIcons.Pause else DuskReadIcons.Play,
+                contentDescription = if (playing) "Stop reading aloud" else "Read this aloud",
+                modifier = Modifier
+                    .size(30.dp)
+                    .clip(RoundedCornerShape(Radius.Chip))
+                    .border(
+                        Stroke.Hairline,
+                        MaterialTheme.colorScheme.outlineVariant,
+                        RoundedCornerShape(Radius.Chip),
+                    )
+                    .clickable(onClick = onTogglePlay)
+                    .padding(8.dp),
+                tint = MaterialTheme.colorScheme.primary,
+            )
+            Spacer(Modifier.width(8.dp))
         }
         Icon(
             imageVector = DuskReadIcons.Close,
@@ -276,3 +371,12 @@ private fun DownloadPrompt(onDownload: () -> Unit) {
 // Below this a page is a stub, a paywall or a cookie wall — and asking a model
 // to summarise two sentences produces a confident summary of nothing.
 private const val MinSummarisableChars = 400
+
+/**
+ * Below this, a page is chrome rather than an article.
+ *
+ * Lower than [MinSummarisableChars]: a paragraph is not worth summarising but
+ * is perfectly worth hearing, and refusing to read a short post would refuse
+ * the case listening is quickest for.
+ */
+private const val MinSpeakableChars = 200

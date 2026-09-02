@@ -66,6 +66,16 @@ class FeedLibrary(private val store: KeyValueStore) {
         persist()
     }
 
+    /**
+     * Unfollows everything at once, for the reset in Settings — the only
+     * caller. Rows in Notion's `Sources` stay where they are; nothing in this
+     * app has ever deleted one, and a reset is not the moment to start.
+     */
+    fun clear() {
+        feeds = emptyList()
+        store.putString(Key, null)
+    }
+
     private fun persist() = store.putString(Key, encode(feeds).takeIf { it.isNotEmpty() })
 
     private fun load(): List<Feed> = store.getString(Key)?.split(RecordSeparator)?.mapNotNull(::decode).orEmpty()

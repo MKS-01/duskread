@@ -100,12 +100,10 @@ label names a section rather than reporting a value, it is not mono.
 | `ReadingGutter` | `18.dp` | Horizontal padding for reading surfaces. |
 | `ListGutter` | `14.dp` | Horizontal padding for list surfaces, which carry their own card insets. |
 | `BarClearance` | `72.dp` | Bottom inset so the last item clears the floating bar. |
-| `TwoPaneBreakpoint` | `720.dp` | The one width that changes the plan. |
-| `ListPaneWidth` | `400.dp` | The list pane above the breakpoint. |
+| `TwoPaneBreakpoint` | `720.dp` | The one width that changes the plan: the floating bar below it, the rail above. Named for a two-pane layout that was drawn and never built. |
 | `RailWidth` | `64.dp` | The vertical rail that replaces the floating bar when wide. |
 | `ReadingMeasure` | `640.dp` | The widest a column of prose may get, ~68 characters. |
-| `WideReadingGutter` | `28.dp` | `ReadingGutter`, opened up once there is room. |
-| `WideListGutter` | `20.dp` | `ListGutter`, likewise. |
+| `WideListGutter` | `20.dp` | `ListGutter`, opened up once there is room. |
 
 ### Wide — desktop and web
 
@@ -186,7 +184,7 @@ Material glyph mixed in is visible instantly.
 
 ```
 Home      Target    Clock      Chevron   Back      Close
-Play      Pause     Shuffle    Waveform  Folder    FolderConnect
+Play      Pause     Shuffle    Waveform  FolderConnect
 External  Bookmark  BookmarkFilled       Feed      Reader
 Summary   Check     Settings   Offline   Contrast  Search
 ```
@@ -195,7 +193,7 @@ Every glyph that can be built from evenly spaced vertical bars is —
 `Waveform`, `Feed`, `Offline`, `Settings`, the shading on `Contrast` — because
 the waveform is the one visual idea this app has, and a set drawn from it
 agrees with the data on screen rather than merely sitting beside it. What
-cannot be (`Target`, `Shuffle`, the folder shapes) borrows the same weight and
+cannot be (`Target`, `Shuffle`, `FolderConnect`) borrows the same weight and
 round terminal.
 
 **`BookmarkFilled` is the single filled glyph**, and only ever the *on* half

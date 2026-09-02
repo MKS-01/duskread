@@ -36,9 +36,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import dev.mks.duskread.reader.PlaybackState
-import dev.mks.duskread.reader.ReadItem
-import dev.mks.duskread.ui.reader.formatDuration
 import dev.mks.duskread.ui.theme.DuskReadIcons
 import dev.mks.duskread.ui.theme.Layout
 import dev.mks.duskread.ui.theme.Motion
@@ -62,6 +59,7 @@ import dev.mks.duskread.ui.theme.Stroke
 @Composable
 fun NavRail(
     selected: HomeTab,
+    tabs: List<HomeTab>,
     onSelect: (HomeTab) -> Unit,
     mono: Boolean,
     onToggleTheme: () -> Unit,
@@ -81,7 +79,9 @@ fun NavRail(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            HomeTab.entries.forEach { tab ->
+            // [tabs], not `HomeTab.entries`: Readback is hidden until it is
+            // switched on. See `UserPrefs.readbackEnabled`.
+            tabs.forEach { tab ->
                 RailButton(tab.icon, tab.label, active = tab == selected) { onSelect(tab) }
             }
 
@@ -179,9 +179,9 @@ private fun RailButton(
  */
 @Composable
 fun TransportBar(
-    item: ReadItem?,
-    playback: PlaybackState,
+    nowPlaying: NowPlaying?,
     onTogglePlay: () -> Unit,
+    /** A fraction, 0f–1f — not seconds. */
     onSeek: (Float) -> Unit,
     onStop: () -> Unit,
     modifier: Modifier = Modifier,
@@ -189,13 +189,14 @@ fun TransportBar(
     val scheme = MaterialTheme.colorScheme
 
     // Held past the end of playback for the same reason the floating bar
-    // holds it: `item` goes null the instant stop lands, and reading it
-    // directly would blank the title mid-exit-animation.
-    val shown = remember { mutableStateOf<ReadItem?>(null) }
-    item?.let { shown.value = it }
+    // holds it: `nowPlaying` goes null the instant stop lands, and reading it
+    // directly would blank the whole face mid-exit-animation.
+    val shown = remember { mutableStateOf<NowPlaying?>(null) }
+    nowPlaying?.let { shown.value = it }
+    val current = shown.value
 
-    val duration = playback.durationSec.takeIf { it > 0f } ?: 1f
-    val fraction = (playback.positionSec / duration).coerceIn(0f, 1f)
+    val fraction = current?.fraction ?: 0f
+    val seekable = current?.seekable ?: false
 
     Column(modifier.fillMaxWidth().background(scheme.background)) {
         // The seek line doubles as the bar's top hairline — one 2dp rule
@@ -204,9 +205,11 @@ fun TransportBar(
             Modifier
                 .fillMaxWidth()
                 .height(18.dp)
-                .pointerInput(duration) {
-                    detectHorizontalDragGestures { change, _ ->
-                        onSeek((change.position.x / size.width).coerceIn(0f, 1f) * duration)
+                .pointerInput(seekable) {
+                    if (seekable) {
+                        detectHorizontalDragGestures { change, _ ->
+                            onSeek((change.position.x / size.width).coerceIn(0f, 1f))
+                        }
                     }
                 },
             contentAlignment = Alignment.TopStart,
@@ -220,13 +223,13 @@ fun TransportBar(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             RailButton(
-                icon = if (playback.playing) DuskReadIcons.Pause else DuskReadIcons.Play,
-                label = if (playback.playing) "Pause" else "Play",
+                icon = if (current?.playing == true) DuskReadIcons.Pause else DuskReadIcons.Play,
+                label = if (current?.playing == true) "Pause" else "Play",
                 onClick = onTogglePlay,
             )
             Spacer(Modifier.width(6.dp))
             Text(
-                text = shown.value?.title.orEmpty(),
+                text = current?.title.orEmpty(),
                 style = MaterialTheme.typography.labelLarge,
                 fontSize = 13.sp,
                 color = scheme.primary,
@@ -236,8 +239,7 @@ fun TransportBar(
             )
             Spacer(Modifier.width(14.dp))
             Text(
-                text = "${formatDuration(playback.positionSec.toDouble())} / " +
-                    formatDuration(playback.durationSec.toDouble()),
+                text = current?.wideLabel.orEmpty(),
                 style = MaterialTheme.typography.labelSmall,
                 color = scheme.onSurfaceVariant,
                 modifier = Modifier.widthIn(min = 84.dp),

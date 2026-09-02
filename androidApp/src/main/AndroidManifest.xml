@@ -154,6 +154,17 @@
             android:name="dev.mks.duskread.reader.ReaderPlaybackService"
             android:exported="false"
             android:foregroundServiceType="mediaPlayback" />
+
+        <!--
+            Reading a saved link or post aloud, in a foreground service for the
+            same reason ReaderPlaybackService is one — see its own KDoc.
+            mediaPlayback again: synthesised speech played back is still
+            playback, and there is no more specific type for it.
+        -->
+        <service
+            android:name="dev.mks.duskread.speech.SpeechPlaybackService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
     </application>
 
 </manifest>

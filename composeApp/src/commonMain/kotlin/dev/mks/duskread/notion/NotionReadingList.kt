@@ -203,19 +203,35 @@ suspend fun syncReadingList(
  * down here.
  */
 private fun statusNames(schema: JsonObject): StatusNames {
-    val groups = schema["properties"]?.jsonObject
-        ?.get("Status")?.jsonObject
-        ?.get("status")?.jsonObject
-        ?.get("groups")?.jsonArray
-        .orEmpty()
+    val column = schema["properties"]?.jsonObject?.get("Status")?.jsonObject
+
+    // A select, not a status. This is what a table built by the fallback in
+    // `createReadingList` looks like, and also what someone gets who made the
+    // column by hand without reaching for Notion's status type. There are no
+    // groups to read, so the names are matched against the spellings this app
+    // writes and the ones Notion ships.
+    column?.get("select")?.jsonObject?.let { select ->
+        val options = select["options"]?.jsonArray.orEmpty()
+            .mapNotNull { (it as? JsonObject)?.get("name")?.stringOrNull() }
+
+        fun match(vararg wanted: String): String? = options.firstOrNull { option -> wanted.any { it.equals(option, ignoreCase = true) } }
+
+        return StatusNames(
+            unread = match(UnreadOption, "Not started", "To read") ?: UnreadOption,
+            read = match(ReadOption, "Done", "Complete") ?: ReadOption,
+            select = true,
+        )
+    }
+
+    val status = column?.get("status")?.jsonObject
+    val groups = status?.get("groups")?.jsonArray.orEmpty()
 
     fun firstIn(group: String): String? = groups
         .mapNotNull { it as? JsonObject }
         .firstOrNull { it["name"]?.stringOrNull() == group }
         ?.get("option_ids")?.jsonArray?.firstOrNull()?.stringOrNull()
         ?.let { id ->
-            schema["properties"]?.jsonObject?.get("Status")?.jsonObject
-                ?.get("status")?.jsonObject?.get("options")?.jsonArray.orEmpty()
+            status?.get("options")?.jsonArray.orEmpty()
                 .mapNotNull { it as? JsonObject }
                 .firstOrNull { it["id"]?.stringOrNull() == id }
                 ?.get("name")?.stringOrNull()
@@ -224,10 +240,27 @@ private fun statusNames(schema: JsonObject): StatusNames {
     return StatusNames(
         unread = firstIn("To-do") ?: firstIn("to_do") ?: "Not started",
         read = firstIn("Complete") ?: firstIn("complete") ?: "Done",
+        select = false,
     )
 }
 
-private data class StatusNames(val unread: String, val read: String)
+/**
+ * The two option names, and which of Notion's two column types holds them.
+ *
+ * [select] is not a preference — it is a fact about the table in front of us,
+ * and every read and write of the column has to agree with it. A `status`
+ * value written into a `select` column is silently ignored by Notion, which
+ * would look exactly like a reading list that never remembers what was read.
+ */
+private data class StatusNames(val unread: String, val read: String, val select: Boolean) {
+    /** `{"status": {...}}` or `{"select": {...}}`, whichever this table takes. */
+    fun value(name: String): JsonObject = buildJsonObject {
+        put(
+            if (select) "select" else "status",
+            buildJsonObject { put("name", JsonPrimitive(name)) },
+        )
+    }
+}
 
 /**
  * A link as Notion properties.
@@ -255,10 +288,7 @@ private fun properties(link: SavedLink, status: StatusNames, includeUrl: Boolean
     if (includeUrl) put("URL", buildJsonObject { put("url", JsonPrimitive(link.url)) })
     put("Duskread ID", richText(link.id))
     put("Saved", buildJsonObject { put("checkbox", JsonPrimitive(true)) })
-    put(
-        "Status",
-        buildJsonObject { put("status", buildJsonObject { put("name", JsonPrimitive(if (link.read) status.read else status.unread)) }) },
-    )
+    put("Status", status.value(if (link.read) status.read else status.unread))
     // Paired with Status rather than folded into it: Status answers whether,
     // this answers when, and a reading history that survives a replaced phone
     // needs the second one written down somewhere that is not the phone.
@@ -330,7 +360,10 @@ fun parseArticle(row: JsonObject): NotionArticle? {
     if (url.isBlank()) return null
 
     val title = prop("Title")?.get("title")?.jsonArray.orEmpty().plainText().trim()
-    val statusName = (prop("Status")?.get("status") as? JsonObject)?.get("name")?.stringOrNull()
+    // Either column type, because both exist in the wild — see `statusNames`.
+    val statusColumn = prop("Status")
+    val statusName = ((statusColumn?.get("status") ?: statusColumn?.get("select")) as? JsonObject)
+        ?.get("name")?.stringOrNull()
 
     return NotionArticle(
         pageId = row["id"]?.stringOrNull() ?: return null,
@@ -341,7 +374,7 @@ fun parseArticle(row: JsonObject): NotionArticle? {
         topic = (prop("Topic")?.get("select") as? JsonObject)?.get("name")?.stringOrNull(),
         // Matched by name against both the stock spelling and the one a
         // reading list would rename it to, so the rename is safe either way.
-        read = statusName == "Done" || statusName == "Read",
+        read = statusName == "Done" || statusName == ReadOption,
         saved = (prop("Saved")?.get("checkbox") as? JsonPrimitive)?.content?.toBooleanStrictOrNull() ?: false,
         dismissed = (prop("Dismissed")?.get("checkbox") as? JsonPrimitive)?.content?.toBooleanStrictOrNull() ?: false,
         savedAt = prop("Saved At")?.dateStart(),

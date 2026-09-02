@@ -25,6 +25,25 @@ data class ArticleSummary(
 )
 
 /**
+ * Which of the two a left swipe opens the panel already doing, chosen once in
+ * Settings.
+ *
+ * The panel always does both — it is one card that summarises and reads
+ * aloud, never two — so this is not "which feature" the way it would have
+ * been before they merged. It is only ever "does it start speaking the
+ * moment it opens", the one thing about the panel a single pull cannot show
+ * on its own and has to be decided ahead of time instead.
+ *
+ * Lives beside [SummaryLength] rather than in `ui/summary/`, the package that
+ * actually reads it: `UserPrefs` needs it too, and `data/` importing from
+ * `ui/` would be the layering running backwards.
+ */
+enum class SwipeDefault(val label: String) {
+    Summary("Summary"),
+    ReadAloud("Read aloud"),
+}
+
+/**
  * How much summary the reader wants.
  *
  * Two options, and they are the engine's own: AICore's summarisation feature

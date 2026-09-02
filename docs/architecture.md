@@ -34,7 +34,8 @@ A Compose Multiplatform app — Android, iOS, desktop, Wasm from one
 `commonMain` — that does four things: keeps saved links, follows blogs by RSS,
 plays articles back as audio, and runs a focus timer.
 
-Three planes, and the arrows between them only run one way each:
+Three planes. Both Notion tables now run in both directions; readback is the
+one that is still strictly one-way.
 
 ```
   PUBLISHERS                CURATION                   DEVICE
@@ -43,16 +44,25 @@ Three planes, and the arrows between them only run one way each:
   RSS / Atom  ──────────────────────────────────────►  FeedPostCache
                                                           ▲
   Gmail ──────►  Claude  ──►  Notion                      │ fetch
-                 (MCP)        ├─ Sources ────────────────►│ FeedLibrary
+                 (MCP)        ├─ Sources ◄───────────────►│ FeedLibrary
                               └─ Reading List ◄──────────►  LinkLibrary
                                                               ▲
   readback (separate project) ──► library.db ──────────►  Reader (read-only)
+
+  On-device TTS ───────────────────────────────────────►  Speaker
 ```
+
+The Readback tab — the browser over that synced `library.db` — is **hidden by
+default**, because the sync script that fills it is one person's. What replaces
+it for everyone else is `speech/`: the phone reads the article itself.
 
 Two rules that most of the design follows from:
 
 1. **The app never destroys anything upstream.** Not a Notion row, not a
-   readback record. It is a working set over archives it does not own.
+   readback record. It is a working set over archives it does not own. It does
+   *create* rows in both tables — following a blog files it in `Sources`, the
+   same way saving a link files it in `Reading List` — but nothing it does
+   deletes or archives one.
 2. **The device works offline.** Notion is where subscriptions are curated, not
    a dependency for reading. Every screen renders from local storage, and most
    articles open with no network at all — see [Offline](#offline).
@@ -64,6 +74,7 @@ Two rules that most of the design follows from:
 | Plane | Holds | Written by | Read by |
 | --- | --- | --- | --- |
 | **Notion** | subscriptions, article archive, read state | you, Claude, the app | the app |
+| **Notion (setup)** | the two databases themselves | the app, on first connect | — |
 | **Device** | followed feeds, cached posts, saved links, signals | the app | the app |
 | **readback** | `library.db` + `audio/`, synced onto the device by a separate script | the readback project | the app, **read-only** |
 
@@ -75,28 +86,41 @@ chose — only deliberately saved links reach Notion.
 
 ## Notion schema
 
-Two databases. Their IDs are entered in **Settings ▸ Notion** and stored on the
-device; they are deliberately not in this repository.
+Two databases. **The app finds or creates them itself** — see
+`notion/NotionProvision.kt`. It looks for `DuskRead Sources` and `DuskRead
+Reading List` by exact title, falls back to the bare names `Sources` and
+`Reading List` so a hand-made pair is adopted rather than duplicated, and
+builds whatever is still missing inside a `DuskRead` page. Their IDs are then
+stored on the device; they are deliberately not in this repository, and there
+is no longer anywhere to type one in.
+
+The one manual step that survives is sharing a page with the token: Notion's
+API refuses to create a database, or a page, at the workspace root, so a
+credential that reaches nothing can build nothing.
 
 ### `Sources` — what to follow
 
-Read by the app, never written.
+**Read and written.** This reversed: `Sources` used to be pulled only, on the
+rule that Notion was upstream and the arrow never turned round. It turns round
+because the table is now created empty rather than curated into existence
+first — a reader who follows four blogs and finds nothing in Notion has been
+handed a feature that looks broken. Following a blog on the phone creates its
+row; nothing here ever deletes one, so unfollowing is still local only.
 
 | Property | Type | Used by the app | Notes |
 | --- | --- | --- | --- |
-| `Name` | Title | ✅ | shown in Following instead of a hostname |
-| `Feed URL` | URL | ✅ | a site URL also works — it is resolved via `<link rel=alternate>` |
+| `Name` | Title | ↕ | shown in Following instead of a hostname |
+| `Feed URL` | URL | ↕ | a site URL also works — it is resolved via `<link rel=alternate>` |
+| `Duskread ID` | Text | ↑ | the app's own `Feed.id`; the stable half of the match |
 | `Site URL` | URL | — | human destination, often not the feed |
 | `Source` | Select | — | RSS / Substack / Medium / Email / Manual |
-| `Topic` | Select | ✅ | inherited by every post from this feed |
+| `Topic` | Select | ↕ | inherited by every post from this feed |
 | `Tags` | Multi-select | — | |
-| `Active` | Checkbox | ✅ | unticked rows are skipped; **a missing column means active** |
+| `Active` | Checkbox | ↕ | unticked rows are skipped; **a missing column means active** |
 | `Feed status` | Select | — | ok / no feed / unverified |
 | `Notes` | Text | — | |
 
 ### `Reading List` — articles
-
-The only table the app writes to.
 
 | Property | Type | Direction | Notes |
 | --- | --- | --- | --- |
@@ -105,7 +129,7 @@ The only table the app writes to.
 | `Duskread ID` | Text | ↑ | the app's own id for the link |
 | `Saved` | Checkbox | ↕ | **the gate — only ticked rows reach the phone** |
 | `Dismissed` | Checkbox | ↑ | "not interested" — never pulled, and nothing should re-file it |
-| `Status` | Status | ↕ | read / unread; option names are read from the schema |
+| `Status` | Status *or* Select | ↕ | read / unread; both the column type and the option names are read from the schema — creating a `status` column via the API is unreliable, so `NotionProvision` falls back to a `select` and everything downstream reads either |
 | `Read At` | Date | ↕ | when, as opposed to whether |
 | `Saved At` | Date | ↕ | when it was filed |
 | `Topic` | Select | ↕ | set in Notion or from the phone |
@@ -371,7 +395,9 @@ demand.
 
 ## Authentication
 
-A **personal access token**, pasted once into Settings.
+A **personal access token**, pasted once — and now the *only* thing anyone
+types. Setup is: create a token, switch it on for one Notion page, paste it.
+Everything else the app works out for itself.
 
 Notion offers OAuth, but `/v1/oauth/token` authorises with HTTP Basic over
 `CLIENT_ID:CLIENT_SECRET` and accepts no `code_verifier` — without PKCE, a
@@ -418,7 +444,10 @@ Things that are true everywhere, and worth keeping true:
    are compared — see [Same article, different address](#same-article-different-address).
 8. **Syncing is never blocking and never noisy.** It runs in the background,
    reports only when asked for by the button, and does nothing at all until
-   something is configured.
+   there is a token.
+9. **Notion is optional.** Every screen works without it. It is where
+   subscriptions are curated for the people who curate them, never a
+   dependency for reading.
 
 ---
 
@@ -478,13 +507,15 @@ composeApp/src/commonMain/kotlin/dev/mks/duskread/
 
   notion/     NotionAuth         the seam OAuth would replace
               NotionClient       transport, paging, backoff, typed failures
-              NotionSources      Sources rows → followed feeds
+              NotionProvision    finds or builds the two databases
+              NotionSources      Sources rows ↔ followed feeds
               NotionReadingList  the two-way saved-links reconciliation
               NotionSync         runFullSync — the one entry point
               NotionPrefs
 
   pomodoro/   the focus timer
   reader/     Reader, AudioPlayer — read-only over readback's library.db
+  speech/     Speaker — the phone reads an article aloud (Android only)
   summary/    on-device summaries (Android only; ML Kit GenAI)
   ui/         screens, theme, shared components
 ```

@@ -87,6 +87,8 @@ import kotlin.time.Clock
 fun DashboardTab(
     onOpenFocus: () -> Unit,
     onOpenSaved: () -> Unit,
+    /** Off unless the Readback tab is switched on; see `UserPrefs.readbackEnabled`. */
+    showReadback: Boolean,
     onOpenReadback: () -> Unit,
     onOpenFollowing: () -> Unit,
     links: LinkLibrary,
@@ -96,7 +98,6 @@ fun DashboardTab(
     feedPosts: FeedPostCache,
     feedClient: HttpClient,
     greeting: String?,
-    onOpenSettings: () -> Unit,
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
 ) {
@@ -131,34 +132,32 @@ fun DashboardTab(
             modifier = Modifier.fillMaxWidth(),
             contentPadding = contentPadding,
         ) {
-            // The greeting only appears if a name was given — no "Hello, there"
-            // fallback, which reads worse than nothing — but the row itself
-            // always shows, since Settings needs somewhere to live either way.
-            // The same hairline-and-softened-corner language as the sort
-            // chips, not a circle button — a bare glyph read as too slight
-            // next to them, and this keeps it one system rather than two.
-            item("head") {
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 22.dp)) {
-                    greeting?.let {
-                        Text(
-                            text = it,
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onBackground,
-                            modifier = Modifier.weight(1f),
-                        )
-                    } ?: Spacer(Modifier.weight(1f))
-                    Icon(
-                        imageVector = DuskReadIcons.Settings,
-                        contentDescription = "Settings",
-                        modifier = Modifier
-                            .size(34.dp)
-                            .clip(RoundedCornerShape(Radius.Chip))
-                            .border(Stroke.Hairline, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(Radius.Chip))
-                            .clickable(onClick = onOpenSettings)
-                            .padding(9.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            // Settings used to live only here, behind a gear next to the
+            // greeting — the row stayed even with no name to show, purely to
+            // give it somewhere to be. It now has a permanent slot of its own
+            // in the tab bar (and, on a wide window, the rail), reachable from
+            // every screen rather than Home alone, so the row has nothing left
+            // to justify existing when there is no greeting to show.
+            greeting?.let {
+                item("head") {
+                    Text(
+                        text = it,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier.padding(bottom = 22.dp),
                     )
                 }
+            }
+
+            // Only on a genuine first run — nothing saved, nothing followed — and
+            // gone the moment either exists. NEXT UP already answers "what's
+            // empty right now" in its own compact, in-dashboard way further
+            // down; this answers a different question that only a blank slate
+            // asks: "what is this app for at all". Once there is one saved
+            // link or one followed blog the reader has already answered that
+            // themselves, and the hero would be a banner nobody needed twice.
+            if (links.links.isEmpty() && feeds.feeds.isEmpty()) {
+                item("welcome") { WelcomeSection() }
             }
 
             // Leads the screen — a specific thing to read, ahead of the general
@@ -166,7 +165,11 @@ fun DashboardTab(
             item("next-up") {
                 NextUpSection(links = links, signals = signals, feeds = feeds, feedPosts = feedPosts, onOpenSaved = onOpenSaved)
             }
-            item("readback") { ReadbackSection(player = player, onOpen = onOpenReadback) }
+            // Dropped entirely rather than shown empty: its every branch ends
+            // in "open the Readback tab", and there is no such tab to open.
+            if (showReadback) {
+                item("readback") { ReadbackSection(player = player, onOpen = onOpenReadback) }
+            }
             item("focus") { FocusSection(onOpen = onOpenFocus) }
             item("following") {
                 FollowingShortcut(feeds = feeds, feedPosts = feedPosts, links = links, onOpen = onOpenFollowing)
@@ -484,6 +487,50 @@ private fun FollowingShortcut(
 private const val FollowingPreviewRows = 3
 
 /**
+ * A first look at the app, not a first look at emptiness.
+ *
+ * Everything else on this screen is a section reporting on state — NEXT UP
+ * says what there is to read, FOCUS what there is to time, FOLLOWING what
+ * there is to browse — and every one of them has an honest, small answer for
+ * "nothing yet". Stacked together on a genuine first run, three honest small
+ * answers in a row read as an app that has nothing in it, not as an app
+ * waiting to be used. This is the difference: one place that says what the
+ * four pillars add up to, so the sections underneath can stay exactly as
+ * quiet as they already are.
+ *
+ * Deliberately not [EmptyState] with a call to action — there is no single
+ * button that would be right here. Saving a link, following a blog and
+ * starting a focus session are three unrelated gestures in three unrelated
+ * places, and a hero that only pointed at one of them would misrepresent the
+ * other two.
+ */
+@Composable
+private fun WelcomeSection(modifier: Modifier = Modifier) {
+    Column(modifier.fillMaxWidth().padding(bottom = SectionGap)) {
+        WaveformMeter(
+            progress = 0f,
+            modifier = Modifier.height(16.dp),
+            barCount = 20,
+            flat = true,
+        )
+        Spacer(Modifier.height(16.dp))
+        Text(
+            text = "Welcome to DuskRead",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Normal,
+            color = MaterialTheme.colorScheme.onBackground,
+        )
+        Spacer(Modifier.height(6.dp))
+        Text(
+            text = "Save a link, follow a blog, hear it read back. Whatever you add " +
+                "shows up below, ready whenever you are.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+/**
  * The one section on Home that makes a *choice* rather than reporting local
  * state — and now it chooses over both halves of the app.
  *
@@ -501,6 +548,7 @@ private const val FollowingPreviewRows = 3
  * same skeleton every other list in the app uses. A recommendation is not a
  * different kind of thing and should not look like one.
  */
+
 @Composable
 private fun NextUpSection(
     links: LinkLibrary,

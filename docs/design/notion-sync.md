@@ -69,9 +69,21 @@ Nothing in the app writes to Notion.
 
 ### W1. Where each thing lives, and who is allowed to write it
 
-The one rule that keeps this simple: **Notion is upstream, DuskRead is
-downstream, and the arrow never reverses.** Anything the app writes, it writes
-to its own store.
+> **Superseded.** This section described a one-way pull, on the rule that
+> Notion was upstream and the arrow never reversed. That held while the
+> `Sources` table was curated into existence before the app ever saw it. It
+> stopped holding when the app started *creating* that table itself: a reader
+> who connects, follows four blogs and opens Notion to an empty database has
+> been handed a feature that looks broken, and is right. `Sources` is now
+> two-way, and `docs/architecture.md` carries the current picture.
+>
+> What did **not** change is the destructive half, which was always the part
+> that mattered: nothing in the app deletes or archives a row on either table.
+> Unfollowing a blog is still local only.
+
+The original rule, kept for the reasoning behind it: **Notion is upstream,
+DuskRead is downstream, and the arrow never reverses.** Anything the app
+writes, it writes to its own store.
 
 ```
   Gmail ─┐
@@ -93,6 +105,11 @@ to its own store.
 ```
 
 ### W2. Connecting, and disconnecting
+
+> **Superseded by the setup sheet.** There is no database-ID field and no
+> "test connection" button any more; the app finds or builds both databases
+> itself. See `notion/NotionProvision.kt` and `ui/settings/NotionSetupSheet.kt`.
+> The shape below is what it replaced.
 
 ```
   Not connected
@@ -312,10 +329,12 @@ Notion API forces on a caller:
   `RateLimited`, `Network` and `Malformed`, because Settings has to say *which*
   went wrong.
 
-Plus `suspend fun databaseTitle(id: String)` for **Test connection** — one
-cheap `GET /v1/databases/{id}` that proves token and ID together, and returns
-the name to show back ("Sources") so a correct connection is legible rather
-than just green.
+> **Superseded, and now removed.** `databaseTitle` existed for a **Test
+> connection** button that proved a token and a hand-typed ID together. Both
+> are gone: `NotionProvision` finds or creates the databases, so there is no
+> ID to prove and the setup sheet's own steps are what report a failure. The
+> method was deleted once nothing called it — along with the
+> `NotionPrefs.databaseName` it cached its answer into.
 
 ### B5. `NotionSources.kt` + `NotionSync.kt` — the pull
 

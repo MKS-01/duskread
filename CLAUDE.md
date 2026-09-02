@@ -12,11 +12,19 @@ The four things the app does, and where each lives:
 - **Saved links** — `links/` (`LinkLibrary`, `SavedLink`, `LinkMetadata`:
   a pasted or shared URL is usable immediately and backfills its real title)
 - **Feeds** — `links/` (`Feed`, `FeedLibrary`, `FeedSync`, `FeedPostCache`)
-- **Readback** — `reader/` (`Reader`, `AudioPlayer`). Integration with the
-  separate [readback](https://github.com/MKS-01/readback) project is
-  **read-only**: the app reads what a sync step puts on the device and never
-  writes to `library.db`.
+- **Readback** — two halves. `speech/` (`Speaker`) is the phone reading an
+  article aloud with its own TTS, which is what everyone gets. `reader/`
+  (`Reader`, `AudioPlayer`) browses the WAV library the separate
+  [readback](https://github.com/MKS-01/readback) project generates; that
+  integration is **read-only** — the app reads what a sync step puts on the
+  device and never writes to `library.db` — and its tab is **hidden unless
+  switched on** by tapping the version line in Settings three times, because
+  the sync script that fills it is one person's.
 - **Focus timer** — `pomodoro/`
+
+**Notion is optional.** The app has to be complete without it: setup is one
+pasted token, the app finds or creates its own databases
+(`notion/NotionProvision.kt`), and no screen may require a connection.
 
 **This is a personal learning and exploration project.** Trying an unfamiliar
 API, library or tool is in scope and does not need justifying.
@@ -40,7 +48,8 @@ lives in `docs/design/amplitude-migration.md`, which holds the state of the
 system and what is still open. A feature large enough to need its own plan
 gets its own file beside it — `docs/design/notion-sync.md` is the first, on
 pulling followed blogs from a Notion database and the ranking that reads
-their topics.
+their topics — two of its sections are now marked superseded and say what
+replaced them; read `docs/architecture.md` for the current shape.
 `docs/design-system/design-tokens.md` is the reference half: every colour
 role, type style, radius, duration and layout value, with the file it lives
 in. The page shows the language, the tokens file lists it — a table of hex

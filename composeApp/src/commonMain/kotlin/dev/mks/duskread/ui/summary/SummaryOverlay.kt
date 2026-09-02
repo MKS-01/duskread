@@ -20,9 +20,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import dev.mks.duskread.data.rememberUserPrefs
+import dev.mks.duskread.speech.SpeechSession
 import dev.mks.duskread.summary.SummaryRequest
+import dev.mks.duskread.summary.SwipeDefault
 import dev.mks.duskread.ui.theme.Layout
 import dev.mks.duskread.ui.theme.Motion
+import dev.mks.duskread.ui.theme.Space
 
 /**
  * The panel a swiped row opens, mounted once above the tabs.
@@ -35,12 +39,21 @@ import dev.mks.duskread.ui.theme.Motion
  */
 @Composable
 fun SummaryOverlay(modifier: Modifier = Modifier) {
+    val prefs = rememberUserPrefs()
     val requested by SummaryRequest.target.collectAsState()
 
     // Held past the request going null so the exit animation still has a
     // target to draw — same reason `PlatformOverlay` and `FloatingBar` do it.
     val shown = remember { mutableStateOf(requested) }
     requested?.let { shown.value = it }
+
+    // Pressing play does not close this panel — the summary text is still
+    // worth reading while it plays — so a read started from here leaves two
+    // floating things at the bottom of the screen at once: this card, and
+    // the transport `HomeScreen` raises to show it. Without extra clearance
+    // they crowd the same few rows of screen; this is what keeps them
+    // stacked with a real gap between them instead.
+    val readingAloud by SpeechSession.state.collectAsState()
 
     Box(modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
         // Tapping the list dismisses the panel. No ripple and no scrim — the
@@ -67,14 +80,25 @@ fun SummaryOverlay(modifier: Modifier = Modifier) {
                 SummaryPanel(
                     target = target,
                     onClose = SummaryRequest::consume,
+                    // The swipe is the one place this is a preference rather
+                    // than a decision made at the tap: the gesture itself
+                    // already told the reader which it would be, in
+                    // `SummariseBackground`'s own label.
+                    autoPlay = prefs.swipeDefault == SwipeDefault.ReadAloud,
                     modifier = Modifier
                         .navigationBarsPadding()
                         .padding(horizontal = Layout.ListGutter)
                         // Clear of the floating bar, not clear of the whole
                         // list inset: [Layout.BarClearance] is what the last
                         // row of a list needs to be scrollable past the bar,
-                        // and a panel resting just above it needs less.
-                        .padding(top = 12.dp, bottom = Layout.BarClearance - 12.dp),
+                        // and a panel resting just above it needs less. A
+                        // second bar's worth on top of that when something is
+                        // actually playing — the transport is showing, not
+                        // just reserving its usual quiet strip of icons.
+                        .padding(
+                            top = 12.dp,
+                            bottom = Layout.BarClearance - 12.dp + if (readingAloud != null) Layout.BarHeight + Space.CardGap else 0.dp,
+                        ),
                 )
             }
         }

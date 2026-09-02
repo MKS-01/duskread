@@ -2,8 +2,6 @@ package dev.mks.duskread.ui.home
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.LinearOutSlowInEasing
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -61,11 +59,14 @@ import dev.mks.duskread.notion.rememberNotionPrefs
 import dev.mks.duskread.notion.runFullSync
 import dev.mks.duskread.reader.rememberAudioPlayer
 import dev.mks.duskread.reader.rememberReadRepository
+import dev.mks.duskread.speech.DriveSpeechSession
+import dev.mks.duskread.speech.SpeechSession
 import dev.mks.duskread.ui.common.ToastHost
 import dev.mks.duskread.ui.common.ToastRequest
 import dev.mks.duskread.ui.layout.LocalWindowClass
 import dev.mks.duskread.ui.links.LinksTab
 import dev.mks.duskread.ui.reader.ReaderTab
+import dev.mks.duskread.ui.reader.formatDuration
 import dev.mks.duskread.ui.rememberUrlOpener
 import dev.mks.duskread.ui.settings.SettingsScreen
 import dev.mks.duskread.ui.theme.Layout
@@ -79,7 +80,12 @@ import kotlin.time.ExperimentalTime
  * Derived rather than typed out: the bar, the gap it keeps from the safe
  * area, and a gap under the last row. Widening [Layout.BarInset] without
  * this moving with it would push the bar up into content the list still
- * thought it had cleared. Reduced by [Layout.BarPeekDrop] while peeked.
+ * thought it had cleared.
+ *
+ * Constant regardless of [BarCollapse]. The collapsed pill shrinks in place —
+ * its own reserved height in the layout tree never changes, only how it
+ * paints within that height — so the list underneath was never actually
+ * covering anything more or less of it to reclaim.
  */
 private val FullClearance = Layout.BarHeight + Layout.BarInset + 32.dp
 
@@ -112,6 +118,69 @@ fun HomeScreen(
     val player = rememberAudioPlayer(readRepository)
     val playback by player.state.collectAsState()
 
+    // The speech half of the same idea, driven from here for the same reason
+    // the Readback player is: this is the one place already alive for the
+    // life of the app, so a read started from a swiped row or the reader's
+    // own button survives the panel that started it closing. What actually
+    // turns a request into sound is platform-specific — a foreground service
+    // with its own notification on Android, nothing at all where there is no
+    // engine to drive — see `DriveSpeechSession`'s own KDoc.
+    DriveSpeechSession()
+    val speechNowPlaying by SpeechSession.state.collectAsState()
+
+    // At most one of Readback and a live read ever has the floating
+    // transport, because there is only one and it can only be about one
+    // thing. Starting either stops the other rather than layering two audio
+    // streams — a rule enforced here, in the one place that can see both.
+    LaunchedEffect(speechNowPlaying?.playing) {
+        if (speechNowPlaying?.playing == true) player.stop()
+    }
+    LaunchedEffect(playback.playing) {
+        if (playback.playing) SpeechSession.stop()
+    }
+
+    // The single merged description of whatever the transport is about —
+    // see `NowPlaying`'s own KDoc for why this is built once here rather
+    // than by each of [FloatingBar] and [TransportBar] separately. Speech
+    // wins when both happen to be non-null for an instant during the
+    // hand-off above; in steady state only one of them ever is.
+    val nowPlaying: NowPlaying? = speechNowPlaying?.let { speech ->
+        NowPlaying(
+            title = speech.title,
+            playing = speech.playing,
+            fraction = speech.fraction,
+            compactLabel = "${(speech.fraction * 100).toInt()}%",
+            wideLabel = "${(speech.fraction * 100).toInt()}%",
+            seekable = false,
+        )
+    } ?: playback.item?.let { item ->
+        val duration = playback.durationSec.takeIf { it > 0f } ?: 1f
+        NowPlaying(
+            title = item.title,
+            playing = playback.playing,
+            fraction = (playback.positionSec / duration).coerceIn(0f, 1f),
+            compactLabel = formatDuration((playback.durationSec - playback.positionSec).toDouble()),
+            wideLabel = "${formatDuration(playback.positionSec.toDouble())} / ${formatDuration(playback.durationSec.toDouble())}",
+            seekable = true,
+        )
+    }
+
+    val onTogglePlayTransport: () -> Unit = {
+        if (speechNowPlaying != null) SpeechSession.stop() else player.togglePlayPause()
+    }
+    val onSeekTransport: (Float) -> Unit = { fraction ->
+        // No-op for a live read: `NowPlaying.seekable` is false for one, so
+        // neither transport ever calls this for it in the first place — this
+        // guard is what keeps that true if that ever changes out from under it.
+        if (speechNowPlaying == null) {
+            val duration = playback.durationSec.takeIf { it > 0f } ?: 1f
+            player.seekTo(fraction * duration)
+        }
+    }
+    val onStopTransport: () -> Unit = {
+        if (speechNowPlaying != null) SpeechSession.stop() else player.stop()
+    }
+
     // Lets a tapped Readback notification land on the Readback tab
     // specifically, rather than just reopening the app onto whatever tab it
     // last showed.
@@ -121,6 +190,19 @@ fun HomeScreen(
             onTabChange(it)
             HomeTabRequest.consume()
         }
+    }
+
+    // Readback is a destination only once it has been switched on, so the tab
+    // list is derived rather than fixed — see `UserPrefs.readbackEnabled`.
+    val visibleTabs = remember(prefs.readbackEnabled) {
+        HomeTab.entries.filter { it != HomeTab.READBACK || prefs.readbackEnabled }
+    }
+
+    // Switching it off while standing on it would leave the selection pointing
+    // at a tab with no way back to it. Falling to Home is the only recovery
+    // that cannot itself be a tab that has since disappeared.
+    LaunchedEffect(visibleTabs) {
+        if (tab !in visibleTabs) onTabChange(HomeTab.HOME)
     }
 
     // A link shared into the app from a browser. Saved here rather than in the
@@ -228,8 +310,7 @@ fun HomeScreen(
         runCatching {
             runFullSync(
                 api = notionApi,
-                sourcesDatabaseId = notionPrefs.sourcesDatabaseId.orEmpty(),
-                readingDatabaseId = notionPrefs.readingDatabaseId,
+                prefs = notionPrefs,
                 library = links,
                 feeds = feeds,
                 feedPosts = feedPosts,
@@ -260,10 +341,6 @@ fun HomeScreen(
     // with the bar it is clearing, in lockstep and on the same curve — the
     // reader is not surprised by it, they asked for it by scrolling.
     //
-    // It never goes to nothing. The bar only peeks, so a floor has to stay
-    // between the last row and the strip of it still on screen, or the list
-    // reads as running underneath rather than clear of it.
-    //
     // `top` is more generous than it used to be: with no per-tab title left
     // above the first card, that clearance is the only thing keeping content
     // off the status bar.
@@ -272,20 +349,13 @@ fun HomeScreen(
     // a Column there rather than something floating over the list, so the
     // list already ends where the transport begins and padding for it would
     // be a second gap under the first.
-    val bottomClearance by animateDpAsState(
-        targetValue = if (collapse.collapsed) FullClearance - Layout.BarPeekDrop else FullClearance,
-        animationSpec = tween(
-            durationMillis = if (collapse.collapsed) Motion.Chip else Motion.Fade,
-            easing = LinearOutSlowInEasing,
-        ),
-        label = "listClearance",
-    )
-
+    //
+    // Constant rather than animated with [collapse] — see [FullClearance].
     val listPadding = PaddingValues(
         start = if (wide) Layout.WideListGutter else 16.dp,
         end = if (wide) Layout.WideListGutter else 16.dp,
         top = 24.dp,
-        bottom = if (wide) 28.dp else bottomClearance,
+        bottom = if (wide) 28.dp else FullClearance,
     )
 
     // Owned here rather than in `App.kt`, unlike Focus mode: Settings needs
@@ -357,9 +427,9 @@ fun HomeScreen(
                     feedClient = feedClient,
                     onOpenFocus = onOpenFocus,
                     onOpenSaved = { onTabChange(HomeTab.SAVED) },
+                    showReadback = prefs.readbackEnabled,
                     onOpenReadback = { onTabChange(HomeTab.READBACK) },
                     onOpenFollowing = { onTabChange(HomeTab.FOLLOWING) },
-                    onOpenSettings = { showSettings = true },
                     contentPadding = listPadding,
                 )
 
@@ -398,6 +468,7 @@ fun HomeScreen(
                 Row(Modifier.weight(1f).fillMaxWidth()) {
                     NavRail(
                         selected = tab,
+                        tabs = visibleTabs,
                         onSelect = onTabChange,
                         mono = mono,
                         onToggleTheme = onToggleTheme,
@@ -407,16 +478,15 @@ fun HomeScreen(
                 }
 
                 AnimatedVisibility(
-                    visible = playback.item != null,
+                    visible = nowPlaying != null,
                     enter = expandVertically(tween(Motion.Chip)) + fadeIn(tween(Motion.Fade)),
                     exit = shrinkVertically(tween(Motion.Chip)) + fadeOut(tween(Motion.Fade)),
                 ) {
                     TransportBar(
-                        item = playback.item,
-                        playback = playback,
-                        onTogglePlay = { player.togglePlayPause() },
-                        onSeek = { player.seekTo(it) },
-                        onStop = { player.stop() },
+                        nowPlaying = nowPlaying,
+                        onTogglePlay = onTogglePlayTransport,
+                        onSeek = onSeekTransport,
+                        onStop = onStopTransport,
                         modifier = Modifier.navigationBarsPadding(),
                     )
                 }
@@ -449,15 +519,16 @@ fun HomeScreen(
         ) {
             FloatingBar(
                 selected = tab,
+                tabs = visibleTabs,
                 onSelect = onTabChange,
                 hazeState = hazeState,
-                nowPlaying = playback.item,
-                playback = playback,
-                onTogglePlay = { player.togglePlayPause() },
-                onSeek = { player.seekTo(it) },
-                onStop = { player.stop() },
+                nowPlaying = nowPlaying,
+                onTogglePlay = onTogglePlayTransport,
+                onSeek = onSeekTransport,
+                onStop = onStopTransport,
                 mono = mono,
                 onToggleTheme = onToggleTheme,
+                onOpenSettings = { showSettings = true },
                 collapse = collapse,
                 modifier = Modifier
                     .navigationBarsPadding()

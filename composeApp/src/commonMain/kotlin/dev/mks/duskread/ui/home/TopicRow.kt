@@ -11,11 +11,15 @@ import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import dev.mks.duskread.data.rememberUserPrefs
 import dev.mks.duskread.links.FeedPost
 import dev.mks.duskread.links.LinkLibrary
 import dev.mks.duskread.links.savedAgo
+import dev.mks.duskread.speech.speechSupported
 import dev.mks.duskread.summary.SummaryRequest
 import dev.mks.duskread.summary.SummaryTarget
 import dev.mks.duskread.summary.summariesSupported
@@ -73,14 +77,17 @@ internal fun TopicRow(
 ) {
     val open = rememberUrlOpener()
     val saved = linkLibrary.isSaved(post.url)
+    val swipeDefault = rememberUserPrefs().swipeDefault
 
     // Swiped one way only, and never to remove: a feed post is not the
-    // reader's own record, so there is nothing here to destroy. What the feed
-    // already carried goes with the request — a post whose body arrived in
-    // the feed is summarised without a single request.
+    // reader's own record, so there is nothing here to destroy. Leftward, the
+    // same direction and the same panel as a saved row, so the gesture means
+    // one thing everywhere. What the feed already carried goes with the
+    // request — a post whose body arrived in the feed is summarised, and read
+    // aloud, without a single request.
     val dismiss = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->
-            if (value == SwipeToDismissBoxValue.StartToEnd) {
+            if (value == SwipeToDismissBoxValue.EndToStart) {
                 SummaryRequest.open(SummaryTarget(post.url, post.title, feedContent = post.content))
             }
             false
@@ -90,9 +97,9 @@ internal fun TopicRow(
     SwipeToDismissBox(
         state = dismiss,
         modifier = modifier,
-        enableDismissFromStartToEnd = summariesSupported(),
-        enableDismissFromEndToStart = false,
-        backgroundContent = { SummariseBackground(dismiss.progress) },
+        enableDismissFromStartToEnd = false,
+        enableDismissFromEndToStart = summariesSupported() || speechSupported(),
+        backgroundContent = { SummariseBackground(dismiss.progress, swipeDefault) },
     ) {
         TopicRowBody(post = post, host = host, last = last, saved = saved, linkLibrary = linkLibrary, topic = topic, onOpen = { open(post.url) })
     }

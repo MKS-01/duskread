@@ -18,6 +18,7 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -49,6 +50,16 @@ sealed class NotionResult<out T> {
 
     data class Network(val detail: String) : Failure("Could not reach Notion")
 
+    /**
+     * A 400: the request was reached, understood and refused.
+     *
+     * Split out from [Network] because the two have nothing in common except
+     * that neither worked. This one carries Notion's own body, which is the
+     * only way to tell *why* something was refused — the status-property
+     * fallback in `NotionProvision.kt` turns on reading it.
+     */
+    data class Rejected(val detail: String) : Failure("Notion refused that — $detail")
+
     data class Malformed(val detail: String) : Failure("Notion sent something unexpected")
 }
 
@@ -59,7 +70,7 @@ inline fun <T, R> NotionResult<T>.then(block: (T) -> NotionResult<R>): NotionRes
 }
 
 /**
- * The Notion REST API, reduced to the two calls this app makes.
+ * The Notion REST API, reduced to the calls this app makes.
  *
  * Wraps the shared [HttpClient] rather than configuring one, so the four
  * platform `createHttpClient()` actuals stay the one-liners they are. Reading
@@ -72,20 +83,6 @@ class NotionClient(
     private val client: HttpClient,
     private val auth: NotionAuth,
 ) {
-    /**
-     * The database's title, used by **Test connection**.
-     *
-     * One cheap `GET` that exercises the token, the ID and the network
-     * together, and hands back a name so a working connection reads as
-     * "Sources" rather than a green tick.
-     */
-    suspend fun databaseTitle(databaseId: String): NotionResult<String> = request { token ->
-        client.get("$ApiBase/databases/${databaseId.trim()}") { notionHeaders(token) }
-    }.then { body ->
-        val title = body["title"]?.jsonArray.orEmpty().plainText()
-        if (title.isBlank()) NotionResult.Malformed("no title") else NotionResult.Ok(title)
-    }
-
     /**
      * Every row of a database, following `next_cursor` to the end.
      *
@@ -134,6 +131,127 @@ class NotionClient(
      */
     suspend fun schema(databaseId: String): NotionResult<JsonObject> = request { token ->
         client.get("$ApiBase/databases/${databaseId.trim()}") { notionHeaders(token) }
+    }
+
+    /**
+     * Titles matching [query], of one `object` type — `"database"` or `"page"`.
+     *
+     * Only ever the first page of results, unlike [queryAll], and deliberately:
+     * Notion filters by title server-side when [query] is set, so a hundred
+     * matches for a name as specific as "DuskRead Sources" would already mean
+     * something has gone very wrong. The unfiltered call — used to list pages
+     * that could host the databases — is capped for the same reason in
+     * reverse: nobody is going to scroll past a hundred to pick one.
+     *
+     * Search only sees what the credential has been given, which is the whole
+     * reason setup can end at "share one page": an empty result here is not an
+     * error, it is the instruction.
+     */
+    suspend fun search(objectType: String, query: String? = null): NotionResult<List<JsonObject>> {
+        val body = buildJsonObject {
+            query?.let { put("query", JsonPrimitive(it)) }
+            put(
+                "filter",
+                buildJsonObject {
+                    put("property", JsonPrimitive("object"))
+                    put("value", JsonPrimitive(objectType))
+                },
+            )
+            // Most-recently-touched first, so the page someone just shared with
+            // the integration is the one at the top of the picker.
+            put(
+                "sort",
+                buildJsonObject {
+                    put("direction", JsonPrimitive("descending"))
+                    put("timestamp", JsonPrimitive("last_edited_time"))
+                },
+            )
+            put("page_size", JsonPrimitive(PageSize))
+        }
+
+        return request { token ->
+            client.post("$ApiBase/search") {
+                notionHeaders(token)
+                contentType(ContentType.Application.Json)
+                setBody(body.toString())
+            }
+        }.then { page ->
+            NotionResult.Ok(page["results"]?.jsonArray.orEmpty().mapNotNull { it as? JsonObject })
+        }
+    }
+
+    /**
+     * A plain page under [parentPageId], returning its id.
+     *
+     * Exists because a database cannot be created at the workspace root — the
+     * API requires a page parent — so the databases need something of their
+     * own to live in rather than being scattered into whichever page the
+     * reader happened to share.
+     */
+    suspend fun createSubPage(parentPageId: String, title: String): NotionResult<String> {
+        val body = buildJsonObject {
+            put("parent", buildJsonObject { put("page_id", JsonPrimitive(parentPageId.trim())) })
+            put(
+                "properties",
+                buildJsonObject {
+                    put(
+                        "title",
+                        buildJsonObject {
+                            put(
+                                "title",
+                                buildJsonArray {
+                                    add(buildJsonObject { put("text", buildJsonObject { put("content", JsonPrimitive(title)) }) })
+                                },
+                            )
+                        },
+                    )
+                },
+            )
+        }
+
+        return write { token ->
+            client.post("$ApiBase/pages") {
+                notionHeaders(token)
+                contentType(ContentType.Application.Json)
+                setBody(body.toString())
+            }
+        }.then { page ->
+            page["id"]?.stringOrNull()?.let { NotionResult.Ok(it) } ?: NotionResult.Malformed("no page id")
+        }
+    }
+
+    /**
+     * A database under [parentPageId], returning its id.
+     *
+     * [properties] is the schema, in Notion's own DDL shape — see
+     * `NotionProvision.kt`, which is the only caller and holds the two schemas
+     * this app knows how to read back.
+     */
+    suspend fun createDatabase(
+        parentPageId: String,
+        title: String,
+        properties: JsonObject,
+    ): NotionResult<String> {
+        val body = buildJsonObject {
+            put("parent", buildJsonObject { put("page_id", JsonPrimitive(parentPageId.trim())) })
+            put(
+                "title",
+                buildJsonArray {
+                    add(buildJsonObject { put("text", buildJsonObject { put("content", JsonPrimitive(title)) }) })
+                },
+            )
+            put("properties", properties)
+        }
+
+        return write { token ->
+            client.post("$ApiBase/databases") {
+                notionHeaders(token)
+                contentType(ContentType.Application.Json)
+                setBody(body.toString())
+            }
+        }.then { database ->
+            database["id"]?.stringOrNull()?.let { NotionResult.Ok(it) } ?: NotionResult.Malformed("no database id")
+        }
     }
 
     /** Creates a row, returning its page id. */
@@ -205,6 +323,12 @@ class NotionClient(
                 // and for one this credential cannot see. Indistinguishable
                 // from here, and the same fix either way.
                 403, 404 -> return NotionResult.NotFound
+
+                // The body, not just the code: a refused schema names the
+                // property it objected to and nothing else can.
+                400 -> return NotionResult.Rejected(
+                    runCatching { response.bodyAsText() }.getOrDefault("").take(300),
+                )
 
                 429 -> {
                     if (attempt == MaxAttempts - 1) return NotionResult.RateLimited

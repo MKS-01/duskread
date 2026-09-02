@@ -264,7 +264,7 @@ private fun ReadRow(
             trailing = {
                 if (playing) {
                     Icon(
-                        imageVector = if (playback?.playing == true) DuskReadIcons.Pause else DuskReadIcons.Play,
+                        imageVector = if (playback.playing) DuskReadIcons.Pause else DuskReadIcons.Play,
                         contentDescription = null,
                         modifier = Modifier.size(15.dp).padding(top = 2.dp),
                         tint = scheme.primary,

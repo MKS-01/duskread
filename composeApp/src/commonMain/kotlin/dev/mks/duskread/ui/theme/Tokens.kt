@@ -45,33 +45,19 @@ object Layout {
     val BarInset = 24.dp
 
     /**
-     * How far the floating bar slides down to get out of the way, and how
-     * much clearance the list underneath takes back when it does.
+     * The one width that changes the plan: below it the floating bar, above
+     * it the rail. One threshold rather than a size-class ladder because
+     * there are only two layouts to choose between — naming Medium and
+     * Expanded separately would imply a third that does not exist.
      *
-     * Two-thirds of the bar's own height. Shared rather than repeated because
-     * the two have to move by the same amount: the bar sliding further than
-     * the list reclaims would leave content running under it.
-     */
-    val BarPeekDrop = 38.dp
-
-    /**
-     * The one width that changes the plan: below it the phone layout, above
-     * it a rail and two panes. One threshold rather than a size-class ladder
-     * because there are only two layouts to choose between — naming Medium
-     * and Expanded separately would imply a third that does not exist.
-     *
-     * 720 rather than 600: at 600 the list and detail panes are each too
-     * narrow to be worth the split, and a landscape phone — which is still
-     * held, still thumb-driven — stays on the layout built for it.
+     * The name is older than the layout. It was drawn for a list pane beside
+     * a detail pane; what was actually built is a rail beside one column
+     * capped at [ReadingMeasure], and the pane it was sized against — and the
+     * `ListPaneWidth` token that sized it — are both gone. 720 still holds
+     * for the layout that exists: a landscape phone is still held, still
+     * thumb-driven, and stays on the bar.
      */
     val TwoPaneBreakpoint = 720.dp
-
-    /**
-     * The list pane's width above [TwoPaneBreakpoint]. Fixed, not a
-     * fraction: a two-line title has a correct measure and a wider monitor
-     * does not change it — a percentage only makes the same rows emptier.
-     */
-    val ListPaneWidth = 400.dp
 
     /**
      * The vertical navigation rail replacing the floating bar when wide.
@@ -81,13 +67,12 @@ object Layout {
 
     /**
      * The widest a column of prose is allowed to get, regardless of how much
-     * room the detail pane has. Roughly 68 characters at body size — past
-     * that the eye loses the start of the next line.
+     * room there is around it. Roughly 68 characters at body size — past that
+     * the eye loses the start of the next line.
      */
     val ReadingMeasure = 640.dp
 
-    /** [ReadingGutter] and [ListGutter], opened up once there is room. */
-    val WideReadingGutter = 28.dp
+    /** [ListGutter], opened up once there is room. */
     val WideListGutter = 20.dp
 }
 

@@ -54,9 +54,6 @@ class LinkLibrary(private val store: KeyValueStore) {
     val removedKeys: Set<String>
         get() = removedUrls.keys.mapTo(mutableSetOf(), ::canonicalUrl)
 
-    val unreadCount: Int
-        get() = links.count { !it.read }
-
     /**
      * Saves [rawUrl], or returns the existing entry if it is already here —
      * re-sharing an article you saved last week should not give you two of it.
@@ -93,47 +90,6 @@ class LinkLibrary(private val store: KeyValueStore) {
         links = listOf(link) + links
         persist()
         return link
-    }
-
-    /**
-     * Adds everything in [text] that looks like a link — see [parseImport].
-     *
-     * Links already here are counted and left exactly as they are, read state
-     * included. An import is additive by definition: pasting a year-old backup
-     * over a live list must not resurrect articles you have since read, and
-     * nothing in a paste box is worth the risk of overwriting the record.
-     *
-     * One state write and one persist for the whole paste, rather than a
-     * hundred, which also keeps the list from animating itself apart row by
-     * row while it lands.
-     */
-    fun import(text: String): ImportSummary {
-        val found = parseImport(text)
-        val known = links.mapTo(mutableSetOf()) { canonicalUrl(it.url) }
-        val now = Clock.System.now().toEpochMilliseconds()
-
-        val fresh = found.filterNot { canonicalUrl(it.url) in known }.mapIndexed { index, imported ->
-            SavedLink(
-                id = now.toString(36) + "-i" + (links.size + index),
-                url = imported.url.clean(),
-                title = imported.title?.clean()?.takeIf { it.isNotBlank() } ?: titleFromUrl(imported.url),
-                savedAt = now,
-                changedAt = now,
-                // Restored, not re-read: the import knows it was read but not
-                // when, and 0L is already how the decoder says exactly that.
-                readAt = if (imported.read) 0L else null,
-                // A line that carried its own title needs no network. Only the
-                // bare URLs are left for the fetcher, so importing a backup of
-                // two hundred articles does not become two hundred requests.
-                fetched = imported.title != null,
-            )
-        }
-
-        if (fresh.isNotEmpty()) {
-            links = fresh + links
-            persist()
-        }
-        return ImportSummary(found = found.size, added = fresh.size)
     }
 
     /** Whether [url] is already in the reading list — the state a save button on a feed card renders itself from. */
@@ -227,6 +183,26 @@ class LinkLibrary(private val store: KeyValueStore) {
         links.firstOrNull { it.id == id }?.let { gone -> tombstone(gone.url) }
         links = links.filterNot { it.id == id }
         persist()
+    }
+
+    /**
+     * Everything, gone — the saved links *and* the tombstones.
+     *
+     * The tombstones are the half worth stating. [remove] writes one so a
+     * deleted link cannot come back on the next pull, but this is a reset
+     * rather than a deletion: someone erasing the app and connecting Notion
+     * again wants their reading list back, and a store still full of refusals
+     * would quietly hand them an emptier library than the one Notion holds.
+     * There is nothing left here for a tombstone to protect.
+     *
+     * Notion itself is untouched, as ever. See `SettingsScreen`'s reset, which
+     * is the only caller.
+     */
+    fun clear() {
+        links = emptyList()
+        removedUrls = emptyMap()
+        store.putString(Key, null)
+        store.putString(RemovedKey, null)
     }
 
     /**

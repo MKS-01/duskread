@@ -12,3 +12,7 @@ import androidx.compose.runtime.remember
  */
 @Composable
 actual fun rememberUrlOpener(): (String) -> Unit = remember { { url -> InAppBrowserRequest.open(url) } }
+
+/** That same escape hatch, reached directly: the system browser, with the session the reader already has. */
+@Composable
+actual fun rememberExternalUrlOpener(): (String) -> Unit = remember { { url -> openExternally(url) } }

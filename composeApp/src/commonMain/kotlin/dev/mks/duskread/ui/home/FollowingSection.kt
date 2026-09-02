@@ -56,6 +56,7 @@ import dev.mks.duskread.links.savedAgo
 import dev.mks.duskread.links.syncFeeds
 import dev.mks.duskread.ui.common.AppTextField
 import dev.mks.duskread.ui.common.CompactEmptyState
+import dev.mks.duskread.ui.common.EmptyState
 import dev.mks.duskread.ui.common.EyebrowHeader
 import dev.mks.duskread.ui.common.HairlineDivider
 import dev.mks.duskread.ui.common.ToastRequest
@@ -91,9 +92,21 @@ fun FollowingDigest(
     client: HttpClient,
     onOpenTopics: (Feed) -> Unit,
     modifier: Modifier = Modifier,
+    /**
+     * Sizes the true empty state — no feeds followed at all — against the
+     * viewport below it, the same way Saved's own paste field does. Built by
+     * the caller because `fillParentMaxHeight` only resolves inside the
+     * `LazyItemScope` this composable is invoked from.
+     */
+    emptyStateModifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
-    var managing by remember { mutableStateOf(false) }
+    // Open by default with nothing followed yet, the same reason Saved's own
+    // paste field is never hidden behind a toggle: a reader's first visit is
+    // exactly when the one thing to do here is add something, and gating that
+    // behind a small "Manage" label in the corner meant the empty state had
+    // no way to act on itself — a title and a sentence, nothing to tap.
+    var managing by remember { mutableStateOf(feedLibrary.feeds.isEmpty()) }
     var feedUrl by remember { mutableStateOf("") }
     var discovering by remember { mutableStateOf(false) }
     var syncing by remember { mutableStateOf(false) }
@@ -209,6 +222,7 @@ fun FollowingDigest(
                     feedLibrary.remove(id)
                     postCache.removeFeed(id)
                 },
+                emptyStateModifier = emptyStateModifier,
             )
         }
 
@@ -481,6 +495,7 @@ private fun FeedManagePanel(
     discovering: Boolean,
     onAdd: () -> Unit,
     onRemove: (String) -> Unit,
+    emptyStateModifier: Modifier = Modifier,
 ) {
     Column(Modifier.padding(bottom = 8.dp)) {
         AppTextField(
@@ -507,12 +522,16 @@ private fun FeedManagePanel(
         )
 
         if (feeds.isEmpty()) {
-            Text(
-                text = "Nothing followed yet.",
-                fontSize = 11.5.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 8.dp, start = 4.dp),
-            )
+            // Sits low in the remaining viewport, the same treatment Saved
+            // gives its own first-run state — a single grey line under the
+            // field was the whole rest of the screen left plain.
+            Box(Modifier.fillMaxWidth().then(emptyStateModifier), contentAlignment = Alignment.BottomStart) {
+                EmptyState(
+                    title = "Nothing followed yet",
+                    message = "Paste a blog's address above, or its RSS or Atom feed directly — " +
+                        "DuskRead finds the feed behind a homepage on its own.",
+                )
+            }
         } else {
             // Flush on the background with a hairline between rows, like
             // every other list in the app. This was the last filled container

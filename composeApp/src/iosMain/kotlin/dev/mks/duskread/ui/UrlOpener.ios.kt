@@ -43,6 +43,19 @@ actual fun rememberUrlOpener(): (String) -> Unit {
     }
 }
 
+/**
+ * Safari proper, not the in-app sheet.
+ *
+ * `SFSafariViewController` does share Safari's cookies, so a sign-in would
+ * mostly work — but the reader still ends up copying a secret inside a sheet
+ * this app presented, and then has to get back out of it. Handing the task to
+ * the browser leaves it where tasks belong.
+ */
+@Composable
+actual fun rememberExternalUrlOpener(): (String) -> Unit = remember {
+    { url -> NSURL.URLWithString(url)?.let { UIApplication.sharedApplication.openURL(it) } }
+}
+
 private val webSchemes = setOf("http", "https")
 
 /** Whatever is frontmost, so the sheet is not presented on an already-covered controller. */

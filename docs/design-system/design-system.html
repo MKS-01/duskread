@@ -488,11 +488,14 @@ h2 {
 .v-amp .navbar .i { font-size: 17px; }
 .v-amp .playing { color: var(--a-sound); }
 
-/* The field with something already saved in it — Settings' masked Notion
-   fields are the one place left that draws this state. */
+/* AppTextField: hairline border, Radius.Inline, never a pill. Settings' name
+   field is the one place left that draws it — the masked Notion ID fields
+   that used to sit beside it went when the app started finding its own
+   databases. */
 .v-amp .fieldbox.typing {
   display: flex; align-items: center; gap: 8px; width: 100%;
   text-align: left; margin-bottom: 10px; font-size: 11.5px;
+  padding: 9px 11px; border: 1px solid var(--a-line); border-radius: 10px;
 }
 .v-amp .fieldbox.typing .txt { flex: 1; min-width: 0; color: var(--a-ink); overflow: hidden; white-space: nowrap; }
 
@@ -797,7 +800,6 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
     <symbol id="w-home" viewBox="0 0 24 24"><path d="M4 12 L12 5.5 L20 12 M6.5 13.5 L6.5 20 M17.5 13.5 L17.5 20 M12 20 L12 15.5"/></symbol>
     <symbol id="w-wave" viewBox="0 0 24 24"><path d="M4 10 L4 14 M8 6.5 L8 17.5 M12 3.5 L12 20.5 M16 6.5 L16 17.5 M20 10 L20 14"/></symbol>
     <symbol id="w-saved" viewBox="0 0 24 24"><path d="M7 19.5 L7 5.5 L17 5.5 L17 19.5 L12 15 Z"/></symbol>
-    <symbol id="w-folder" viewBox="0 0 24 24"><path d="M3 6 L9.5 6 L11.5 8.5 L21 8.5 L21 18 L3 18 Z"/></symbol>
     <symbol id="w-feed" viewBox="0 0 24 24"><path d="M4 7 L6 7 M9 7 L20 7 M4 12 L6 12 M9 12 L20 12 M4 17 L6 17 M9 17 L20 17"/></symbol>
     <symbol id="w-play" viewBox="0 0 24 24"><path d="M8.5 5.5 L18.5 12 L8.5 18.5 Z"/></symbol>
     <symbol id="w-pause" viewBox="0 0 24 24"><path d="M9 5 L9 19 M15 5 L15 19"/></symbol>
@@ -1001,10 +1003,12 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
   <section id="walkthrough" class="act">
     <div data-reveal>
       <h2>Act two &middot; Walkthrough</h2>
-      <p class="act-title">Four screens</p>
+      <p class="act-title">The screens, and why each one looks like that</p>
       <p class="act-note">
-        Reading, Home, Following, and the Settings screen that connects
-        Notion. Drag the deck, or use the arrows.
+        An article being read, the screen that picked it for you, the blogs
+        behind it, and what you can change. The last one &mdash; connecting
+        Notion &mdash; is the only screen here you can skip entirely and lose
+        nothing. Drag the deck, or use the arrows.
       </p>
     </div>
 
@@ -1023,6 +1027,7 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
                   <span class="title">A Tale of Two Flink Autoscalers</span>
                   <span class="iconbtn active"><svg class="i" style="font-size:15px"><use href="#w-reader"/></svg></span>
                   <span class="iconbtn active"><svg class="i" style="font-size:15px"><use href="#w-summary"/></svg></span>
+                  <span class="iconbtn"><svg class="i" style="font-size:15px"><use href="#w-wave"/></svg></span>
                   <span class="iconbtn"><svg class="i" style="font-size:15px"><use href="#w-external"/></svg></span>
                 </div>
                 <div style="font-size:13px;line-height:1.6;color:var(--a-mute);filter:blur(1.5px);opacity:0.5">
@@ -1062,16 +1067,18 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
           </div>
         </div>
         <div class="deck-copy">
-          <p class="num">01 / 04 &nbsp;&middot;&nbsp; Reading</p>
-          <h3>Read it here, or ask what's in it</h3>
+          <p class="num">01 / 05 &nbsp;&middot;&nbsp; Reading</p>
+          <h3>Read it, ask what's in it, or have it read to you</h3>
           <p>
             The reader strips the page down to its text. The
             <b>summary</b> button sends that text to Gemini Nano, on the
             phone. Nothing is uploaded.
           </p>
           <p>
-            The summary opens in a panel over the article. The article
-            itself doesn't move.
+            The <b>waveform</b> button is new: the phone reads the article
+            aloud itself, no separate sync step required. It keeps playing
+            behind whatever screen you open next, in the same floating bar
+            Readback already used.
           </p>
         </div>
       </article>
@@ -1082,8 +1089,7 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
             <div class="statusbar"><span>4:19</span><span class="bars"><i></i><i></i><i></i><i></i></span></div>
             <div class="canvas">
               <div class="greet">
-                <h3>Hello, MKS</h3>
-                <span class="iconbtn"><svg class="i" style="font-size:16px"><use href="#w-settings"/></svg></span>
+                <h3>Hello, ReaderK4TP</h3>
               </div>
 
               <p class="eyebrow bare" style="gap:0">Next up<span style="flex:1;height:1px;background:var(--a-line);margin:0 8px"></span><svg class="i" style="font-size:13px;color:var(--a-faint)"><use href="#w-shuffle"/></svg></p>
@@ -1112,20 +1118,6 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
                     <h4 style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Idempotency keys, explained</h4>
                     <div class="meta"><span>stripe.com</span><span>4 min</span></div>
                   </div>
-                </div>
-              </div>
-
-              <p class="eyebrow bare" style="gap:0"><svg class="i eb" style="margin-right:8px"><use href="#w-wave"/></svg>Today&rsquo;s readback<span style="flex:1;height:1px;background:var(--a-line);margin:0 8px"></span><svg class="i" style="font-size:12px;color:var(--a-faint)"><use href="#w-chev"/></svg></p>
-              <div class="row">
-                <div style="display:flex;gap:10px;align-items:flex-start">
-                  <div style="flex:1;min-width:0">
-                    <h4 class="playing">Gesture Handler&rsquo;s Touchable</h4>
-                    <div class="meta" style="margin-bottom:8px"><span class="playing">0:38 / 1:22</span></div>
-                  </div>
-                  <svg class="i playing" style="font-size:14px;margin-top:2px"><use href="#w-pause"/></svg>
-                </div>
-                <div class="wave part">
-                  <i class="p" style="height:7px"></i><i class="p" style="height:12px"></i><i class="p" style="height:15px"></i><i class="p" style="height:9px"></i><i class="p" style="height:13px"></i><i class="p" style="height:6px"></i><i class="p" style="height:11px"></i><i style="height:14px"></i><i style="height:8px"></i><i style="height:12px"></i><i style="height:5px"></i><i style="height:10px"></i><i style="height:15px"></i><i style="height:7px"></i><i style="height:11px"></i><i style="height:9px"></i><i style="height:13px"></i><i style="height:6px"></i>
                 </div>
               </div>
 
@@ -1159,20 +1151,21 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
               <span class="nb sel"><svg class="i"><use href="#w-home"/></svg></span>
               <span class="nb"><svg class="i"><use href="#w-feed"/></svg></span>
               <span class="nb"><svg class="i"><use href="#w-saved"/></svg></span>
-              <span class="nb"><svg class="i"><use href="#w-wave"/></svg></span>
               <span class="bardiv"></span>
               <span class="nb"><svg class="i"><use href="#w-contrast"/></svg></span>
+              <span class="nb"><svg class="i"><use href="#w-settings"/></svg></span>
             </div>
           </div>
           </div>
         </div>
         <div class="deck-copy">
-          <p class="num">02 / 04 &nbsp;&middot;&nbsp; Home</p>
+          <p class="num">02 / 05 &nbsp;&middot;&nbsp; Home</p>
           <h3>Everything on one screen</h3>
           <p>
-            Four sections: <b>Next up</b>, whatever's playing in
-            <b>Readback</b>, the <b>Focus</b> timer, and a
-            <b>Following</b> summary that links to the full tab.
+            Three sections: <b>Next up</b>, the <b>Focus</b> timer, and a
+            <b>Following</b> summary that links to the full tab. A fourth,
+            whatever's playing in <b>Readback</b>, joins them once that tab
+            is switched on.
           </p>
           <p>
             <b>Next up</b> ranks every unread saved link and every cached
@@ -1263,15 +1256,15 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
               <span class="nb"><svg class="i"><use href="#w-home"/></svg></span>
               <span class="nb sel"><svg class="i"><use href="#w-feed"/></svg></span>
               <span class="nb"><svg class="i"><use href="#w-saved"/></svg></span>
-              <span class="nb"><svg class="i"><use href="#w-wave"/></svg></span>
               <span class="bardiv"></span>
               <span class="nb"><svg class="i"><use href="#w-contrast"/></svg></span>
+              <span class="nb"><svg class="i"><use href="#w-settings"/></svg></span>
             </div>
           </div>
           </div>
         </div>
         <div class="deck-copy">
-          <p class="num">03 / 04 &nbsp;&middot;&nbsp; Following</p>
+          <p class="num">03 / 05 &nbsp;&middot;&nbsp; Following</p>
           <h3>Every blog you follow, one line each</h3>
           <p>
             Each feed shows its host, how many posts you haven't saved, and
@@ -1281,7 +1274,9 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
           </p>
           <p>
             The header has a search field and two sort options,
-            <b>Newest</b> and <b>A&ndash;Z</b>.
+            <b>Newest</b> and <b>A&ndash;Z</b>. Following a blog files its own
+            row in Notion now, too &mdash; open Sources there and it's
+            waiting for you.
           </p>
         </div>
       </article>
@@ -1292,47 +1287,118 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
             <div class="statusbar"><span>4:19</span><span class="bars"><i></i><i></i><i></i><i></i></span></div>
             <div class="canvas">
               <div class="toolbar">
+                <span class="iconbtn" style="border:0"><svg class="i" style="font-size:16px"><use href="#w-close"/></svg></span>
                 <span class="title">Settings</span>
-                <span class="iconbtn" style="border:0"><svg class="i" style="font-size:15px"><use href="#w-close"/></svg></span>
               </div>
 
-              <p class="eyebrow" style="margin-top:10px">Notion</p>
-              <div class="fieldbox typing">
-                <span class="txt" style="color:var(--a-mute)">ntn_&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;</span>
-              </div>
-              <div class="fieldbox typing">
-                <span class="txt" style="color:var(--a-mute)">&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;7c2a</span>
-              </div>
-              <div class="fieldbox typing">
-                <span class="txt" style="color:var(--a-mute)">&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;91fe</span>
+              <p class="eyebrow" style="margin-top:12px">Summaries</p>
+              <div class="pillrow" style="margin:0 0 16px">
+                <span class="pill">Short</span>
+                <span class="pill sel">Full</span>
               </div>
 
-              <div style="margin:14px 0 18px">
-                <h4 style="margin:0 0 3px">Reading list &middot; 9 feeds</h4>
-                <div class="meta"><span>Last synced 2h ago</span></div>
+              <p class="eyebrow">Voice</p>
+              <div class="pillrow" style="margin:0 0 16px">
+                <span class="pill sel">System voice</span>
               </div>
 
-              <div style="display:flex;gap:16px;align-items:center">
-                <span style="color:var(--a-sound);font-family:var(--a-ui);font-weight:700;font-size:9.5px;letter-spacing:0.09em;text-transform:uppercase">Test connection</span>
-                <span style="color:var(--a-sound);font-family:var(--a-ui);font-weight:700;font-size:9.5px;letter-spacing:0.09em;text-transform:uppercase">Sync now</span>
-                <span style="color:var(--a-faint);font-family:var(--a-ui);font-weight:700;font-size:9.5px;letter-spacing:0.09em;text-transform:uppercase;margin-left:auto">Disconnect</span>
+              <p class="eyebrow">Swipe</p>
+              <div class="pillrow" style="margin:0 0 16px">
+                <span class="pill sel">Summary</span>
+                <span class="pill">Read aloud</span>
+              </div>
+
+              <p class="eyebrow">Notion</p>
+              <h4 style="margin:0 0 2px">Connected &middot; 9 feeds &middot; 12 saved</h4>
+              <div class="meta" style="margin-bottom:8px"><span>Last synced 2h ago</span></div>
+              <div style="display:flex;gap:14px;margin-bottom:16px">
+                <span style="color:var(--a-mute);font-family:var(--a-ui);font-weight:700;font-size:9px;letter-spacing:0.09em;text-transform:uppercase">Set up again</span>
+                <span style="color:var(--a-mute);font-family:var(--a-ui);font-weight:700;font-size:9px;letter-spacing:0.09em;text-transform:uppercase">Sync now</span>
+                <span style="color:var(--a-faint);font-family:var(--a-ui);font-weight:700;font-size:9px;letter-spacing:0.09em;text-transform:uppercase">Disconnect</span>
+              </div>
+
+              <p class="eyebrow">Appearance</p>
+              <h4 style="margin:0 0 16px">Ink</h4>
+
+              <p class="eyebrow">Profile</p>
+              <div class="fieldbox typing" style="margin-bottom:16px">
+                <span class="txt">ReaderK4TP</span>
+              </div>
+
+              <p class="eyebrow muted">Reset</p>
+              <span style="color:var(--a-mute);font-family:var(--a-ui);font-weight:700;font-size:9px;letter-spacing:0.09em;text-transform:uppercase">Erase everything</span>
+
+              <p style="margin:18px 0 0;font-family:var(--a-data);font-size:10px;color:var(--a-faint)">DuskRead 1.0.0</p>
+            </div>
+          </div>
+          </div>
+        </div>
+        <div class="deck-copy">
+          <p class="num">04 / 05 &nbsp;&middot;&nbsp; Settings</p>
+          <h3>Ordered by what you came here to change</h3>
+          <p>
+            The reading settings lead — <b>summary</b> length, which
+            <b>voice</b> reads aloud, what a <b>swipe</b> starts doing. Then
+            Notion, the one section with live state. <b>Appearance</b> and
+            <b>Profile</b> sit below both: the theme toggle is already in the
+            bar on every screen, and a name is set once.
+          </p>
+          <p class="rationale">
+            <b>Reset is last and quiet.</b> Erasing everything asks in place
+            rather than in a dialog — this screen has no boxed card in it, and
+            the most destructive control is the wrong one to introduce the
+            first. Neither answer takes the accent.
+          </p>
+        </div>
+      </article>
+      <article class="deck-slide" aria-hidden="true" inert>
+        <div class="v-amp deck-figure">
+          <div class="phone">
+          <div class="screen">
+            <div class="statusbar"><span>4:19</span><span class="bars"><i></i><i></i><i></i><i></i></span></div>
+            <div class="canvas">
+              <div class="toolbar">
+                <span class="iconbtn" style="border:0"><svg class="i" style="font-size:16px"><use href="#w-back"/></svg></span>
+                <span class="title">Connect Notion</span>
+              </div>
+
+              <div style="display:flex;gap:10px;align-items:center;padding:9px 0">
+                <span style="flex-shrink:0;width:20px;height:20px;border-radius:6px;border:1px solid var(--a-faint);display:flex;align-items:center;justify-content:center;color:var(--a-faint)"><svg class="i" style="font-size:11px"><use href="#w-done"/></svg></span>
+                <h4 style="margin:0;font-size:12.5px;color:var(--a-mute)">Create a token</h4>
+              </div>
+              <div style="display:flex;gap:10px;align-items:center;padding:9px 0">
+                <span style="flex-shrink:0;width:20px;height:20px;border-radius:6px;border:1px solid var(--a-faint);display:flex;align-items:center;justify-content:center;color:var(--a-faint)"><svg class="i" style="font-size:11px"><use href="#w-done"/></svg></span>
+                <h4 style="margin:0;font-size:12.5px;color:var(--a-mute)">Paste it here</h4>
+              </div>
+              <div style="display:flex;gap:10px;padding:9px 0">
+                <span style="flex-shrink:0;width:20px;height:20px;border-radius:6px;border:1px solid var(--a-sound);display:flex;align-items:center;justify-content:center;color:var(--a-sound);font-family:var(--a-data);font-size:10.5px;margin-top:1px">3</span>
+                <div>
+                  <h4 style="margin:0;font-size:12.5px;color:var(--a-ink)">Share one page</h4>
+                  <p style="margin:4px 0 0;font-family:var(--a-ui);font-size:10.5px;line-height:1.5;color:var(--a-mute)">Open any Notion page &rsaquo; &middot;&middot;&middot; &rsaquo; Connections &rsaquo; pick the integration.</p>
+                  <span style="display:inline-block;margin-top:8px;color:var(--a-sound);font-family:var(--a-ui);font-weight:700;font-size:9.5px;letter-spacing:0.09em;text-transform:uppercase">Check again</span>
+                </div>
+              </div>
+              <div style="display:flex;gap:10px;padding:9px 0;opacity:0.4">
+                <span style="flex-shrink:0;width:20px;height:20px;border-radius:6px;border:1px solid var(--a-faint);display:flex;align-items:center;justify-content:center;color:var(--a-faint);font-family:var(--a-data);font-size:10.5px;margin-top:1px">4</span>
+                <h4 style="margin:0;font-size:12.5px;color:var(--a-mute)">Ready</h4>
               </div>
             </div>
           </div>
           </div>
         </div>
         <div class="deck-copy">
-          <p class="num">04 / 04 &nbsp;&middot;&nbsp; Settings</p>
-          <h3>A token and two database IDs</h3>
+          <p class="num">05 / 05 &nbsp;&middot;&nbsp; Connect Notion</p>
+          <h3>One token, no database IDs to copy in</h3>
           <p>
-            Paste a personal access token once. Notion only shows it at
-            creation, so there's nothing to look up later. Add the
-            <b>Sources</b> database ID to follow blogs, and optionally a
-            <b>Reading List</b> ID to keep saved links in step too.
+            Paste a personal access token, share one Notion page with it, and
+            the app builds <b>DuskRead Sources</b> and
+            <b>DuskRead Reading List</b> itself &mdash; or adopts a hand-made
+            pair with those names. There's nowhere left to type an ID wrong.
           </p>
           <p>
-            <b>Test connection</b> checks the token. <b>Sync now</b> pulls
-            whatever changed.
+            Four steps that check themselves, so a reader who's stuck is
+            pointed at the one step that isn't done rather than one generic
+            error.
           </p>
         </div>
       </article>
@@ -1345,8 +1411,9 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
           <button type="button" class="cdot" aria-label="Home"></button>
           <button type="button" class="cdot" aria-label="Following"></button>
           <button type="button" class="cdot" aria-label="Settings"></button>
+          <button type="button" class="cdot" aria-label="Connect Notion"></button>
           </div>
-          <span class="deck-count" aria-live="polite">01 / 04</span>
+          <span class="deck-count" aria-live="polite">01 / 05</span>
           <button type="button" class="deck-nav deck-next" aria-label="Next screen"><svg class="i"><use href="#w-chev"/></svg></button>
         </div>
       </div>
@@ -1390,7 +1457,7 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
             <svg class="flow-arrow i"><use href="#w-chev"/></svg>
             <div class="flow-step"><svg class="i"><use href="#w-saved"/></svg><span>DuskRead</span></div>
           </div>
-          <p class="flow-note">Feeds are fetched by the app itself and never touch Notion.</p>
+          <p class="flow-note">Feeds are fetched by the app itself and never touch Notion. Following one writes it into Notion, too.</p>
         </div>
         <div class="deck-copy">
           <p class="num">01 / 03 &nbsp;&middot;&nbsp; Architecture</p>
@@ -1402,8 +1469,10 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
           the app directly and never touches Notion.
         </p>
         <p>
-          The phone only pulls rows that were kept. Everything else stays
-          archived in Notion.
+          The phone only pulls saved links that were kept &mdash; everything
+          else stays archived in Notion. Followed blogs are the one thing
+          that now flows both ways: the app files a row when you follow one,
+          Notion is where you edit it.
         </p>
         </div>
       </article>
@@ -1413,7 +1482,6 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
             <span class="nb sel"><svg class="i"><use href="#w-home"/></svg></span>
             <span class="nb"><svg class="i"><use href="#w-feed"/></svg></span>
             <span class="nb"><svg class="i"><use href="#w-saved"/></svg></span>
-            <span class="nb"><svg class="i"><use href="#w-wave"/></svg></span>
           </div>
           <div class="v-amp pillrow" style="justify-content:center;margin:0">
             <span class="pill sel">Android</span>
@@ -1426,8 +1494,11 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
           <p class="num">02 / 03 &nbsp;&middot;&nbsp; The client app</p>
           <h3>One shell, wherever it runs</h3>
         <p>
-          Home, Following, Saved and Readback share one floating bar and
-          the same row and header components. None of them was built
+          Home, Following and Saved share one floating bar and the same row
+          and header components &mdash; a hidden fourth tab, Readback, joins
+          them the same way once it's switched on. Settings sits at the far
+          end of the same bar now, one tap from every screen rather than a
+          gear that only ever lived on Home. None of them was built
           separately.
         </p>
         <p>
@@ -1522,7 +1593,9 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
     <table class="spec">
       <tr><th>Android</th><td>12 and up. The target that is finished.</td></tr>
       <tr><th>Summaries</th><td>Need a phone with AICore — Pixel 9 and up, Galaxy S24 and up, and similar. Everywhere else the control simply is not drawn.</td></tr>
-      <tr><th>Readback</th><td>Audio comes from the separate <a href="https://github.com/MKS-01/readback">readback</a> project, synced onto the device. Without it the tab is empty rather than hidden.</td></tr>
+      <tr><th>Listening</th><td>The phone reads articles aloud with its own text-to-speech — nothing to sync, works on every Android phone. Quality follows whatever voice engine is already installed.</td></tr>
+      <tr><th>Notion</th><td>Optional. Paste one personal access token and share a page with it — the app creates its own databases. No screen requires it; it only curates what's worth reading.</td></tr>
+      <tr><th>Readback</th><td>The separate <a href="https://github.com/MKS-01/readback">readback</a> project's synced audio library, for the one person who runs its sync script. Hidden by default — tap the version line in Settings three times to switch the tab on.</td></tr>
       <tr><th>Desktop, web, iOS</th><td>Build from the same source and exist to prove it travels. The workshop, not the product.</td></tr>
     </table>
 

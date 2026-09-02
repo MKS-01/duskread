@@ -8,3 +8,9 @@ import kotlinx.browser.window
 actual fun rememberUrlOpener(): (String) -> Unit = remember {
     { url -> window.open(url, "_blank") }
 }
+
+/** Already a browser tab either way — the distinction the other targets draw does not exist here. */
+@Composable
+actual fun rememberExternalUrlOpener(): (String) -> Unit = remember {
+    { url -> window.open(url, "_blank") }
+}

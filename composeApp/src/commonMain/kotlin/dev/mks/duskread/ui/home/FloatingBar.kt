@@ -4,7 +4,6 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.LinearOutSlowInEasing
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -20,7 +19,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -50,16 +48,12 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.HazeTint
 import dev.chrisbanes.haze.hazeEffect
-import dev.mks.duskread.reader.PlaybackState
-import dev.mks.duskread.reader.ReadItem
-import dev.mks.duskread.ui.reader.formatDuration
 import dev.mks.duskread.ui.theme.DuskReadIcons
 import dev.mks.duskread.ui.theme.Layout
 import dev.mks.duskread.ui.theme.Motion
@@ -99,6 +93,30 @@ private const val CollapsedScale = 0.82f
  * both.
  */
 private enum class BarFace { TABS, PLAYER }
+
+/**
+ * What the floating transport shows, merged from whichever of Readback or a
+ * live read is actually playing — see `HomeScreen`, which builds this and
+ * stops whichever source is not it before starting the other, so the bar
+ * never has two things to be about at once.
+ *
+ * One shape for both rather than a `ReadItem?` and a speech session side by
+ * side, because [PlayerFace] and [TransportBar] only ever want to draw one
+ * thing playing, and building that union twice — once per caller — was two
+ * chances for the two transports to disagree about what "playing" means.
+ */
+data class NowPlaying(
+    val title: String,
+    val playing: Boolean,
+    /** 0f–1f. Always known: Readback derives it from position over duration, a live read reports it directly. */
+    val fraction: Float,
+    /** What the phone's floating bar prints — remaining time for Readback, a percentage for a live read. */
+    val compactLabel: String,
+    /** What the wide layout's transport prints — elapsed / total for Readback, a percentage for a live read. */
+    val wideLabel: String,
+    /** False for a live read: there is nowhere to drag to, only somewhere it has already been. */
+    val seekable: Boolean,
+)
 
 /**
  * Tracks scroll direction so the bar can shrink out of the way while reading.
@@ -176,15 +194,16 @@ fun rememberBarCollapse(): BarCollapse {
 @Composable
 fun FloatingBar(
     selected: HomeTab,
+    tabs: List<HomeTab>,
     onSelect: (HomeTab) -> Unit,
     hazeState: HazeState,
-    nowPlaying: ReadItem?,
-    playback: PlaybackState,
+    nowPlaying: NowPlaying?,
     onTogglePlay: () -> Unit,
     onSeek: (Float) -> Unit,
     onStop: () -> Unit,
     mono: Boolean,
     onToggleTheme: () -> Unit,
+    onOpenSettings: () -> Unit,
     collapse: BarCollapse,
     modifier: Modifier = Modifier,
 ) {
@@ -193,12 +212,12 @@ fun FloatingBar(
     // Peeking at the tabs is a momentary thing, not a mode: any new read, and
     // any tab actually chosen, hands the bar back to the transport.
     var peekingTabs by remember { mutableStateOf(false) }
-    LaunchedEffect(nowPlaying?.id) { peekingTabs = false }
+    LaunchedEffect(nowPlaying?.title) { peekingTabs = false }
 
     // Held past the end of playback: `nowPlaying` goes null the instant you
-    // hit stop, and reading it directly would blank the title and duration
-    // while the player face was still animating out.
-    val shown = remember { mutableStateOf<ReadItem?>(null) }
+    // hit stop, and reading it directly would blank the title and the rest
+    // of the face while it was still animating out.
+    val shown = remember { mutableStateOf<NowPlaying?>(null) }
     nowPlaying?.let { shown.value = it }
 
     val face = when {
@@ -206,25 +225,19 @@ fun FloatingBar(
         else -> BarFace.TABS
     }
 
-    // Out of the way, not gone: it slides down and shrinks toward the edge
-    // it's sinking into, the way a MacBook's dock or Safari's toolbar recedes
-    // rather than merely vanishing. Shrinking used to be rejected here on its
-    // own — the buttons are 42dp against a 56dp bar, so shrinking a *tappable*
-    // bar would take them under thumb size — but collapsed, they already
-    // aren't individually tappable: the whole pill becomes one target for
-    // [collapse]'s `expand()` below. Nothing here is losing precision that
-    // wasn't already gone.
+    // Out of the way, not gone: it shrinks in place rather than sliding down
+    // toward the edge. A slide used to be part of this — the MacBook-dock
+    // idea of a bar sinking into the edge it recedes toward — but anchored to
+    // the *screen* bottom rather than to its own resting position, that slide
+    // read as the bar drifting down and crowding the gesture area on every
+    // collapse, not as one continuous recession. Shrinking alone, anchored to
+    // [TransformOrigin] below, says "quieter" without also saying "lower".
     //
-    // Deliberate to leave, cheap to return, the same asymmetry [BarCollapse]
-    // already applies to the scroll runs that trigger it.
-    val drop by animateDpAsState(
-        targetValue = if (collapse.collapsed) Layout.BarPeekDrop else 0.dp,
-        animationSpec = tween(
-            durationMillis = if (collapse.collapsed) Motion.Chip else Motion.Fade,
-            easing = LinearOutSlowInEasing,
-        ),
-        label = "barPeek",
-    )
+    // Shrinking used to be rejected on its own — the buttons are 42dp against
+    // a 56dp bar, so shrinking a *tappable* bar would take them under thumb
+    // size — but collapsed, they already aren't individually tappable: the
+    // whole pill becomes one target for [collapse]'s `expand()` below.
+    // Nothing here is losing precision that wasn't already gone.
     val scale by animateFloatAsState(
         targetValue = if (collapse.collapsed) CollapsedScale else 1f,
         animationSpec = tween(
@@ -236,13 +249,6 @@ fun FloatingBar(
 
     Box(
         modifier = modifier
-            // `offset` with a lambda, not folded into the `graphicsLayer`
-            // below: this has to move the bar's hit area with it, or the
-            // still-tappable expanded state stops lining up with where it's
-            // drawn. The shrink is purely visual — it runs after layout, in
-            // the same `graphicsLayer` step as the blur clip — so it never
-            // fights the offset for which one owns the bar's position.
-            .offset { IntOffset(0, drop.roundToPx()) }
             .height(Layout.BarHeight)
             .graphicsLayer {
                 scaleX = scale
@@ -304,23 +310,26 @@ fun FloatingBar(
             when (current) {
                 BarFace.TABS -> TabsFace(
                     selected = selected,
+                    tabs = tabs,
                     onSelect = {
                         onSelect(it)
                         peekingTabs = false
                     },
                     mono = mono,
                     onToggleTheme = onToggleTheme,
+                    onOpenSettings = onOpenSettings,
                 )
 
-                BarFace.PLAYER -> PlayerFace(
-                    item = shown.value,
-                    playback = playback,
-                    selected = selected,
-                    onTogglePlay = onTogglePlay,
-                    onSeek = onSeek,
-                    onStop = onStop,
-                    onShowTabs = { peekingTabs = true },
-                )
+                BarFace.PLAYER -> shown.value?.let { current ->
+                    PlayerFace(
+                        nowPlaying = current,
+                        selected = selected,
+                        onTogglePlay = onTogglePlay,
+                        onSeek = onSeek,
+                        onStop = onStop,
+                        onShowTabs = { peekingTabs = true },
+                    )
+                }
             }
         }
 
@@ -336,7 +345,7 @@ fun FloatingBar(
         // it, so scrubbing works from either and this line is never lying
         // about where a drag on the title would land.
         if (face == BarFace.PLAYER) {
-            val duration = playback.durationSec.takeIf { it > 0f } ?: 1f
+            val seekable = shown.value?.seekable == true
 
             // Where the finger is, while it is down. Without this the fill is
             // drawn straight from the player's reported position, so a drag
@@ -344,14 +353,15 @@ fun FloatingBar(
             // player answered a few frames later with wherever it had actually
             // landed, and the line snapped back and forth between the two.
             var scrub by remember { mutableStateOf<Float?>(null) }
-            val fraction = scrub ?: (playback.positionSec / duration).coerceIn(0f, 1f)
+            val fraction = scrub ?: (shown.value?.fraction ?: 0f)
 
             Box(
                 Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
                     .height(SeekTouchHeight)
-                    .pointerInput(duration) {
+                    .pointerInput(seekable) {
+                        if (!seekable) return@pointerInput
                         detectHorizontalDragGestures(
                             onDragStart = { offset -> scrub = (offset.x / size.width).coerceIn(0f, 1f) },
                             // One seek, on release. Asking a MediaPlayer to
@@ -359,7 +369,7 @@ fun FloatingBar(
                             // stutter — each one interrupts the decode it just
                             // started for the last.
                             onDragEnd = {
-                                scrub?.let { onSeek(it * duration) }
+                                scrub?.let { onSeek(it) }
                                 scrub = null
                             },
                             onDragCancel = { scrub = null },
@@ -381,20 +391,36 @@ fun FloatingBar(
 }
 
 /**
- * The theme toggle rides at the trailing end, behind [BarDivider] — it isn't
- * a destination like the three tabs before it, so it doesn't get to look like
- * one. This is also the only place it lives now: reachable from every tab
- * rather than stranded at the top of Home alone, in keeping with this bar's
- * whole reason for existing.
+ * The theme toggle and Settings ride at the trailing end, behind [BarDivider]
+ * — neither is a destination like the tabs before it, so neither gets to
+ * look like one. Reachable from every tab rather than stranded at the top of
+ * Home alone, which is where both started: the theme toggle made this move
+ * first, and Settings had stayed behind only because [NavRail] — the same
+ * far-end slot, for the wide layout — was the one place it was ever a single
+ * tap away from every screen. Home's own gear stays too; the wide layout has
+ * carried the same duplication since the rail was built, and a reader moving
+ * between window sizes should not have Settings change location under them.
+ *
+ * [tabs] rather than `HomeTab.entries` because Readback is hidden unless it
+ * has been switched on — see `UserPrefs.readbackEnabled`. The bar widens and
+ * narrows with the list, which is the whole reason it wraps its icons rather
+ * than filling the pill.
  */
 @Composable
-private fun TabsFace(selected: HomeTab, onSelect: (HomeTab) -> Unit, mono: Boolean, onToggleTheme: () -> Unit) {
+private fun TabsFace(
+    selected: HomeTab,
+    tabs: List<HomeTab>,
+    onSelect: (HomeTab) -> Unit,
+    mono: Boolean,
+    onToggleTheme: () -> Unit,
+    onOpenSettings: () -> Unit,
+) {
     Row(
         Modifier.padding(horizontal = 7.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-        HomeTab.entries.forEach { tab ->
+        tabs.forEach { tab ->
             BarButton(tab.icon, tab.label, active = tab == selected) { onSelect(tab) }
         }
         BarDivider()
@@ -403,6 +429,7 @@ private fun TabsFace(selected: HomeTab, onSelect: (HomeTab) -> Unit, mono: Boole
             label = if (mono) "Switch to the colour theme" else "Switch to the monochrome theme",
             onClick = onToggleTheme,
         )
+        BarButton(icon = DuskReadIcons.Settings, label = "Settings", onClick = onOpenSettings)
     }
 }
 
@@ -413,29 +440,27 @@ private fun TabsFace(selected: HomeTab, onSelect: (HomeTab) -> Unit, mono: Boole
  */
 @Composable
 private fun PlayerFace(
-    item: ReadItem?,
-    playback: PlaybackState,
+    nowPlaying: NowPlaying,
     selected: HomeTab,
     onTogglePlay: () -> Unit,
+    /** A fraction, 0f–1f — not seconds. The caller knows what that means for whichever source is actually playing. */
     onSeek: (Float) -> Unit,
     onStop: () -> Unit,
     onShowTabs: () -> Unit,
 ) {
-    val duration = playback.durationSec.takeIf { it > 0f } ?: 1f
-
     Row(
         Modifier.fillMaxWidth().padding(horizontal = 7.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         BarButton(
-            icon = if (playback.playing) DuskReadIcons.Pause else DuskReadIcons.Play,
-            label = if (playback.playing) "Pause" else "Play",
+            icon = if (nowPlaying.playing) DuskReadIcons.Pause else DuskReadIcons.Play,
+            label = if (nowPlaying.playing) "Pause" else "Play",
             tint = MaterialTheme.colorScheme.primary,
             onClick = onTogglePlay,
         )
         Spacer(Modifier.width(4.dp))
         Text(
-            text = item?.title.orEmpty(),
+            text = nowPlaying.title,
             style = MaterialTheme.typography.labelLarge,
             fontSize = 12.5.sp,
             color = MaterialTheme.colorScheme.onSurface,
@@ -446,15 +471,20 @@ private fun PlayerFace(
                 // The visible line along the pill's foot is the discoverable
                 // scrub target; this is the same gesture repeated over the
                 // title so a drag doesn't have to land in a 20dp-tall strip.
-                .pointerInput(duration) {
-                    detectHorizontalDragGestures { change, _ ->
-                        onSeek((change.position.x / size.width).coerceIn(0f, 1f) * duration)
+                // A no-op registration when unseekable, not an omitted one:
+                // the title should not suddenly respond to a drag it ignored
+                // a moment ago just because something else started playing.
+                .pointerInput(nowPlaying.seekable) {
+                    if (nowPlaying.seekable) {
+                        detectHorizontalDragGestures { change, _ ->
+                            onSeek((change.position.x / size.width).coerceIn(0f, 1f))
+                        }
                     }
                 },
         )
         Spacer(Modifier.width(8.dp))
         Text(
-            text = formatDuration((playback.durationSec - playback.positionSec).toDouble()),
+            text = nowPlaying.compactLabel,
             fontSize = 10.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -523,16 +553,4 @@ private fun BarButton(
         )
         Icon(icon, contentDescription = label, Modifier.size(iconSize), tint = content)
     }
-}
-
-/** Kept for the search field, which wants the same treatment on its own page. */
-@Composable
-fun glassStyle(): HazeStyle {
-    val scheme = MaterialTheme.colorScheme
-    return HazeStyle(
-        backgroundColor = scheme.background,
-        tints = listOf(HazeTint(scheme.surface.copy(alpha = 0.62f))),
-        blurRadius = 28.dp,
-        noiseFactor = 0.04f,
-    )
 }
