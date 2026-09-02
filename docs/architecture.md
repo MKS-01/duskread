@@ -14,17 +14,10 @@ if you need the schema, the diagram, or the reasoning behind a number.
 - [Where data lives](#where-data-lives)
 - [Notion schema](#notion-schema)
 - [On-device storage](#on-device-storage)
-- [Flow 1 — following blogs](#flow-1--following-blogs)
-- [Flow 2 — saved links, both directions](#flow-2--saved-links-both-directions)
-- [Flow 3 — newsletters, from inbox to phone](#flow-3--newsletters-from-inbox-to-phone)
-- [Flow 4 — capture](#flow-4--capture)
-- [Flow 5 — what Home suggests](#flow-5--what-home-suggests)
 - [When a sync happens](#when-a-sync-happens)
 - [Same article, different address](#same-article-different-address)
 - [Authentication](#authentication)
 - [Offline](#offline)
-- [Invariants](#invariants)
-- [Deliberately not built](#deliberately-not-built)
 - [Module map](#module-map)
 
 ---
@@ -35,6 +28,35 @@ A Compose Multiplatform app — Android, iOS, desktop, Wasm from one
 `commonMain` — that does four things: keeps saved links, follows blogs by RSS,
 plays articles back as audio, and runs a focus timer. Notion curates what to
 follow and what's worth reading; the device never depends on it being reachable.
+
+<p align="center">
+  <img src="media/notion-flow.png" alt="Three sources — Gmail, RSS feeds, and links you paste or share. Claude files the mail into Notion's Sources and Reading List, which syncs both ways with DuskRead; feeds and shared links reach the app directly, never touching Notion. The app caches everything, reads offline, and reads articles aloud on the phone">
+</p>
+
+Same picture as `README.md` — one copy, `docs/media/notion-flow.png`
+(source and render command in `docs/media/notion-flow.html`), rather than a
+second one drawn for this doc that would drift from the first.
+
+What it shows, in words:
+
+- **Following a blog** pulls `Sources` into `FeedLibrary`, additively, and
+  writes back the same way — nothing here ever unfollows on a row deleted
+  upstream.
+- **Saving a link** is the only two-way path, and the only place the app
+  writes to Notion. A row resolves per-row, newest wins, on `changedAt`
+  against Notion's `last_edited_time`; a delete on the phone tombstones the
+  Notion row (`Dismissed`) rather than erasing it.
+- **A newsletter with no public feed** is filed by Claude straight into
+  `Reading List` and reaches the phone the same way any other row does, once
+  `Saved` is ticked.
+- **A link gets in** one of four ways — the share sheet, the home-screen
+  widget, the paste field, or a bookmark from Following — all landing in
+  `LinkLibrary`.
+- **`NEXT UP`** ranks everything unread by a weighted sum of bounded,
+  explicable terms: freshness, source and topic affinity, staleness, fit
+  against the focus timer, a shuffle, and two skip penalties. Weights live in
+  one block at the top of `links/Recommender.kt`; **Settings ▸ Discovery**
+  shows the pool and the top five with each term broken out.
 
 <details>
 <summary>The three planes, and the two rules the design follows from</summary>
@@ -162,8 +184,9 @@ migrations.
 | `signals.hosts` | reads / opens / skips per host |
 | `signals.topics` | reads per topic |
 | `signals.skipped` | per-URL skips, bounded |
-| `notion.database.sources`, `notion.database.reading`, `notion.sync.last`, `notion.database.name` | connection state |
-| `user.name`, `intro.seen`, `theme.mono`, `summary.length` | preferences |
+| `notion.database.sources`, `notion.database.reading`, `notion.page.parent`, `notion.page.home`, `notion.sync.last` | connection state |
+| `summaries` | generated summaries, newest first, bounded — a second look at an article costs no AICore quota |
+| `user.name`, `intro.seen`, `theme.mono`, `summary.length`, `readback.enabled`, `speech.voice`, `swipe.default` | preferences |
 
 The Notion **token is not here.** It lives in a separate `SecretStore` —
 `duskread_secrets` on Android, AES-GCM under a hardware-backed keystore key.
@@ -174,191 +197,12 @@ On desktop, iOS and Wasm `SecretStore` delegates to `KeyValueStore` and says
 so in its own KDoc: it is plaintext there. Android is the only target with a
 Settings entry point for a token, and a fallback that pretended otherwise
 would be worse than one that admits it.
-</details>
 
----
-
-## Flow 1 — following blogs
-
-Notion's `Sources` pulls into `FeedLibrary`, additively — a row deleted in
-Notion leaves the feed followed on the phone, because unfollowing stays a
-deliberate act in the app, never a side effect of a short response.
-
-<details>
-<summary>The path, step by step</summary>
-
-```
- Settings ▸ Sync now, or automatically on open
-        │
-        ▼
- GET  /v1/databases/{sources}                     read Status option names
- POST /v1/databases/{sources}/query               paged, 100 at a time
-        │
-        ▼
- rows ──► NotionSource(name, feedUrl, topic, active)
-        │  filter { active }
-        ▼
- discoverFeedUrl()          a site URL resolves to its feed
-        │
-        ▼
- FeedLibrary.add(url, name, topic)                additive — never unfollows
-        │
-        ▼
- syncFeeds()                15 entries per feed, whole body word-counted once
-        │
-        ▼
- FeedPostCache  ──►  Home, Following, NEXT UP
-```
-</details>
-
----
-
-## Flow 2 — saved links, both directions
-
-The only two-way path, and the only place the app writes to Notion.
-Conflicts resolve per row, newest wins — local `changedAt` against Notion's
-`last_edited_time` — because a rule that fits in one sentence can be reasoned
-about on a phone.
-
-<details>
-<summary>The reconciliation, and three refusals worth knowing</summary>
-
-```
- query Reading List once, index by Duskread ID then by canonical URL
-        │
-        ├── DISMISS  every tombstoned address → Dismissed ☑, Saved ☐, once
-        │
-        ├── PULL  rows where Saved ☑ and not Dismissed
-        │     ├─ address in links.removed?  skip — a delete is a delete
-        │     ├─ not present locally?       create it
-        │     └─ present?                   reconcile
-        │
-        └── PUSH  every local saved link
-              ├─ no matching row?          POST /v1/pages
-              ├─ local newer AND differs?  PATCH everything
-              ├─ row unclaimed?            PATCH id + Saved only
-              └─ otherwise                 write nothing
-```
-
-- **Claiming is not a conflict.** Stamping `Duskread ID` and ticking `Saved`
-  happens regardless of timestamps — a row filed from Gmail is pulled with
-  `changedAt` set to its own edit time, so it is never "newer" and would
-  otherwise never be adopted.
-- **An unchanged row is never rewritten.** The whole reconciliation rests on
-  `last_edited_time` meaning something.
-- **A null never overwrites a value.** The app having nothing to say about a
-  topic is not the same as knowing there is none.
-
-**Refusals go up first.** A row deleted on the phone is marked `Dismissed`
-before the pull could read it as still saved, and before the push could
-re-tick it — the local tombstone makes the delete instant, the column makes
-it survive a reinstall or a second phone.
-</details>
-
----
-
-## Flow 3 — newsletters, from inbox to phone
-
-The part with no code in this repository. Claude, with Gmail and Notion
-connected, does the curation; the app only reads the result, for newsletters
-with **no public feed** — a publication that has one is better registered in
-`Sources` directly.
-
-<details>
-<summary>The path</summary>
-
-```
-  newsletter arrives in Gmail
-            │
-            ▼
-  Claude reads it (Gmail MCP), files a row in Reading List
-     Title · URL · Source=Email · Newsletter · Excerpt · Topic
-            │
-            │   Saved ☐  →  stays in Notion as archive
-            │   Saved ☑  →  ↓
-            ▼
-  Settings ▸ Sync now
-            │
-            ▼
-  appears in Saved, with its topic, rankable by NEXT UP
-```
-</details>
-
----
-
-## Flow 4 — capture
-
-Four ways a link gets in, all landing in `LinkLibrary`:
-
-| Route | Path |
-| --- | --- |
-| **Share sheet** | `ACTION_SEND` → `SharedLinkRequest` → saved and shown |
-| **Home-screen widget** | clipboard read in an invisible activity → `links.inbox` → drained on next open |
-| **Paste field** | Saved tab, top |
-| **Bookmark** | Following or NEXT UP → carries the feed's topic with it |
-
-The widget writes to `links.inbox` rather than `links.saved` because
-`LinkLibrary` rewrites its whole blob on every mutation — a second writer
-from another process would be clobbered. The inbox is a queue with one drain
-point.
-
----
-
-## Flow 5 — what Home suggests
-
-`NEXT UP` ranks saved links and cached feed posts together as one pool, by a
-weighted sum of bounded terms — freshness, source affinity, topic affinity,
-staleness, fit against the timer, jitter, and two skip penalties.
-
-<details>
-<summary>The weights, and the arithmetic behind each one</summary>
-
-```
- pool(links, cache, feeds)     unread saved links + posts not already saved
-        │
-        ▼
- rank(...)  every term bounded 0..1, then weighted:
-        freshness   1.00   4-day half-life
-        source      0.70   reads from this host, Laplace-smoothed
-        topic       0.70   reads of this subject — pools across hosts
-        stale       0.55   a saved link untouched for a month
-        fit         0.45   estimated minutes vs the focus timer
-        jitter      0.18   the shuffle, seeded by day + tap count
-        skip       -0.15   this host is not landing
-        post-skip  -1.40   you just shuffled past this exact article
-        │
-        ▼
- topPicks(ranked, 3)          at most one per host
-        │
-        ▼
- hero + two runners-up
-```
-
-Weights live in one block at the top of `links/Recommender.kt`. They are
-wrong until seen wrong on a phone, which is what **Settings ▸ Discovery** is
-for — it shows the pool, how many carry a topic, and the top five with each
-term broken out.
-
-- **Jitter used to out-vote freshness.** At a 14-day half-life, three days of
-  a fresh sync spanned `1.00 → 0.86` — a range of 0.14 — against a jitter of
-  0.35, so the top of the list was mostly noise. A 4-day half-life spans the
-  same three days `1.00 → 0.59`, and jitter came down to 0.18.
-- **A skip used to punish the wrong thing.** It wrote only a host signal, so
-  stepping past one post penalised everything that blog had published and
-  did nothing to the article on screen. `signals.skipped` now sinks that
-  exact post, decaying over two days; the host term stays at less than half
-  its old weight, as the weak hint it always should have been.
-- **Variety is enforced after ranking, not inside it.** `topPicks` takes the
-  best candidate per host, because a diversity term folded into the
-  arithmetic makes the honest answer to "why this one?" *"because of what
-  else was in the list"*.
-- **Topics come from Notion, not a model.** `Sources.Topic` rides through
-  `Feed.topic` into every post that feed carries — the one thing host
-  affinity structurally cannot do: pool across hosts, so three security
-  posts from three different blogs make a fourth from a blog never opened
-  rank. It's per *source*, not per article — the known cost of not running
-  a model. `pool()`'s `tagFor` is the seam where per-article tagging would
-  override it.
+`notion.database.name` is not in the table above — nothing writes it any
+more, from back when there was one database instead of two and its name was
+cached for display. `NotionPrefs.clear()` still deletes it, so an install
+that predates the current schema doesn't leave a stray key behind on
+disconnect.
 </details>
 
 ---
@@ -437,9 +281,8 @@ strangers' authorisation codes through a server the author pays for, or
 asking every user to deploy their own. A PAT also acts as the user who
 created it, so there's no per-database *Add connections* step to forget.
 
-`NotionAuth` is an interface with `bearer()` and `disconnect()`. If DuskRead
-is ever *hosted* for other people, `OAuthAuth` slots in behind it and no
-sync code changes.
+`NotionAuth` is an interface with `bearer()` and `disconnect()`, implemented
+today by `PastedTokenAuth`.
 
 **Rate limits.** Notion allows roughly three requests a second. Reads page
 at 100; writes are spaced 350 ms; a 429 is retried up to three times
@@ -481,67 +324,6 @@ own empty state rather than letting the WebView render a `net::` error page.
 
 ---
 
-## Invariants
-
-Things that are true everywhere, and worth keeping true:
-
-1. **The app never deletes or archives a Notion row.** Refusing an article
-   ticks `Dismissed` and leaves the row where it is.
-2. **A sync never rewrites an unchanged row.**
-3. **Feed posts are never uploaded.** Only deliberate saves.
-4. **Every decoder tolerates a short record.** New fields append.
-5. **All colour comes from `MaterialTheme.colorScheme`** — a literal survives
-   the runtime scheme swap.
-6. **One writer per storage key.** A second instance of `LinkLibrary`,
-   `FeedLibrary` or `NotionPrefs` will clobber the first; they are hoisted
-   into `HomeScreen` and passed down. `LinkInbox` exists solely because the
-   widget runs in another process and could not share one.
-7. **A canonical URL is never persisted.** See
-   [Same article, different address](#same-article-different-address).
-8. **Syncing is never blocking and never noisy.** Background, silent unless
-   asked, and does nothing at all until there is a token.
-9. **Notion is optional.** Every screen works without it.
-10. **There is one transport, and it is a face of the floating bar.**
-    Readback and a live read never play at once — starting either stops the
-    other, in `HomeScreen`, the one place that can see both. The bar is
-    drawn after the full-screen surfaces it shares a `Box` with, so a read
-    started from one of them still has a player; over those it carries the
-    transport alone, since the tabs behind it aren't reachable anyway.
-    Anything bottom-anchored asks `BottomFurniture` how much room is taken
-    rather than assuming a bar is there.
-11. **A read that cannot happen says why.** `Speaker.speak` closes its flow
-    with the reason — no engine, no voice installed, an engine that never
-    started — and `SpeechPlaybackService` shows it, instead of the silent
-    failure this used to be (including a race against `TextToSpeech`'s
-    asynchronous `onInit` that fired on most reads).
-12. **Every sync write is conditional on the data epoch.** `DataEpoch`
-    (`data/DataEpoch.kt`) is what tells a real sync apart from the erase in
-    Settings: the erase bumps it before clearing anything, and every sync
-    routine takes a mark at the start and declines to write once it's stale
-    — otherwise a sync in flight when someone taps Erase restores the whole
-    Following list from rows it had already read.
-
----
-
-## Deliberately not built
-
-Said plainly rather than half-built:
-
-- **No scheduler.** Sync happens on the button and on launch. No
-  `WorkManager`, no daily job.
-- **No Gmail ingestion in the app.** Newsletters reach Notion through
-  Claude's own Gmail connection; the app only reads the result.
-- **No JSON plugin.** Notion's response is deeply variant-typed — a
-  `select`, a `multi_select` and a `url` share no shape — so
-  `Json.parseToJsonElement` navigated with `jsonObject[...]` is the smaller,
-  more honest tool than a `@Serializable` model.
-- **No OAuth**, for the reasons under [Authentication](#authentication).
-- **No PDFs**, and no upload of anything not deliberately saved.
-- **No Settings entry for Notion outside Android** — `SecretStore` is only
-  really encrypted there.
-
----
-
 ## Module map
 
 <details>
@@ -560,9 +342,9 @@ composeApp/src/commonMain/kotlin/dev/mks/duskread/
               CanonicalUrl                             what "the same article"
                                                        means
               Recommender · ReadingSignals             what NEXT UP picks
-              LinkMetadata · LinkTransfer · SharedLinkRequest
+              LinkMetadata · SharedLinkRequest
 
-  notion/     NotionAuth         the seam OAuth would replace
+  notion/     NotionAuth         bearer() + disconnect(), over the pasted token
               NotionClient       transport, paging, backoff, typed failures
               NotionProvision    finds or builds the two databases
               NotionSources      Sources rows ↔ followed feeds
