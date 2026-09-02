@@ -11,10 +11,16 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Notion_·_curation-b45f3c?style=flat-square&logo=notion&logoColor=white" alt="Curated through Notion">
-  <img src="https://img.shields.io/badge/Kotlin_·_Compose_Multiplatform-1a1a1a?style=flat-square&logo=kotlin&logoColor=white" alt="Kotlin and Compose Multiplatform">
+  <a href="https://www.notion.com/product/dev"><img src="https://img.shields.io/badge/Notion_·_curation-b45f3c?style=flat-square&logo=notion&logoColor=white" alt="Curated through Notion"></a>
+  <a href="https://www.jetbrains.com/compose-multiplatform/"><img src="https://img.shields.io/badge/Kotlin_·_Compose_Multiplatform-1a1a1a?style=flat-square&logo=kotlin&logoColor=white" alt="Kotlin and Compose Multiplatform"></a>
   <img src="https://img.shields.io/badge/Android_12+-1a1a1a?style=flat-square&logo=android&logoColor=white" alt="Android 12 and up">
-  <img src="https://img.shields.io/badge/MIT-1a1a1a?style=flat-square" alt="MIT License">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/MIT-1a1a1a?style=flat-square" alt="MIT License"></a>
+</p>
+
+<p align="center">
+  <a href="https://mks-01.github.io/duskread/">See every screen</a> &nbsp;·&nbsp;
+  <a href="docs/architecture.md">How it fits together</a> &nbsp;·&nbsp;
+  <a href="#getting-started">Run it</a>
 </p>
 
 <p align="center"><sub>Monochrome by default. One accent, spent on purpose.</sub></p>
@@ -22,47 +28,6 @@
 ---
 
 **Automated:** an AI agent catches newsletters in your inbox, and the blogs you follow add their own posts, without you lifting a finger. **Personalised:** what rises to the top is ranked by what you actually read, not by when it arrived. Then you put the phone face-down, set a timer for twenty-five minutes, and read: on **Paper Black**, warm-white ink on matte near-black lit by one terracotta accent, or on **Ink**, the same page with the colour drained out — the one it starts on.
-
----
-
-## Getting started
-
-> **Android is the app; the other three are the workshop.** It's what this is built and tested against day to day. Desktop, web and iOS compile from the same source and are there to prove it travels — see [Platform support](#platform-support).
-
-```bash
-git clone https://github.com/MKS-01/duskread.git && cd duskread
-./gradlew :androidApp:installDebug      # ~5 s once warm
-```
-
-That's the whole setup. Saved links, feeds, the timer and the themes all work the moment it opens.
-
-| | |
-|---|---|
-| **JDK** | 17 or newer — the toolchain targets JVM 17 |
-| **Android** | 12 and up (`minSdk` 31, compile/target 36) |
-| **Gradle** | 9.3.1, via the wrapper — don't install it yourself |
-| **For summaries** | A phone with **AICore** — Pixel 9+, Galaxy S24+ and similar. No emulator has it |
-| **For iOS** | Xcode, plus [XcodeGen](https://github.com/yonaskolb/XcodeGen) — the host project is generated, not committed |
-
-<details>
-<summary><strong>The other three targets</strong></summary>
-
-```bash
-./gradlew :composeApp:runDistributable              # desktop — see the note below
-./gradlew :composeApp:wasmJsBrowserDevelopmentRun   # web, on :8080
-
-cd iosApp && xcodegen generate && cd ..             # iOS needs an Xcode host
-open iosApp/iosApp.xcodeproj
-```
-
-`runDistributable`, not `run`, for desktop: the embedded browser is Chromium
-through JCEF, and its native side needs the packaged `.app` layout. Under a
-plain `run` it segfaults during `CefApp.initialize`. Everything else in the
-app works either way.
-
-A first Kotlin/Native build for iOS is ten minutes or more; incremental after
-that.
-</details>
 
 ---
 
@@ -116,7 +81,44 @@ no voice installed, no engine — it says so rather than staying silent.
 
 A pomodoro that behaves like an alarm and not a widget: a real system notification and a vibration when the interval ends, so it works with the phone face-down and the app closed. It lives on Home beside the reading, because the point is to read for twenty-five minutes rather than to admire a timer.
 
----
+## Getting started
+
+> **Android is the app; the other three are the workshop.** It's what this is built and tested against day to day. Desktop, web and iOS compile from the same source and are there to prove it travels — see [Platform support](#platform-support).
+
+```bash
+git clone https://github.com/MKS-01/duskread.git && cd duskread
+./gradlew :androidApp:installDebug      # ~5 s once warm
+```
+
+That's the whole setup. Saved links, feeds, the timer and the themes all work the moment it opens. Notion is optional, and connecting it is one pasted token in Settings.
+
+| | |
+|---|---|
+| **JDK** | 17 or newer — the toolchain targets JVM 17 |
+| **Android** | 12 and up (`minSdk` 31, compile/target 36) |
+| **Gradle** | 9.3.1, via the wrapper — don't install it yourself |
+| **For summaries** | A phone with **AICore** — Pixel 9+, Galaxy S24+ and similar. No emulator has it |
+| **For iOS** | Xcode, plus [XcodeGen](https://github.com/yonaskolb/XcodeGen) — the host project is generated, not committed |
+
+<details>
+<summary><strong>The other three targets</strong></summary>
+
+```bash
+./gradlew :composeApp:runDistributable              # desktop — see the note below
+./gradlew :composeApp:wasmJsBrowserDevelopmentRun   # web, on :8080
+
+cd iosApp && xcodegen generate && cd ..             # iOS needs an Xcode host
+open iosApp/iosApp.xcodeproj
+```
+
+`runDistributable`, not `run`, for desktop: the embedded browser is Chromium
+through JCEF, and its native side needs the packaged `.app` layout. Under a
+plain `run` it segfaults during `CefApp.initialize`. Everything else in the
+app works either way.
+
+A first Kotlin/Native build for iOS is ten minutes or more; incremental after
+that.
+</details>
 
 ## How it's built
 
@@ -131,48 +133,66 @@ doesn't show a control it can't offer.
 
 ### Tech stack
 
-One `commonMain` source set for all four targets. Storage, audio, the
-summariser, the timer and the HTTP client are `expect`/`actual` pairs.
-State is a `HomeTab` enum and overlays in one `Box`, hoisted into `App.kt`
-over a flat key/value store. No nav library, no ViewModel, no DI, no
-database.
+One `commonMain` source set feeds all four targets, and storage, audio, the
+summariser, the timer and the HTTP client are `expect`/`actual` pairs behind
+it. The UI is [Compose Multiplatform](https://www.jetbrains.com/compose-multiplatform/)
+1.11 with Material 3, where [Haze](https://github.com/chrisbanes/haze) draws
+the blur under the floating bar; [Kotlin](https://kotlinlang.org/) 2.3 supplies
+the platform seams and [Ktor](https://ktor.io/) 3.1 the RSS and
+[Notion](https://www.notion.com/product/dev) calls, with a different engine
+per target. Summaries run on the phone through
+[ML Kit GenAI](https://developer.android.com/ai) and Gemini Nano, reading
+aloud is Android's own `TextToSpeech`, and the optional Readback tab queries
+[readback](https://github.com/MKS-01/readback)'s `library.db` read-only over
+[sqlite-jdbc](https://github.com/xerial/sqlite-jdbc) and a folder grant. The
+desktop build embeds Chromium through [KCEF](https://github.com/DatL4g/KCEF).
+It builds on AGP 9's `androidLibrary` KMP DSL and Gradle 9.3.1.
 
-| Layer | What's used | For |
-| --- | --- | --- |
-| UI | [Compose Multiplatform](https://www.jetbrains.com/compose-multiplatform/) 1.11, Material 3, [Haze](https://github.com/chrisbanes/haze) | one shared UI across all four targets; Haze is the blur behind the floating bar |
-| Language | [Kotlin](https://kotlinlang.org/) 2.3 | `expect`/`actual` platform seams instead of per-platform apps |
-| Network | [Ktor](https://ktor.io/) 3.1 | RSS/Atom fetches, the Notion REST API — a different engine per target |
-| Curation | [Notion](https://www.notion.com/product/dev) API, Claude via the Gmail + Notion MCP | subscriptions and the reading list live in Notion; Claude files newsletters into it |
-| Summaries | [ML Kit GenAI](https://developer.android.com/ai) → Gemini Nano | on-device, Android only, absent elsewhere |
-| Listening | Android `TextToSpeech` | reading aloud, on-device, Android only |
-| Readback | [sqlite-jdbc](https://github.com/xerial/sqlite-jdbc) + SAF | read-only query of readback's `library.db`; hidden until switched on |
-| Desktop shell | [KCEF](https://github.com/DatL4g/KCEF) | the embedded Chromium browser |
-| Build | AGP 9's `androidLibrary` KMP DSL, Gradle 9.3.1 | |
+State is a `HomeTab` enum and a few overlays in one `Box`, hoisted into
+`App.kt` over a flat key/value store. No navigation library, no ViewModel, no
+dependency injection, no database — a ceiling chosen on purpose rather than a
+stage on the way to one.
 
 ```bash
 ./gradlew ktlintCheck    # lint; several rules deliberately off, see .editorconfig
 ./gradlew ktlintFormat   # auto-fix
 ```
 
-No tests yet.
-
----
+There are no tests yet, so a build that succeeds is the start of checking a
+change rather than the end of it.
 
 ## Design system
 
 Two schemes, one layout, both dark, **Paper Black** and **Ink** — see **[the design system](https://mks-01.github.io/duskread/)** for the full visual language and every token behind it.
 
----
-
 ## Architecture
 
 How the pieces connect, the Notion schema, and the end-to-end flows — see **[docs/architecture.md](docs/architecture.md)**.
 
----
+## Contributing
+
+A personal learning project, built in the open. Fork it, lift a file out of
+it, or open an issue if something here is wrong, unclear or won't build —
+that last one is the most useful thing you can send. Pull requests are
+welcome, and small ones are easiest to take.
+
+Before opening one:
+
+```bash
+./gradlew ktlintCheck
+./gradlew :composeApp:compileKotlinDesktop   # quick check that common code compiles
+./gradlew :androidApp:installDebug           # then look at the change on a device
+```
+
+Compiling proves nothing about layout and there are no tests to catch it, so
+exercise the screen you touched. [`CLAUDE.md`](CLAUDE.md) is the house style
+in full — why-not-what comments, British spelling in prose, colour only from
+`MaterialTheme.colorScheme`, and the lint rules switched off in
+`.editorconfig` that are off deliberately.
 
 ## Licence
 
-MIT — see [LICENSE](LICENSE).
+MIT — see [LICENSE](LICENSE). Do what you like with it.
 
 <p align="center">
   <sub>Built agent-first with <a href="https://claude.ai/code">Claude Code</a></sub><br>

@@ -32,16 +32,22 @@ app is put together and must not be restated there — the reverse holds too.
 ## Sections, and what each is allowed to say
 
 The order is fixed. Don't add top-level sections; fit new material into these.
+**What it does comes before Getting started**: a public README is read first
+by someone deciding whether to care, and install steps are no use to them
+yet. Only the masthead and the opening scene come before both.
 
 ```
-masthead        mark, name, standfirst, badges, the monochrome sub-line
+masthead        mark, name, standfirst, linked badges, a one-line row of
+                jump links, the monochrome sub-line
 opening scene   one paragraph, second person, a day with the app
+What it does    one ### per pillar, bold-lead bullets underneath
 Getting started clone + installDebug, the requirements table, the collapsed
                 "other three targets" block
-What it does    one ### per pillar, bold-lead bullets underneath
 How it's built  Platform support, then Tech stack, then the lint commands
 Design system   two schemes in two sentences, then a link to the page
 Architecture    three lines and a link to docs/architecture.md
+Contributing    what the project is, what to run before a PR, a pointer at
+                CLAUDE.md for the conventions
 Licence         MIT
 ```
 
@@ -62,7 +68,15 @@ decision, not the mechanism — "**The grant persists.**", not "Uses SAF".
 
 **Tech stack** is one paragraph of prose with inline links, not a
 dependency list. Adding a library means adding a clause, or replacing one.
-Drop the clause when the dependency goes.
+Drop the clause when the dependency goes. It was a table once, with a row per
+layer: it read as filler — a column of one-word labels, and a "Build" row
+whose third cell was empty — and every version in it had to be found twice.
+
+**Contributing is written for a stranger, and stays honest.** A personal
+learning project that says so is more inviting than one pretending to be a
+product: name what to run before a PR, say there are no tests and that
+compiling proves nothing about layout, and point at `CLAUDE.md` rather than
+restating the conventions here.
 
 ## Facts to re-derive, never to trust
 
