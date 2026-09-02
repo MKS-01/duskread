@@ -53,7 +53,8 @@ obvious thing), a workaround for something outside this repo.
 - Match the surrounding density. It is the house style, not decoration — a
   file with a comment every few lines should not gain a bare patch, and one
   that reads cleanly should not gain three restatements of its own code.
-- No `TODO`. Open work goes in `docs/design/`, not in a comment nobody sweeps.
+- No `TODO`. Open work goes in an issue or a commit message, not in a comment
+  nobody sweeps.
 
 **Do not write:** a comment that repeats the line, a changelog ("was X, now
 Y" — that is what git is for), a name in place of a reason, or a block that

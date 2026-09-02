@@ -24,6 +24,7 @@ things live before changing them.
 - [Authentication](#authentication)
 - [Offline](#offline)
 - [Invariants](#invariants)
+- [Deliberately not built](#deliberately-not-built)
 - [Module map](#module-map)
 
 ---
@@ -169,6 +170,13 @@ the reason the format survives schema changes without migrations.
 
 The Notion **token is not here.** It lives in a separate `SecretStore` —
 `duskread_secrets` on Android, AES-GCM under a hardware-backed keystore key.
+It must never reach the plain `KeyValueStore`, which is what the widget reads
+from another process.
+
+On desktop, iOS and Wasm `SecretStore` delegates to `KeyValueStore` and says so
+in its own KDoc: it is plaintext there. Android is the only target with a
+Settings entry point for a token, and a fallback that pretended otherwise would
+be worse than one that admits it.
 
 ---
 
@@ -323,6 +331,34 @@ Weights live in one block at the top of `links/Recommender.kt`. They are wrong
 until seen wrong on a phone, which is what **Settings ▸ Discovery** is for — it
 shows the pool, how many carry a topic, and the top five with each term broken
 out.
+
+**Why those numbers.** They were recalibrated once the pool went from a handful
+of saved links to roughly 165, and each change has arithmetic behind it:
+
+- **Jitter used to out-vote freshness.** At a 14-day half-life, three days of a
+  fresh sync spanned `1.00 → 0.86` — a range of 0.14 — against a jitter of
+  0.35, so the top of the list was mostly noise. A 4-day half-life spans the
+  same three days `1.00 → 0.59`, and jitter came down to 0.18.
+- **A skip punished the wrong thing.** `recordSkip` wrote only a host signal,
+  so stepping past one post penalised everything that blog had published and
+  did nothing to the article on screen, which could return on the next tap.
+  `signals.skipped` now sinks that exact post, decaying over two days; the host
+  term stays at less than half its old weight, as the weak hint it always
+  should have been.
+- **Variety is enforced after ranking, not inside it.** `topPicks` takes the
+  best candidate per host. A diversity term folded into the arithmetic makes
+  the honest answer to "why this one?" *"because of what else was in the
+  list"*, and every term here has to stay explicable on its own.
+- **Topics come from Notion, not from a model.** `Sources.Topic` is already
+  curated per feed and rides through `Feed.topic` into every post that feed
+  carries, which is the one thing host affinity structurally cannot do: it
+  pools across hosts, so three security posts read from three different blogs
+  make a fourth from a blog never opened rank. It is per *source*, not per
+  article — a general-interest blog gets one topic for everything — and that is
+  the known cost of not running a model. `pool()`'s `tagFor` is the seam where
+  per-article tagging would override it. Before this, `TopicAffinityWeight` was
+  a socket with nothing in it: the term was built, read by `rank()`, and always
+  zero, because no caller ever supplied a topic.
 
 ---
 
@@ -511,6 +547,32 @@ empty state rather than letting the WebView render a `net::` error page.
 
 ---
 
+## Deliberately not built
+
+Said plainly rather than half-built, and each with the reason it was refused:
+
+- **No scheduler.** Sync happens on the button and on launch under the rule
+  above. No `WorkManager`, no daily job — a reader who has not opened the app
+  has nothing to sync *for*.
+- **No Gmail ingestion in the app.** Newsletters reach Notion through Claude's
+  own Gmail connection; the app only reads the result. Putting an inbox client
+  in a reading app would double its surface to save one hop.
+- **No JSON plugin.** `ktor-client-content-negotiation` and a `@Serializable`
+  model were both considered and dropped: installing a plugin means touching
+  all four `createHttpClient()` actuals, and Notion's response is deeply
+  variant-typed — a `select`, a `multi_select` and a `url` share no shape. The
+  smaller, more honest tool is `Json.parseToJsonElement(body)` navigated with
+  `jsonObject[...]`, which is the same reasoning that keeps `KeyValueStore` a
+  four-method interface.
+- **No OAuth**, for the reasons under [Authentication](#authentication) — and
+  `NotionAuth` is the seam if that ever changes.
+- **No PDFs**, and no upload of anything the reader did not deliberately save.
+- **No Settings entry for Notion outside Android.** The section is in
+  `commonMain` and compiles everywhere, but `SecretStore` is only really
+  encrypted on Android, and that is the only target being exercised.
+
+---
+
 ## Module map
 
 ```
@@ -561,4 +623,3 @@ launcher activity, the home-screen widget and the foreground service.
 - `README.md` — what the app is and how to build it
 - `docs/design-system/design-system.html` — the visual language
 - `docs/design-system/design-tokens.md` — every colour, type style and value
-- `docs/design/notion-sync.md` — how the Notion integration was designed

@@ -195,8 +195,8 @@ source should not empty the app.
 
 ## When this file is wrong
 
-The exact property names, the four-hour rule and the rate limits live in
-`docs/architecture.md`, and the design rationale in
-`docs/design/notion-sync.md`. If the code and this skill disagree, the code
+The exact property names, the four-hour rule, the rate limits and the design
+rationale behind all three live in `docs/architecture.md`, which is the single
+design document. If the code and this skill disagree, the code
 wins — fix the skill in the same change, the same way `README.md` is kept in
 step (`duskread-readme`).
