@@ -448,6 +448,14 @@ Things that are true everywhere, and worth keeping true:
 9. **Notion is optional.** Every screen works without it. It is where
    subscriptions are curated for the people who curate them, never a
    dependency for reading.
+10. **Every sync write is conditional on the data epoch.** A sync is a long
+    sequence of network calls with writes between them; the erase in Settings
+    is a dozen synchronous `clear()` calls. `DataEpoch` (`data/DataEpoch.kt`)
+    is how the two are told apart: the erase bumps it before clearing
+    anything, and `runFullSync`, `applySources` and `syncFeeds` each take a
+    mark at the start and decline to write once it is stale. Without it a
+    sync that was in the air when someone tapped Erase put their whole
+    Following list back, restored from rows it had already read.
 
 ---
 

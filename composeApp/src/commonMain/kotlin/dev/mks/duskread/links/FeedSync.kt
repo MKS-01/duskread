@@ -1,5 +1,6 @@
 package dev.mks.duskread.links
 
+import dev.mks.duskread.data.DataEpoch
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.request.header
@@ -231,6 +232,10 @@ internal fun resolveAgainst(pageUrl: String, href: String): String = when {
  * yielded posts, for the caller to report.
  */
 suspend fun syncFeeds(client: HttpClient, feeds: List<Feed>, cache: FeedPostCache): Int {
+    // What the fetch below is about. A dozen feeds take long enough that an
+    // erase can happen while they are in the air; see [DataEpoch].
+    val epoch = DataEpoch.mark()
+
     // Gathered, then written once. The cache re-encodes its whole catalogue on
     // every write, so committing per feed made a fourteen-feed sync serialise
     // the lot fourteen times — the cost grew with the square of the catalogue,
@@ -242,6 +247,10 @@ suspend fun syncFeeds(client: HttpClient, feeds: List<Feed>, cache: FeedPostCach
         if (entries.isNullOrEmpty()) continue
         fetched[feed.id] = entries.take(EntriesPerFeed).map { it.asPost(feed.id) }
     }
+
+    // Erased while this was fetching: these posts belong to a Following list
+    // that no longer exists, and writing them would put it back.
+    if (DataEpoch.stale(epoch)) return 0
 
     cache.replaceAll(fetched)
     return fetched.size

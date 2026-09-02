@@ -89,6 +89,20 @@ class FeedPostCache(private val store: KeyValueStore) {
         persist()
     }
 
+    /**
+     * Every feed's posts at once, for the reset in Settings.
+     *
+     * [replaceAll] cannot do this: it merges, and it returns early on an empty
+     * map precisely so a sync where nothing answered leaves the cache alone.
+     * Erasing needs the opposite of both, and calling the merge with an empty
+     * map — which is what the reset used to do — cleared nothing at all, so
+     * NEXT UP went on offering posts from blogs that no longer existed.
+     */
+    fun clear() {
+        postsByFeed = emptyMap()
+        store.putString(Key, null)
+    }
+
     /** Drops a feed's cached posts once it's unfollowed — nothing should surface for a blog no longer synced. */
     fun removeFeed(feedId: String) {
         postsByFeed = postsByFeed - feedId

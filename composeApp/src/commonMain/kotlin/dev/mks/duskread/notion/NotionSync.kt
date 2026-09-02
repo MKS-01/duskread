@@ -1,5 +1,6 @@
 package dev.mks.duskread.notion
 
+import dev.mks.duskread.data.DataEpoch
 import dev.mks.duskread.links.FeedLibrary
 import dev.mks.duskread.links.FeedPostCache
 import dev.mks.duskread.links.LinkLibrary
@@ -54,12 +55,19 @@ suspend fun applySources(
     http: HttpClient,
     sources: List<NotionSource>,
     feeds: FeedLibrary,
+    /** The sync's own [DataEpoch.mark]; the loop stops following once it is stale. */
+    epoch: Int = DataEpoch.mark(),
 ): SourceSyncSummary {
     val active = sources.filter { it.active }
     var added = 0
     var skipped = 0
 
     active.forEach { source ->
+        // Checked per source, not once at the top: this loop resolves each
+        // address over the network, so it is the part of a sync most likely
+        // to still be running when someone taps Erase.
+        if (DataEpoch.stale(epoch)) return SourceSyncSummary(found = active.size, added = added, skipped = skipped)
+
         val before = feeds.feeds.size
         // Resolution is a network call and can fail; the raw address is still
         // worth following, since fetchFeed may well accept what discovery
@@ -108,6 +116,11 @@ suspend fun runFullSync(
     // stored would be one deleted database away from failing forever, and the
     // call is free once they are: `provision` returns on the stored id without
     // reaching the network at all.
+    // Every write below is conditional on this still being current — see
+    // [DataEpoch]. A sync that outlives an erase must not restore what it was
+    // reading a moment before the reader emptied the app.
+    val epoch = DataEpoch.mark()
+
     val ready = when (val result = provision(api, prefs)) {
         is NotionResult.Failure -> return SyncOutcome(result.message, ok = false)
         is NotionResult.Ok -> when (val state = result.value) {
@@ -124,7 +137,9 @@ suspend fun runFullSync(
         is NotionResult.Ok -> result.value
     }
 
-    val applied = applySources(http, sources, feeds)
+    if (DataEpoch.stale(epoch)) return SyncOutcome(ErasedLine, ok = false)
+
+    val applied = applySources(http, sources, feeds, epoch)
 
     // After the pull, so a blog that arrived from Notion a moment ago is
     // already followed and gets matched rather than created a second time —
@@ -136,6 +151,12 @@ suspend fun runFullSync(
     }
 
     val fetched = syncFeeds(http, feeds.feeds, feedPosts)
+
+    // Last gate, and the one that also keeps `notion.sync.last` off a store
+    // the erase has just emptied — a recorded sync would hold the next
+    // automatic one back for an app with nothing in it.
+    if (DataEpoch.stale(epoch)) return SyncOutcome(ErasedLine, ok = false)
+
     val reading = syncReadingList(api, ready.readingId, library)
     recordSync(Clock.System.now().toEpochMilliseconds())
 
@@ -148,6 +169,14 @@ suspend fun runFullSync(
         ok = true,
     )
 }
+
+/**
+ * Reported by a sync abandoned mid-flight because the data underneath it was
+ * erased. Nobody is likely to read it — Settings closes with the erase — but
+ * a sync that stopped is not a sync that succeeded, and `ok = false` keeps it
+ * out of `lastSyncAt`.
+ */
+internal const val ErasedLine = "Erased — sync stopped"
 
 /** Said by a sync as well as by the setup sheet, so it is written once. */
 internal const val NoPagesLine = "Share a Notion page with the token first"

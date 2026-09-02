@@ -44,11 +44,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.mks.duskread.AppVersion
+import dev.mks.duskread.data.DataEpoch
 import dev.mks.duskread.data.NotionTokenKey
 import dev.mks.duskread.data.UserPrefs
+import dev.mks.duskread.data.rememberKeyValueStore
 import dev.mks.duskread.data.rememberSecretStore
 import dev.mks.duskread.links.FeedLibrary
 import dev.mks.duskread.links.FeedPostCache
+import dev.mks.duskread.links.LinkInbox
 import dev.mks.duskread.links.LinkLibrary
 import dev.mks.duskread.links.ReadingSignals
 import dev.mks.duskread.links.savedAgo
@@ -609,10 +612,22 @@ private fun NotionSettings(
  * *question* carries the weight instead, in `onSurface` against the muted
  * actions beneath it.
  *
- * The order of the wipe matters. [UserPrefs.reset] goes last because it clears
- * `introSeen`, and `App.kt` reads that reactively — the moment it flips, the
- * whole app is Onboarding again and this screen no longer exists. Anything
- * left to clear after it would be running inside a composable on its way out.
+ * The order of the wipe matters, at both ends.
+ *
+ * [DataEpoch.bump] goes first, and the disconnect straight after it. A sync
+ * is a minute of network calls with writes between them; the wipe is a dozen
+ * synchronous lines. Land the tap in the middle of one and the sync goes on
+ * writing into the store afterwards — which is how a Following list of a
+ * dozen blogs used to reappear on Home moments after being erased, restored
+ * from Notion by a coroutine that had already read the rows. The epoch is
+ * what makes every remaining write in that sync decline; taking the token
+ * away as well means the calls it has not made yet fail rather than
+ * succeeding into a void.
+ *
+ * [UserPrefs.reset] goes last because it clears `introSeen`, and `App.kt`
+ * reads that reactively — the moment it flips, the whole app is Onboarding
+ * again and this screen no longer exists. Anything left to clear after it
+ * would be running inside a composable on its way out.
  */
 @Composable
 private fun ResetSettings(
@@ -626,6 +641,7 @@ private fun ResetSettings(
     onErased: () -> Unit,
 ) {
     val summaries = rememberSummaryCache()
+    val store = rememberKeyValueStore()
     var confirming by remember { mutableStateOf(false) }
 
     Column(Modifier.fillMaxWidth()) {
@@ -657,16 +673,24 @@ private fun ResetSettings(
         ) {
             if (confirming) {
                 TransferAction("Erase") {
-                    library.clear()
-                    feeds.clear()
-                    feedPosts.replaceAll(emptyMap())
-                    signals.clear()
-                    summaries.clear()
-
+                    // Both of these before a single thing is cleared, and in
+                    // this order — see the note on ordering above.
+                    DataEpoch.bump()
                     // The token and the ids it resolved, together — one without
                     // the other is a connection that cannot be used or repaired.
                     auth.disconnect()
                     notion.clear()
+
+                    library.clear()
+                    feeds.clear()
+                    feedPosts.clear()
+                    signals.clear()
+                    summaries.clear()
+                    // Anything the widget captured since the last resume, too:
+                    // draining is the only way to empty it, and a link left
+                    // here would be filed into the library on the next resume
+                    // — after the erase, out of an app that had none.
+                    LinkInbox.drain(store)
 
                     onErased()
                     prefs.reset()
