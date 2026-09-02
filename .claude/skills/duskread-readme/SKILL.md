@@ -39,32 +39,32 @@ yet. Only the masthead and the opening scene come before both.
 ```
 masthead        mark, name, standfirst, linked badges, a one-line row of
                 jump links, the monochrome sub-line
-opening scene   one paragraph, second person, a day with the app
-What it does    one ### per pillar, bold-lead bullets underneath
+opening scene   two or three sentences, not a paragraph — the pitch, not the
+                tour
+What it does    one bold-lead bullet per pillar, not a ### and a paragraph
+                each — this is a public README, not the landing page
 Getting started clone + installDebug, the requirements table, the collapsed
                 "other three targets" block
-How it's built  Platform support, then Tech stack, then the lint commands
-Design system   two schemes in two sentences, then a link to the page
-Architecture    three lines and a link to docs/architecture.md
+How it's built  one paragraph of prose (stack + platform caveats folded in),
+                the lint commands, then a line linking the design system and
+                a line linking docs/architecture.md — no subheadings
 Contributing    what the project is, what to run before a PR, a pointer at
                 CLAUDE.md for the conventions
 Licence         MIT
 ```
 
-**The opening paragraph is the piece to protect.** It is a single scene —
-the inbox, the followed blog, the timer, the theme — in second person,
-present tense, one paragraph. It leads with two bold-lead clauses,
-**Automated:** and **Personalised:**, the two qualities that decide what
-lands in the list before the scene gets to the reading itself; nothing else
-in it takes a bold label. A new feature joins it only if it changes the
-shape of the day. Most don't; they go in *What it does*. If you edit it,
-keep it one paragraph and read it back whole.
+**The opening line is the piece to protect.** A short, plain sentence or
+two — what lands in the list, then what reading looks like. Not a scene to
+walk through; a public README gets read by someone deciding in five seconds
+whether to keep scrolling. A new feature joins it only if it changes what the
+app fundamentally is. Almost nothing does; it goes in *What it does* instead.
 
 **What it does** is the pillar list from `CLAUDE.md` — saved links and feeds
 (`links/`), readback (`reader/`), summaries (`summary/`), the focus timer
-(`pomodoro/`). A genuinely new pillar gets its own `###`; anything smaller is
-a bold-lead bullet under the pillar it belongs to. Each bullet leads with the
-decision, not the mechanism — "**The grant persists.**", not "Uses SAF".
+(`pomodoro/`) — as a flat list of bold-lead bullets, one or two sentences
+each. Each bullet leads with the decision, not the mechanism — "**The grant
+persists.**", not "Uses SAF" — and anything that needs a third sentence to
+explain probably belongs in `docs/architecture.md` with a link back instead.
 
 **Tech stack** is one paragraph of prose with inline links, not a
 dependency list. Adding a library means adding a clause, or replacing one.

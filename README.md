@@ -27,172 +27,117 @@
 
 ---
 
-**Automated:** an AI agent catches newsletters in your inbox, and the blogs you follow add their own posts, without you lifting a finger. **Personalised:** what rises to the top is ranked by what you actually read, not by when it arrived. Then you put the phone face-down, set a timer for twenty-five minutes, and read: on **Paper Black**, warm-white ink on matte near-black lit by one terracotta accent, or on **Ink**, the same page with the colour drained out — the one it starts on.
-
----
+Newsletters and blogs file themselves into one Notion database — ranked by
+what you actually read, not by when it arrived — then you set a twenty-five
+minute timer and read, on **Paper Black** or **Ink**, the same page with the
+colour drained out.
 
 ## What it does
-
-### Curated automatically, through Notion
-
-A **[Notion](https://www.notion.com/product/dev) database** is the single
-place subscriptions and saves are curated, and **Claude** works through it
-so you don't have to. Newsletters that arrive in Gmail with no public feed
-are read and filed by Claude straight into the reading list; blogs with a
-working feed are fetched by the app itself and never touch Notion. Either
-way, the phone only pulls rows that were ticked `Saved`. Everything else
-stays archived, not shown.
 
 <p align="center">
   <img src="docs/media/notion-flow.png" alt="Three sources — Gmail, RSS feeds, and links you paste or share. Claude files the mail into Notion's Sources and Reading List, which syncs both ways with DuskRead; feeds and shared links reach the app directly, never touching Notion. The app caches everything, reads offline, and reads articles aloud on the phone">
 </p>
 
-Notion is the curation layer, not a dependency. The device works whether
-or not it can reach it, and setup is one pasted token — the app finds or
-creates its own databases rather than asking you to type in an ID. The full
-schema, the sync rules and the reasoning behind each of them are in
-**[docs/architecture.md](docs/architecture.md)**.
-
-**Save it however it reaches you, too.** Share a link straight from Chrome — DuskRead is in the share sheet — or open the paste field on Saved with **Add**. Either way the row appears immediately with the host as its stand-in title, then a fetch fills in the real one behind it.
-
-**Following a blog files it in Notion, too.** The one exception to the
-one-way pull above: `Sources` is written as well as read, so a blog followed
-on the phone is already there to edit the next time you open Notion.
-
-### Reading, offline first
-
-**Almost everything opens with no network at all.** Every screen renders from local storage, and the reader tries its own cache before the wire — a feed that publishes full-content RSS is cached whole at sync time, so the article was already on the phone before you tapped it. A post that will open offline carries its own badge on the meta line, computed the same way the reader itself decides, so it never claims something it can't deliver.
-
-**Saved is a queue and a record at once.** Unread leads, and what you've read stays under its own heading rather than disappearing — filter to either, or search a title, a host or a topic. The paste field folds away behind **Add**, because most links arrive from the share sheet rather than the keyboard.
-
-The page itself stays out of the way: **Paper Black** and **Ink**, warm ink on near-black or the same layout with the hue drained out, swapped at runtime, one terracotta accent spent only to mean *there is sound here*. No chrome, no feed of unread counts — one article at a time.
-
-**Long ones get a one-tap summary first**, generated on-device by Gemini Nano so nothing leaves the phone; the control is simply absent on hardware that can't run it.
-
-### Listening
-
-**The phone reads an article aloud itself**, with its own text-to-speech —
-nothing to sync, nothing to download first. The player is a face of the same
-floating bar the tabs live on, so it follows you to whatever you open next,
-including a screen that covers the tabs entirely. If a read can't happen —
-no voice installed, no engine — it says so rather than staying silent.
-
-### Focus timer
-
-A pomodoro that behaves like an alarm and not a widget: a real system notification and a vibration when the interval ends, so it works with the phone face-down and the app closed. It lives on Home beside the reading, because the point is to read for twenty-five minutes rather than to admire a timer.
+- **Curated through Notion.** Claude files inbox newsletters straight into
+  the reading list; blogs with a working feed are fetched by the app and
+  never touch Notion. Either way, only rows ticked `Saved` reach the phone —
+  see [docs/architecture.md](docs/architecture.md) for the schema and sync
+  rules. Following a blog writes it back to Notion too, so it's there to edit
+  next time you open it.
+- **Save it however it reaches you** — the Chrome share sheet, or the paste
+  field on Saved behind **Add**.
+- **Reads offline.** Every screen renders from local storage; a feed with
+  full-content RSS is cached whole at sync time, so most articles were
+  already on the phone before you tapped them.
+- **Saved is a queue and a record.** Unread leads; what you've read stays
+  under its own heading. Filter to either, or search a title, host or topic.
+- **On-device summaries and reading aloud.** Long articles get a one-tap
+  summary via Gemini Nano; the phone can also read one aloud with its own
+  text-to-speech. Both are absent on hardware that can't run them, and a read
+  that can't happen says why instead of staying silent.
+- **A focus timer** that behaves like an alarm, not a widget — a real system
+  notification and vibration when the interval ends, phone face-down.
 
 ## Getting started
 
-> **Android is the app; the other three are the workshop.** It's what this is built and tested against day to day. Desktop, web and iOS compile from the same source and are there to prove it travels — see [Platform support](#platform-support).
+> Android is the app, built and tested day to day. Desktop, web and iOS
+> compile from the same source to prove it travels.
 
 ```bash
 git clone https://github.com/MKS-01/duskread.git && cd duskread
 ./gradlew :androidApp:installDebug      # ~5 s once warm
 ```
 
-That's the whole setup. Saved links, feeds, the timer and the themes all work the moment it opens. Notion is optional, and connecting it is one pasted token in Settings.
+That's the whole setup — Notion is optional, and connecting it is one pasted
+token in Settings.
 
 | | |
 |---|---|
-| **JDK** | 17 or newer — the toolchain targets JVM 17 |
+| **JDK** | 17 or newer |
 | **Android** | 12 and up (`minSdk` 31, compile/target 36) |
-| **Gradle** | 9.3.1, via the wrapper — don't install it yourself |
+| **Gradle** | 9.3.1, via the wrapper |
 | **For summaries** | A phone with **AICore** — Pixel 9+, Galaxy S24+ and similar. No emulator has it |
-| **For iOS** | Xcode, plus [XcodeGen](https://github.com/yonaskolb/XcodeGen) — the host project is generated, not committed |
+| **For iOS** | Xcode, plus [XcodeGen](https://github.com/yonaskolb/XcodeGen) |
 
 <details>
-<summary><strong>The other three targets</strong></summary>
+<summary><strong>Desktop, web and iOS</strong></summary>
 
 ```bash
-./gradlew :composeApp:runDistributable              # desktop — see the note below
+./gradlew :composeApp:runDistributable              # desktop — use this, not `run`
 ./gradlew :composeApp:wasmJsBrowserDevelopmentRun   # web, on :8080
 
 cd iosApp && xcodegen generate && cd ..             # iOS needs an Xcode host
 open iosApp/iosApp.xcodeproj
 ```
 
-`runDistributable`, not `run`, for desktop: the embedded browser is Chromium
-through JCEF, and its native side needs the packaged `.app` layout. Under a
-plain `run` it segfaults during `CefApp.initialize`. Everything else in the
-app works either way.
-
-A first Kotlin/Native build for iOS is ten minutes or more; incremental after
-that.
+`runDistributable`, not `run`, for desktop — the embedded Chromium needs the
+packaged `.app` layout, or it segfaults on init. First iOS build is ten
+minutes or more; incremental after that.
 </details>
 
 ## How it's built
 
-### Platform support
-
-**Android is the app; desktop, web and iOS run the same code, mostly to
-prove it travels.** Summaries need AICore, reading aloud needs a system
-text-to-speech engine, and readback needs a filesystem — all three are
-Android-first. `summariesSupported()`, `speechSupported()` and
-`readbackSupported()` are `expect`/`actual` constants, and a screen just
-doesn't show a control it can't offer.
-
-### Tech stack
-
-One `commonMain` source set feeds all four targets, and storage, audio, the
-summariser, the timer and the HTTP client are `expect`/`actual` pairs behind
-it. The UI is [Compose Multiplatform](https://www.jetbrains.com/compose-multiplatform/)
-1.11 with Material 3, where [Haze](https://github.com/chrisbanes/haze) draws
-the blur under the floating bar; [Kotlin](https://kotlinlang.org/) 2.3 supplies
-the platform seams and [Ktor](https://ktor.io/) 3.1 the RSS and
-[Notion](https://www.notion.com/product/dev) calls, with a different engine
-per target. Summaries run on the phone through
-[ML Kit GenAI](https://developer.android.com/ai) and Gemini Nano, reading
-aloud is Android's own `TextToSpeech`, and the optional Readback tab queries
-[readback](https://github.com/MKS-01/readback)'s `library.db` read-only over
-[sqlite-jdbc](https://github.com/xerial/sqlite-jdbc) and a folder grant. The
-desktop build embeds Chromium through [KCEF](https://github.com/DatL4g/KCEF).
-It builds on AGP 9's `androidLibrary` KMP DSL and Gradle 9.3.1.
-
-State is a `HomeTab` enum and a few overlays in one `Box`, hoisted into
-`App.kt` over a flat key/value store. No navigation library, no ViewModel, no
-dependency injection, no database — a ceiling chosen on purpose rather than a
-stage on the way to one.
+One `commonMain` source set feeds Android, desktop, web and iOS; storage,
+audio, the summariser and the HTTP client are `expect`/`actual` pairs behind
+it. UI is [Compose Multiplatform](https://www.jetbrains.com/compose-multiplatform/)
+1.11 with [Haze](https://github.com/chrisbanes/haze) for the floating-bar
+blur, on [Kotlin](https://kotlinlang.org/) 2.3 and [Ktor](https://ktor.io/)
+3.1. Summaries run on-device via [ML Kit GenAI](https://developer.android.com/ai)
+/ Gemini Nano; reading aloud is Android's own `TextToSpeech`; the optional
+Readback tab queries [readback](https://github.com/MKS-01/readback)'s
+`library.db` read-only. No navigation library, no ViewModel, no DI, no
+database — a ceiling chosen on purpose.
 
 ```bash
-./gradlew ktlintCheck    # lint; several rules deliberately off, see .editorconfig
-./gradlew ktlintFormat   # auto-fix
+./gradlew ktlintCheck    # several rules deliberately off, see .editorconfig
+./gradlew ktlintFormat
 ```
 
-There are no tests yet, so a build that succeeds is the start of checking a
-change rather than the end of it.
+No tests yet — a build that succeeds is the start of checking a change, not
+the end of it.
 
-## Design system
-
-Two schemes, one layout, both dark, **Paper Black** and **Ink** — see **[the design system](https://mks-01.github.io/duskread/)** for the full visual language and every token behind it.
-
-## Architecture
-
-How the pieces connect, the Notion schema, and the end-to-end flows — see **[docs/architecture.md](docs/architecture.md)**.
+**[The design system](https://mks-01.github.io/duskread/)** — Paper Black
+and Ink, and every token behind them.
+**[docs/architecture.md](docs/architecture.md)** — how the pieces connect,
+the Notion schema, and the end-to-end flows.
 
 ## Contributing
 
-A personal learning project, built in the open. Fork it, lift a file out of
-it, or open an issue if something here is wrong, unclear or won't build —
-that last one is the most useful thing you can send. Pull requests are
-welcome, and small ones are easiest to take.
-
-Before opening one:
+A personal learning project, built in the open. Issues, forks and small pull
+requests are welcome. Before opening one:
 
 ```bash
 ./gradlew ktlintCheck
-./gradlew :composeApp:compileKotlinDesktop   # quick check that common code compiles
-./gradlew :androidApp:installDebug           # then look at the change on a device
+./gradlew :composeApp:compileKotlinDesktop
+./gradlew :androidApp:installDebug   # then look at the change on a device
 ```
 
-Compiling proves nothing about layout and there are no tests to catch it, so
-exercise the screen you touched. [`CLAUDE.md`](CLAUDE.md) is the house style
-in full — why-not-what comments, British spelling in prose, colour only from
-`MaterialTheme.colorScheme`, and the lint rules switched off in
-`.editorconfig` that are off deliberately.
+Compiling proves nothing about layout and there are no tests, so exercise the
+screen you touched. [`CLAUDE.md`](CLAUDE.md) has the house style in full.
 
 ## Licence
 
-MIT — see [LICENSE](LICENSE). Do what you like with it.
+MIT — see [LICENSE](LICENSE).
 
 <p align="center">
   <sub>Built agent-first with <a href="https://claude.ai/code">Claude Code</a></sub><br>
