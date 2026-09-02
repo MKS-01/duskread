@@ -43,6 +43,7 @@ import dev.mks.duskread.summary.SummaryTarget
 import dev.mks.duskread.summary.parseSummary
 import dev.mks.duskread.summary.rememberSummariser
 import dev.mks.duskread.summary.rememberSummaryCache
+import dev.mks.duskread.ui.common.ToastRequest
 import dev.mks.duskread.ui.theme.DuskReadIcons
 import dev.mks.duskread.ui.theme.Mono
 import dev.mks.duskread.ui.theme.Radius
@@ -144,10 +145,41 @@ fun SummaryPanel(
         }
         scope.launch {
             val text = articleText ?: loadArticle(client, target.url, target.title, target.feedContent)?.text
-            if (text == null || text.length < MinSpeakableChars) return@launch
+            // Both refusals are stated. A play button that does nothing at
+            // all is indistinguishable from a broken one, and this is the
+            // half of "nothing happened" the speaker itself never sees — it
+            // is never asked in the first place.
+            if (text == null) {
+                ToastRequest.show("Couldn't reach this page to read it.")
+                return@launch
+            }
+            if (text.length < MinSpeakableChars) {
+                ToastRequest.show("There isn't enough text on this page to read aloud.")
+                return@launch
+            }
             articleText = text
             SpeechSession.start(target.url, target.title, text)
         }
+    }
+
+    // Two floating things at the bottom of the screen, one of them saying
+    // only that it has nothing to say. Where the summary failed outright, the
+    // read *is* the panel's whole content, and the transport already carries
+    // it — with its own title, progress and stop — so the card gets out of
+    // the way rather than stacking an explanation on top of a working player.
+    //
+    // Only on [Stage.Failed]. A finished summary is still worth reading while
+    // it plays, which is why pressing play does not close this panel in
+    // general, and a model waiting to be downloaded still has its own button
+    // to offer.
+    // Read off [engineState] as well as [stage], not just the stage: on a
+    // swipe that starts speaking immediately, the read is playing before the
+    // effect below has had a chance to turn "no engine" into a
+    // [Stage.Failed], and a close that depends on the two landing in the
+    // right order is a close that sometimes does not happen.
+    val nothingToSay = engineState is SummariserState.Unavailable || stage is Stage.Failed
+    LaunchedEffect(isThisPlaying, nothingToSay) {
+        if (isThisPlaying && nothingToSay) onClose()
     }
 
     // The one thing autoPlay does — see the parameter's own KDoc for who

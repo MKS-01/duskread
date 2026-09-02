@@ -71,6 +71,7 @@ import dev.mks.duskread.ui.rememberUrlOpener
 import dev.mks.duskread.ui.settings.SettingsScreen
 import dev.mks.duskread.ui.theme.Layout
 import dev.mks.duskread.ui.theme.Motion
+import dev.mks.duskread.ui.theme.Space
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
@@ -495,47 +496,6 @@ fun HomeScreen(
             tabs(Modifier.fillMaxSize())
         }
 
-        // There is no scrim gradient under the bar any more. The bar blurs
-        // whatever passes beneath it, so fading that content to the
-        // background colour would defeat the effect.
-        //
-        // The horizontal padding is what bounds the bar's width: the
-        // transport face fills it, the tab face wraps and centres inside
-        // it. Playback already outlives the Readback tab; keeping the
-        // transport here rather than in the tab is what makes the controls
-        // outlive it too, instead of sending you to the notification shade.
-        //
-        // It leaves entirely while the keyboard is up. Riding above the
-        // keyboard was worse than hiding: it eats a bar's height out of an
-        // already halved screen and puts a blurred pill against the
-        // keyboard's own edge, and there is nothing on it worth reaching
-        // mid-sentence — every field here commits with its own inline
-        // action or the IME's Done key.
-        AnimatedVisibility(
-            visible = !wide && !imeVisible,
-            enter = slideInVertically(tween(Motion.Chip)) { it } + fadeIn(tween(Motion.Fade)),
-            exit = slideOutVertically(tween(Motion.Chip)) { it } + fadeOut(tween(Motion.Fade)),
-            modifier = Modifier.align(Alignment.BottomCenter),
-        ) {
-            FloatingBar(
-                selected = tab,
-                tabs = visibleTabs,
-                onSelect = onTabChange,
-                hazeState = hazeState,
-                nowPlaying = nowPlaying,
-                onTogglePlay = onTogglePlayTransport,
-                onSeek = onSeekTransport,
-                onStop = onStopTransport,
-                mono = mono,
-                onToggleTheme = onToggleTheme,
-                onOpenSettings = { showSettings = true },
-                collapse = collapse,
-                modifier = Modifier
-                    .navigationBarsPadding()
-                    .padding(bottom = Layout.BarInset, start = 16.dp, end = 16.dp),
-            )
-        }
-
         // Top, not bottom: the floating bar already owns the bottom of the
         // screen, and a toast landing there would either sit on top of it or
         // shove it aside for two seconds every time a link is saved.
@@ -592,6 +552,75 @@ fun HomeScreen(
                 notion = notionPrefs,
                 auth = notionAuth,
                 api = notionApi,
+            )
+        }
+
+        // There is no scrim gradient under the bar any more. The bar blurs
+        // whatever passes beneath it, so fading that content to the
+        // background colour would defeat the effect.
+        //
+        // The horizontal padding is what bounds the bar's width: the
+        // transport face fills it, the tab face wraps and centres inside
+        // it. Playback already outlives the Readback tab; keeping the
+        // transport here rather than in the tab is what makes the controls
+        // outlive it too, instead of sending you to the notification shade.
+        //
+        // It leaves entirely while the keyboard is up. Riding above the
+        // keyboard was worse than hiding: it eats a bar's height out of an
+        // already halved screen and puts a blurred pill against the
+        // keyboard's own edge, and there is nothing on it worth reaching
+        // mid-sentence — every field here commits with its own inline
+        // action or the IME's Done key.
+        //
+        // Drawn *after* the two full-screen surfaces above rather than before
+        // them, so a read started from Topics or Settings still has its
+        // transport: those surfaces cover the whole screen, and a bar
+        // underneath one of them is a player nobody can reach — the panel's
+        // own pause was the only control there, and it went with the panel.
+        // What they do take away is navigation: the tabs belong to the screen
+        // they cover, so over one of them this is the transport and nothing
+        // else, and it is not there at all when there is nothing to transport.
+        val coveredByASurface = topicsFeed != null || showSettings
+        val barVisible = !wide && !imeVisible && (!coveredByASurface || nowPlaying != null)
+
+        // What anything else bottom-anchored has to clear — see
+        // [BottomFurniture]. The wide layout's transport is a sibling at the
+        // window's own edge rather than a floating pill, so it needs no
+        // inset of its own.
+        val furniture = when {
+            barVisible -> Layout.BarInset + Layout.BarHeight + Space.CardGap
+            wide && nowPlaying != null -> Layout.BarHeight + Space.CardGap
+            else -> 0.dp
+        }
+        LaunchedEffect(furniture) { BottomFurniture.publish(furniture) }
+        DisposableEffect(Unit) { onDispose { BottomFurniture.publish(0.dp) } }
+
+        AnimatedVisibility(
+            visible = barVisible,
+            enter = slideInVertically(tween(Motion.Chip)) { it } + fadeIn(tween(Motion.Fade)),
+            exit = slideOutVertically(tween(Motion.Chip)) { it } + fadeOut(tween(Motion.Fade)),
+            modifier = Modifier.align(Alignment.BottomCenter),
+        ) {
+            FloatingBar(
+                selected = tab,
+                tabs = visibleTabs,
+                onSelect = onTabChange,
+                hazeState = hazeState,
+                nowPlaying = nowPlaying,
+                onTogglePlay = onTogglePlayTransport,
+                onSeek = onSeekTransport,
+                onStop = onStopTransport,
+                mono = mono,
+                onToggleTheme = onToggleTheme,
+                onOpenSettings = { showSettings = true },
+                // The tabs are behind whatever is covering the bar, so
+                // peeking at them there would offer a destination that
+                // cannot be reached without first closing the surface on top.
+                tabsAvailable = !coveredByASurface,
+                collapse = collapse,
+                modifier = Modifier
+                    .navigationBarsPadding()
+                    .padding(bottom = Layout.BarInset, start = 16.dp, end = 16.dp),
             )
         }
     }

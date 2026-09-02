@@ -12,6 +12,8 @@ import android.support.v4.media.session.PlaybackStateCompat
 import androidx.core.app.NotificationCompat
 import androidx.media.app.NotificationCompat.MediaStyle
 import androidx.media.session.MediaButtonReceiver
+import dev.mks.duskread.ui.common.ToastRequest
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -93,9 +95,21 @@ class SpeechPlaybackService : Service() {
 
         val engine = speaker ?: return
         job = scope.launch {
-            runCatching {
+            val outcome = runCatching {
                 engine.speak(requestedTitle, text).collect { progress ->
                     publish(SpeechNowPlaying(key, requestedTitle, progress.fraction, playing = true))
+                }
+            }
+
+            // A read that cannot happen has to say so. Everything the speaker
+            // refuses — no engine, no voice installed, an engine that never
+            // came up — used to end here as a swallowed exception, and all
+            // the reader saw was the transport appearing and vanishing again.
+            // A cancellation is not a failure: it is this read being
+            // superseded by a newer one, which needs no announcement.
+            outcome.exceptionOrNull()?.let { failure ->
+                if (failure !is CancellationException) {
+                    ToastRequest.show(failure.message ?: "Couldn't read this aloud.")
                 }
             }
             // Reached on natural completion, on failure, and when [job] is

@@ -722,3 +722,96 @@ empty state, a `danluu` search narrowing to one row, and the paste field
 folded away by Add/Done. `ktlintCheck` and `:composeApp:compileKotlinDesktop`
 clean.
 
+## The summary panel sat under the floating bar (this pass)
+
+`SummaryOverlay` measured its bottom inset off `Layout.BarClearance` — 72dp,
+minus 12 for its own top padding, so 60dp above the safe area. The bar starts
+at `Layout.BarInset` (24dp) and is `Layout.BarHeight` (56dp) tall, so it
+occupies 24–80dp: the panel's bottom 20dp was drawn underneath the pill.
+
+- [x] The inset is now `Layout.BarInset + Layout.BarHeight + Space.CardGap`,
+  measured off the bar itself. `BarClearance` is a *scroll* inset — what a
+  list's last row needs to be pushable past the bar — and was never the
+  distance to the bar's top edge; reading it as one is what put the panel
+  under the pill.
+- [x] The extra `BarHeight + CardGap` the panel added while something was
+  playing is gone. It dated from the transport being a second pill stacked
+  above the tabs; the transport has been a *face* of the same pill for a
+  while now (`FloatingBar` — "one pill that swaps its contents costs no
+  height at all"), so the bar is the same height either way and that branch
+  only made the panel jump up on play. The `SpeechSession` collection it
+  needed went with it.
+
+### Verified
+
+Reproduced and fixed on the emulator: the panel's card now clears the bar
+with a visible gap. **Not** verified in the playing state — the emulator has
+`com.google.android.tts` installed but no voice data, so a read never starts
+there; that half is a code-level certainty (constant bar height, branch
+removed) and wants a look on the phone.
+
+## Reading aloud failed silently (this pass)
+
+Reported as "it stopped working". Nothing in the read-aloud path had any way
+to say why it did nothing, and one of the reasons it did nothing was a race
+that fires on most reads.
+
+- [x] `SystemSpeaker.speak` refused any read taken before `TextToSpeech`'s
+  async `onInit` had answered — until then `state` is
+  `Unavailable("Starting up…")`, and the guard read that as "this phone
+  cannot speak" and closed the flow. `SpeechPlaybackService` builds its
+  speaker in `onCreate` for a head start, but `onStartCommand` follows within
+  the same delivery, and the service calls `stopSelf()` at the end of every
+  read — so *every* read raced a cold engine, not just the first. It now
+  waits on a `CompletableDeferred` the init callback completes, with a
+  five-second timeout so a wedged engine fails rather than hangs.
+- [x] Every refusal now carries its reason. `speak` closes the flow *with*
+  the message (no engine, no voice installed, engine never started) instead
+  of closing it empty; `SpeechPlaybackService` shows that as a toast rather
+  than swallowing it in a bare `runCatching`, skipping `CancellationException`
+  because that is only a newer read superseding this one.
+- [x] `SummaryPanel.togglePlay` had two silent `return@launch`es of its own —
+  the page could not be fetched, or there was too little text to be worth
+  speaking. Both say so now. They are the half the speaker never sees,
+  because it is never asked.
+
+### Verified
+
+On the emulator, pressing play on an unreachable article now says "Couldn't
+reach this page to read it." where it used to do nothing at all. The engine
+paths could **not** be exercised there — `com.google.android.tts` is
+installed but has no voice data, and the read never gets as far as the
+speaker — so the race fix and the no-voice message want a look on the phone.
+
+## The player had nowhere to be, and the panel doubled up (this pass)
+
+Two things found by reading aloud from a blog's own posts screen, which is a
+full-screen surface drawn over the floating bar.
+
+- [x] The bar is now composed *after* `TopicsScreen` and `SettingsScreen` in
+  `HomeScreen`'s `Box`, so a read started from either still has a transport
+  — before this the player was underneath them and the only control was the
+  summary panel's own pause, which left with the panel. Over one of those
+  surfaces the bar carries the transport alone: `FloatingBar` takes
+  `tabsAvailable`, which pins the face to the player and drops the show-tabs
+  button rather than leaving a button that does nothing.
+- [x] New `ui/home/BottomFurniture.kt` publishes how much of the bottom edge
+  is taken. `SummaryOverlay` is mounted a level above the screen that draws
+  the bar and had no way to ask, so it guessed — and guessing is visible in
+  both directions: under the pill on Home, floating mid-screen over a surface
+  with no bar at all.
+- [x] The summary panel closes itself when a read of the same article is
+  playing *and* the summariser has nothing to say. Two floating cards, one of
+  them explaining only that it cannot help, is one too many. Read off
+  `SummariserState` as well as the panel's own stage: on a swipe that speaks
+  immediately the read starts before the stage effect has run, and a close
+  that depends on the two landing in order is a close that sometimes doesn't
+  happen — which is exactly how it first behaved.
+
+### Verified
+
+On the emulator, over a followed blog's posts: the transport appears above
+the surface with no tabs button, the panel sits above it with a real gap, and
+the panel leaves the moment the read starts. Confirmed on the phone by MKS,
+where the read actually produces audio.
+

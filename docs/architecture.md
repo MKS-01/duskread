@@ -448,7 +448,22 @@ Things that are true everywhere, and worth keeping true:
 9. **Notion is optional.** Every screen works without it. It is where
    subscriptions are curated for the people who curate them, never a
    dependency for reading.
-10. **Every sync write is conditional on the data epoch.** A sync is a long
+10. **There is one transport, and it is a face of the floating bar.**
+    Readback and a live read never play at once — starting either stops the
+    other, enforced in `HomeScreen`, the one place that can see both. The bar
+    is drawn after the full-screen surfaces it shares a `Box` with (a blog's
+    posts, Settings), so a read started from one of them still has a player;
+    over those it carries the transport alone, because the tabs behind it
+    cannot be reached without closing what is on top. Anything else anchored
+    to the bottom edge asks `BottomFurniture` how much of it is taken rather
+    than assuming a bar is there.
+11. **A read that cannot happen says why.** `Speaker.speak` closes its flow
+    with the reason — no engine, no voice installed, an engine that never
+    started — and `SpeechPlaybackService` shows it. Silence is the one
+    outcome a reader cannot act on, and it was previously the outcome of
+    every failure, including a race against `TextToSpeech`'s asynchronous
+    `onInit` that fired on most reads.
+12. **Every sync write is conditional on the data epoch.** A sync is a long
     sequence of network calls with writes between them; the erase in Settings
     is a dozen synchronous `clear()` calls. `DataEpoch` (`data/DataEpoch.kt`)
     is how the two are told apart: the erase bumps it before clearing
@@ -523,9 +538,14 @@ composeApp/src/commonMain/kotlin/dev/mks/duskread/
 
   pomodoro/   the focus timer
   reader/     Reader, AudioPlayer — read-only over readback's library.db
-  speech/     Speaker — the phone reads an article aloud (Android only)
+  speech/     Speaker        the phone reads an article aloud (Android only)
+              SpeechSession  the one live read, and what the bar shows
   summary/    on-device summaries (Android only; ML Kit GenAI)
   ui/         screens, theme, shared components
+              common/          ListRow · AppTextField · EyebrowHeader ·
+                               Pill · HeaderAction · EmptyState · Toast
+              home/            the tabs, the floating bar, BottomFurniture
+              summary/         the panel a swiped row opens
 ```
 
 State is plain `remember { mutableStateOf(...) }` hoisted into `App.kt`. No

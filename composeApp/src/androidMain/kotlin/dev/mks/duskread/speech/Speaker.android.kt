@@ -10,9 +10,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.withTimeoutOrNull
 import java.util.Locale
 
 /**
@@ -35,16 +37,39 @@ internal class SystemSpeaker(context: Context) : Speaker {
     override var state: SpeakerState by mutableStateOf(SpeakerState.Unavailable("Starting up…"))
         private set
 
+    /**
+     * Settles once `onInit` has answered, so [speak] can wait for the engine
+     * rather than refuse the read.
+     *
+     * `onInit` is asynchronous and takes anything from a few hundred
+     * milliseconds to a couple of seconds on a cold engine, and until it
+     * lands [state] is `Unavailable("Starting up…")` — which [speak] used to
+     * read as "this phone cannot speak" and close on. Every read starts a
+     * fresh [SpeechPlaybackService] (it calls `stopSelf` when a read ends),
+     * so that race was in play on *every* read, not just the first: press
+     * play, the transport appears for an instant, and nothing is ever said.
+     */
+    private val ready = CompletableDeferred<SpeakerState>()
+
     init {
         // The constructor's callback is the only way to learn whether the
         // engine came up; there is no synchronous form of this question.
         engine = TextToSpeech(context.applicationContext) { status ->
-            state = if (status == TextToSpeech.SUCCESS) evaluate() else SpeakerState.Unavailable(NoEngine)
+            val settled = if (status == TextToSpeech.SUCCESS) evaluate() else SpeakerState.Unavailable(NoEngine)
+            state = settled
+            ready.complete(settled)
         }
     }
 
     override suspend fun refresh() {
-        state = if (engine == null) SpeakerState.Unavailable(NoEngine) else evaluate()
+        state = if (engine == null) {
+            SpeakerState.Unavailable(NoEngine)
+        } else {
+            // Same wait as [speak]: asked before `onInit` has landed,
+            // `setLanguage` answers for an engine that isn't up yet.
+            withTimeoutOrNull(InitTimeoutMs) { ready.await() }
+            evaluate()
+        }
     }
 
     /**
@@ -86,9 +111,29 @@ internal class SystemSpeaker(context: Context) : Speaker {
      */
     override fun speak(title: String, text: String): Flow<SpeechProgress> = callbackFlow {
         val tts = engine
-        if (tts == null || state !is SpeakerState.Ready) {
-            close()
+        if (tts == null) {
+            close(IllegalStateException(NoEngine))
             return@callbackFlow
+        }
+
+        // Waited for, not tested — see [ready]. The timeout is what stops a
+        // wedged engine turning a silent failure into a transport that sits
+        // at nought per cent forever, which is the worse of the two.
+        val settled = withTimeoutOrNull(InitTimeoutMs) { ready.await() }
+            ?: SpeakerState.Unavailable("The voice engine didn't start.")
+
+        // Closed *with* the reason rather than silently: the caller shows it,
+        // and "nothing happened" is the one outcome a reader cannot act on.
+        when (settled) {
+            is SpeakerState.Ready -> Unit
+            is SpeakerState.NeedsVoice -> {
+                close(IllegalStateException(settled.detail))
+                return@callbackFlow
+            }
+            is SpeakerState.Unavailable -> {
+                close(IllegalStateException(settled.reason))
+                return@callbackFlow
+            }
         }
 
         // The title is read first and counted as part of the whole, so the
@@ -215,6 +260,13 @@ internal class SystemSpeaker(context: Context) : Speaker {
          * character during assembly is silently truncated.
          */
         const val SafeChunk = 3_500
+
+        /**
+         * How long to wait for `onInit` before calling the engine wedged.
+         * A cold Google TTS takes a second or two; nothing that has not
+         * answered in five is going to.
+         */
+        const val InitTimeoutMs = 5_000L
 
         /** Keeps the terminator with the sentence it ends, so the pause lands after the full stop. */
         val SentenceEnd = Regex("(?<=[.!?])\\s+")

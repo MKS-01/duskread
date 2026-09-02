@@ -206,6 +206,13 @@ fun FloatingBar(
     onOpenSettings: () -> Unit,
     collapse: BarCollapse,
     modifier: Modifier = Modifier,
+    /**
+     * False where the tabs are behind something — a full-screen surface
+     * covering the screen the bar belongs to. The bar is then a transport
+     * and nothing else: no tab face to fall back to, and no peeking at
+     * destinations that cannot be reached without closing what is on top.
+     */
+    tabsAvailable: Boolean = true,
 ) {
     val scheme = MaterialTheme.colorScheme
 
@@ -221,7 +228,7 @@ fun FloatingBar(
     nowPlaying?.let { shown.value = it }
 
     val face = when {
-        nowPlaying != null && !peekingTabs -> BarFace.PLAYER
+        nowPlaying != null && (!peekingTabs || !tabsAvailable) -> BarFace.PLAYER
         else -> BarFace.TABS
     }
 
@@ -328,6 +335,7 @@ fun FloatingBar(
                         onSeek = onSeek,
                         onStop = onStop,
                         onShowTabs = { peekingTabs = true },
+                        tabsAvailable = tabsAvailable,
                     )
                 }
             }
@@ -447,6 +455,8 @@ private fun PlayerFace(
     onSeek: (Float) -> Unit,
     onStop: () -> Unit,
     onShowTabs: () -> Unit,
+    /** False where the tabs are behind a full-screen surface — see [FloatingBar]'s own parameter. */
+    tabsAvailable: Boolean,
 ) {
     Row(
         Modifier.fillMaxWidth().padding(horizontal = 7.dp),
@@ -490,11 +500,14 @@ private fun PlayerFace(
         )
         Spacer(Modifier.width(6.dp))
         BarButton(DuskReadIcons.Close, "Stop", diameter = 34.dp, iconSize = 13.dp, onClick = onStop)
-        BarDivider()
         // The way back to navigation. It shows the tab you are already on, so
         // it reads as "return to where you were" rather than as a fourth
-        // destination.
-        BarButton(selected.icon, "Show tabs", onClick = onShowTabs)
+        // destination — and it is absent, not inert, where there is nothing
+        // to go back to: a button that does nothing is worse than no button.
+        if (tabsAvailable) {
+            BarDivider()
+            BarButton(selected.icon, "Show tabs", onClick = onShowTabs)
+        }
     }
 }
 
