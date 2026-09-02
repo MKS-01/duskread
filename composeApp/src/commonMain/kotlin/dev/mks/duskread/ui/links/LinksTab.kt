@@ -58,11 +58,14 @@ import dev.mks.duskread.summary.SummaryRequest
 import dev.mks.duskread.summary.SummaryTarget
 import dev.mks.duskread.summary.summariesSupported
 import dev.mks.duskread.ui.common.AppTextField
+import dev.mks.duskread.ui.common.CompactEmptyState
 import dev.mks.duskread.ui.common.EmptyState
 import dev.mks.duskread.ui.common.EyebrowHeader
+import dev.mks.duskread.ui.common.HeaderAction
 import dev.mks.duskread.ui.common.ListRowBody
 import dev.mks.duskread.ui.common.ListRowDivider
 import dev.mks.duskread.ui.common.MonogramBadge
+import dev.mks.duskread.ui.common.Pill
 import dev.mks.duskread.ui.common.RowMeta
 import dev.mks.duskread.ui.common.RowTone
 import dev.mks.duskread.ui.common.ToastRequest
@@ -124,6 +127,27 @@ fun LinksTab(
         if (pending.isEmpty()) refreshing = false
     }
 
+    // Three controls, all folded away until asked for: a filter, a search
+    // field and the paste box itself. Saved is a list you come back to, and
+    // by the time it is worth searching it is long enough that a permanently
+    // parked paste field is the least useful thing on the screen — sharing
+    // from the browser is how most links actually arrive. Open with it
+    // showing while there is nothing saved, for the same reason Following
+    // opens on Manage: a first visit is exactly when adding is the only
+    // thing to do here.
+    var adding by remember { mutableStateOf(library.links.isEmpty()) }
+    var searching by remember { mutableStateOf(false) }
+    var query by remember { mutableStateOf("") }
+    var filter by remember { mutableStateOf(LinkFilter.ALL) }
+
+    val matching = library.links.filter { it.matches(query) }
+    val (read, unread) = matching.partition { it.read }
+    // The filter picks which of the two sections exist at all rather than
+    // reordering anything: UNREAD and READ are already the shape of this
+    // screen, so "Unread" is that heading on its own, not a third layout.
+    val showUnread = filter != LinkFilter.READ && unread.isNotEmpty()
+    val showRead = filter != LinkFilter.UNREAD && read.isNotEmpty()
+
     PullToRefreshBox(
         isRefreshing = refreshing,
         onRefresh = {
@@ -133,15 +157,54 @@ fun LinksTab(
         modifier = modifier.fillMaxSize(),
     ) {
         LazyColumn(Modifier.fillMaxSize(), contentPadding = contentPadding) {
-            item("add") {
-                AddLinkField(
-                    onSave = {
-                        val saved = library.save(it) != null
-                        if (saved) ToastRequest.show("Saved")
-                        saved
-                    },
-                    modifier = Modifier.padding(bottom = 22.dp),
-                )
+            item("controls") {
+                Column(Modifier.padding(bottom = 18.dp)) {
+                    EyebrowHeader(
+                        text = "SAVED · ${library.links.size}",
+                        trailing = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                HeaderAction(icon = DuskReadIcons.Search, label = "Search") {
+                                    searching = !searching
+                                    if (!searching) query = ""
+                                }
+                                HeaderAction(if (adding) "Done" else "Add") { adding = !adding }
+                            }
+                        },
+                    )
+                    Spacer(Modifier.height(12.dp))
+
+                    if (library.links.isNotEmpty()) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(7.dp),
+                            modifier = Modifier.padding(bottom = 12.dp),
+                        ) {
+                            LinkFilter.entries.forEach { choice ->
+                                Pill(choice.label, filter == choice) { filter = choice }
+                            }
+                        }
+                    }
+
+                    AnimatedVisibility(searching) {
+                        AppTextField(
+                            value = query,
+                            onValueChange = { query = it },
+                            placeholder = "Search by title, host or topic",
+                            fontSize = 14.5.sp,
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                            modifier = Modifier.padding(bottom = 12.dp),
+                        )
+                    }
+
+                    AnimatedVisibility(adding) {
+                        AddLinkField(
+                            onSave = {
+                                val saved = library.save(it) != null
+                                if (saved) ToastRequest.show("Saved")
+                                saved
+                            },
+                        )
+                    }
+                }
             }
 
             if (library.links.isEmpty()) {
@@ -157,11 +220,24 @@ fun LinksTab(
                         )
                     }
                 }
+            } else if (!showUnread && !showRead) {
+                // Narrowed to nothing — which is a fact about the query or the
+                // filter, not about the library, so it says which one and stays
+                // compact rather than taking over a screen that still has
+                // content one tap away.
+                item("no-matches") {
+                    CompactEmptyState(
+                        title = if (query.isNotBlank()) "Nothing matches “$query”" else "Nothing ${filter.label.lowercase()} here",
+                        message = if (query.isNotBlank()) {
+                            "Try a different title, host or topic."
+                        } else {
+                            "Switch the filter back to All to see everything saved."
+                        },
+                    )
+                }
             }
 
-            val (read, unread) = library.links.partition { it.read }
-
-            if (unread.isNotEmpty()) {
+            if (showUnread) {
                 item("unread-head") {
                     EyebrowHeader(text = "UNREAD · ${unread.size}", modifier = Modifier.padding(bottom = 12.dp))
                 }
@@ -193,12 +269,12 @@ fun LinksTab(
             // was read and when, which is the question a reading list gets asked
             // long after the reading is done. Sorted by when they were read rather
             // than saved, so the section reads as a history.
-            if (read.isNotEmpty()) {
+            if (showRead) {
                 item("read-head") {
                     EyebrowHeader(
                         text = "READ · ${read.size}",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = if (unread.isEmpty()) 0.dp else 20.dp, bottom = 12.dp),
+                        modifier = Modifier.padding(top = if (showUnread) 20.dp else 0.dp, bottom = 12.dp),
                     )
                 }
 
@@ -222,6 +298,29 @@ fun LinksTab(
         }
     }
 }
+
+/**
+ * What the pills above the list choose between. Read links are kept forever
+ * and eventually outnumber the unread ones, which is the whole reason this
+ * exists: "Unread" is the reading queue, "Read" is the record, "All" is the
+ * screen as it always was.
+ */
+private enum class LinkFilter(val label: String) {
+    ALL("All"),
+    UNREAD("Unread"),
+    READ("Read"),
+}
+
+/**
+ * What the search field looks at: the three facts a row actually shows. The
+ * URL is deliberately not searched — a query typed here is remembered words,
+ * and matching a slug inside an address surfaces rows whose visible text has
+ * nothing to do with what was typed.
+ */
+private fun SavedLink.matches(query: String): Boolean = query.isBlank() ||
+    title.contains(query, ignoreCase = true) ||
+    host.contains(query, ignoreCase = true) ||
+    topic?.contains(query, ignoreCase = true) == true
 
 /**
  * The paste field: a flat, full-width pill rather than a bordered text field

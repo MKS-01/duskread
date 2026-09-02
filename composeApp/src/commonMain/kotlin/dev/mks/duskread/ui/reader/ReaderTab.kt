@@ -48,6 +48,7 @@ import dev.mks.duskread.reader.ReaderSourcePicker
 import dev.mks.duskread.ui.common.EmptyState
 import dev.mks.duskread.ui.common.ListRowBody
 import dev.mks.duskread.ui.common.ListRowDivider
+import dev.mks.duskread.ui.common.Pill
 import dev.mks.duskread.ui.common.RowMeta
 import dev.mks.duskread.ui.common.RowTone
 import dev.mks.duskread.ui.common.WaveformMeter
@@ -55,7 +56,6 @@ import dev.mks.duskread.ui.rememberUrlOpener
 import dev.mks.duskread.ui.theme.DuskReadIcons
 import dev.mks.duskread.ui.theme.Mono
 import dev.mks.duskread.ui.theme.Radius
-import dev.mks.duskread.ui.theme.Stroke
 
 /**
  * Past reads from readback (github.com/MKS-01/readback) — a personal
@@ -131,8 +131,8 @@ fun ReaderTab(
                 horizontalArrangement = Arrangement.spacedBy(7.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                SortChip("Newest", sort == ReadSort.NEWEST) { sort = ReadSort.NEWEST }
-                SortChip("Oldest", sort == ReadSort.OLDEST) { sort = ReadSort.OLDEST }
+                Pill("Newest", sort == ReadSort.NEWEST) { sort = ReadSort.NEWEST }
+                Pill("Oldest", sort == ReadSort.OLDEST) { sort = ReadSort.OLDEST }
             }
         }
 
@@ -178,27 +178,6 @@ fun ReaderTab(
             }
         }
     }
-}
-
-/** A small bordered pill — `.pill` in the mockup, not a filled chip. */
-@Composable
-private fun SortChip(label: String, active: Boolean, onClick: () -> Unit) {
-    val tone = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-    Text(
-        text = label.uppercase(),
-        fontFamily = Mono,
-        fontSize = 11.sp,
-        letterSpacing = 0.4.sp,
-        color = tone,
-        modifier = Modifier
-            .clip(RoundedCornerShape(Radius.Chip))
-            // Selection is carried by the border and the text alone. A filled
-            // chip is the only remaining Material surface on this screen, and
-            // next to a hairline sourcechip it reads as a different app.
-            .border(Stroke.Hairline, tone, RoundedCornerShape(Radius.Chip))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 11.dp, vertical = 6.dp),
-    )
 }
 
 /**

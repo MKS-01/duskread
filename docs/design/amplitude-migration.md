@@ -681,3 +681,44 @@ home screen instead of a second control.
   launchers whose own row height runs 150dp or more. `updatePeriodMillis` is
   `0`, same as the bar widget: nothing here polls, every redraw is a real
   event.
+
+## Saved gets a filter, a search and a folded paste field (this pass)
+
+Saved was the one list in the app with no way to narrow it and a permanent
+paste field parked above it. Read links are kept forever — that is the
+point of the READ section — so the list only grows, and the control that
+matters least (pasting, when most links arrive by sharing from a browser)
+had the most prominent position on the screen.
+
+- [x] `LinksTab` opens with an `EyebrowHeader` of its own, `SAVED · N`,
+  carrying a Search icon and an Add/Done word in its trailing slot — the
+  same header-with-actions shape `FollowingDigest` already uses, not a new
+  one.
+- [x] Three filter pills, `ALL / UNREAD / READ`, choosing which of the two
+  existing sections render rather than reordering anything. UNREAD and READ
+  were already the shape of this screen; "Unread" is that heading on its
+  own.
+- [x] The paste field is folded behind Add, open by default only while
+  nothing is saved — the same reasoning that opens Following on Manage: a
+  first visit is when adding is the only thing to do, and an empty state
+  with nothing to tap is a dead end.
+- [x] Search matches title, host and topic — the three facts a row actually
+  shows. The URL is deliberately not searched: a query typed here is
+  remembered words, and matching a slug inside an address surfaces rows
+  whose visible text has nothing to do with what was typed.
+- [x] Narrowed-to-nothing is a `CompactEmptyState` that names the cause
+  (the query, or the filter), distinct from the full-height "Nothing saved
+  yet" — which is a fact about the library, not about the controls.
+- [x] The bordered sort pill was a private copy in `ReaderTab` and a second
+  in `FollowingSection`; Saved wanted a third, so it became
+  `ui/common/Pill.kt` and both callers now use it. The header's word and
+  icon actions moved out of `FollowingSection` the same way, as
+  `ui/common/HeaderAction.kt`.
+
+### Verified
+
+Both schemes on the emulator: empty, three saved, `READ` filtered to its
+empty state, a `danluu` search narrowing to one row, and the paste field
+folded away by Add/Done. `ktlintCheck` and `:composeApp:compileKotlinDesktop`
+clean.
+

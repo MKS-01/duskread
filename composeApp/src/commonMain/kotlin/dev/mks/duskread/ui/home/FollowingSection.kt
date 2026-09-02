@@ -4,7 +4,6 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,7 +20,6 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
@@ -38,7 +36,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
@@ -59,14 +56,14 @@ import dev.mks.duskread.ui.common.CompactEmptyState
 import dev.mks.duskread.ui.common.EmptyState
 import dev.mks.duskread.ui.common.EyebrowHeader
 import dev.mks.duskread.ui.common.HairlineDivider
+import dev.mks.duskread.ui.common.HeaderAction
+import dev.mks.duskread.ui.common.Pill
 import dev.mks.duskread.ui.common.ToastRequest
 import dev.mks.duskread.ui.rememberUrlOpener
 import dev.mks.duskread.ui.theme.DuskReadIcons
 import dev.mks.duskread.ui.theme.Mono
 import dev.mks.duskread.ui.theme.Motion
-import dev.mks.duskread.ui.theme.Radius
 import dev.mks.duskread.ui.theme.SectionLabel
-import dev.mks.duskread.ui.theme.Stroke
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -180,14 +177,14 @@ fun FollowingDigest(
             text = "FOLLOWING",
             trailing = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    FollowingAction(icon = DuskReadIcons.Search, label = "Search") {
+                    HeaderAction(icon = DuskReadIcons.Search, label = "Search") {
                         searching = !searching
                         if (!searching) query = ""
                     }
                     if (feedLibrary.feeds.isNotEmpty()) {
-                        FollowingAction(if (syncing) "Syncing…" else "Sync now", onClick = ::sync)
+                        HeaderAction(if (syncing) "Syncing…" else "Sync now", onClick = ::sync)
                     }
-                    FollowingAction(if (managing) "Done" else "Manage") { managing = !managing }
+                    HeaderAction(if (managing) "Done" else "Manage") { managing = !managing }
                 }
             },
         )
@@ -195,8 +192,8 @@ fun FollowingDigest(
 
         if (feedLibrary.feeds.isNotEmpty()) {
             Row(horizontalArrangement = Arrangement.spacedBy(7.dp), modifier = Modifier.padding(bottom = 12.dp)) {
-                FollowingSortChip("Newest", sortNewest) { sortNewest = true }
-                FollowingSortChip("A–Z", !sortNewest) { sortNewest = false }
+                Pill("Newest", sortNewest) { sortNewest = true }
+                Pill("A–Z", !sortNewest) { sortNewest = false }
             }
         }
 
@@ -286,27 +283,6 @@ fun FollowingDigest(
     }
 }
 
-/**
- * The same bordered pill Readback's Newest/Oldest chips use (`ReaderTab.kt`)
- * — this app's one sort pattern, not a second one invented for this list.
- */
-@Composable
-private fun FollowingSortChip(label: String, active: Boolean, onClick: () -> Unit) {
-    val tone = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-    Text(
-        text = label.uppercase(),
-        fontFamily = Mono,
-        fontSize = 11.sp,
-        letterSpacing = 0.4.sp,
-        color = tone,
-        modifier = Modifier
-            .clip(RoundedCornerShape(Radius.Chip))
-            .border(Stroke.Hairline, tone, RoundedCornerShape(Radius.Chip))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 11.dp, vertical = 6.dp),
-    )
-}
-
 /** A blog's own fields, searched by [FollowingDigest]'s query field. */
 private fun Feed.matches(query: String): Boolean = label.contains(query, ignoreCase = true) ||
     host.contains(query, ignoreCase = true) ||
@@ -314,34 +290,6 @@ private fun Feed.matches(query: String): Boolean = label.contains(query, ignoreC
 
 /** One post's title, searched the same way as its feed. */
 private fun FeedPost.matches(query: String): Boolean = title.contains(query, ignoreCase = true)
-
-@Composable
-private fun FollowingAction(label: String, onClick: () -> Unit) {
-    Text(
-        text = label,
-        style = SectionLabel,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier
-            .clip(CircleShape)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 10.dp, vertical = 6.dp),
-    )
-}
-
-/** The icon-only sibling — Search sits with the other actions but has no word for one. */
-@Composable
-private fun FollowingAction(icon: ImageVector, label: String, onClick: () -> Unit) {
-    Icon(
-        imageVector = icon,
-        contentDescription = label,
-        modifier = Modifier
-            .size(26.dp)
-            .clip(CircleShape)
-            .clickable(onClick = onClick)
-            .padding(4.dp),
-        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
-}
 
 /**
  * One line of the digest — "host — N new", the count in the accent when

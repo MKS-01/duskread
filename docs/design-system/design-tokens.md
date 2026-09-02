@@ -146,7 +146,7 @@ desktop screen would claim more than the code does.
 | --- | --- | --- |
 | `Radius.Card` | `14.dp` | Dashboard and list cards. 14 rather than the 20 it used to be — the app draws its own data, and a heavily rounded card reads as a generic Material surface sitting on top of it. |
 | `Radius.Inline` | `10.dp` | Everything inside or below a card: the filled call-to-action, text fields, rows, the timer's state chips. One step tighter than `Card`, so a row never competes with the panel holding it. |
-| `Radius.Chip` | `3.dp` | Sort pills and source chips. At these sizes a softened corner, not a rounded one — anything rounder turns a sort control into a Material chip. |
+| `Radius.Chip` | `3.dp` | Sort and filter pills (`ui/common/Pill.kt`) and source chips. At these sizes a softened corner, not a rounded one — anything rounder turns a sort control into a Material chip. |
 | `Stroke.Hairline` | `1.dp` | Every divider in the app. |
 | `Space.ChipGap` | `6.dp` | Between chips in a row. |
 | `Space.CardGap` | `9.dp` | Between cards in a list. |
