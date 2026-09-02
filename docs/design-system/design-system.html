@@ -314,13 +314,6 @@ h2 {
   .screen-row { grid-template-columns: 1fr; gap: 30px; }
 }
 
-.spec { width: 100%; border-collapse: collapse; font-size: 14px; margin: 0 0 20px; max-width: 74ch; }
-.spec th, .spec td { text-align: left; padding: 8px 10px 8px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
-.spec th {
-  width: 100px; font-weight: 600; color: var(--faint); font-family: var(--data);
-  font-size: 11.5px; letter-spacing: 0.09em; text-transform: uppercase; padding-top: 11px;
-}
-
 /* ============================================================
    PHONE FRAME — the app's own dark scheme, real token values.
    ============================================================ */
@@ -499,12 +492,6 @@ h2 {
 }
 .v-amp .fieldbox.typing .txt { flex: 1; min-width: 0; color: var(--a-ink); overflow: hidden; white-space: nowrap; }
 
-.cmd {
-  font-family: var(--data); font-size: 13.5px; line-height: 1.8; margin: 0 0 18px;
-  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
-  padding: 14px 16px; overflow-x: auto; max-width: 640px; color: var(--text);
-}
-.cmd .c { color: var(--faint); }
 
 
 /* ============================================================
@@ -621,7 +608,6 @@ body.ink .v-amp {
   .quality-name { font-size: 14px; }
   .quality-note { font-size: 13px; }
   .accentcard .cap2 { font-size: 12.5px; }
-  .spec { font-size: 13px; }
   .wordmark { font-size: 20px; }
   .foot-line { font-size: 13.5px; }
 }
@@ -913,7 +899,7 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
       <a href="#concept">01 &middot; Concept</a>
       <a href="#walkthrough">02 &middot; Walkthrough</a>
       <a href="#system">03 &middot; How it works</a>
-      <a href="#get">04 &middot; Get it</a>
+      <a href="https://github.com/MKS-01/duskread" style="display:inline-flex;align-items:center;gap:5px">Get it<svg class="i" style="font-size:10px" aria-hidden="true"><use href="#w-external"/></svg></a>
     </nav>
   </header>
 
@@ -1591,25 +1577,18 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
           <p class="num">02 / 03 &nbsp;&middot;&nbsp; The client app</p>
           <h3>One shell, wherever it runs</h3>
         <p>
-          Home, Following and Saved share one floating bar and the same row
-          and header components &mdash; a hidden fourth tab, Readback, joins
-          them the same way once it's switched on. Settings sits at the far
-          end of the same bar now, one tap from every screen rather than a
-          gear that only ever lived on Home. None of them was built
-          separately.
+          Home, Following, Saved and the hidden Readback tab share one
+          floating bar, the same row and the same header components &mdash;
+          none of it built twice. Settings sits at the bar&rsquo;s far end
+          now too, one tap from any screen rather than a gear that only ever
+          lived on Home.
         </p>
         <p>
-          That bar is also the player. There is one transport in the app, and
-          it is a face of the same pill rather than a second slab above it
-          &mdash; so it costs no height, and it rides above a full-screen
-          surface like a blog&rsquo;s posts or Settings, where the tabs
-          underneath it would be unreachable anyway. What is playing outlives
-          the screen it was started from.
-        </p>
-        <p>
-          Compose Multiplatform compiles that one shell to Android, desktop,
-          web and iOS. Android is the target built and tested day to day;
-          the other three exist to prove the code travels.
+          That bar is also the player: one transport, a face of the same
+          pill rather than a second slab above it, so it costs no height and
+          rides above a full-screen surface &mdash; a blog&rsquo;s posts,
+          Settings &mdash; where the tabs underneath would be unreachable
+          anyway. What is playing outlives the screen that started it.
         </p>
         </div>
       </article>
@@ -1674,38 +1653,6 @@ footer { margin-top: 96px; padding-top: 26px; border-top: 1px solid var(--line);
     </div>
   </section>
 
-
-  <!-- ============================================================
-       ACT 4 — running it.
-       ============================================================ -->
-  <section id="get" class="act">
-    <div data-reveal>
-      <h2>Act four &middot; Get it</h2>
-      <p class="act-title">One clone, one Gradle task</p>
-    </div>
-
-    <div data-reveal>
-    <p class="section-note">
-      Android is the app, built and tested on a phone day to day. Saved
-      links, feeds, the timer and both schemes work the moment it opens.
-    </p>
-
-    <div class="cmd">
-      git clone https://github.com/MKS-01/duskread.git &amp;&amp; cd duskread<br>
-      ./gradlew :androidApp:installDebug<span class="c">&nbsp;&nbsp;# ~5s once warm</span>
-    </div>
-
-    <table class="spec">
-      <tr><th>Android</th><td>12 and up. The target that is finished.</td></tr>
-      <tr><th>Summaries</th><td>Need a phone with AICore — Pixel 9 and up, Galaxy S24 and up, and similar. Everywhere else the control simply is not drawn.</td></tr>
-      <tr><th>Listening</th><td>The phone reads articles aloud with its own text-to-speech — nothing to sync, works on every Android phone. Quality follows whatever voice engine is already installed.</td></tr>
-      <tr><th>Notion</th><td>Optional. Paste one personal access token and share a page with it — the app creates its own databases. No screen requires it; it only curates what's worth reading.</td></tr>
-      <tr><th>Readback</th><td>The separate <a href="https://github.com/MKS-01/readback">readback</a> project's synced audio library, for the one person who runs its sync script. Hidden by default — tap the version line in Settings three times to switch the tab on.</td></tr>
-      <tr><th>Desktop, web, iOS</th><td>Build from the same source and exist to prove it travels. The workshop, not the product.</td></tr>
-    </table>
-
-    </div>
-  </section>
 
   <script>
   // Blocks arrive as they are scrolled to. Marketing motion, and the one

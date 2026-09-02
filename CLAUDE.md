@@ -31,25 +31,25 @@ API, library or tool is in scope and does not need justifying.
 
 `README.md` describes how the app is put together — do not restate it here.
 `docs/design-system/design-system.html` is the landing page and the
-visual-language reference in one (open it in a browser), in four acts:
-**Concept** (laid out, not a deck: the lockup and the name, then the four
-pillars — saved links, feeds, readback, focus — one hairline card each. The
-on-device Summary used to be shown here too and was cut: the Walkthrough's
-Reading slide already had it, and Concept is not the place to demonstrate a
-screen), **Walkthrough** (seven screens, as one
-draggable deck: onboarding's name panel, Home, Following, reading with a
-summary, Saved, Focus, Readback), **Design system** (a six-slide deck: monochrome, colour,
-type, icon set, app icon, shape/motion) and **Get it**. The app icon's own
-construction (bar, crescent, mark), its size ramp and the splash live in the
-Design system deck's "App icon" slide, not Concept — Concept argues the
-identity, the deck is reference on how the mark is built. Keep it that way — **no code
-paths, no class names, no TODO lists in it.** That material belongs in
-`docs/architecture.md`, which is now the single design document: how the
-pieces connect, the Notion schema, every flow, the ranking and its arithmetic,
-the invariants, and what was deliberately not built. The two plan documents
-that used to sit in `docs/design/` are gone — the Amplitude migration they
-tracked is finished and the Notion integration is shipped, so their reasoning
-was folded into `architecture.md` and `git log` keeps the rest.
+visual-language reference in one (open it in a browser), in three acts:
+**Concept** (laid out, not a deck: the lockup and the name, then four
+one-sentence qualities — Automated, Personalised, Offline-first,
+Monochrome — as hairline cards), **Walkthrough** (a six-slide deck:
+Reading, Home, Following, Saved, Settings, Connect Notion) and **How it
+works** (a three-slide deck: the curation flow into Notion, the one shell
+every screen shares, and a compact colour/type/icon/motion summary linking
+to `design-tokens.md`). There is no fourth "Get it" act any more — the
+contents nav's last chip goes straight to the GitHub repo instead, and the
+clone command and the requirements table both live in `README.md` only, not
+duplicated here as well.
+Keep it that way — **no code paths, no class names, no TODO lists in it.**
+That material belongs in `docs/architecture.md`, which is the single design
+document: how the pieces connect, the Notion schema, on-device storage, the
+sync trigger, canonical URLs, authentication and offline behaviour. The two
+plan documents that used to sit in `docs/design/` are gone — the Amplitude
+migration they tracked is finished and the Notion integration is shipped —
+and `architecture.md` itself carries only what is built, not invariants,
+descoped decisions or per-flow diagrams; `git log` keeps the rest.
 `docs/design-system/design-tokens.md` is the reference half: every colour
 role, type style, radius, duration and layout value, with the file it lives
 in. The page shows the language, the tokens file lists it — a table of hex
@@ -194,7 +194,7 @@ with `/review-animations`.
 ### This project
 
 `duskread-design-system` for Compose UI work, `duskread-landing-page` for
-`docs/design-system/` (the page's four acts, the deck component, what belongs
+`docs/design-system/` (the page's three acts, the deck component, what belongs
 on the page versus in the tokens file), `duskread-readme` for `README.md`
 (what belongs there versus in `docs/architecture.md`, the fixed section
 order, the facts to re-derive from `libs.versions.toml`), `duskread-setup`

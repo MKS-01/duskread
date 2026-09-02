@@ -19,11 +19,12 @@ screen rather than introducing a second system next to the first.
 ## Source of truth
 
 - **`docs/design-system/design-system.html`** — open it in a browser. The
-  landing page and the visual language in one, in four acts: brand, a
-  thirteen-screen walkthrough, the design system (monochrome, colour, type,
-  icons, shape and motion) and how to run it. Every mockup uses the real token
-  values and the shipped icon paths, so it is the app rather than a wireframe
-  of it. **Editing it has its own skill — `duskread-landing-page`.**
+  landing page and the visual language in one, in three acts: Concept, a
+  six-screen Walkthrough, and How it works (curation, the shell, and a
+  compact colour/type/icon/motion summary linking to `design-tokens.md`).
+  Every mockup uses the real token values and the shipped icon paths, so it
+  is the app rather than a wireframe of it. **Editing it has its own skill —
+  `duskread-landing-page`.**
 - **`docs/design-system/design-tokens.md`** — the reference half: every colour
   role in both schemes, the type scale, layout values, radii, durations and
   the icon list, each with the file it lives in. Look values up here; look at

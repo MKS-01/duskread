@@ -2,7 +2,7 @@
 name: duskread-landing-page
 description: Use when editing docs/design-system/design-system.html — the DuskRead
   landing page and visual-language reference — or docs/design-system/design-tokens.md
-  beside it. Covers the four-act structure, the deck (slider) component and how to
+  beside it. Covers the three-act structure, the deck (slider) component and how to
   add a slide, what belongs on the page versus in the tokens file, the motion rules
   the page is built to, and how to actually check a change by rendering it. Load it
   before touching either file; it is not about the Compose app (that is
@@ -37,36 +37,51 @@ Neither file may carry code paths as *structure* — no class names as headings,
 no TODO lists. Open work belongs in an issue or a commit message, not on the
 page.
 
-## Structure — four acts
+## Structure — three acts
 
 ```
-masthead          lockup, headline, standfirst, act nav
-01 · concept       laid out, not a deck: lockup + name, then the four
-                   pillars (saved links, feeds, readback, focus) as cards
-02 · walkthrough   one deck, 7 slides — onboarding (name), Home, Following,
-                   reading + summary, Saved, Focus, Readback
-03 · design system one deck, 6 slides — monochrome, colour, type, icon set,
-                   app icon (the mark's construction, size ramp, splash),
-                   shape and motion
-04 · get it        clone, Gradle task, platform table
+masthead          lockup, headline, standfirst, act nav — the nav's last
+                   chip goes straight to GitHub, not to a fourth act
+01 · concept       id="concept" — laid out, not a deck: lockup + name, then
+                   four one-sentence qualities (Automated, Personalised,
+                   Offline-first, Monochrome) as hairline cards
+02 · walkthrough   id="walkthrough" — one deck, 6 slides: Reading, Home,
+                   Following, Saved, Settings, Connect Notion
+03 · how it works  id="system" — one deck, 3 slides: the curation flow into
+                   Notion, the one shell every screen shares, and a compact
+                   colour/type/icon/motion summary linking to
+                   design-tokens.md — the mechanism, not the visual language
 footer             "Built with AI", source links, MIT
 ```
+
+**There is no "Get it" act.** It used to close the page with a clone
+command and a spec table — Android version, AICore requirement, the
+platform note — every fact of which also lives in `README.md`'s "Getting
+started". A landing page's last act should be a door, not a second copy of
+what's behind it, so the door is now the nav chip itself: `<a
+href="https://github.com/MKS-01/duskread">Get it</a>` with the external-link
+glyph, same styling as the three in-page chips beside it. If the page ever
+wants its own copy-pasteable clone command again, put it back as a single
+`.cmd` block near the footer rather than reviving the whole act.
+
+The visual-language reference used to be its own six-slide deck here
+(monochrome, colour, type, icon set, app icon, shape/motion). It was folded
+into act three's single "Design language" slide plus `design-tokens.md` —
+the app icon's construction, size ramp and splash included, which is why
+neither exists as a standalone slide any more. If a future pass wants that
+level of detail back on the page rather than in the tokens file, it belongs
+in act three, not act one — act one argues the identity, act three is where
+the page gets into mechanism.
 
 Acts are `<section class="act">` with an `<h2>` eyebrow and a `.act-title`.
 Blocks inside them are `<div class="subsection">` with a `.sublabel`.
 
 **Do not stack three levels of heading in one act.** An eyebrow *and* a title
 *and* a note for one row of icons is chrome restating the act title above it.
-Act one (Concept, `id="concept"`) carries two sub-headings and no more — `The
-name` beside the lockup, `What it does` over the pillar row — and the pillar
-titles are `<p class="pillar-name">`, not headings, for the same reason
-`.cstep-title` is: a card label is not a level of the document.
-
-**Concept argues the identity; the Design system deck is reference on how the
-mark is built.** The app icon's construction (bar, crescent, mark), its size
-ramp and the splash live in the deck's "App icon" slide, not in act one —
-they used to be in act one and were moved out because a construction
-diagram and an identity argument were competing for the same attention.
+Act one carries two sub-headings and no more — `The name` beside the lockup,
+`What it does` over the quality row — and the quality titles are
+`<p class="quality-name">`, not headings: a card label is not a level of the
+document.
 
 ## The deck
 
@@ -79,7 +94,7 @@ The slider. One component, two instances, driven by `[data-deck]`.
       <article class="deck-slide">            <!-- first slide: no inert -->
         <div class="v-amp deck-figure"> … </div>
         <div class="deck-copy">
-          <p class="num">01 / 07 &nbsp;&middot;&nbsp; Onboarding</p>
+          <p class="num">01 / 06 &nbsp;&middot;&nbsp; Reading</p>
           <h3>…</h3>
           <p>…</p>
           <p class="rationale">…</p>
