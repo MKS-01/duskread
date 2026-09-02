@@ -79,7 +79,7 @@ way, the phone only pulls rows that were ticked `Saved`. Everything else
 stays archived, not shown.
 
 <p align="center">
-  <img src="docs/media/notion-flow.png" alt="Gmail and RSS feed into Claude and Notion; Notion and RSS both feed the DuskRead app, which caches everything for offline reading">
+  <img src="docs/media/notion-flow.png" alt="Three sources — Gmail, RSS feeds, and links you paste or share. Claude files the mail into Notion's Sources and Reading List, which syncs both ways with DuskRead; feeds and shared links reach the app directly, never touching Notion. The app caches everything, reads offline, and reads articles aloud on the phone">
 </p>
 
 Notion is the curation layer, not a dependency. The device works whether
@@ -88,7 +88,7 @@ creates its own databases rather than asking you to type in an ID. The full
 schema, the sync rules and the reasoning behind each of them are in
 **[docs/architecture.md](docs/architecture.md)**.
 
-**Save it however it reaches you, too.** Paste a URL into the field, or share one straight from Chrome — DuskRead is in the share sheet. Either way the row appears immediately with the host as its stand-in title, then a fetch fills in the real one behind it.
+**Save it however it reaches you, too.** Share a link straight from Chrome — DuskRead is in the share sheet — or open the paste field on Saved with **Add**. Either way the row appears immediately with the host as its stand-in title, then a fetch fills in the real one behind it.
 
 **Following a blog files it in Notion, too.** The one exception to the
 one-way pull above: `Sources` is written as well as read, so a blog followed
@@ -98,6 +98,8 @@ on the phone is already there to edit the next time you open Notion.
 
 **Almost everything opens with no network at all.** Every screen renders from local storage, and the reader tries its own cache before the wire — a feed that publishes full-content RSS is cached whole at sync time, so the article was already on the phone before you tapped it. A post that will open offline carries its own badge on the meta line, computed the same way the reader itself decides, so it never claims something it can't deliver.
 
+**Saved is a queue and a record at once.** Unread leads, and what you've read stays under its own heading rather than disappearing — filter to either, or search a title, a host or a topic. The paste field folds away behind **Add**, because most links arrive from the share sheet rather than the keyboard.
+
 The page itself stays out of the way: **Paper Black** and **Ink**, warm ink on near-black or the same layout with the hue drained out, swapped at runtime, one terracotta accent spent only to mean *there is sound here*. No chrome, no feed of unread counts — one article at a time.
 
 **Long ones get a one-tap summary first**, generated on-device by Gemini Nano so nothing leaves the phone; the control is simply absent on hardware that can't run it.
@@ -105,8 +107,10 @@ The page itself stays out of the way: **Paper Black** and **Ink**, warm ink on n
 ### Listening
 
 **The phone reads an article aloud itself**, with its own text-to-speech —
-nothing to sync, nothing to download first. It keeps playing behind whatever
-screen you open next, in the same floating bar the timer uses.
+nothing to sync, nothing to download first. The player is a face of the same
+floating bar the tabs live on, so it follows you to whatever you open next,
+including a screen that covers the tabs entirely. If a read can't happen —
+no voice installed, no engine — it says so rather than staying silent.
 
 ### Focus timer
 
