@@ -43,13 +43,13 @@ type, icon set, app icon, shape/motion) and **Get it**. The app icon's own
 construction (bar, crescent, mark), its size ramp and the splash live in the
 Design system deck's "App icon" slide, not Concept — Concept argues the
 identity, the deck is reference on how the mark is built. Keep it that way — **no code
-paths, no class names, no TODO lists in it.** That material
-lives in `docs/design/amplitude-migration.md`, which holds the state of the
-system and what is still open. A feature large enough to need its own plan
-gets its own file beside it — `docs/design/notion-sync.md` is the first, on
-pulling followed blogs from a Notion database and the ranking that reads
-their topics — two of its sections are now marked superseded and say what
-replaced them; read `docs/architecture.md` for the current shape.
+paths, no class names, no TODO lists in it.** A feature large enough to need
+its own plan gets a file in `docs/design/` — `docs/design/notion-sync.md` is
+the one there is, on pulling followed blogs from a Notion database and the
+ranking that reads their topics; two of its sections are marked superseded and
+say what replaced them, and `docs/architecture.md` carries the current shape.
+The Amplitude migration those documents tracked is finished, and its log is
+deleted rather than left to rot — `git log` has the history.
 `docs/design-system/design-tokens.md` is the reference half: every colour
 role, type style, radius, duration and layout value, with the file it lives
 in. The page shows the language, the tokens file lists it — a table of hex

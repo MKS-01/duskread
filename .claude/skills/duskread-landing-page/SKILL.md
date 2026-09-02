@@ -34,7 +34,8 @@ reason, and the page links out instead.
 The inverse also holds: do not put a diagram in the markdown. It cannot draw.
 
 Neither file may carry code paths as *structure* — no class names as headings,
-no TODO lists. Open work lives in `docs/design/amplitude-migration.md`.
+no TODO lists. Open work belongs in an issue or a commit message, not on the
+page.
 
 ## Structure — four acts
 

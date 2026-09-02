@@ -28,9 +28,6 @@ screen rather than introducing a second system next to the first.
   role in both schemes, the type scale, layout values, radii, durations and
   the icon list, each with the file it lives in. Look values up here; look at
   them on the page.
-- **`docs/design/amplitude-migration.md`** — the day-by-day log of how the app
-  got here, screen by screen. Read it for *why* a pattern exists; read the
-  design-system doc for *what* the pattern is.
 - **`CLAUDE.md`**'s "Colour and design tokens" and "Icons" sections carry the
   house rules this skill assumes: colour only from `MaterialTheme.colorScheme`
   (never a hard-coded `Color(0x…)`), icons only from `ui/theme/DuskReadIcons.kt`
@@ -40,8 +37,8 @@ screen rather than introducing a second system next to the first.
 a rule bent for a reason, a "Next" item resolved or added) should update
 `design-system.html` in the same pass — not as a separate follow-up that never
 happens. Verify claims against the real code before writing them; do not carry
-a stale note forward just because the old doc said so (see the doc's own
-history for two examples of exactly that mistake, caught and removed).
+a stale note forward just because an older document said so — that mistake has
+been made and caught here twice.
 
 ## When a plan would go against the system
 

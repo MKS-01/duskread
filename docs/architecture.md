@@ -562,4 +562,3 @@ launcher activity, the home-screen widget and the foreground service.
 - `docs/design-system/design-system.html` — the visual language
 - `docs/design-system/design-tokens.md` — every colour, type style and value
 - `docs/design/notion-sync.md` — how the Notion integration was designed
-- `docs/design/amplitude-migration.md` — the state of the design system
