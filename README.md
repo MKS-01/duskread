@@ -5,9 +5,9 @@
 <h1 align="center">DuskRead</h1>
 
 <p align="center">
-  <strong>A reading habit, automated around a Notion database.</strong><br>
-  An AI agent files what lands in your inbox, feeds pull themselves, and<br>
-  the phone only ever shows what you actually chose to keep.
+  <strong>A reading list that keeps itself, ranked by what you actually read.</strong><br>
+  An AI agent checks your inbox and files what's worth keeping into Notion;<br>
+  blogs you follow add their own posts the same way.
 </p>
 
 <p align="center">
@@ -121,25 +121,12 @@ and Ink, and every token behind them.
 **[docs/architecture.md](docs/architecture.md)** — how the pieces connect,
 the Notion schema, and the end-to-end flows.
 
-## Contributing
-
-A personal learning project, built in the open. Issues, forks and small pull
-requests are welcome. Before opening one:
-
-```bash
-./gradlew ktlintCheck
-./gradlew :composeApp:compileKotlinDesktop
-./gradlew :androidApp:installDebug   # then look at the change on a device
-```
-
-Compiling proves nothing about layout and there are no tests, so exercise the
-screen you touched. [`CLAUDE.md`](CLAUDE.md) has the house style in full.
-
 ## Licence
 
 MIT — see [LICENSE](LICENSE).
 
 <p align="center">
+  <sub>A personal project, built for learning and for its own author to use</sub><br>
   <sub>Built agent-first with <a href="https://claude.ai/code">Claude Code</a></sub><br>
   <sub>The synced-audio Readback tab is a separate, optional open-source project: <a href="https://github.com/MKS-01/readback">readback</a></sub>
 </p>

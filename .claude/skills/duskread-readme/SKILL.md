@@ -48,10 +48,18 @@ Getting started clone + installDebug, the requirements table, the collapsed
 How it's built  one paragraph of prose (stack + platform caveats folded in),
                 the lint commands, then a line linking the design system and
                 a line linking docs/architecture.md — no subheadings
-Contributing    what the project is, what to run before a PR, a pointer at
-                CLAUDE.md for the conventions
-Licence         MIT
+Licence         MIT, then a one-line footer sub saying this is a personal
+                project built for learning and its own author's use
 ```
+
+**There is no Contributing section.** It existed, briefly — a "what to run
+before touching the code" note plus the verify commands — and was cut
+outright rather than kept solicitation-free, because a heading titled
+*Contributing* reads as an invitation no matter how the prose under it is
+worded. What it's for instead is one `<sub>` line in the footer, beside
+"Built agent-first with Claude Code": a plain statement, not a pitch. If the
+verify commands are worth keeping somewhere, `CLAUDE.md` is where they
+belong — this is not a section to bring back.
 
 **The opening line is the piece to protect.** A short, plain sentence or
 two — what lands in the list, then what reading looks like. Not a scene to
@@ -71,12 +79,6 @@ dependency list. Adding a library means adding a clause, or replacing one.
 Drop the clause when the dependency goes. It was a table once, with a row per
 layer: it read as filler — a column of one-word labels, and a "Build" row
 whose third cell was empty — and every version in it had to be found twice.
-
-**Contributing is written for a stranger, and stays honest.** A personal
-learning project that says so is more inviting than one pretending to be a
-product: name what to run before a PR, say there are no tests and that
-compiling proves nothing about layout, and point at `CLAUDE.md` rather than
-restating the conventions here.
 
 ## Facts to re-derive, never to trust
 
