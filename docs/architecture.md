@@ -59,22 +59,7 @@ What it shows, in words:
   shows the pool and the top five with each term broken out.
 
 <details>
-<summary>The three planes, and the two rules the design follows from</summary>
-
-```
-  PUBLISHERS                CURATION                   DEVICE
-  ─────────────             ────────────               ──────────────
-
-  RSS / Atom  ──────────────────────────────────────►  FeedPostCache
-                                                          ▲
-  Gmail ──────►  Claude  ──►  Notion                      │ fetch
-                 (MCP)        ├─ Sources ◄───────────────►│ FeedLibrary
-                              └─ Reading List ◄──────────►  LinkLibrary
-                                                              ▲
-  readback (separate project) ──► library.db ──────────►  Reader (read-only)
-
-  On-device TTS ───────────────────────────────────────►  Speaker
-```
+<summary>The two rules the design follows from</summary>
 
 Both Notion tables run in both directions now; readback is the one still
 strictly one-way. The Readback tab — the browser over that synced
@@ -115,6 +100,10 @@ database ID in. The one manual step that survives is sharing a page with the
 token: Notion's API refuses to create a database at the workspace root, so a
 credential that reaches nothing can build nothing.
 
+<p align="center">
+  <img src="media/notion-schema.png" alt="Sources and Reading List, property by property, each row marked two-way, app-writes-only, or Notion-only">
+</p>
+
 <details>
 <summary>Both tables, property by property</summary>
 
@@ -127,38 +116,38 @@ reader who follows four blogs and finds nothing in Notion has been handed a
 feature that looks broken. Nothing here ever deletes a row, so unfollowing is
 still local only.
 
-| Property | Type | Used by the app | Notes |
-| --- | --- | --- | --- |
-| `Name` | Title | ↕ | shown in Following instead of a hostname |
-| `Feed URL` | URL | ↕ | a site URL also works — resolved via `<link rel=alternate>` |
-| `Duskread ID` | Text | ↑ | the app's own `Feed.id`; the stable half of the match |
-| `Site URL` | URL | — | human destination, often not the feed |
-| `Source` | Select | — | RSS / Substack / Medium / Email / Manual |
-| `Topic` | Select | ↕ | inherited by every post from this feed |
-| `Tags` | Multi-select | — | |
-| `Active` | Checkbox | ↕ | unticked rows are skipped; **a missing column means active** |
-| `Feed status` | Select | — | ok / no feed / unverified |
-| `Notes` | Text | — | |
+| Property | Notes |
+| --- | --- |
+| `Name` | shown in Following instead of a hostname |
+| `Feed URL` | a site URL also works — resolved via `<link rel=alternate>` |
+| `Duskread ID` | the app's own `Feed.id`; the stable half of the match |
+| `Site URL` | human destination, often not the feed |
+| `Source` | RSS / Substack / Medium / Email / Manual |
+| `Topic` | inherited by every post from this feed |
+| `Active` | unticked rows are skipped; **a missing column means active** |
+| `Feed status` | ok / no feed / unverified |
+
+Type and direction (↕ / ↑ / —) for every property are in the diagram above;
+`Tags` and `Notes` carry neither a direction worth calling out nor a note.
 
 ### `Reading List` — articles
 
-| Property | Type | Direction | Notes |
-| --- | --- | --- | --- |
-| `Title` | Title | ↕ | phone wins once it has fetched the real page |
-| `URL` | URL | ↑ create only | the fallback match key; rewriting it would orphan the row |
-| `Duskread ID` | Text | ↑ | the app's own id for the link |
-| `Saved` | Checkbox | ↕ | **the gate — only ticked rows reach the phone** |
-| `Dismissed` | Checkbox | ↑ | "not interested" — never pulled, and nothing should re-file it |
-| `Status` | Status *or* Select | ↕ | read / unread; both the column type and option names are read from the schema — a `status` column via the API is unreliable, so `NotionProvision` falls back to `select` and everything downstream reads either |
-| `Read At` | Date | ↕ | when, as opposed to whether |
-| `Saved At` | Date | ↕ | when it was filed |
-| `Topic` | Select | ↕ | set in Notion or from the phone |
-| `Excerpt` | Text | ↕ | |
-| `Source`, `Author`, `Newsletter`, `Published At`, `Tags`, `Notes` | — | — | Claude's, untouched by the app |
-| `last_edited_time` | built-in | ↑ read | how conflicts are resolved |
+| Property | Notes |
+| --- | --- |
+| `Title` | phone wins once it has fetched the real page |
+| `URL` | create only — the fallback match key; rewriting it would orphan the row |
+| `Duskread ID` | the app's own id for the link |
+| `Saved` | **the gate — only ticked rows reach the phone** |
+| `Dismissed` | "not interested" — never pulled, and nothing should re-file it |
+| `Status` | read / unread; both the column type and option names are read from the schema — a `status` column via the API is unreliable, so `NotionProvision` falls back to `select` and everything downstream reads either |
+| `Read At` | when, as opposed to whether |
+| `Saved At` | when it was filed |
+| `Topic` | set in Notion or from the phone |
+| `Source`, `Author`, `Newsletter`, `Published At`, `Tags`, `Notes` | Claude's, untouched by the app |
+| `last_edited_time` | read only; how conflicts are resolved |
 
-`Saved` is the load-bearing column — the table holds everything filed from
-feeds and mail, and ticking a row is what puts it on the phone.
+Type and direction (↕ / ↑ / —) for every property are in the diagram above;
+`Excerpt` carries neither a direction worth calling out nor a note.
 </details>
 
 ---
@@ -170,6 +159,10 @@ No database. `KeyValueStore` is a four-method interface over
 Every decoder is positional and tolerant — new fields are appended and read
 with `getOrNull`, so a record written by an older build still loads, with no
 migrations.
+
+<p align="center">
+  <img src="media/ondevice-storage.png" alt="One phone, two stores: KeyValueStore is plaintext and read by the widget from another process, SecretStore is encrypted and never reaches it. Six key groups age six different ways — links.saved keeps growing, links.removed is bounded and evicts oldest, links.inbox drains on next open, feeds.posts is replaced whole every sync, summaries is bounded newest-first, notion.*/prefs are static until changed">
+</p>
 
 <details>
 <summary>Every key, and where the token actually lives</summary>
@@ -326,51 +319,24 @@ own empty state rather than letting the WebView render a `net::` error page.
 
 ## Module map
 
+Two Gradle modules — `composeApp` (every platform) and `androidApp` (the
+Android host) — plus `iosApp`, an Xcode project that's generated, not
+committed. `composeApp` splits into `commonMain` and four platform source
+sets meeting it through `expect`/`actual`; `commonMain` is organised by
+feature — `links/`, `notion/`, `pomodoro/`, `reader/`, `speech/`, `summary/`,
+`ui/` — each named for the concern in [The shape of it](#the-shape-of-it).
+
 <details>
-<summary>Package by package</summary>
+<summary>What's platform-only, with no commonMain counterpart</summary>
 
-```
-composeApp/src/commonMain/kotlin/dev/mks/duskread/
-  data/       KeyValueStore  the plaintext store, expect/actual
-              SecretStore    the encrypted one, for the token alone
-              UserPrefs
-
-  links/      SavedLink · LinkLibrary · LinkInbox      the reading list
-              Feed · FeedLibrary · FeedSync · FeedPostCache   followed blogs
-              Article · ArticleDocument                extraction, and the
-                                                       reader's own HTML
-              CanonicalUrl                             what "the same article"
-                                                       means
-              Recommender · ReadingSignals             what NEXT UP picks
-              LinkMetadata · SharedLinkRequest
-
-  notion/     NotionAuth         bearer() + disconnect(), over the pasted token
-              NotionClient       transport, paging, backoff, typed failures
-              NotionProvision    finds or builds the two databases
-              NotionSources      Sources rows ↔ followed feeds
-              NotionReadingList  the two-way saved-links reconciliation
-              NotionSync         runFullSync — the one entry point
-              NotionPrefs
-
-  pomodoro/   the focus timer
-  reader/     Reader, AudioPlayer — read-only over readback's library.db
-  speech/     Speaker        the phone reads an article aloud (Android only)
-              SpeechSession  the one live read, and what the bar shows
-  summary/    on-device summaries (Android only; ML Kit GenAI)
-  ui/         screens, theme, shared components
-              common/          ListRow · AppTextField · EyebrowHeader ·
-                               Pill · HeaderAction · EmptyState · Toast
-              home/            the tabs, the floating bar, BottomFurniture
-              summary/         the panel a swiped row opens
-```
+Android carries three foreground services (Pomodoro, Speech, Reader
+playback) and the home-screen widget; desktop carries the Chromium
+WebView host for the in-app browser. Everything else behind `expect` has an
+`actual` on all four platforms.
 
 State is plain `remember { mutableStateOf(...) }` hoisted into `App.kt`. No
 ViewModel, no dependency injection, no navigation library — at this size
 they would be ceremony, and their absence is deliberate rather than pending.
-
-Platform code lives in `androidMain` / `iosMain` / `desktopMain` /
-`wasmJsMain` behind `expect`/`actual`. The Android app module holds the
-launcher activity, the home-screen widget and the foreground service.
 </details>
 
 ## Where to look next

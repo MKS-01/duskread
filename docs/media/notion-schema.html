@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>DuskRead — Notion schema</title>
+<!--
+  Source for notion-schema.png, the diagram in docs/architecture.md's
+  "Notion schema" section. Same idea as notion-flow.html: committed so the
+  picture can be corrected rather than redrawn, and rendered rather than
+  hand-drawn so the two panels stay lined up.
+
+  Rendered at twice size, so the type in it survives a retina screen:
+
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+      --headless --disable-gpu --hide-scrollbars \
+      --window-size=1280,720 --force-device-scale-factor=2 \
+      --screenshot=docs/media/notion-schema.png \
+      --virtual-time-budget=4000 docs/media/notion-schema.html
+
+  Colours are the Paper Black scheme's own, mirrored from ui/theme/Theme.kt —
+  the same rule notion-flow.html and the landing page follow. The property
+  list mirrors the tables in architecture.md; if those tables change, this
+  file and its render need updating too, same as notion-flow.html does for
+  the flow prose.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inconsolata:wght@400;500;600&family=Jost:wght@400;500;600;700&display=swap">
+<style>
+  :root {
+    --bg: #101010;
+    --surface: #1a1a1a;
+    --ink: #e8e6e2;
+    --muted: #a3a19d;
+    --faint: #6f6d6a;
+    --line: #242423;
+    --line-firm: #3e3e3d;
+    --accent: #c6684a;
+    --ui: "Jost", ui-sans-serif, system-ui, sans-serif;
+    --data: "Inconsolata", ui-monospace, Menlo, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+
+  body {
+    width: 1280px; height: 720px; overflow: hidden;
+    background: var(--bg); color: var(--ink);
+    font-family: var(--data);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  #stage { position: relative; width: 1280px; height: 720px; }
+
+  h1 {
+    position: absolute; top: 34px; left: 0; right: 0; margin: 0;
+    font-family: var(--ui); font-weight: 700; font-size: 28px;
+    line-height: 1.28; letter-spacing: -0.01em; text-align: center;
+  }
+  h1 .accent { color: var(--accent); }
+
+  .sub {
+    position: absolute; top: 78px; left: 0; right: 0; margin: 0;
+    font-family: var(--data); font-size: 12.5px; letter-spacing: 0.02em;
+    text-align: center; color: var(--faint);
+  }
+
+  .panel {
+    position: absolute; top: 130px;
+    border: 1px solid var(--line-firm); border-radius: 12px;
+    background: var(--surface); padding: 18px 22px 20px;
+    width: 560px;
+  }
+  .panel h2 {
+    margin: 0 0 4px; font-family: var(--ui); font-weight: 600;
+    font-size: 18px; letter-spacing: 0.005em; color: var(--ink);
+  }
+  .panel .caption {
+    margin: 0 0 14px; font-size: 11.5px; color: var(--faint);
+  }
+
+  .row {
+    display: flex; align-items: baseline; gap: 12px;
+    padding: 7px 0; border-bottom: 1px solid var(--line);
+    font-size: 12.5px;
+  }
+  .row:last-child { border-bottom: none; }
+  .row .prop { flex: 0 0 138px; color: var(--ink); font-weight: 600; }
+  .row .type { flex: 1 1 auto; color: var(--muted); }
+  .row .dir { flex: 0 0 30px; text-align: right; font-weight: 600; }
+  .row .note { flex: 0 0 100%; margin-top: 3px; color: var(--faint); font-size: 11px; }
+
+  .dir.both { color: var(--accent); }
+  .dir.up { color: var(--muted); }
+  .dir.none { color: var(--faint); }
+
+  .legend {
+    position: absolute; left: 0; right: 0; top: 612px;
+    display: flex; justify-content: center; gap: 34px;
+    font-family: var(--data); font-size: 12px; color: var(--muted);
+  }
+  .legend span.dir { margin-right: 6px; font-weight: 600; }
+
+  footer {
+    position: absolute; left: 40px; right: 40px; bottom: 34px;
+    padding-top: 16px; border-top: 1px solid var(--line);
+    font-family: var(--data); font-size: 12.5px; line-height: 1.5;
+    color: var(--muted); text-align: center;
+  }
+</style>
+
+<div id="stage">
+  <h1>Two databases, <span class="accent">created by the app</span></h1>
+  <p class="sub">what to follow, and what's worth reading — property by property</p>
+
+  <div class="panel" id="sources" style="left:170px; width:400px">
+    <h2>Sources</h2>
+    <p class="caption">what to follow — read and written</p>
+
+    <div class="row"><span class="prop">Name</span><span class="type">Title</span><span class="dir both">&#8597;</span></div>
+    <div class="row"><span class="prop">Feed URL</span><span class="type">URL</span><span class="dir both">&#8597;</span></div>
+    <div class="row"><span class="prop">Duskread ID</span><span class="type">Text</span><span class="dir up">&#8593;</span></div>
+    <div class="row"><span class="prop">Site URL</span><span class="type">URL</span><span class="dir none">&mdash;</span></div>
+    <div class="row"><span class="prop">Source</span><span class="type">Select</span><span class="dir none">&mdash;</span></div>
+    <div class="row"><span class="prop">Topic</span><span class="type">Select</span><span class="dir both">&#8597;</span></div>
+    <div class="row"><span class="prop">Tags</span><span class="type">Multi-select</span><span class="dir none">&mdash;</span></div>
+    <div class="row"><span class="prop">Active</span><span class="type">Checkbox</span><span class="dir both">&#8597;</span></div>
+    <div class="row"><span class="prop">Feed status</span><span class="type">Select</span><span class="dir none">&mdash;</span></div>
+    <div class="row"><span class="prop">Notes</span><span class="type">Text</span><span class="dir none">&mdash;</span></div>
+  </div>
+
+  <div class="panel" id="reading" style="left:610px; width:500px">
+    <h2>Reading List</h2>
+    <p class="caption">articles &mdash; Saved is the gate onto the phone</p>
+
+    <div class="row"><span class="prop">Title</span><span class="type">Title</span><span class="dir both">&#8597;</span></div>
+    <div class="row"><span class="prop">URL</span><span class="type">URL</span><span class="dir up">&#8593;</span></div>
+    <div class="row"><span class="prop">Duskread ID</span><span class="type">Text</span><span class="dir up">&#8593;</span></div>
+    <div class="row"><span class="prop">Saved</span><span class="type">Checkbox</span><span class="dir both">&#8597;</span>
+      <span class="note">the gate &mdash; only ticked rows reach the phone</span></div>
+    <div class="row"><span class="prop">Dismissed</span><span class="type">Checkbox</span><span class="dir up">&#8593;</span></div>
+    <div class="row"><span class="prop">Status</span><span class="type">Status / Select</span><span class="dir both">&#8597;</span></div>
+    <div class="row"><span class="prop">Read At</span><span class="type">Date</span><span class="dir both">&#8597;</span></div>
+    <div class="row"><span class="prop">Saved At</span><span class="type">Date</span><span class="dir both">&#8597;</span></div>
+    <div class="row"><span class="prop">Topic</span><span class="type">Select</span><span class="dir both">&#8597;</span></div>
+    <div class="row"><span class="prop">Excerpt</span><span class="type">Text</span><span class="dir both">&#8597;</span></div>
+    <div class="row"><span class="prop">Source, Author, Newsletter&hellip;</span><span class="type">Claude's</span><span class="dir none">&mdash;</span></div>
+    <div class="row"><span class="prop">last_edited_time</span><span class="type">built-in</span><span class="dir up">&#8593;</span></div>
+  </div>
+
+  <div class="legend">
+    <div><span class="dir both">&#8597;</span> two-way</div>
+    <div><span class="dir up">&#8593;</span> app writes, Notion doesn't</div>
+    <div><span class="dir none">&mdash;</span> Notion only, app doesn't touch it</div>
+  </div>
+
+  <footer>
+    Both tables are created empty by <code>NotionProvision.kt</code> &mdash; nothing here ever deletes a row upstream.
+  </footer>
+</div>

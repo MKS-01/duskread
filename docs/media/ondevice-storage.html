@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>DuskRead — on-device storage</title>
+<!--
+  Source for ondevice-storage.png, in docs/architecture.md's "On-device
+  storage" section. Same idea as notion-flow.html and notion-schema.html:
+  committed so the picture can be corrected rather than redrawn.
+
+  Rendered at twice size, so the type in it survives a retina screen:
+
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+      --headless --disable-gpu --hide-scrollbars \
+      --window-size=1280,570 --force-device-scale-factor=2 \
+      --screenshot=docs/media/ondevice-storage.png \
+      --virtual-time-budget=4000 docs/media/ondevice-storage.html
+
+  Colours and icon style are the Paper Black scheme's own, mirrored from
+  ui/theme/Theme.kt and ui/theme/DuskReadIcons.kt — stroked, not filled,
+  same rule the other two diagrams and the landing page follow.
+
+  Two claims this makes that the key table alone doesn't: the phone holds
+  two physically separate stores (plaintext, and the one thing encrypted),
+  and the six key groups don't all behave the same way over time — some
+  grow, some drain, some get replaced whole. That second half is synthesised
+  from the table below, not a re-listing of it, so it earns being a picture.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inconsolata:wght@400;500;600&family=Jost:wght@400;500;600;700&display=swap">
+<style>
+  :root {
+    --bg: #101010;
+    --surface: #1a1a1a;
+    --surface-raised: #202020;
+    --ink: #e8e6e2;
+    --muted: #a3a19d;
+    --faint: #6f6d6a;
+    --line: #242423;
+    --line-firm: #3e3e3d;
+    --accent: #c6684a;
+    --ui: "Jost", ui-sans-serif, system-ui, sans-serif;
+    --data: "Inconsolata", ui-monospace, Menlo, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+
+  body {
+    width: 1280px; height: 570px; overflow: hidden;
+    background: var(--bg); color: var(--ink);
+    font-family: var(--data);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  #stage { position: relative; width: 1280px; height: 570px; }
+
+  .icon { width: 22px; height: 22px; flex: none; }
+  .icon.sm { width: 16px; height: 16px; }
+
+  h1 {
+    position: absolute; top: 34px; left: 0; right: 0; margin: 0;
+    font-family: var(--ui); font-weight: 700; font-size: 28px;
+    line-height: 1.28; letter-spacing: -0.01em; text-align: center;
+  }
+  h1 .accent { color: var(--accent); }
+
+  .sub {
+    position: absolute; top: 78px; left: 0; right: 0; margin: 0;
+    font-family: var(--data); font-size: 12.5px; letter-spacing: 0.02em;
+    text-align: center; color: var(--faint);
+  }
+
+  /* ---- the phone ---- */
+
+  #phone {
+    position: absolute; left: 80px; top: 130px; width: 300px; height: 300px;
+    border: 2px solid var(--line-firm); border-radius: 34px;
+    background: var(--surface); padding: 30px 18px 22px;
+  }
+  #phone .notch {
+    position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+    width: 60px; height: 5px; border-radius: 3px; background: var(--line-firm);
+  }
+  #phone .home {
+    position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
+    width: 70px; height: 3px; border-radius: 2px; background: var(--line-firm);
+  }
+
+  .store {
+    border: 1px solid var(--line-firm); border-radius: 12px;
+    background: var(--surface-raised); padding: 14px 14px;
+  }
+  .store .head { display: flex; align-items: center; gap: 10px; }
+  .store .name { font-family: var(--ui); font-weight: 600; font-size: 14.5px; color: var(--ink); }
+  .store .kind { margin-top: 2px; font-size: 10.5px; color: var(--faint); letter-spacing: 0.03em; text-transform: uppercase; }
+  .store.secret { border-color: var(--accent); }
+  .store.secret .icon { color: var(--accent); }
+  .store .icon { color: var(--muted); }
+
+  .crossing {
+    display: flex; align-items: center; gap: 8px; justify-content: center;
+    margin: 14px 0; font-size: 10.5px; color: var(--faint);
+  }
+  .crossing .rule { flex: 1; height: 1px; background: repeating-linear-gradient(90deg, var(--line-firm) 0 4px, transparent 4px 8px); }
+
+  .grant {
+    margin-top: 10px; display: flex; align-items: center; gap: 6px;
+    font-size: 10.5px;
+  }
+  .grant.yes { color: var(--muted); }
+  .grant.no { color: var(--faint); }
+  .grant b { font-weight: 600; }
+
+  /* ---- the six lifecycles ---- */
+
+  #lifecycles {
+    position: absolute; left: 428px; top: 130px; width: 772px;
+  }
+  #lifecycles .heading {
+    font-family: var(--ui); font-weight: 600; font-size: 15px; color: var(--ink);
+    margin: 0 0 3px;
+  }
+  #lifecycles .heading .caption {
+    display: block; margin-top: 3px; font-family: var(--data); font-weight: 400;
+    font-size: 11.5px; color: var(--faint);
+  }
+
+  .grid {
+    margin-top: 18px; display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+  }
+  .cell {
+    border: 1px solid var(--line-firm); border-radius: 12px;
+    background: var(--surface); padding: 16px 16px 15px;
+  }
+  .cell .icon { color: var(--accent); margin-bottom: 10px; }
+  .cell .key {
+    font-family: var(--data); font-weight: 600; font-size: 13px; color: var(--ink);
+  }
+  .cell .lifecycle {
+    margin-top: 6px; font-size: 11.5px; line-height: 1.5; color: var(--muted);
+  }
+
+  .legendline {
+    margin-top: 18px; font-size: 11px; color: var(--faint); line-height: 1.6;
+  }
+
+  footer {
+    position: absolute; left: 40px; right: 40px; top: 502px;
+    padding-top: 16px; border-top: 1px solid var(--line);
+    font-family: var(--data); font-size: 12.5px; line-height: 1.5;
+    color: var(--muted); text-align: center;
+  }
+</style>
+
+<div id="stage">
+  <h1>One phone, <span class="accent">two stores</span></h1>
+  <p class="sub">no database — just key-value, plaintext or encrypted, and six ways a key ages</p>
+
+  <div id="phone">
+    <div class="notch"></div>
+
+    <div class="store">
+      <div class="head">
+        <svg class="icon" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <ellipse cx="14" cy="6.5" rx="9" ry="3"/>
+          <path d="M5 6.5 V19 a9 3 0 0 0 18 0 V6.5"/>
+          <path d="M5 13 a9 3 0 0 0 18 0"/>
+        </svg>
+        <div>
+          <div class="name">KeyValueStore</div>
+          <div class="kind">plaintext</div>
+        </div>
+      </div>
+      <div class="grant yes">✓ <b>read by the widget</b> — another process</div>
+    </div>
+
+    <div class="crossing"><span class="rule"></span>never crosses<span class="rule"></span></div>
+
+    <div class="store secret">
+      <div class="head">
+        <svg class="icon" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="6.5" y="13" width="15" height="11" rx="2.5"/>
+          <path d="M10 13 v-3.2 a4 4 0 0 1 8 0 V13"/>
+        </svg>
+        <div>
+          <div class="name">SecretStore</div>
+          <div class="kind">encrypted — the token, alone</div>
+        </div>
+      </div>
+      <div class="grant no">✕ never reaches the plaintext store</div>
+    </div>
+
+    <div class="home"></div>
+  </div>
+
+  <div id="lifecycles">
+    <div class="heading">Six keys, six different lifecycles
+      <span class="caption">grouped from the full key table below — not every key ages the same way</span>
+    </div>
+
+    <div class="grid">
+      <div class="cell">
+        <svg class="icon" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="14" cy="14" r="10"/><path d="M14 9 v10 M9 14 h10"/>
+        </svg>
+        <div class="key">links.saved</div>
+        <div class="lifecycle">keeps growing with what you save</div>
+      </div>
+
+      <div class="cell">
+        <svg class="icon" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8 4 h12 M8 24 h12 M8 4 l6 10 l-6 10 M20 4 l-6 10 l6 10"/>
+        </svg>
+        <div class="key">links.removed</div>
+        <div class="lifecycle">bounded — the oldest tombstone is evicted</div>
+      </div>
+
+      <div class="cell">
+        <svg class="icon" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 12 v7 h16 v-7"/><path d="M6 12 h16"/><path d="M14 3 v8 M10 7 l4 4 l4 -4"/>
+        </svg>
+        <div class="key">links.inbox</div>
+        <div class="lifecycle">drained the next time the app opens</div>
+      </div>
+
+      <div class="cell">
+        <svg class="icon" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 7.5 A9 9 0 1 1 12.5 4"/><path d="M21 7.5 V2.5 M21 7.5 H16"/>
+        </svg>
+        <div class="key">feeds.posts</div>
+        <div class="lifecycle">re-encoded and replaced whole, every sync</div>
+      </div>
+
+      <div class="cell">
+        <svg class="icon" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 4 L24 9.5 L14 15 L4 9.5 Z"/><path d="M4 14.5 L14 20 L24 14.5"/><path d="M4 19 L14 24.5 L24 19"/>
+        </svg>
+        <div class="key">summaries</div>
+        <div class="lifecycle">bounded, newest first — a re-read costs no quota</div>
+      </div>
+
+      <div class="cell">
+        <svg class="icon" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="8" y1="4" x2="8" y2="24"/><circle cx="8" cy="10" r="2.3"/>
+          <line x1="14" y1="4" x2="14" y2="24"/><circle cx="14" cy="18" r="2.3"/>
+          <line x1="20" y1="4" x2="20" y2="24"/><circle cx="20" cy="7" r="2.3"/>
+        </svg>
+        <div class="key">notion.* · prefs</div>
+        <div class="lifecycle">connection state and settings — static until changed</div>
+      </div>
+    </div>
+
+    <div class="legendline">Every decoder is positional and tolerant — a record from an older build still loads, with no migrations.</div>
+  </div>
+
+  <footer id="footer">Full key-by-key table below. The token is the one thing that never goes here.</footer>
+</div>
