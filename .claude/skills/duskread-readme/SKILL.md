@@ -20,7 +20,7 @@ paragraph should still make sense to someone who will never open the code.
 | --- | --- | --- |
 | `README.md` | What is this, why would I use it, how do I run it | Class names, flow diagrams, schemas, token tables |
 | `docs/architecture.md` | How the pieces connect — Notion schema, on-device storage, the end-to-end flows, invariants | Sales prose |
-| `docs/design-system/design-system.html` + `design-tokens.md` | What it looks like and every value behind it | Code paths, TODOs |
+| https://duskread.mksbrew.dev (source in the separate `mksbrew` repo) | What it looks like and every value behind it | Code paths, TODOs |
 | `CLAUDE.md` | How to work in the repo — Gradle task names, lint rules, conventions | Feature description |
 
 So: a new feature earns **a paragraph** in the README and **a flow** in

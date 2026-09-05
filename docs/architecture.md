@@ -342,5 +342,5 @@ they would be ceremony, and their absence is deliberate rather than pending.
 ## Where to look next
 
 - `README.md` — what the app is and how to build it
-- `docs/design-system/design-system.html` — the visual language
-- `docs/design-system/design-tokens.md` — every colour, type style and value
+- https://duskread.mksbrew.dev — the visual language and every colour, type
+  style and value behind it

@@ -30,36 +30,18 @@ pasted token, the app finds or creates its own databases
 API, library or tool is in scope and does not need justifying.
 
 `README.md` describes how the app is put together — do not restate it here.
-`docs/design-system/design-system.html` is the landing page and the
-visual-language reference in one (open it in a browser), in three acts:
-**Concept** (laid out, not a deck: the lockup and the name, then four
-one-sentence qualities — Automated, Personalised, Offline-first,
-Monochrome — as hairline cards), **Walkthrough** (a six-slide deck:
-Reading, Home, Following, Saved, Settings, Connect Notion) and **How it
-works** (a three-slide deck: the curation flow into Notion, the one shell
-every screen shares, and a compact colour/type/icon/motion summary linking
-to `design-tokens.md`). There is no fourth "Get it" act any more — the
-contents nav's last chip goes straight to the GitHub repo instead, and the
-clone command and the requirements table both live in `README.md` only, not
-duplicated here as well.
-Keep it that way — **no code paths, no class names, no TODO lists in it.**
-That material belongs in `docs/architecture.md`, which is the single design
-document: how the pieces connect, the Notion schema, on-device storage, the
-sync trigger, canonical URLs, authentication and offline behaviour. The two
-plan documents that used to sit in `docs/design/` are gone — the Amplitude
-migration they tracked is finished and the Notion integration is shipped —
-and `architecture.md` itself carries only what is built, not invariants,
-descoped decisions or per-flow diagrams; `git log` keeps the rest.
-`docs/design-system/design-tokens.md` is the reference half: every colour
-role, type style, radius, duration and layout value, with the file it lives
-in. The page shows the language, the tokens file lists it — a table of hex
-values does not belong on a landing page. All three are kept up to date and
-should be treated as current — update them alongside a UI change rather than
-letting them drift.
-
-The page deploys to GitHub Pages via `.github/workflows/pages.yml` on pushes
-to `main` under `docs/design-system/`. It has no build step and should not
-grow one.
+The landing page and visual-language reference (three acts — Concept,
+Walkthrough, How it works — plus the colour/type/icon/motion token table)
+used to live in this repo at `docs/design-system/` and deploy to GitHub
+Pages. As of September 2026 that page moved to the `mksbrew` monorepo and is
+served from there at https://duskread.mksbrew.dev — **this repo no longer
+carries the landing page source, its deploy workflow, or the tokens
+reference.** Edit the page in `mksbrew`, not here.
+`docs/architecture.md` remains the single design document in this repo: how
+the pieces connect, the Notion schema, on-device storage, the sync trigger,
+canonical URLs, authentication and offline behaviour. It carries only what
+is built, not invariants, descoped decisions or per-flow diagrams; `git log`
+keeps the rest.
 
 ## Build and verify
 
@@ -179,10 +161,10 @@ that apply here are present): `apple-design`, `animate` (+ `RECIPES.md`),
 `animation-vocabulary`, `find-animation-opportunities`, `improve-animations`,
 `review-animations` and `emil-design-eng`.
 
-**They are written for the web** — CSS, Pointer Events, Motion. On
-`docs/design-system/design-system.html` they apply directly and did: the
-page's easing tokens, the scroll reveal, the segmented switch and the
-reduced-motion block all come from them. For `composeApp/` only the
+**They are written for the web** — CSS, Pointer Events, Motion. They applied
+directly to the landing page's easing tokens, scroll reveal, segmented
+switch and reduced-motion block, but that page now lives in `mksbrew`, not
+here. For `composeApp/` only the
 *reasoning* transfers — the gate (should this animate at all), the named
 purpose, ease-out for entrances, sub-300ms for UI — and it lands on
 `animateDpAsState`, `spring()` and `tween()` in `ui/theme/Tokens.kt`'s
@@ -193,14 +175,12 @@ with `/review-animations`.
 
 ### This project
 
-`duskread-design-system` for Compose UI work, `duskread-landing-page` for
-`docs/design-system/` (the page's three acts, the deck component, what belongs
-on the page versus in the tokens file), `duskread-readme` for `README.md`
-(what belongs there versus in `docs/architecture.md`, the fixed section
-order, the facts to re-derive from `libs.versions.toml`), `duskread-setup`
-for standing the app up from a fresh clone (the two Notion databases and
-their exact property names, the PAT, readback's folder grant),
-`duskread-code-docs` for comments and KDoc (why not what, and when a
+`duskread-design-system` for Compose UI work, `duskread-readme` for
+`README.md` (what belongs there versus in `docs/architecture.md`, the fixed
+section order, the facts to re-derive from `libs.versions.toml`),
+`duskread-setup` for standing the app up from a fresh clone (the two Notion
+databases and their exact property names, the PAT, readback's folder
+grant), `duskread-code-docs` for comments and KDoc (why not what, and when a
 decision outgrows a comment and belongs in `docs/architecture.md`), plus
 `duskread-verify` and `duskread-crash-audit`.
 

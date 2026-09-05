@@ -18,7 +18,7 @@
 </p>
 
 <p align="center">
-  <a href="https://mks-01.github.io/duskread/">See every screen</a> &nbsp;·&nbsp;
+  <a href="https://duskread.mksbrew.dev">See every screen</a> &nbsp;·&nbsp;
   <a href="docs/architecture.md">How it fits together</a> &nbsp;·&nbsp;
   <a href="#getting-started">Run it</a>
 </p>
@@ -116,7 +116,7 @@ database — a ceiling chosen on purpose.
 No tests yet — a build that succeeds is the start of checking a change, not
 the end of it.
 
-**[The design system](https://mks-01.github.io/duskread/)** — Paper Black
+**[The design system](https://duskread.mksbrew.dev)** — Paper Black
 and Ink, and every token behind them.
 **[docs/architecture.md](docs/architecture.md)** — how the pieces connect,
 the Notion schema, and the end-to-end flows.

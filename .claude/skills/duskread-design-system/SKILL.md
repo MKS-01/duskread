@@ -2,7 +2,7 @@
 name: duskread-design-system
 description: Use when building a new UI flow or making a visual fix anywhere in
   this DuskRead app — a new screen, a restyled row, an icon button, a colour or
-  spacing tweak. Points at docs/design-system/design-system.html as the visual
+  spacing tweak. Points at https://duskread.mksbrew.dev as the visual
   source of truth and gives the reusable Compose patterns already shipped
   (ListRow, AppTextField, EyebrowHeader, the bordered icon-button shape, the
   one-accent rule) so new work reuses what exists instead of hand-rolling a
@@ -18,32 +18,29 @@ screen rather than introducing a second system next to the first.
 
 ## Source of truth
 
-- **`docs/design-system/design-system.html`** — open it in a browser. The
-  landing page and the visual language in one, in three acts: Concept, a
-  six-screen Walkthrough, and How it works (curation, the shell, and a
-  compact colour/type/icon/motion summary linking to `design-tokens.md`).
-  Every mockup uses the real token values and the shipped icon paths, so it
-  is the app rather than a wireframe of it. **Editing it has its own skill —
-  `duskread-landing-page`.**
-- **`docs/design-system/design-tokens.md`** — the reference half: every colour
-  role in both schemes, the type scale, layout values, radii, durations and
-  the icon list, each with the file it lives in. Look values up here; look at
-  them on the page.
+- **https://duskread.mksbrew.dev** — open it in a browser. The landing page
+  and the visual language in one, in three acts: Concept, a six-screen
+  Walkthrough, and How it works (curation, the shell, and a compact
+  colour/type/icon/motion summary linking to the tokens reference). Every
+  mockup uses the real token values and the shipped icon paths, so it is the
+  app rather than a wireframe of it. As of September 2026 the page's source
+  lives in the separate `mksbrew` monorepo, not here — this repo only
+  consumes it as a reference, it does not edit it.
 - **`CLAUDE.md`**'s "Colour and design tokens" and "Icons" sections carry the
   house rules this skill assumes: colour only from `MaterialTheme.colorScheme`
   (never a hard-coded `Color(0x…)`), icons only from `ui/theme/DuskReadIcons.kt`
   (never `Icons.Filled.*`).
 
-**Keep the doc in sync.** A UI change that isn't cosmetic-only (a new pattern,
-a rule bent for a reason, a "Next" item resolved or added) should update
-`design-system.html` in the same pass — not as a separate follow-up that never
-happens. Verify claims against the real code before writing them; do not carry
-a stale note forward just because an older document said so — that mistake has
-been made and caught here twice.
+**Flag drift.** A UI change that isn't cosmetic-only (a new pattern, a rule
+bent for a reason, a "Next" item resolved or added) makes the deployed page
+stale, but its source lives in `mksbrew`, not here — tell the user rather
+than trying to edit it from this repo. Verify claims against the real code
+before writing them; do not carry a stale note forward just because an older
+document said so — that mistake has been made and caught here twice.
 
 ## When a plan would go against the system
 
-Check a planned change against this doc and `design-tokens.md` **before**
+Check a planned change against the deployed page **before**
 writing any code for it — at the plan stage, not mid-implementation. If what's
 being asked for conflicts with an established rule here (a colour outside the
 one-accent rule, mono used for a name rather than a value, a corner radius
