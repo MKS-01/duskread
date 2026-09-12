@@ -33,6 +33,7 @@ struct DuskReadRootView: View {
         .environment(host.pomodoro)
         .environment(host.suggestions)
         .environment(host.notion)
+        .environment(host.speech)
         .environment(browser)
         .environment(collapse)
         .environment(\.dusk, theme)
@@ -74,6 +75,10 @@ struct DuskReadRootView: View {
                     onOpenSettings: { destination = .settings }
                 )
                 .padding(.bottom, gap)
+                // The player face fills the width it is given, so the bar
+                // takes the list's gutter rather than running edge to edge.
+                // The tabs face is intrinsically narrow and ignores it.
+                .padding(.horizontal, Layout.listGutter)
                 .contentShape(Capsule())
                 .onTapGesture { if collapse.collapsed { collapse.expand() } }
             }
@@ -117,6 +122,7 @@ struct DuskReadRootView: View {
         .environment(host.pomodoro)
         .environment(host.suggestions)
         .environment(host.notion)
+        .environment(host.speech)
         .environment(browser)
         .environment(collapse)
         .environment(\.dusk, theme)

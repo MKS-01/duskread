@@ -126,12 +126,21 @@ Three things had to change in `commonMain` before Swift could see any of it:
    generics-erased, default arguments do not export at all, and a sealed
    hierarchy loses its exhaustive `when`.
 
-**What iOS does not have.** `Speaker`, `Summariser`, `Reader` and
-`AudioPlayer` have no iOS `actual` — they are `Unavailable*` stubs. So the
-SwiftUI app is Onboarding, Home, Following, Topics, Saved, Focus and Settings;
-Settings' summary, voice and swipe sections are gated on
-`summariesSupported()` / `speechSupported()` and do not render. They appear
-when those actuals do, not before.
+**What iOS does not have.** `Summariser`, `Reader` and `AudioPlayer` have no
+iOS `actual` — they are `Unavailable*` stubs — so Settings' summary and swipe
+sections are gated on `summariesSupported()` and do not render, and there is
+no Readback tab. `Speaker` **is** implemented: `AVSpeechSynthesizer`, in
+Kotlin/Native, so the shared `Flow<SpeechProgress>` contract is the same one
+Android satisfies. The floating bar's transport face is what that lights up.
+
+**Where a platform does something Kotlin cannot, it is written natively.**
+Kotlin keeps the port — the interface and the types either side agree on — and
+the platform supplies the adapter. Storage went to Swift because the Keychain
+has no sensible Kotlin/Native shape and the decisions around it (suite name,
+App Group, accessibility) are Apple's; speech stayed in Kotlin/Native because
+`Flow<SpeechProgress>` is worth keeping and AVFoundation binds cleanly enough.
+Which side an adapter lands on is judged per case; what does not move is the
+contract.
 
 **Motion does not become springs.** `Motion` is four `tween` durations on
 Compose's default easing, and there is not one spring in the codebase. Swift

@@ -38,6 +38,10 @@ class DuskReadBridge(store: KeyValueStore, secrets: SecretStore) {
     val pomodoro = PomodoroBridge()
     val design = DesignBridge()
     val notion = NotionBridge(graph)
+    val speaker = SpeakerBridge(graph)
 
-    fun close() = graph.close()
+    fun close() {
+        speaker.stop()
+        graph.close()
+    }
 }

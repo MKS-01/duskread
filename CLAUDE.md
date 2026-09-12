@@ -14,6 +14,16 @@ SwiftUI**, in `iosApp/iosApp/`, over the same Kotlin through
 `ui/theme/DesignTokens.kt` and `ui/theme/IconPaths.kt` — never hard-code a
 colour, radius, duration or glyph on either side.
 
+**Where a platform does something Kotlin cannot, write it natively.** Kotlin
+keeps the *port* — the interface, and the types either side agree on — and the
+platform supplies the adapter. `KeyValueStore` and `SecretStore` are
+implemented in Swift (`iosApp/iosApp/Storage/`) so the token can live in the
+Keychain; `Speaker` is implemented in Kotlin/Native over `AVSpeechSynthesizer`
+because the shared `Flow<SpeechProgress>` contract is worth keeping. Which
+side an adapter lands on is a judgement per case — the rule is that the
+*contract* stays in `commonMain`, so neither platform invents its own shape
+for the same job.
+
 The four things the app does, and where each lives:
 
 - **Saved links** — `links/` (`LinkLibrary`, `SavedLink`, `LinkMetadata`:

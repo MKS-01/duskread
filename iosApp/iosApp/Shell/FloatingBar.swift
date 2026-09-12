@@ -8,10 +8,10 @@ import SwiftUI
 /// controls stay where a thumb already is. It collapses out of the way while a
 /// list is scrolled down and comes back on the first scroll up.
 ///
-/// The transport face — the bar doubling as a player — is not here yet: iOS
-/// has no speaker and no audio player, so there is nothing to transport. The
-/// face swap is the reason the real bar is a single pill rather than tabs plus
-/// a slab, and it goes in when the audio actuals do.
+/// It has two faces — tabs, or the transport for whatever is being read aloud.
+/// One pill that changes what it is, rather than a player slab appearing above
+/// a tab bar: the reading surface keeps its height either way, and the read
+/// stays reachable from every screen without taking a second row of it.
 struct FloatingBar: View {
     @Binding var tab: AppTab
     let collapsed: Bool
@@ -19,26 +19,28 @@ struct FloatingBar: View {
     let onToggleTheme: () -> Void
     let onOpenSettings: () -> Void
 
+    @Environment(SpeechStore.self) private var speech
     @Environment(\.dusk) private var dusk
+
+    /// Showing the transport does not mean hiding the tabs forever — tapping
+    /// the title peeks back at them, the way the Compose bar does.
+    @State private var peekingTabs = false
+
+    private var showsPlayer: Bool { speech.title != nil && !peekingTabs }
 
     var body: some View {
         HStack(spacing: 0) {
-            ForEach(AppTab.allCases, id: \.self) { option in
-                barButton(option.icon, active: tab == option) {
-                    withAnimation(Motion.ease(Motion.fade)) { tab = option }
-                }
+            if showsPlayer {
+                playerFace
+            } else {
+                tabsFace
             }
-
-            Rectangle()
-                .fill(dusk.outlineVariant)
-                .frame(width: Stroke.hairline, height: 22)
-                .padding(.horizontal, 6)
-
-            barButton(IconPaths.shared.Contrast, active: false, onTap: onToggleTheme)
-            barButton(IconPaths.shared.Settings, active: false, onTap: onOpenSettings)
         }
         .padding(.horizontal, 10)
         .frame(height: Layout.barHeight)
+        .animation(Motion.ease(Motion.chip), value: showsPlayer)
+        // Any new read puts the transport back in front.
+        .onChange(of: speech.title) { peekingTabs = false }
         .background(
             Capsule()
                 .fill(.ultraThinMaterial)
@@ -57,6 +59,61 @@ struct FloatingBar: View {
         )
         .scaleEffect(collapsed ? 0.82 : 1, anchor: .bottom)
         .animation(Motion.ease(collapsed ? Motion.chip : Motion.fade), value: collapsed)
+    }
+
+    private var tabsFace: some View {
+        HStack(spacing: 0) {
+            ForEach(AppTab.allCases, id: \.self) { option in
+                barButton(option.icon, active: tab == option) {
+                    withAnimation(Motion.ease(Motion.fade)) { tab = option }
+                }
+            }
+
+            Rectangle()
+                .fill(dusk.outlineVariant)
+                .frame(width: Stroke.hairline, height: 22)
+                .padding(.horizontal, 6)
+
+            barButton(IconPaths.shared.Contrast, active: false, onTap: onToggleTheme)
+            barButton(IconPaths.shared.Settings, active: false, onTap: onOpenSettings)
+
+            // Only while something is playing, so the pill can be put back
+            // without waiting for the read to end.
+            if speech.title != nil {
+                barButton(IconPaths.shared.Waveform, active: true) { peekingTabs = false }
+            }
+        }
+    }
+
+    private var playerFace: some View {
+        HStack(spacing: 10) {
+            barButton(speech.playing ? IconPaths.shared.Pause : IconPaths.shared.Play, active: true) {
+                speech.togglePlayPause()
+            }
+
+            VStack(alignment: .leading, spacing: 5) {
+                Text(speech.title ?? "")
+                    .dusk(.labelMedium)
+                    .foregroundStyle(dusk.onSurface)
+                    .lineLimit(1)
+                // A progress line, not a scrubber. Speech has no seek — the
+                // synthesiser speaks from where it is — so a track that looked
+                // draggable would be a control that does nothing.
+                GeometryReader { proxy in
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(dusk.outlineVariant)
+                        Capsule().fill(dusk.primary)
+                            .frame(width: proxy.size.width * speech.fraction)
+                    }
+                }
+                .frame(height: 2.5)
+            }
+            .contentShape(Rectangle())
+            .onTapGesture { peekingTabs = true }
+
+            barButton(IconPaths.shared.Close, active: false) { speech.stop() }
+        }
+        .padding(.leading, 2)
     }
 
     private func barButton(_ path: IconPath, active: Bool, onTap: @escaping () -> Void) -> some View {

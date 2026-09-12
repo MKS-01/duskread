@@ -8,6 +8,7 @@ import SwiftUI
 struct SavedScreen: View {
     @Environment(LinksStore.self) private var links
     @Environment(BrowserRouter.self) private var browser
+    @Environment(SpeechStore.self) private var speech
     @Environment(BarCollapse.self) private var collapse
     @Environment(\.dusk) private var dusk
 
@@ -126,6 +127,9 @@ struct SavedScreen: View {
         // That one changes its own label at 40% travel and never settles, and
         // half-porting it would leave a gesture that looks the same and is not.
         .contextMenu {
+            if speech.available {
+                Button("Read aloud") { speech.speak(title: link.title, url: link.url) }
+            }
             Button(link.read ? "Mark unread" : "Mark read") { links.toggleRead(link) }
             if link.fetchFailed {
                 Button("Try again") { links.retry(link) }

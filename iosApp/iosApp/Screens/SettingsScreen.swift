@@ -13,6 +13,7 @@ struct SettingsScreen: View {
     @Environment(NotionStore.self) private var notion
     @Environment(LinksStore.self) private var links
     @Environment(FeedsStore.self) private var feeds
+    @Environment(SpeechStore.self) private var speech
     @Environment(\.dusk) private var dusk
 
     @State private var setupOpen = false
@@ -23,6 +24,7 @@ struct SettingsScreen: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 28) {
                 header
+                voice
                 notionSection
                 appearance
                 profile
@@ -52,6 +54,26 @@ struct SettingsScreen: View {
             Spacer()
         }
         .padding(.top, 8)
+    }
+
+    /// Present only because iOS can now speak. The section is absent rather
+    /// than disabled where it cannot — a control that explains why it does
+    /// nothing is still a control that does nothing.
+    @ViewBuilder
+    private var voice: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            EyebrowHeader(label: "Voice")
+            Text("Articles are read aloud on this phone. Nothing is sent anywhere to be spoken.")
+                .dusk(.bodyMedium)
+                .foregroundStyle(dusk.onSurfaceVariant)
+                .fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: Space.chipGap) {
+                Pill(label: "System voice", active: true) {}
+            }
+            Text(speech.unavailableReason ?? "Ready")
+                .dusk(.bodySmall)
+                .foregroundStyle(dusk.onSurfaceVariant)
+        }
     }
 
     private var notionSection: some View {

@@ -242,3 +242,67 @@ final class NotionStore {
         note = (try? await bridge.sync())?.message
     }
 }
+
+/// Reading an article aloud.
+///
+/// Holds what the transport needs and nothing else: what is playing, how far
+/// through, and whether it is paused. The read itself is Kotlin's — fetch,
+/// extract, speak — so this is a remote control, not a player.
+@Observable
+final class SpeechStore {
+    private(set) var title: String?
+    private(set) var fraction: Double = 0
+    private(set) var playing = false
+    private(set) var note: String?
+
+    @ObservationIgnored private let bridge: SpeakerBridge
+
+    init(_ bridge: SpeakerBridge) {
+        self.bridge = bridge
+    }
+
+    var available: Bool { bridge.isReady() }
+
+    /// Why it cannot speak, in the words the shared side chose — a missing
+    /// voice and a missing engine need different answers, and neither is
+    /// something this side should word for itself.
+    var unavailableReason: String? { bridge.status() }
+
+    func speak(title: String, url: String) {
+        self.title = title
+        fraction = 0
+        playing = true
+        note = nil
+        bridge.speak(
+            url: url,
+            title: title,
+            onProgress: { [weak self] value in
+                self?.fraction = Double(truncating: value)
+            },
+            onFinished: { [weak self] failure in
+                self?.playing = false
+                self?.title = nil
+                self?.fraction = 0
+                self?.note = failure
+            }
+        )
+    }
+
+    func togglePlayPause() {
+        guard title != nil else { return }
+        if playing {
+            bridge.pause()
+            playing = false
+        } else {
+            bridge.resume()
+            playing = true
+        }
+    }
+
+    func stop() {
+        bridge.stop()
+        playing = false
+        title = nil
+        fraction = 0
+    }
+}
