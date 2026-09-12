@@ -37,25 +37,41 @@ struct DuskReadRootView: View {
     }
 
     private func shell(_ theme: DuskTheme) -> some View {
-        ZStack(alignment: .bottom) {
-            tabContent
-                .safeAreaInset(edge: .bottom) {
-                    // Constant clearance: the pill shrinks *within* the space
-                    // it reserved rather than handing any of it back, so the
-                    // list underneath never reflows as the bar collapses.
-                    Color.clear.frame(height: Layout.barHeight + Layout.barInset)
-                }
+        GeometryReader { proxy in
+            // `BarInset` is the gap the bar keeps from the system's own
+            // furniture, and it is sized for Android — where, under gesture
+            // navigation, the system inset is only a few dp and the token has
+            // to supply the clearance itself. iPhone's home-indicator safe
+            // area is already about 34pt, so adding the token on top of it
+            // floats the bar halfway up the screen.
+            //
+            // The intent ports, the arithmetic does not: keep at least
+            // `BarInset` between the bar and the physical bottom edge, and let
+            // the safe area count towards it.
+            let systemInset = proxy.safeAreaInsets.bottom
+            let gap = max(0, Layout.barInset - systemInset)
 
-            FloatingBar(
-                tab: $tab,
-                collapsed: collapse.collapsed,
-                mono: host.prefs.mono,
-                onToggleTheme: { host.prefs.toggleTheme() },
-                onOpenSettings: { destination = .settings }
-            )
-            .padding(.bottom, Layout.barInset)
-            .contentShape(Capsule())
-            .onTapGesture { if collapse.collapsed { collapse.expand() } }
+            ZStack(alignment: .bottom) {
+                tabContent
+                    .safeAreaInset(edge: .bottom) {
+                        // Constant clearance: the pill shrinks *within* the
+                        // space it reserved rather than handing any of it
+                        // back, so the list underneath never reflows as the
+                        // bar collapses.
+                        Color.clear.frame(height: Layout.barHeight + gap)
+                    }
+
+                FloatingBar(
+                    tab: $tab,
+                    collapsed: collapse.collapsed,
+                    mono: host.prefs.mono,
+                    onToggleTheme: { host.prefs.toggleTheme() },
+                    onOpenSettings: { destination = .settings }
+                )
+                .padding(.bottom, gap)
+                .contentShape(Capsule())
+                .onTapGesture { if collapse.collapsed { collapse.expand() } }
+            }
         }
         .fullScreenCover(item: $destination) { destination in
             cover(destination, theme)
