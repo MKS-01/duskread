@@ -12,6 +12,7 @@ struct DashboardScreen: View {
     let onOpenFollowing: () -> Void
 
     @Environment(LinksStore.self) private var links
+    @Environment(BrowserRouter.self) private var browser
     @Environment(FeedsStore.self) private var feeds
     @Environment(PomodoroStore.self) private var pomodoro
     @Environment(SuggestionsStore.self) private var suggestions
@@ -174,10 +175,9 @@ struct DashboardScreen: View {
     }
 
     private func open(_ candidate: Candidate) {
-        guard let url = URL(string: candidate.url) else { return }
         suggestions.recordOpen(candidate.url)
         _ = links.save(candidate.url)
-        UIApplication.shared.open(url)
+        browser.open(candidate.url)
     }
 }
 

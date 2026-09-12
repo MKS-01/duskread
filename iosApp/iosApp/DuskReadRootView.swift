@@ -12,6 +12,7 @@ struct DuskReadRootView: View {
     @State private var tab: AppTab = .home
     @State private var collapse = BarCollapse()
     @State private var destination: Destination?
+    @State private var browser = BrowserRouter()
 
     var body: some View {
         let theme = host.prefs.theme
@@ -32,8 +33,11 @@ struct DuskReadRootView: View {
         .environment(host.pomodoro)
         .environment(host.suggestions)
         .environment(host.notion)
+        .environment(browser)
         .environment(\.dusk, theme)
         .background(theme.background.ignoresSafeArea())
+        .onAppear { tintBrowser(theme) }
+        .onChange(of: host.prefs.mono) { tintBrowser(theme) }
     }
 
     private func shell(_ theme: DuskTheme) -> some View {
@@ -114,7 +118,15 @@ struct DuskReadRootView: View {
         .environment(host.pomodoro)
         .environment(host.suggestions)
         .environment(host.notion)
+        .environment(browser)
         .environment(\.dusk, theme)
+    }
+
+    /// The reader sheet is UIKit's, so its tint cannot come from the
+    /// environment — it is pushed in whenever the scheme changes.
+    private func tintBrowser(_ theme: DuskTheme) {
+        browser.barTint = theme.surface
+        browser.controlTint = theme.primary
     }
 
     enum Destination: Identifiable, Hashable {

@@ -7,6 +7,7 @@ import SwiftUI
 /// things you actually meant to read under thirty you already have.
 struct SavedScreen: View {
     @Environment(LinksStore.self) private var links
+    @Environment(BrowserRouter.self) private var browser
     @Environment(\.dusk) private var dusk
 
     @State private var filter: LinkFilter = .all
@@ -174,8 +175,7 @@ struct SavedScreen: View {
     }
 
     private func open(_ link: SavedLink) {
-        guard let url = URL(string: link.url) else { return }
-        UIApplication.shared.open(url)
+        browser.open(link.url)
     }
 }
 

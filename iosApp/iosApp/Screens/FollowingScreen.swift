@@ -7,6 +7,7 @@ struct FollowingScreen: View {
     let onOpenTopics: (Feed) -> Void
 
     @Environment(FeedsStore.self) private var feeds
+    @Environment(BrowserRouter.self) private var browser
     @Environment(LinksStore.self) private var links
     @Environment(\.dusk) private var dusk
 
@@ -180,8 +181,7 @@ struct FollowingScreen: View {
     }
 
     private func open(_ post: FeedPost) {
-        guard let url = URL(string: post.url) else { return }
-        UIApplication.shared.open(url)
+        browser.open(post.url)
     }
 }
 
@@ -191,6 +191,7 @@ struct TopicsScreen: View {
     let onClose: () -> Void
 
     @Environment(FeedsStore.self) private var feeds
+    @Environment(BrowserRouter.self) private var browser
     @Environment(LinksStore.self) private var links
     @Environment(\.dusk) private var dusk
 
@@ -246,7 +247,6 @@ struct TopicsScreen: View {
     private var posts: [FeedPost] { feeds.posts(for: feed) }
 
     private func open(_ post: FeedPost) {
-        guard let url = URL(string: post.url) else { return }
-        UIApplication.shared.open(url)
+        browser.open(post.url)
     }
 }

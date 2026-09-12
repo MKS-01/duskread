@@ -35,6 +35,11 @@ struct NotionSetupScreen: View {
                         .dusk(.bodyMedium)
                         .foregroundStyle(dusk.onSurfaceVariant)
                         .fixedSize(horizontal: false, vertical: true)
+                    // Safari proper, deliberately, while every article opens
+                    // in-app. Signing in inside a sheet this app presented
+                    // means copying a secret out of it and back in; handing
+                    // the task to the browser leaves it where a password
+                    // manager already works.
                     HeaderAction(label: "Open Notion integrations") {
                         if let url = URL(string: "https://www.notion.so/my-integrations") {
                             UIApplication.shared.open(url)
