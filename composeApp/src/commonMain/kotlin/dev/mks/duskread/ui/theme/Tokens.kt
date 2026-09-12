@@ -17,21 +17,26 @@ import androidx.compose.ui.unit.dp
  * not a rule, and naming it would imply a system that is not there.
  *
  * Spacing follows a 2dp rhythm. New values should land on it.
+ *
+ * The numbers themselves have moved to [DesignTokens], which carries no
+ * Compose types and so can be read from Swift. These objects stay because
+ * they are what the Compose UI reads — this file is now the `Dp` face of the
+ * same values, not a second set of them.
  */
 
 /** Sizes that shape the page rather than decorate it. */
 object Layout {
     /** Horizontal padding for reading surfaces. */
-    val ReadingGutter = 18.dp
+    val ReadingGutter = DesignTokens.ReadingGutter.dp
 
     /** Horizontal padding for list surfaces, which carry their own card insets. */
-    val ListGutter = 14.dp
+    val ListGutter = DesignTokens.ListGutter.dp
 
     /** Bottom inset so the last item clears the floating bar. */
-    val BarClearance = 72.dp
+    val BarClearance = DesignTokens.BarClearance.dp
 
     /** Every face of the floating bar is this tall; only the width changes between them. */
-    val BarHeight = 56.dp
+    val BarHeight = DesignTokens.BarHeight.dp
 
     /**
      * What the floating bar keeps between itself and the safe area.
@@ -42,7 +47,7 @@ object Layout {
      * floating things a thumb-width apart, one of them the system's. This is
      * the gap that stops them reading as one control.
      */
-    val BarInset = 24.dp
+    val BarInset = DesignTokens.BarInset.dp
 
     /**
      * The one width that changes the plan: below it the floating bar, above
@@ -57,23 +62,23 @@ object Layout {
      * for the layout that exists: a landscape phone is still held, still
      * thumb-driven, and stays on the bar.
      */
-    val TwoPaneBreakpoint = 720.dp
+    val TwoPaneBreakpoint = DesignTokens.TwoPaneBreakpoint.dp
 
     /**
      * The vertical navigation rail replacing the floating bar when wide.
      * Narrow enough to read as an edge rather than a column of its own.
      */
-    val RailWidth = 64.dp
+    val RailWidth = DesignTokens.RailWidth.dp
 
     /**
      * The widest a column of prose is allowed to get, regardless of how much
      * room there is around it. Roughly 68 characters at body size — past that
      * the eye loses the start of the next line.
      */
-    val ReadingMeasure = 640.dp
+    val ReadingMeasure = DesignTokens.ReadingMeasure.dp
 
     /** [ListGutter], opened up once there is room. */
-    val WideListGutter = 20.dp
+    val WideListGutter = DesignTokens.WideListGutter.dp
 }
 
 /** Corner radii, largest to smallest. */
@@ -84,14 +89,14 @@ object Radius {
      * a heavily rounded card reads as a generic Material surface sitting on
      * top of it rather than a panel drawn in the same instrument-panel hand.
      */
-    val Card = 14.dp
+    val Card = DesignTokens.RadiusCard.dp
 
     /**
      * Everything that sits inside or below a card: the filled call-to-action,
      * text fields, dashboard and list rows, the timer's state chips. One step
      * tighter than [Card] so a row never competes with the panel holding it.
      */
-    val Inline = 10.dp
+    val Inline = DesignTokens.RadiusInline.dp
 
     /**
      * The mockup's `.pill` and `.sourcechip`: 3dp, which at these sizes is a
@@ -99,21 +104,21 @@ object Radius {
      * sort control into a Material chip and the source cell into an avatar,
      * both of which fight the squared-off waveform they sit beside.
      */
-    val Chip = 3.dp
+    val Chip = DesignTokens.RadiusChip.dp
 }
 
 /** Line weights. */
 object Stroke {
-    val Hairline = 1.dp
+    val Hairline = DesignTokens.StrokeHairline.dp
 }
 
 /** Gaps that recur. Anything used once stays a literal at its call site. */
 object Space {
     /** Between chips in a row. */
-    val ChipGap = 6.dp
+    val ChipGap = DesignTokens.ChipGap.dp
 
     /** Between cards in a list. */
-    val CardGap = 9.dp
+    val CardGap = DesignTokens.CardGap.dp
 }
 
 /**
@@ -126,14 +131,14 @@ object Space {
  */
 object Motion {
     /** Pushing to a full-screen destination: the incoming screen slides and fades in. */
-    const val PushIn = 260
+    const val PushIn = DesignTokens.MotionPushIn
 
     /** …fading slightly slower than it slides, so it does not vanish mid-travel. */
-    const val PopFade = 160
+    const val PopFade = DesignTokens.MotionPopFade
 
     /** Cross-fades that should not draw attention: tab and pane swaps. */
-    const val Fade = 180
+    const val Fade = DesignTokens.MotionFade
 
     /** Chip and bar state changes. */
-    const val Chip = 220
+    const val Chip = DesignTokens.MotionChip
 }

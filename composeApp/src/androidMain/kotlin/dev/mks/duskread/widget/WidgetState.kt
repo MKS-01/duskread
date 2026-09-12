@@ -79,7 +79,7 @@ object WidgetState {
     data class Flash(val host: String, val label: String)
 
     /** Ink or Paper Black, read from the same key the app's theme toggle writes. */
-    fun mono(context: Context): Boolean = keyValueStore(context).getBoolean("theme.mono", default = true)
+    fun mono(context: Context): Boolean = keyValueStore(context).getBoolean("theme.mono", fallback = true)
 
     /** Package-scoped so it reaches our provider and nothing else's. */
     fun refresh(context: Context) {

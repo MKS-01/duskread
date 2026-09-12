@@ -17,6 +17,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import dev.mks.duskread.data.ProvideAppGraph
 import dev.mks.duskread.data.rememberUserPrefs
 import dev.mks.duskread.ui.PlatformOverlay
 import dev.mks.duskread.ui.home.HomeScreen
@@ -30,7 +31,15 @@ import dev.mks.duskread.ui.theme.DuskReadTheme
 import dev.mks.duskread.ui.theme.Motion
 
 @Composable
-fun App() {
+fun App() = ProvideAppGraph { DuskRead() }
+
+/**
+ * Split from [App] only so the graph is in scope: every `rememberX()` below
+ * now resolves through `LocalAppGraph`, which has to be provided by an
+ * ancestor rather than by the composable reading it.
+ */
+@Composable
+private fun DuskRead() {
     val prefs = rememberUserPrefs()
 
     // Both themes are dark; this picks the colourless one. Persisted through

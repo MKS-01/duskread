@@ -2,11 +2,13 @@ package dev.mks.duskread.links
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import dev.mks.duskread.data.KeyValueStore
+import dev.mks.duskread.data.LocalAppGraph
+import dev.mks.duskread.data.Observed
 import dev.mks.duskread.data.rememberKeyValueStore
+import kotlinx.coroutines.flow.StateFlow
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
@@ -18,8 +20,16 @@ import kotlin.time.ExperimentalTime
  */
 @OptIn(ExperimentalTime::class)
 class FeedLibrary(private val store: KeyValueStore) {
-    var feeds: List<Feed> by mutableStateOf(load())
+    // Snapshot state and a StateFlow in one, so Compose and the iOS bridge read
+    // the same value. Declared up here because a delegate has to exist before
+    // the property delegating to it.
+    private val observedFeeds = Observed(load())
+
+    var feeds: List<Feed> by observedFeeds
         private set
+
+    /** [feeds] for observers outside a composition; see [Observed]. */
+    val feedsUpdates: StateFlow<List<Feed>> get() = observedFeeds.updates
 
     /**
      * Follows [rawUrl], or returns the existing feed if it's already followed.
@@ -109,7 +119,4 @@ class FeedLibrary(private val store: KeyValueStore) {
 }
 
 @Composable
-fun rememberFeedLibrary(): FeedLibrary {
-    val store = rememberKeyValueStore()
-    return remember(store) { FeedLibrary(store) }
-}
+fun rememberFeedLibrary(): FeedLibrary = LocalAppGraph.current.feeds

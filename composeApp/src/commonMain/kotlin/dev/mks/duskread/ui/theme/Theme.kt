@@ -13,23 +13,7 @@ import androidx.compose.ui.graphics.Color
 // power on an OLED/AMOLED panel (background is by far the largest area on
 // screen), but not so flat that it loses depth against the cards. Cards get
 // a slightly lifted `surface` so they read as raised above that background.
-private val DarkScheme = darkColorScheme(
-    primary = Color(0xFFC6684A),
-    onPrimary = Color(0xFF2B1006),
-    primaryContainer = Color(0xFF352822),
-    onPrimaryContainer = Color(0xFFFFD9C0),
-    background = Color(0xFF101010),
-    onBackground = Color(0xFFE8E6E2),
-    surface = Color(0xFF1A1A1A),
-    onSurface = Color(0xFFE8E6E2),
-    surfaceVariant = Color(0xFF0D0D0D),
-    onSurfaceVariant = Color(0xFFA3A19D),
-    surfaceContainer = Color(0xFF212121),
-    surfaceContainerHigh = Color(0xFF282828),
-    outline = Color(0xFF3E3E3D),
-    outlineVariant = Color(0xFF242423),
-    error = Color(0xFFF0645F),
-)
+private val DarkScheme = schemeOf(DesignTokens.paperBlack)
 
 // "Ink" — the same page, with the ink drained out of it. Not a second dark
 // theme in a different hue but the *absence* of hue: black through white and
@@ -47,22 +31,33 @@ private val DarkScheme = darkColorScheme(
 // only mean the brightest thing on the page. `error` stays grey rather than
 // sneaking a red back in — anything that has to read as wrong here is loud
 // through brightness and wording, not hue.
-private val MonoScheme = darkColorScheme(
-    primary = Color(0xFFDCDCDC),
-    onPrimary = Color(0xFF161616),
-    primaryContainer = Color(0xFF2E2E2E),
-    onPrimaryContainer = Color(0xFFE4E4E4),
-    background = Color(0xFF161616),
-    onBackground = Color(0xFFDCDCDC),
-    surface = Color(0xFF202020),
-    onSurface = Color(0xFFDCDCDC),
-    surfaceVariant = Color(0xFF121212),
-    onSurfaceVariant = Color(0xFF9C9C9C),
-    surfaceContainer = Color(0xFF272727),
-    surfaceContainerHigh = Color(0xFF303030),
-    outline = Color(0xFF464646),
-    outlineVariant = Color(0xFF2B2B2B),
-    error = Color(0xFFCBCBCB),
+private val MonoScheme = schemeOf(DesignTokens.ink)
+
+/**
+ * Builds a Material scheme from a [Palette].
+ *
+ * The values themselves live in [DesignTokens] rather than here, so the
+ * SwiftUI shell reads the same fifteen numbers this does instead of carrying
+ * a transcription of them. Everything not named falls through to the Material
+ * 3 dark baseline, which is what both schemes did when the literals sat in
+ * this file.
+ */
+private fun schemeOf(palette: Palette) = darkColorScheme(
+    primary = Color(palette.primary),
+    onPrimary = Color(palette.onPrimary),
+    primaryContainer = Color(palette.primaryContainer),
+    onPrimaryContainer = Color(palette.onPrimaryContainer),
+    background = Color(palette.background),
+    onBackground = Color(palette.onBackground),
+    surface = Color(palette.surface),
+    onSurface = Color(palette.onSurface),
+    surfaceVariant = Color(palette.surfaceVariant),
+    onSurfaceVariant = Color(palette.onSurfaceVariant),
+    surfaceContainer = Color(palette.surfaceContainer),
+    surfaceContainerHigh = Color(palette.surfaceContainerHigh),
+    outline = Color(palette.outline),
+    outlineVariant = Color(palette.outlineVariant),
+    error = Color(palette.error),
 )
 
 /**

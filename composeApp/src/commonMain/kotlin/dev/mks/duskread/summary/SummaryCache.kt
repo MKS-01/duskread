@@ -2,11 +2,13 @@ package dev.mks.duskread.summary
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import dev.mks.duskread.data.KeyValueStore
+import dev.mks.duskread.data.LocalAppGraph
+import dev.mks.duskread.data.Observed
 import dev.mks.duskread.data.rememberKeyValueStore
+import kotlinx.coroutines.flow.StateFlow
 
 /**
  * Summaries already generated, kept so a second look costs nothing.
@@ -20,8 +22,16 @@ import dev.mks.duskread.data.rememberKeyValueStore
  * ceremony.
  */
 class SummaryCache(private val store: KeyValueStore) {
-    var summaries: Map<String, ArticleSummary> by mutableStateOf(load())
+    // Snapshot state and a StateFlow in one, so Compose and the iOS bridge read
+    // the same value. Declared up here because a delegate has to exist before
+    // the property delegating to it.
+    private val observedSummaries = Observed(load())
+
+    var summaries: Map<String, ArticleSummary> by observedSummaries
         private set
+
+    /** [summaries] for observers outside a composition; see [Observed]. */
+    val summariesUpdates: StateFlow<Map<String, ArticleSummary>> get() = observedSummaries.updates
 
     /** Short and full are different answers, so the other length is a miss. */
     fun summaryFor(url: String, length: SummaryLength): ArticleSummary? = summaries[url]?.takeIf { it.length == length }
@@ -86,7 +96,4 @@ class SummaryCache(private val store: KeyValueStore) {
 }
 
 @Composable
-fun rememberSummaryCache(): SummaryCache {
-    val store = rememberKeyValueStore()
-    return remember(store) { SummaryCache(store) }
-}
+fun rememberSummaryCache(): SummaryCache = LocalAppGraph.current.summaries

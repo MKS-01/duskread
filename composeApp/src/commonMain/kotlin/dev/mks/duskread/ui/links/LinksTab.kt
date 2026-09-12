@@ -45,11 +45,11 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dev.mks.duskread.data.LocalAppGraph
 import dev.mks.duskread.data.rememberUserPrefs
 import dev.mks.duskread.links.LinkLibrary
 import dev.mks.duskread.links.ReadingSignals
 import dev.mks.duskread.links.SavedLink
-import dev.mks.duskread.links.createHttpClient
 import dev.mks.duskread.links.fetchLinkMetadata
 import dev.mks.duskread.links.looksLikeUrl
 import dev.mks.duskread.links.savedAgo
@@ -105,8 +105,7 @@ fun LinksTab(
     modifier: Modifier = Modifier,
 ) {
     val open = rememberUrlOpener()
-    val client = remember { createHttpClient() }
-    DisposableEffect(client) { onDispose { client.close() } }
+    val client = LocalAppGraph.current.http
 
     val pending = library.links.filterNot { it.fetched }
     LaunchedEffect(pending.map { it.id }) {

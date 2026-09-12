@@ -22,7 +22,16 @@ interface KeyValueStore {
 
     fun putString(key: String, value: String?)
 
-    fun getBoolean(key: String, default: Boolean = false): Boolean = getString(key)?.toBooleanStrictOrNull() ?: default
+    /**
+     * [fallback] rather than `default` because iOS implements this interface in
+     * Swift, where `default` is a keyword and would arrive needing backticks at
+     * every call site.
+     *
+     * Booleans are stored as their string form, not natively, so that a
+     * platform adapter overriding these two stays compatible with anything
+     * written through [getString].
+     */
+    fun getBoolean(key: String, fallback: Boolean = false): Boolean = getString(key)?.toBooleanStrictOrNull() ?: fallback
 
     fun putBoolean(key: String, value: Boolean) = putString(key, value.toString())
 }

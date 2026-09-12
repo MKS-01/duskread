@@ -31,8 +31,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dev.mks.duskread.data.LocalAppGraph
 import dev.mks.duskread.data.rememberUserPrefs
-import dev.mks.duskread.links.createHttpClient
 import dev.mks.duskread.links.loadArticle
 import dev.mks.duskread.links.rememberReadingSignals
 import dev.mks.duskread.speech.SpeechSession
@@ -119,7 +119,7 @@ fun SummaryPanel(
     val summariser = rememberSummariser(prefs.summaryLength)
     val cache = rememberSummaryCache()
     val signals = rememberReadingSignals()
-    val client = remember { createHttpClient() }
+    val client = LocalAppGraph.current.http
     val scope = rememberCoroutineScope()
 
     var stage by remember(target.url, prefs.summaryLength) { mutableStateOf<Stage>(Stage.Waiting) }

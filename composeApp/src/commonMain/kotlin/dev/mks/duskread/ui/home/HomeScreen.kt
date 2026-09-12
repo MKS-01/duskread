@@ -42,19 +42,16 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
+import dev.mks.duskread.data.LocalAppGraph
 import dev.mks.duskread.data.UserPrefs
 import dev.mks.duskread.data.rememberKeyValueStore
-import dev.mks.duskread.data.rememberSecretStore
 import dev.mks.duskread.links.Feed
 import dev.mks.duskread.links.LinkInbox
 import dev.mks.duskread.links.SharedLinkRequest
-import dev.mks.duskread.links.createHttpClient
 import dev.mks.duskread.links.rememberFeedLibrary
 import dev.mks.duskread.links.rememberFeedPostCache
 import dev.mks.duskread.links.rememberLinkLibrary
 import dev.mks.duskread.links.rememberReadingSignals
-import dev.mks.duskread.notion.NotionClient
-import dev.mks.duskread.notion.PastedTokenAuth
 import dev.mks.duskread.notion.rememberNotionPrefs
 import dev.mks.duskread.notion.runFullSync
 import dev.mks.duskread.reader.rememberAudioPlayer
@@ -267,16 +264,14 @@ fun HomeScreen(
     // switch instead of re-fetching every time the dashboard recomposes.
     val feeds = rememberFeedLibrary()
     val feedPosts = rememberFeedPostCache()
-    val feedClient = remember { createHttpClient() }
-    DisposableEffect(feedClient) { onDispose { feedClient.close() } }
+    val feedClient = LocalAppGraph.current.http
 
     // Hoisted here and passed into Settings rather than built there, for the
     // same reason FeedLibrary is: NotionPrefs writes `notion.sync.last`, and
     // two instances over one key would disagree the moment either wrote.
     val notionPrefs = rememberNotionPrefs()
-    val secrets = rememberSecretStore()
-    val notionAuth = remember(secrets) { PastedTokenAuth(secrets) }
-    val notionApi = remember(feedClient, notionAuth) { NotionClient(feedClient, notionAuth) }
+    val notionAuth = LocalAppGraph.current.notionAuth
+    val notionApi = LocalAppGraph.current.notionApi
 
     /*
      * The sync that happens without being asked.

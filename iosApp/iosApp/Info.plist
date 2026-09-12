@@ -29,6 +29,19 @@
 		<key>UIApplicationSupportsMultipleScenes</key>
 		<false/>
 	</dict>
+	<key>UIAppFonts</key>
+	<array>
+		<string>jost_regular.ttf</string>
+		<string>jost_medium.ttf</string>
+		<string>jost_semibold.ttf</string>
+		<string>jost_bold.ttf</string>
+		<string>inconsolata_regular.ttf</string>
+		<string>inconsolata_medium.ttf</string>
+		<string>inconsolata_semibold.ttf</string>
+		<string>inconsolata_bold.ttf</string>
+	</array>
+	<key>UIUserInterfaceStyle</key>
+	<string>Dark</string>
 	<key>UILaunchScreen</key>
 	<dict/>
 	<key>UIRequiredDeviceCapabilities</key>

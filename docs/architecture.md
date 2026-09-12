@@ -11,6 +11,7 @@ if you need the schema, the diagram, or the reasoning behind a number.
 ## Contents
 
 - [The shape of it](#the-shape-of-it)
+- [The two UIs](#the-two-uis)
 - [Where data lives](#where-data-lives)
 - [Notion schema](#notion-schema)
 - [On-device storage](#on-device-storage)
@@ -24,10 +25,13 @@ if you need the schema, the diagram, or the reasoning behind a number.
 
 ## The shape of it
 
-A Compose Multiplatform app — Android, iOS, desktop, Wasm from one
+A Kotlin Multiplatform app — Android, iOS, desktop, Wasm from one
 `commonMain` — that does four things: keeps saved links, follows blogs by RSS,
 plays articles back as audio, and runs a focus timer. Notion curates what to
 follow and what's worth reading; the device never depends on it being reachable.
+
+Android, desktop and Wasm draw with Compose Multiplatform. iOS draws with
+SwiftUI over the same Kotlin — see [The two UIs](#the-two-uis).
 
 <p align="center">
   <img src="media/notion-flow.png" alt="Three sources — Gmail, RSS feeds, and links you paste or share. Claude files the mail into Notion's Sources and Reading List, which syncs both ways with DuskRead; feeds and shared links reach the app directly, never touching Notion. The app caches everything, reads offline, and reads articles aloud on the phone">
@@ -74,6 +78,74 @@ phone reads the article itself.
    nothing it does deletes or archives one.
 2. **The device works offline.** Notion is where subscriptions are curated,
    not a dependency for reading. See [Offline](#offline).
+</details>
+
+---
+
+## The two UIs
+
+Compose for Android, desktop and Wasm; SwiftUI for iOS. Both draw from the
+same Kotlin logic and the same design tokens, and neither owns a copy of a
+colour, a radius or an icon.
+
+<details>
+<summary>What is shared, what is not, and the three things that made it possible</summary>
+
+**Shared:** every library in `links/`, `notion/`, `pomodoro/`, `summary/` and
+`data/`; the ranking; the parsers; the sync. Also the design *values* —
+`ui/theme/DesignTokens.kt` carries the fifteen colour roles per scheme, the
+layout and radius and stroke numbers and the four motion durations as plain
+`Long`/`Double`/`Int`, and `ui/theme/IconPaths.kt` carries the twenty-two
+glyphs as SVG path data. `Theme.kt`, `Tokens.kt` and `DuskReadIcons.kt` build
+their Compose values from those rather than owning them; Swift builds its
+`Color`, `CGFloat` and `Path` values from the same.
+
+**Not shared:** composition. `ListRow`'s geometry, the floating bar's collapse
+behaviour and every screen's layout exist twice, in two languages, with
+nothing linking them. That is the standing cost of a native iOS UI and it is
+paid deliberately — a change to how a row is *built* lands twice, while a
+change to what colour it is lands once.
+
+Three things had to change in `commonMain` before Swift could see any of it:
+
+1. **`data/Observed.kt`.** Every state holder kept its state in Compose
+   snapshot state, which from Swift is a plain getter with no change
+   notification. `Observed` writes a snapshot *and* a `StateFlow` from one
+   setter, so Compose recomposes exactly as before and everything else can
+   subscribe. Both representations, one write — they cannot drift.
+2. **`data/AppGraph.kt`.** The libraries were built by `@Composable
+   rememberX()` factories, and Swift cannot enter a composition. The graph is
+   a plain class holding one of each, reached through `LocalAppGraph` on the
+   Compose side and directly on the Swift side. It also collapsed three
+   `HttpClient` instances into one.
+3. **`iosMain/bridge/`.** ktor and kotlinx-serialization are `implementation`
+   dependencies that are not exported to the framework, so any signature
+   mentioning `HttpClient` or `JsonObject` is uncallable from Swift. The
+   bridge owns the graph and hands out only types Obj-C can carry — callbacks
+   rather than `StateFlow`, since without SKIE a `StateFlow<T>` arrives
+   generics-erased, default arguments do not export at all, and a sealed
+   hierarchy loses its exhaustive `when`.
+
+**What iOS does not have.** `Summariser`, `Reader` and `AudioPlayer` have no
+iOS `actual` — they are `Unavailable*` stubs — so Settings' summary and swipe
+sections are gated on `summariesSupported()` and do not render, and there is
+no Readback tab. `Speaker` **is** implemented: `AVSpeechSynthesizer`, in
+Kotlin/Native, so the shared `Flow<SpeechProgress>` contract is the same one
+Android satisfies. The floating bar's transport face is what that lights up.
+
+**Where a platform does something Kotlin cannot, it is written natively.**
+Kotlin keeps the port — the interface and the types either side agree on — and
+the platform supplies the adapter. Storage went to Swift because the Keychain
+has no sensible Kotlin/Native shape and the decisions around it (suite name,
+App Group, accessibility) are Apple's; speech stayed in Kotlin/Native because
+`Flow<SpeechProgress>` is worth keeping and AVFoundation binds cleanly enough.
+Which side an adapter lands on is judged per case; what does not move is the
+contract.
+
+**Motion does not become springs.** `Motion` is four `tween` durations on
+Compose's default easing, and there is not one spring in the codebase. Swift
+mirrors them as the same cubic at the same durations. Adopting SwiftUI's
+spring idiom would be a change to the motion design rather than a port of it.
 </details>
 
 ---
@@ -186,10 +258,19 @@ The Notion **token is not here.** It lives in a separate `SecretStore` —
 It must never reach the plain `KeyValueStore`, which is what the widget reads
 from another process.
 
-On desktop, iOS and Wasm `SecretStore` delegates to `KeyValueStore` and says
-so in its own KDoc: it is plaintext there. Android is the only target with a
-Settings entry point for a token, and a fallback that pretended otherwise
-would be worse than one that admits it.
+On iOS both stores are **written in Swift**. `KeyValueStore` and `SecretStore`
+are ports; `iosApp/iosApp/Storage/` supplies the adapters — `UserDefaults` and
+the Keychain — and hands them to the bridge at launch. That is what lets the
+token live in the Keychain rather than in preferences, and it leaves the
+decisions that are genuinely Apple's (the suite name, an App Group for a
+future widget, Keychain accessibility) on that side of the line. Booleans go
+in as their string form, because Kotlin's default `getBoolean` is written in
+terms of `getString` and a native `Bool` would make the two disagree silently.
+
+On desktop and Wasm `SecretStore` still delegates to `KeyValueStore` and says
+so in its own KDoc: it is plaintext there. Neither has a Settings entry point
+for a token, and a fallback that pretended otherwise would be worse than one
+that admits it.
 
 `notion.database.name` is not in the table above — nothing writes it any
 more, from back when there was one database instead of two and its name was
@@ -323,8 +404,15 @@ Two Gradle modules — `composeApp` (every platform) and `androidApp` (the
 Android host) — plus `iosApp`, an Xcode project that's generated, not
 committed. `composeApp` splits into `commonMain` and four platform source
 sets meeting it through `expect`/`actual`; `commonMain` is organised by
-feature — `links/`, `notion/`, `pomodoro/`, `reader/`, `speech/`, `summary/`,
-`ui/` — each named for the concern in [The shape of it](#the-shape-of-it).
+feature — `data/`, `links/`, `notion/`, `pomodoro/`, `reader/`, `speech/`,
+`summary/`, `ui/` — each named for the concern in
+[The shape of it](#the-shape-of-it).
+
+`iosApp` is no longer a thin host around a Compose view controller: it is the
+iOS UI. `Design/` builds Swift values from the shared tokens, `Bridge/` wraps
+the Kotlin bridge in observable stores, `Components/` and `Screens/` are the
+UI, and `Shell/` is the floating bar and the router. See
+[The two UIs](#the-two-uis).
 
 <details>
 <summary>What's platform-only, with no commonMain counterpart</summary>
@@ -334,9 +422,11 @@ playback) and the home-screen widget; desktop carries the Chromium
 WebView host for the in-app browser. Everything else behind `expect` has an
 `actual` on all four platforms.
 
-State is plain `remember { mutableStateOf(...) }` hoisted into `App.kt`. No
-ViewModel, no dependency injection, no navigation library — at this size
-they would be ceremony, and their absence is deliberate rather than pending.
+State is plain snapshot state, now behind `Observed` so it is a `StateFlow`
+as well, hoisted into `App.kt` over an `AppGraph`. Still no ViewModel, no
+dependency injection framework and no navigation library — `AppGraph` is a
+class with constructors in it, not a container — because at this size they
+would be ceremony, and their absence is deliberate rather than pending.
 </details>
 
 ## Where to look next
