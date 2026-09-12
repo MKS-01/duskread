@@ -1,3 +1,4 @@
+import ComposeApp
 import SwiftUI
 
 /// The per-row meter, and the "no signal" ornament when flat.

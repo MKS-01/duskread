@@ -1,5 +1,6 @@
 import ComposeApp
 import SwiftUI
+import UIKit
 
 /// The type scale, read back from the live Compose `Typography`.
 ///
@@ -40,10 +41,14 @@ enum DuskType {
             ? inconsolata(weight: Int(spec.weight))
             : jost(weight: Int(spec.weight))
         let size = CGFloat(spec.size)
+        // Measured, not assumed: SwiftUI's lineSpacing is extra leading on top
+        // of the face's own line height, and Jost's differs from the 1.2x rule
+        // of thumb enough to read as loose paragraphs.
+        let natural = UIFont(name: name, size: size)?.lineHeight ?? size * 1.2
         let made = DuskTextStyle(
             font: .custom(name, size: size),
             tracking: CGFloat(spec.tracking),
-            lineSpacing: max(0, CGFloat(spec.lineHeight) - size * 1.2)
+            lineSpacing: max(0, CGFloat(spec.lineHeight) - natural)
         )
         cache[role] = made
         return made

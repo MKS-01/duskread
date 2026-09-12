@@ -15,6 +15,10 @@ final class DuskReadHost: ObservableObject {
     let bridge: DuskReadBridge
     let links: LinksStore
     let prefs: PrefsStore
+    let feeds: FeedsStore
+    let pomodoro: PomodoroStore
+    let suggestions: SuggestionsStore
+    let notion: NotionStore
 
     init() {
         bridge = DuskReadBridge(
@@ -23,6 +27,10 @@ final class DuskReadHost: ObservableObject {
         )
         links = LinksStore(bridge.links)
         prefs = PrefsStore(bridge.prefs)
+        feeds = FeedsStore(bridge.feeds)
+        pomodoro = PomodoroStore(bridge.pomodoro)
+        suggestions = SuggestionsStore(bridge.signals)
+        notion = NotionStore(bridge.notion)
         // The type scale is read off the shared module once, here, rather than
         // looked up per view.
         DuskType.design = bridge.design

@@ -1,4 +1,5 @@
 import ComposeApp
+import Foundation
 import Observation
 import SwiftUI
 
@@ -39,6 +40,8 @@ final class LinksStore {
 
     func savedAgo(_ link: SavedLink) -> String { bridge.savedAgoLabel(savedAt: link.savedAt) }
 
+    func clear() { bridge.clear() }
+
     /// Fetches titles for anything saved without one. The work is Kotlin's;
     /// this is only the trigger, so the two UIs backfill identically.
     func backfillTitles() async {
@@ -77,4 +80,165 @@ final class PrefsStore {
     func updateName(_ value: String?) { bridge.updateName(value: value) }
 
     func markIntroSeen() { bridge.markIntroSeen() }
+
+    func reset() { bridge.reset() }
+}
+
+/// Followed blogs and their cached posts.
+@Observable
+final class FeedsStore {
+    private(set) var feeds: [Feed] = []
+    private(set) var postsByFeed: [String: [FeedPost]] = [:]
+    private(set) var syncing = false
+
+    @ObservationIgnored private let bridge: FeedsBridge
+    @ObservationIgnored private var subscriptions: [Cancellable] = []
+
+    init(_ bridge: FeedsBridge) {
+        self.bridge = bridge
+        feeds = bridge.currentFeeds()
+        postsByFeed = bridge.currentPosts() as? [String: [FeedPost]] ?? [:]
+        subscriptions = [
+            bridge.observeFeeds { [weak self] in self?.feeds = $0 },
+            bridge.observePosts { [weak self] in self?.postsByFeed = $0 as? [String: [FeedPost]] ?? [:] },
+        ]
+    }
+
+    deinit { subscriptions.forEach { $0.cancel() } }
+
+    func posts(for feed: Feed) -> [FeedPost] { postsByFeed[feed.id] ?? [] }
+
+    /// Posts not already saved — the count a row reports as "new".
+    func newCount(for feed: Feed, saved: [SavedLink]) -> Int {
+        let savedUrls = Set(saved.map(\.url))
+        return posts(for: feed).filter { !savedUrls.contains($0.url) }.count
+    }
+
+    func follow(_ rawUrl: String) async {
+        _ = try? await bridge.follow(rawUrl: rawUrl, title: nil, topic: nil)
+    }
+
+    func remove(_ feed: Feed) { bridge.remove(id: feed.id) }
+
+    func clear() { bridge.clear() }
+
+    func sync() async {
+        syncing = true
+        defer { syncing = false }
+        _ = try? await bridge.sync()
+    }
+}
+
+/// The focus timer.
+@Observable
+final class PomodoroStore {
+    private(set) var state: PomodoroState
+
+    @ObservationIgnored private let bridge: PomodoroBridge
+    @ObservationIgnored private var subscription: Cancellable?
+
+    init(_ bridge: PomodoroBridge) {
+        self.bridge = bridge
+        state = PomodoroState(totalSeconds: 0, remainingSeconds: 0, running: false)
+        subscription = bridge.observe { [weak self] in self?.state = $0 }
+    }
+
+    deinit { subscription?.cancel() }
+
+    var pickableMinutes: [Int] { bridge.pickableMinutes.map { Int(truncating: $0) } }
+
+    /// `mm:ss` from the shared side, so the two UIs cannot pad differently.
+    var clockLabel: String { bridge.clockLabelFor(state: state) }
+
+    var elapsedFraction: Double {
+        guard state.totalSeconds > 0 else { return 0 }
+        return 1 - Double(state.remainingSeconds) / Double(state.totalSeconds)
+    }
+
+    func start(_ minutes: Int) { bridge.start(minutes: Int32(minutes)) }
+    func pause() { bridge.pause() }
+    func resume() { bridge.resume() }
+    func reset() { bridge.reset() }
+}
+
+/// Home's ranked shortlist.
+@Observable
+final class SuggestionsStore {
+    private(set) var picks: [Scored] = []
+
+    @ObservationIgnored private let bridge: SignalsBridge
+    @ObservationIgnored private var seed: Int32 = 0
+
+    init(_ bridge: SignalsBridge) {
+        self.bridge = bridge
+        refresh()
+    }
+
+    /// Re-seeding re-ranks rather than re-randomising, so shuffle means
+    /// "something else good" and not "anything at all".
+    func shuffle() {
+        seed &+= 1
+        refresh()
+    }
+
+    func refresh() {
+        picks = bridge.nextUp(
+            count: 3,
+            now: Int64(Date().timeIntervalSince1970 * 1000),
+            seed: seed,
+            focusMinutes: nil
+        )
+    }
+
+    func recordOpen(_ url: String) { bridge.recordOpen(url: url) }
+}
+
+/// Notion setup and sync.
+@Observable
+final class NotionStore {
+    private(set) var connected: Bool
+    private(set) var hasToken: Bool
+    private(set) var lastSyncAt: Int64?
+    private(set) var busy = false
+    private(set) var note: String?
+
+    @ObservationIgnored private let bridge: NotionBridge
+    @ObservationIgnored private var subscription: Cancellable?
+
+    init(_ bridge: NotionBridge) {
+        self.bridge = bridge
+        connected = bridge.isConnected()
+        hasToken = bridge.hasToken()
+        lastSyncAt = bridge.lastSyncAt()?.int64Value
+        subscription = bridge.observeLastSync { [weak self] in self?.lastSyncAt = $0?.int64Value }
+    }
+
+    deinit { subscription?.cancel() }
+
+    func saveToken(_ token: String) {
+        bridge.saveToken(token: token)
+        hasToken = bridge.hasToken()
+    }
+
+    func disconnect() {
+        bridge.disconnect()
+        connected = false
+        hasToken = false
+        note = nil
+    }
+
+    func provision(parentPageId: String? = nil) async -> NotionOutcome? {
+        busy = true
+        defer { busy = false }
+        guard let outcome = try? await bridge.provisionDatabases(parentPageId: parentPageId) else { return nil }
+        connected = bridge.isConnected()
+        note = outcome.message
+        return outcome
+    }
+
+    func sync() async {
+        busy = true
+        defer { busy = false }
+        note = (try? await bridge.sync())?.message
+    }
 }

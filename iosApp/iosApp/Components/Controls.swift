@@ -19,6 +19,9 @@ struct EyebrowHeader<Trailing: View>: View {
                 .fill(dusk.outlineVariant)
                 .frame(height: Stroke.hairline)
                 .frame(maxWidth: .infinity)
+                // The rule yields first; the label and the actions keep their
+                // width.
+                .layoutPriority(-1)
             trailing()
         }
     }
@@ -118,6 +121,10 @@ struct HeaderAction: View {
         Text(label)
             .dusk(.sectionLabel)
             .foregroundStyle(dusk.onSurfaceVariant)
+            // Never wraps: these sit on an eyebrow's rule, and a two-line
+            // action pushes the whole header out of shape.
+            .lineLimit(1)
+            .fixedSize()
             .contentShape(Rectangle())
             .onTapGesture(perform: onTap)
     }

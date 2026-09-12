@@ -3,7 +3,7 @@ options:
   bundleIdPrefix: dev.mks.duskread
 settings:
   base:
-    IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+    IPHONEOS_DEPLOYMENT_TARGET: "18.0"
 targets:
   iosApp:
     type: application

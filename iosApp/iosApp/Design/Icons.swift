@@ -132,15 +132,18 @@ private extension Path {
         if sweep, endAngle < startAngle { endAngle += 2 * .pi }
         if !sweep, endAngle > startAngle { endAngle -= 2 * .pi }
 
-        // Ellipses are drawn as a transformed circle: SwiftUI has no
-        // ellipse-arc primitive, and scaling the unit arc is exact.
-        var transform = CGAffineTransform(translationX: cx, y: cy)
+        // Appended to the *current* subpath, not added as a new one. That
+        // distinction is the whole game: a ring is two half-arcs followed by
+        // `Z`, and if each arc opens its own subpath then `Z` closes only the
+        // second one — drawing its chord straight across the circle.
+        //
+        // Ellipses are a transformed circle because SwiftUI has no ellipse-arc
+        // primitive, and scaling the unit arc is exact.
+        let transform = CGAffineTransform(translationX: cx, y: cy)
             .rotated(by: phi)
             .scaledBy(x: rx, y: ry)
-        var arc = Path()
-        arc.addArc(center: .zero, radius: 1, startAngle: .radians(startAngle),
-                   endAngle: .radians(endAngle), clockwise: !sweep)
-        addPath(arc.applying(transform))
+        addArc(center: .zero, radius: 1, startAngle: .radians(startAngle),
+               endAngle: .radians(endAngle), clockwise: !sweep, transform: transform)
     }
 }
 
