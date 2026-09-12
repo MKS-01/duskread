@@ -101,3 +101,45 @@ val Mono: FontFamily
 val CodeStyle: TextStyle
     @Composable
     get() = TextStyle(fontFamily = Mono, fontSize = 12.5.sp, lineHeight = 20.sp)
+
+/**
+ * The type scale flattened to plain numbers, for the SwiftUI shell.
+ *
+ * Read off the live [Typography] rather than restated as literals. Only two
+ * styles in this file are fully the app's own — [SectionLabel] and
+ * [CodeStyle] — while the rest are Material 3's scale re-fonted and selectively
+ * overridden by [AlgoTypography]. Copying M3's numbers into a token file would
+ * pin a version of them by hand and put the app one dependency bump away from
+ * a scale that no longer matches itself, so this reads whatever is actually in
+ * effect instead.
+ *
+ * Keyed by the Material role name so both sides say `"bodyMedium"` and neither
+ * has to know what that resolves to. The three `display` styles are omitted:
+ * nothing in the app uses them.
+ */
+fun duskReadTypeSpecs(typography: Typography): Map<String, TypeSpec> {
+    fun spec(style: TextStyle, family: String = "jost") = TypeSpec(
+        family = family,
+        weight = style.fontWeight?.weight ?: FontWeight.Normal.weight,
+        size = style.fontSize.value.toDouble(),
+        lineHeight = style.lineHeight.value.toDouble(),
+        tracking = style.letterSpacing.value.toDouble(),
+    )
+    return mapOf(
+        "headlineMedium" to spec(typography.headlineMedium),
+        "headlineSmall" to spec(typography.headlineSmall),
+        "titleLarge" to spec(typography.titleLarge),
+        "titleMedium" to spec(typography.titleMedium),
+        "titleSmall" to spec(typography.titleSmall),
+        "bodyLarge" to spec(typography.bodyLarge),
+        "bodyMedium" to spec(typography.bodyMedium),
+        "bodySmall" to spec(typography.bodySmall),
+        "labelLarge" to spec(typography.labelLarge),
+        "labelMedium" to spec(typography.labelMedium),
+        "labelSmall" to spec(typography.labelSmall),
+        // The two the app owns outright. SectionLabel is labelSmall reopened
+        // at 11sp/1sp tracking; CodeStyle is the only mono style there is.
+        "sectionLabel" to spec(typography.labelSmall).copy(size = 11.0, tracking = 1.0),
+        "code" to TypeSpec(family = "inconsolata", weight = FontWeight.Normal.weight, size = 12.5, lineHeight = 20.0, tracking = 0.0),
+    )
+}

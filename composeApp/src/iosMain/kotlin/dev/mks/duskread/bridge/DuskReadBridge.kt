@@ -36,6 +36,7 @@ class DuskReadBridge(store: KeyValueStore, secrets: SecretStore) {
     val prefs = PrefsBridge(graph)
     val signals = SignalsBridge(graph)
     val pomodoro = PomodoroBridge()
+    val design = DesignBridge()
 
     fun close() = graph.close()
 }
