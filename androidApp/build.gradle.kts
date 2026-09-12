@@ -1,3 +1,4 @@
+import java.util.Properties
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -10,6 +11,16 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.core.splashscreen)
 }
+
+// Release signing reads from keystore.properties at the repo root — gitignored,
+// since it carries the store and key passwords alongside the keystore itself.
+// Absent on a fresh clone, `assembleRelease` still succeeds, just unsigned,
+// rather than failing a build nobody but the release owner needs to sign.
+val keystoreProperties =
+    Properties().apply {
+        val file = rootProject.file("keystore.properties")
+        if (file.exists()) file.inputStream().use { load(it) }
+    }
 
 android {
     namespace = "dev.mks.duskread.android"
@@ -29,9 +40,26 @@ android {
         }
     }
 
+    signingConfigs {
+        if (keystoreProperties.containsKey("storeFile")) {
+            create("release") {
+                storeFile = rootProject.file(keystoreProperties.getProperty("storeFile"))
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         getByName("release") {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
+            signingConfigs.findByName("release")?.let { signingConfig = it }
         }
     }
 
