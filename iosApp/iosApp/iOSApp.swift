@@ -8,9 +8,8 @@ struct iOSApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            DuskReadRootView()
                 .environmentObject(host)
-                .ignoresSafeArea(.all)
         }
     }
 }

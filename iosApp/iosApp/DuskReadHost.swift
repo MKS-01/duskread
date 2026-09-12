@@ -13,12 +13,19 @@ import SwiftUI
 /// puts the token in the Keychain instead of preferences.
 final class DuskReadHost: ObservableObject {
     let bridge: DuskReadBridge
+    let links: LinksStore
+    let prefs: PrefsStore
 
     init() {
         bridge = DuskReadBridge(
             store: UserDefaultsStore(),
             secrets: KeychainSecretStore()
         )
+        links = LinksStore(bridge.links)
+        prefs = PrefsStore(bridge.prefs)
+        // The type scale is read off the shared module once, here, rather than
+        // looked up per view.
+        DuskType.design = bridge.design
     }
 
     deinit {

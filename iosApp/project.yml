@@ -3,16 +3,24 @@ options:
   bundleIdPrefix: dev.mks.duskread
 settings:
   base:
-    IPHONEOS_DEPLOYMENT_TARGET: "15.0"
+    IPHONEOS_DEPLOYMENT_TARGET: "17.0"
 targets:
   iosApp:
     type: application
     platform: iOS
-    sources: [iosApp]
+    sources:
+      - iosApp
+      # The bundled faces live with the shared UI, not here. Referenced in
+      # place so there is one copy of each: Compose loads them through
+      # composeResources, and this puts the same files in the app bundle.
+      - path: ../composeApp/src/commonMain/composeResources/font
+        buildPhase: resources
+        type: folder.reference
+        optional: false
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: dev.mks.duskread
-        PRODUCT_NAME: iosApp
+        PRODUCT_NAME: DuskRead
         INFOPLIST_FILE: iosApp/Info.plist
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
