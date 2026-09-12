@@ -24,7 +24,7 @@
   <a href="#getting-started">Run it</a>
 </p>
 
-<p align="center"><sub>Monochrome by default. One accent, spent on purpose.</sub></p>
+<p align="center"><sub>Monochrome by default. One accent, spent on purpose. Under 4 MB, after R8.</sub></p>
 
 ---
 
