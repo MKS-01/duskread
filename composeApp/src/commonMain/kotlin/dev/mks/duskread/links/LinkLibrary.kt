@@ -2,11 +2,13 @@ package dev.mks.duskread.links
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import dev.mks.duskread.data.KeyValueStore
+import dev.mks.duskread.data.LocalAppGraph
+import dev.mks.duskread.data.Observed
 import dev.mks.duskread.data.rememberKeyValueStore
+import kotlinx.coroutines.flow.StateFlow
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
@@ -25,8 +27,17 @@ import kotlin.time.ExperimentalTime
  */
 @OptIn(ExperimentalTime::class)
 class LinkLibrary(private val store: KeyValueStore) {
-    var links: List<SavedLink> by mutableStateOf(load())
+    // Snapshot state and a StateFlow in one, so Compose and the iOS bridge read
+    // the same value. Declared up here because a delegate has to exist before
+    // the property delegating to it.
+    private val observedLinks = Observed(load())
+    private val observedRemovedUrls = Observed(loadRemoved())
+
+    var links: List<SavedLink> by observedLinks
         private set
+
+    /** [links] for observers outside a composition; see [Observed]. */
+    val linksUpdates: StateFlow<List<SavedLink>> get() = observedLinks.updates
 
     /**
      * URLs deleted here, so the reading-list sync does not hand them back.
@@ -47,8 +58,11 @@ class LinkLibrary(private val store: KeyValueStore) {
      * algorithm can change cannot be persisted — so the raw address is kept
      * and [removedKeys] derives the comparison form on demand.
      */
-    var removedUrls: Map<String, Long> by mutableStateOf(loadRemoved())
+    var removedUrls: Map<String, Long> by observedRemovedUrls
         private set
+
+    /** [removedUrls] for observers outside a composition; see [Observed]. */
+    val removedUrlsUpdates: StateFlow<Map<String, Long>> get() = observedRemovedUrls.updates
 
     /** The canonical forms of [removedUrls], derived rather than stored. */
     val removedKeys: Set<String>
@@ -333,10 +347,7 @@ class LinkLibrary(private val store: KeyValueStore) {
 }
 
 @Composable
-fun rememberLinkLibrary(): LinkLibrary {
-    val store = rememberKeyValueStore()
-    return remember(store) { LinkLibrary(store) }
-}
+fun rememberLinkLibrary(): LinkLibrary = LocalAppGraph.current.links
 
 /**
  * "3h ago". Relative only, and deliberately so: an absolute date needs a

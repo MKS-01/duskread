@@ -2,11 +2,13 @@ package dev.mks.duskread.notion
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import dev.mks.duskread.data.KeyValueStore
+import dev.mks.duskread.data.LocalAppGraph
+import dev.mks.duskread.data.Observed
 import dev.mks.duskread.data.rememberKeyValueStore
+import kotlinx.coroutines.flow.StateFlow
 
 /**
  * Everything about the Notion connection except the credential.
@@ -21,9 +23,21 @@ import dev.mks.duskread.data.rememberKeyValueStore
  * point — see `SecretStore.kt`.
  */
 class NotionPrefs(private val store: KeyValueStore) {
+    // Snapshot state and a StateFlow in one, so Compose and the iOS bridge read
+    // the same value. Declared up here because a delegate has to exist before
+    // the property delegating to it.
+    private val observedSourcesDatabaseId = Observed(store.getString(SourcesKey))
+    private val observedReadingDatabaseId = Observed(store.getString(ReadingKey))
+    private val observedParentPageId = Observed(store.getString(ParentKey))
+    private val observedHomePageId = Observed(store.getString(HomeKey))
+    private val observedLastSyncAt = Observed(store.getString(LastSyncKey)?.toLongOrNull())
+
     /** The `Sources` database the sync reads. */
-    var sourcesDatabaseId: String? by mutableStateOf(store.getString(SourcesKey))
+    var sourcesDatabaseId: String? by observedSourcesDatabaseId
         private set
+
+    /** [sourcesDatabaseId] for observers outside a composition; see [Observed]. */
+    val sourcesDatabaseIdUpdates: StateFlow<String?> get() = observedSourcesDatabaseId.updates
 
     /**
      * The `Reading List` database saved links sync against.
@@ -35,8 +49,11 @@ class NotionPrefs(private val store: KeyValueStore) {
      * pulling your followed blogs and configuring nothing else was a
      * reasonable thing to want; `runFullSync` carried a branch for it.
      */
-    var readingDatabaseId: String? by mutableStateOf(store.getString(ReadingKey))
+    var readingDatabaseId: String? by observedReadingDatabaseId
         private set
+
+    /** [readingDatabaseId] for observers outside a composition; see [Observed]. */
+    val readingDatabaseIdUpdates: StateFlow<String?> get() = observedReadingDatabaseId.updates
 
     /**
      * The page the reader shared with the token, inside which [homePageId]
@@ -45,8 +62,11 @@ class NotionPrefs(private val store: KeyValueStore) {
      * Held so a later repair — a home page deleted in Notion, say — can rebuild
      * without asking the same question twice.
      */
-    var parentPageId: String? by mutableStateOf(store.getString(ParentKey))
+    var parentPageId: String? by observedParentPageId
         private set
+
+    /** [parentPageId] for observers outside a composition; see [Observed]. */
+    val parentPageIdUpdates: StateFlow<String?> get() = observedParentPageId.updates
 
     /**
      * The `DuskRead` page the two databases live in.
@@ -56,12 +76,18 @@ class NotionPrefs(private val store: KeyValueStore) {
      * there. Conflating them would mean a second connection creating a second
      * home page inside the first.
      */
-    var homePageId: String? by mutableStateOf(store.getString(HomeKey))
+    var homePageId: String? by observedHomePageId
         private set
 
+    /** [homePageId] for observers outside a composition; see [Observed]. */
+    val homePageIdUpdates: StateFlow<String?> get() = observedHomePageId.updates
+
     /** When the last successful pull finished, for the "synced 2m ago" line. */
-    var lastSyncAt: Long? by mutableStateOf(store.getString(LastSyncKey)?.toLongOrNull())
+    var lastSyncAt: Long? by observedLastSyncAt
         private set
+
+    /** [lastSyncAt] for observers outside a composition; see [Observed]. */
+    val lastSyncAtUpdates: StateFlow<Long?> get() = observedLastSyncAt.updates
 
     fun updateDatabaseId(id: String?) {
         val trimmed = id?.trim()?.takeIf { it.isNotBlank() }
@@ -152,7 +178,4 @@ class NotionPrefs(private val store: KeyValueStore) {
 }
 
 @Composable
-fun rememberNotionPrefs(): NotionPrefs {
-    val store = rememberKeyValueStore()
-    return remember(store) { NotionPrefs(store) }
-}
+fun rememberNotionPrefs(): NotionPrefs = LocalAppGraph.current.notionPrefs

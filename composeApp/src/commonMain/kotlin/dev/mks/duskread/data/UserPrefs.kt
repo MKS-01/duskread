@@ -2,12 +2,12 @@ package dev.mks.duskread.data
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import dev.mks.duskread.speech.VoiceChoice
 import dev.mks.duskread.summary.SummaryLength
 import dev.mks.duskread.summary.SwipeDefault
+import kotlinx.coroutines.flow.StateFlow
 
 /**
  * The first state in this app that is genuinely mutable and outlives a
@@ -19,19 +19,45 @@ import dev.mks.duskread.summary.SwipeDefault
  * to the store, so nothing can be lost by a process dying between the two.
  */
 class UserPrefs(private val store: KeyValueStore) {
-    var name: String? by mutableStateOf(store.getString(KeyName)?.takeIf { it.isNotBlank() })
+    // Snapshot state and a StateFlow in one, so Compose and the iOS bridge read
+    // the same value. Declared up here because a delegate has to exist before
+    // the property delegating to it.
+    private val observedName = Observed(store.getString(KeyName)?.takeIf { it.isNotBlank() })
+    private val observedIntroSeen = Observed(store.getBoolean(KeyIntroSeen))
+    private val observedMono = Observed(store.getBoolean(KeyMono, fallback = DefaultMono))
+    private val observedReadbackEnabled = Observed(store.getBoolean(KeyReadback))
+    private val observedSummaryLength = Observed(
+        store.getString(KeySummaryLength)?.let { name -> SummaryLength.entries.firstOrNull { it.name == name } } ?: SummaryLength.Full,
+    )
+    private val observedVoice = Observed(
+        store.getString(KeyVoice)?.let { name -> VoiceChoice.entries.firstOrNull { it.name == name } } ?: VoiceChoice.System,
+    )
+    private val observedSwipeDefault = Observed(
+        store.getString(KeySwipeDefault)?.let { name -> SwipeDefault.entries.firstOrNull { it.name == name } } ?: SwipeDefault.Summary,
+    )
+
+    var name: String? by observedName
         private set
 
-    var introSeen: Boolean by mutableStateOf(store.getBoolean(KeyIntroSeen))
+    /** [name] for observers outside a composition; see [Observed]. */
+    val nameUpdates: StateFlow<String?> get() = observedName.updates
+
+    var introSeen: Boolean by observedIntroSeen
         private set
+
+    /** [introSeen] for observers outside a composition; see [Observed]. */
+    val introSeenUpdates: StateFlow<Boolean> get() = observedIntroSeen.updates
 
     /**
      * The monochrome ("Ink") scheme, kept across restarts until changed by
      * hand. Ink by default — the app opens colourless and a reader opts into
      * an accent, not the other way round.
      */
-    var mono: Boolean by mutableStateOf(store.getBoolean(KeyMono, default = DefaultMono))
+    var mono: Boolean by observedMono
         private set
+
+    /** [mono] for observers outside a composition; see [Observed]. */
+    val monoUpdates: StateFlow<Boolean> get() = observedMono.updates
 
     /**
      * Whether the Readback tab is shown at all.
@@ -49,8 +75,11 @@ class UserPrefs(private val store: KeyValueStore) {
      * gesture is documented, and anyone who does not is never shown a switch
      * they have no way to use.
      */
-    var readbackEnabled: Boolean by mutableStateOf(store.getBoolean(KeyReadback))
+    var readbackEnabled: Boolean by observedReadbackEnabled
         private set
+
+    /** [readbackEnabled] for observers outside a composition; see [Observed]. */
+    val readbackEnabledUpdates: StateFlow<Boolean> get() = observedReadbackEnabled.updates
 
     /**
      * How long a summary the reader wants. Stored by name rather than
@@ -58,10 +87,11 @@ class UserPrefs(private val store: KeyValueStore) {
      * existing reader at a different length; an unknown name falls back to
      * the default, which is the engine's own maximum.
      */
-    var summaryLength: SummaryLength by mutableStateOf(
-        store.getString(KeySummaryLength)?.let { name -> SummaryLength.entries.firstOrNull { it.name == name } } ?: SummaryLength.Full,
-    )
+    var summaryLength: SummaryLength by observedSummaryLength
         private set
+
+    /** [summaryLength] for observers outside a composition; see [Observed]. */
+    val summaryLengthUpdates: StateFlow<SummaryLength> get() = observedSummaryLength.updates
 
     /** A blank name is stored as absent, so "skip" and "cleared" mean the same thing. */
     fun updateName(value: String?) {
@@ -104,10 +134,11 @@ class UserPrefs(private val store: KeyValueStore) {
      * An unknown name falls back to [VoiceChoice.System], which is also the
      * only voice guaranteed to exist on every phone.
      */
-    var voice: VoiceChoice by mutableStateOf(
-        store.getString(KeyVoice)?.let { name -> VoiceChoice.entries.firstOrNull { it.name == name } } ?: VoiceChoice.System,
-    )
+    var voice: VoiceChoice by observedVoice
         private set
+
+    /** [voice] for observers outside a composition; see [Observed]. */
+    val voiceUpdates: StateFlow<VoiceChoice> get() = observedVoice.updates
 
     fun updateVoice(value: VoiceChoice) {
         voice = value
@@ -126,10 +157,11 @@ class UserPrefs(private val store: KeyValueStore) {
      * starts talking before anyone asked for it is the more surprising of
      * the two ways to get this wrong.
      */
-    var swipeDefault: SwipeDefault by mutableStateOf(
-        store.getString(KeySwipeDefault)?.let { name -> SwipeDefault.entries.firstOrNull { it.name == name } } ?: SwipeDefault.Summary,
-    )
+    var swipeDefault: SwipeDefault by observedSwipeDefault
         private set
+
+    /** [swipeDefault] for observers outside a composition; see [Observed]. */
+    val swipeDefaultUpdates: StateFlow<SwipeDefault> get() = observedSwipeDefault.updates
 
     fun updateSwipeDefault(value: SwipeDefault) {
         swipeDefault = value
@@ -180,7 +212,4 @@ class UserPrefs(private val store: KeyValueStore) {
 }
 
 @Composable
-fun rememberUserPrefs(): UserPrefs {
-    val store = rememberKeyValueStore()
-    return remember(store) { UserPrefs(store) }
-}
+fun rememberUserPrefs(): UserPrefs = LocalAppGraph.current.prefs

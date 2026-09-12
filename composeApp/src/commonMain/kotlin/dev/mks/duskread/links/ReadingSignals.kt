@@ -2,11 +2,13 @@ package dev.mks.duskread.links
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import dev.mks.duskread.data.KeyValueStore
+import dev.mks.duskread.data.LocalAppGraph
+import dev.mks.duskread.data.Observed
 import dev.mks.duskread.data.rememberKeyValueStore
+import kotlinx.coroutines.flow.StateFlow
 import kotlin.time.Clock
 
 /**
@@ -45,12 +47,25 @@ data class HostSignal(
  * here that is about one article rather than about a source.
  */
 class ReadingSignals(private val store: KeyValueStore) {
-    var byHost: Map<String, HostSignal> by mutableStateOf(loadHosts())
+    // Snapshot state and a StateFlow in one, so Compose and the iOS bridge read
+    // the same value. Declared up here because a delegate has to exist before
+    // the property delegating to it.
+    private val observedByHost = Observed(loadHosts())
+    private val observedTopicReads = Observed(loadTopics())
+    private val observedSkippedPosts = Observed(loadSkips())
+
+    var byHost: Map<String, HostSignal> by observedByHost
         private set
 
+    /** [byHost] for observers outside a composition; see [Observed]. */
+    val byHostUpdates: StateFlow<Map<String, HostSignal>> get() = observedByHost.updates
+
     /** tag -> reads. Empty until something tags the candidates; every term that reads it is then zero. */
-    var topicReads: Map<String, Int> by mutableStateOf(loadTopics())
+    var topicReads: Map<String, Int> by observedTopicReads
         private set
+
+    /** [topicReads] for observers outside a composition; see [Observed]. */
+    val topicReadsUpdates: StateFlow<Map<String, Int>> get() = observedTopicReads.updates
 
     /**
      * url -> when the shuffle stepped past it.
@@ -62,8 +77,11 @@ class ReadingSignals(private val store: KeyValueStore) {
      * return on the very next tap. At a pool of two hundred, where the shuffle
      * is how the pool is navigated, that is backwards.
      */
-    var skippedPosts: Map<String, Long> by mutableStateOf(loadSkips())
+    var skippedPosts: Map<String, Long> by observedSkippedPosts
         private set
+
+    /** [skippedPosts] for observers outside a composition; see [Observed]. */
+    val skippedPostsUpdates: StateFlow<Map<String, Long>> get() = observedSkippedPosts.updates
 
     /** Total reads across every host — the denominator source affinity is smoothed against. */
     val totalReads: Int
@@ -202,7 +220,4 @@ class ReadingSignals(private val store: KeyValueStore) {
 }
 
 @Composable
-fun rememberReadingSignals(): ReadingSignals {
-    val store = rememberKeyValueStore()
-    return remember(store) { ReadingSignals(store) }
-}
+fun rememberReadingSignals(): ReadingSignals = LocalAppGraph.current.signals

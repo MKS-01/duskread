@@ -2,11 +2,13 @@ package dev.mks.duskread.links
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import dev.mks.duskread.data.KeyValueStore
+import dev.mks.duskread.data.LocalAppGraph
+import dev.mks.duskread.data.Observed
 import dev.mks.duskread.data.rememberKeyValueStore
+import kotlinx.coroutines.flow.StateFlow
 
 /**
  * One post as it appeared in a feed the last time that feed synced.
@@ -65,8 +67,16 @@ fun Map<String, List<FeedPost>>.postFor(url: String): FeedPost? = values.asSeque
  * arrives" is the default, not something callers have to arrange.
  */
 class FeedPostCache(private val store: KeyValueStore) {
-    var postsByFeed: Map<String, List<FeedPost>> by mutableStateOf(load())
+    // Snapshot state and a StateFlow in one, so Compose and the iOS bridge read
+    // the same value. Declared up here because a delegate has to exist before
+    // the property delegating to it.
+    private val observedPostsByFeed = Observed(load())
+
+    var postsByFeed: Map<String, List<FeedPost>> by observedPostsByFeed
         private set
+
+    /** [postsByFeed] for observers outside a composition; see [Observed]. */
+    val postsByFeedUpdates: StateFlow<Map<String, List<FeedPost>>> get() = observedPostsByFeed.updates
 
     fun replace(feedId: String, posts: List<FeedPost>) {
         postsByFeed = postsByFeed + (feedId to posts)
@@ -156,7 +166,4 @@ class FeedPostCache(private val store: KeyValueStore) {
 }
 
 @Composable
-fun rememberFeedPostCache(): FeedPostCache {
-    val store = rememberKeyValueStore()
-    return remember(store) { FeedPostCache(store) }
-}
+fun rememberFeedPostCache(): FeedPostCache = LocalAppGraph.current.feedPosts
