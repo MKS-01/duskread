@@ -25,13 +25,13 @@ if you need the schema, the diagram, or the reasoning behind a number.
 
 ## The shape of it
 
-A Kotlin Multiplatform app — Android, iOS, desktop, Wasm from one
-`commonMain` — that does four things: keeps saved links, follows blogs by RSS,
-plays articles back as audio, and runs a focus timer. Notion curates what to
-follow and what's worth reading; the device never depends on it being reachable.
+A Kotlin Multiplatform app — Android and iOS from one `commonMain` — that
+does four things: keeps saved links, follows blogs by RSS, plays articles
+back as audio, and runs a focus timer. Notion curates what to follow and
+what's worth reading; the device never depends on it being reachable.
 
-Android, desktop and Wasm draw with Compose Multiplatform. iOS draws with
-SwiftUI over the same Kotlin — see [The two UIs](#the-two-uis).
+Android draws with Compose Multiplatform. iOS draws with SwiftUI over the
+same Kotlin — see [The two UIs](#the-two-uis).
 
 <p align="center">
   <img src="media/notion-flow.png" alt="Three sources — Gmail, RSS feeds, and links you paste or share. Claude files the mail into Notion's Sources and Reading List, which syncs both ways with DuskRead; feeds and shared links reach the app directly, never touching Notion. The app caches everything, reads offline, and reads articles aloud on the phone">
@@ -84,9 +84,16 @@ phone reads the article itself.
 
 ## The two UIs
 
-Compose for Android, desktop and Wasm; SwiftUI for iOS. Both draw from the
-same Kotlin logic and the same design tokens, and neither owns a copy of a
-colour, a radius or an icon.
+Compose for Android; SwiftUI for iOS. Both draw from the same Kotlin logic
+and the same design tokens, and neither owns a copy of a colour, a radius or
+an icon.
+
+<p align="center">
+  <img src="media/kmp-architecture.png" alt="commonMain holds the business logic (data, links, notion, pomodoro, reader, speech, summary), the Compose UI itself, and the design tokens. Android draws that Compose UI directly through platform actuals. iOS goes through iosMain/bridge/, which wraps AppGraph in an observable, Obj-C-safe layer, and iosApp draws its own SwiftUI from the same tokens">
+</p>
+
+Same picture as `README.md` — one copy, `docs/media/kmp-architecture.png`
+(source and render command in `docs/media/kmp-architecture.html`).
 
 <details>
 <summary>What is shared, what is not, and the three things that made it possible</summary>
@@ -267,11 +274,6 @@ future widget, Keychain accessibility) on that side of the line. Booleans go
 in as their string form, because Kotlin's default `getBoolean` is written in
 terms of `getString` and a native `Bool` would make the two disagree silently.
 
-On desktop and Wasm `SecretStore` still delegates to `KeyValueStore` and says
-so in its own KDoc: it is plaintext there. Neither has a Settings entry point
-for a token, and a fallback that pretended otherwise would be worse than one
-that admits it.
-
 `notion.database.name` is not in the table above — nothing writes it any
 more, from back when there was one database instead of two and its name was
 cached for display. `NotionPrefs.clear()` still deletes it, so an install
@@ -400,9 +402,9 @@ own empty state rather than letting the WebView render a `net::` error page.
 
 ## Module map
 
-Two Gradle modules — `composeApp` (every platform) and `androidApp` (the
+Two Gradle modules — `composeApp` (both platforms) and `androidApp` (the
 Android host) — plus `iosApp`, an Xcode project that's generated, not
-committed. `composeApp` splits into `commonMain` and four platform source
+committed. `composeApp` splits into `commonMain` and two platform source
 sets meeting it through `expect`/`actual`; `commonMain` is organised by
 feature — `data/`, `links/`, `notion/`, `pomodoro/`, `reader/`, `speech/`,
 `summary/`, `ui/` — each named for the concern in
@@ -418,9 +420,8 @@ UI, and `Shell/` is the floating bar and the router. See
 <summary>What's platform-only, with no commonMain counterpart</summary>
 
 Android carries three foreground services (Pomodoro, Speech, Reader
-playback) and the home-screen widget; desktop carries the Chromium
-WebView host for the in-app browser. Everything else behind `expect` has an
-`actual` on all four platforms.
+playback) and the home-screen widget, none of which iOS has a counterpart
+for. Everything else behind `expect` has an `actual` on both platforms.
 
 State is plain snapshot state, now behind `Observed` so it is a `StateFlow`
 as well, hoisted into `App.kt` over an `AppGraph`. Still no ViewModel, no

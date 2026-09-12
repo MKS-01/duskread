@@ -137,8 +137,8 @@ pattern fixes, not a style preference.
 ## Before calling a UI change done
 
 Per `CLAUDE.md`: compiling proves nothing about layout. For any visual change —
-`./gradlew ktlintCheck`, then `:composeApp:compileAndroidMain` (or the desktop
-target if it touches `commonMain`/`desktopMain`), then actually look at it:
+`./gradlew ktlintCheck`, then `:composeApp:compileAndroidMain`, then actually
+look at it:
 
 ```bash
 adb shell am force-stop dev.mks.duskread

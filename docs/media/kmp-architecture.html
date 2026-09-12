@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>DuskRead — one core, two UIs</title>
+<!--
+  Source for kmp-architecture.png, the diagram in README.md and
+  docs/architecture.md's "The two UIs" section. Committed so the picture can
+  be corrected rather than redrawn — same reasoning as notion-flow.html.
+
+  Rendered at twice size, so the type in it survives a retina screen:
+
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+      --headless --disable-gpu --hide-scrollbars \
+      --window-size=1280,700 --force-device-scale-factor=2 \
+      --screenshot=docs/media/kmp-architecture.png \
+      --virtual-time-budget=4000 docs/media/kmp-architecture.html
+
+  Colours are the Paper Black scheme's own, mirrored from ui/theme/Theme.kt —
+  the same rule notion-flow.html follows. The connectors are drawn by the
+  script at the foot from the boxes' measured positions.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inconsolata:wght@400;500;600&family=Jost:wght@400;500;600;700&display=swap">
+<style>
+  :root {
+    --bg: #101010;
+    --surface: #1a1a1a;
+    --ink: #e8e6e2;
+    --muted: #a3a19d;
+    --faint: #6f6d6a;
+    --line: #242423;
+    --line-firm: #3e3e3d;
+    --accent: #c6684a;
+    --ui: "Jost", ui-sans-serif, system-ui, sans-serif;
+    --data: "Inconsolata", ui-monospace, Menlo, monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body { margin: 0; padding: 0; }
+
+  body {
+    width: 1280px; height: 700px; overflow: hidden;
+    background: var(--bg); color: var(--ink);
+    font-family: var(--data);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  #stage { position: relative; width: 1280px; height: 700px; }
+
+  #wires { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+
+  .layer { position: absolute; z-index: 1; }
+
+  h1 {
+    position: absolute; top: 28px; left: 0; right: 0; margin: 0;
+    font-family: var(--ui); font-weight: 700; font-size: 29px;
+    line-height: 1.26; letter-spacing: -0.01em; text-align: center;
+  }
+  h1 .two { color: var(--accent); }
+
+  .grouplabel {
+    font-family: var(--data); font-size: 11px; letter-spacing: 0.16em;
+    text-transform: uppercase; color: var(--faint);
+  }
+
+  /* commonMain's own frame — everything inside it is one Kotlin source set,
+     compiled into every target, which is the whole claim the picture makes. */
+  #common {
+    position: absolute; z-index: -1;
+    border: 1px solid var(--line); border-radius: 14px;
+    background: #131313;
+  }
+
+  .card {
+    position: absolute; z-index: 1;
+    border: 1px solid var(--line-firm); border-radius: 10px;
+    background: var(--bg); padding: 13px 16px;
+  }
+  .card .name {
+    font-family: var(--data); font-size: 14.5px; font-weight: 600;
+    letter-spacing: 0.01em; color: var(--ink);
+  }
+  .card .sub {
+    margin-top: 6px; font-family: var(--data); font-size: 11px;
+    color: var(--faint); line-height: 1.5;
+  }
+
+  #tokens { background: var(--accent); border-color: var(--accent); }
+  #tokens .name { color: #17100d; }
+  #tokens .sub { color: rgba(23, 16, 13, 0.72); }
+
+  #ports {
+    background: var(--surface);
+  }
+  #ports .name { color: var(--ink); }
+
+  .panel {
+    position: absolute; z-index: 1;
+    border: 1px solid var(--line-firm); border-radius: 12px;
+    background: var(--surface); padding: 16px 18px 18px;
+  }
+  .panel h2 {
+    margin: 0 0 11px; padding-bottom: 10px;
+    border-bottom: 1px solid var(--line);
+    font-family: var(--ui); font-weight: 600; font-size: 15px;
+    letter-spacing: 0.005em;
+  }
+  .panel p {
+    margin: 0 0 6px; font-family: var(--data); font-size: 11.8px;
+    line-height: 1.52; color: var(--muted);
+  }
+  .panel p:last-child { margin-bottom: 0; }
+  .panel p.strong { color: var(--ink); font-weight: 600; }
+  .panel p .sound { color: var(--accent); }
+
+  .wirelabel {
+    position: absolute; z-index: 1;
+    font-family: var(--data); font-size: 11px; color: var(--muted);
+    background: var(--bg); padding: 0 6px; text-align: center;
+  }
+
+  footer {
+    position: absolute; left: 40px; right: 40px; bottom: 30px;
+    padding-top: 16px; border-top: 1px solid var(--line);
+    font-family: var(--data); font-size: 12.5px; line-height: 1.6;
+    color: var(--muted);
+  }
+</style>
+
+<div id="stage">
+  <svg id="wires" width="1280" height="700" aria-hidden="true"></svg>
+
+  <h1>One Kotlin core.<br><span class="two">Two native UIs.</span></h1>
+
+  <div id="common" style="left:100px; top:118px; width:1080px; height:172px"></div>
+  <div class="layer grouplabel" style="left:124px; top:132px">commonMain — one Kotlin source set, every target</div>
+
+  <div class="card" id="logic" style="left:124px; top:164px; width:322px">
+    <div class="name">business logic</div>
+    <div class="sub">data/ · links/ · notion/<br>pomodoro/ · reader/ · speech/ · summary/<br>ranking, sync, canonical urls</div>
+  </div>
+
+  <div class="card" id="uiCard" style="left:466px; top:164px; width:322px">
+    <div class="name">ui/ — Compose Multiplatform</div>
+    <div class="sub">screens, ListRow, the floating bar<br>Android's own composition</div>
+  </div>
+
+  <div class="card" id="tokens" style="left:808px; top:164px; width:342px">
+    <div class="name">design tokens</div>
+    <div class="sub">DesignTokens.kt · IconPaths.kt · Tokens.kt<br>values only — Swift reads these too</div>
+  </div>
+
+  <div class="card" id="ports" style="left:400px; top:322px; width:480px">
+    <div class="name">expect / actual</div>
+    <div class="sub">KeyValueStore · SecretStore · Speaker<br>Summariser · Reader · AudioPlayer · HttpClient<br>one contract in commonMain, one adapter per platform</div>
+  </div>
+
+  <div class="panel" id="compose" style="left:140px; top:458px; width:460px">
+    <h2>Android</h2>
+    <p class="strong">draws commonMain's Compose UI directly</p>
+    <p>same process, same language, no second copy</p>
+    <p>androidMain supplies the actuals —<br>TextToSpeech, the WebView, ML Kit GenAI</p>
+  </div>
+
+  <div class="panel" id="ios" style="left:680px; top:458px; width:460px">
+    <h2>iOS</h2>
+    <p class="strong">draws its own UI, in SwiftUI</p>
+    <p><span class="sound">iosMain/bridge/</span> wraps AppGraph in an<br>Obj-C-safe, observable layer — callbacks, not Flow</p>
+    <p>iosApp/ (Design/ Bridge/ Components/ Screens/ Shell/)<br>builds every value from the same tokens, composes fresh</p>
+  </div>
+
+  <div class="wirelabel" id="composeLabel">shared UI</div>
+  <div class="wirelabel" id="iosLabel">second UI,<br>same values</div>
+
+  <footer>
+    Business logic and the Compose UI live once, in commonMain. iOS is the one place a screen is built twice — never a colour, a radius or an icon.
+  </footer>
+</div>
+
+<script>
+  (function () {
+    var svg = document.getElementById('wires');
+    var NS = 'http://www.w3.org/2000/svg';
+    var GREY = '#4a4948';
+    var ACCENT = '#c6684a';
+
+    var defs = document.createElementNS(NS, 'defs');
+    [['head-grey', GREY], ['head-accent', ACCENT]].forEach(function (pair) {
+      var m = document.createElementNS(NS, 'marker');
+      m.setAttribute('id', pair[0]);
+      m.setAttribute('viewBox', '0 0 10 10');
+      m.setAttribute('refX', '9'); m.setAttribute('refY', '5');
+      m.setAttribute('markerWidth', '7'); m.setAttribute('markerHeight', '7');
+      m.setAttribute('orient', 'auto-start-reverse');
+      var p = document.createElementNS(NS, 'path');
+      p.setAttribute('d', 'M 0 1 L 9 5 L 0 9 z');
+      p.setAttribute('fill', pair[1]);
+      m.appendChild(p); defs.appendChild(m);
+    });
+    svg.appendChild(defs);
+
+    function box(id) {
+      var r = document.getElementById(id).getBoundingClientRect();
+      return { l: r.left, r: r.right, t: r.top, b: r.bottom, cx: r.left + r.width / 2, cy: r.top + r.height / 2 };
+    }
+
+    function draw(d, colour) {
+      var p = document.createElementNS(NS, 'path');
+      p.setAttribute('d', d);
+      p.setAttribute('fill', 'none');
+      p.setAttribute('stroke', colour);
+      p.setAttribute('stroke-width', '1.4');
+      p.setAttribute('marker-end', 'url(#' + (colour === ACCENT ? 'head-accent' : 'head-grey') + ')');
+      svg.appendChild(p);
+    }
+
+    var ports = box('ports'), compose = box('compose'), ios = box('ios');
+
+    // commonMain down into the expect/actual boundary.
+    draw('M ' + ports.cx + ' ' + (ports.t - 20) + ' V ' + ports.t, GREY);
+
+    // The boundary fans out to each platform's own composition — grey to
+    // Compose (still the shared UI), accent to iOS (the one branch that
+    // draws a second one).
+    draw('M ' + ports.l + ' ' + ports.b + ' V ' + (ports.b + 30) + ' H ' + compose.cx + ' V ' + compose.t, GREY);
+    draw('M ' + ports.r + ' ' + ports.b + ' V ' + (ports.b + 30) + ' H ' + ios.cx + ' V ' + ios.t, ACCENT);
+
+    function place(el, x, y) {
+      el.style.left = Math.round(x) + 'px';
+      el.style.top = Math.round(y) + 'px';
+    }
+    place(document.getElementById('composeLabel'), compose.cx - 34, ports.b + 6);
+    place(document.getElementById('iosLabel'), ios.cx - 40, ports.b - 2);
+  })();
+</script>

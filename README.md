@@ -62,8 +62,7 @@ colour drained out.
 ## Getting started
 
 > Android is the app, built and tested day to day. iOS draws its own UI in
-> SwiftUI over the same Kotlin; desktop and web compile from the Compose one
-> to prove it travels.
+> SwiftUI over the same Kotlin.
 
 ```bash
 git clone https://github.com/MKS-01/duskread.git && cd duskread
@@ -82,38 +81,41 @@ token in Settings.
 | **For iOS** | Xcode and [XcodeGen](https://github.com/yonaskolb/XcodeGen); iOS 18 and up |
 
 <details>
-<summary><strong>Desktop, web and iOS</strong></summary>
+<summary><strong>iOS</strong></summary>
 
 ```bash
-./gradlew :composeApp:runDistributable              # desktop — use this, not `run`
-./gradlew :composeApp:wasmJsBrowserDevelopmentRun   # web, on :8080
-
-cd iosApp && xcodegen generate && cd ..             # iOS needs an Xcode host
+cd iosApp && xcodegen generate && cd ..             # needs an Xcode host
 open iosApp/iosApp.xcodeproj
 ```
 
-`runDistributable`, not `run`, for desktop — the embedded Chromium needs the
-packaged `.app` layout, or it segfaults on init. First iOS build is ten
+There's no Gradle run task for it — Compose Multiplatform only builds a
+framework, which the generated Xcode project links. First build is ten
 minutes or more; incremental after that.
 </details>
 
-## How it's built
+## One core, two UIs
 
-One `commonMain` source set holds the libraries, the ranking and the sync for
-every platform; storage, audio, the summariser and the HTTP client are
-`expect`/`actual` pairs behind it, on [Kotlin](https://kotlinlang.org/) 2.3
-and [Ktor](https://ktor.io/) 3.1. Android, desktop and web draw it with
+One `commonMain` source set holds the libraries, the ranking, the sync and the
+Compose UI itself, shared between Android and iOS; storage, audio, the
+summariser and the HTTP client are `expect`/`actual` pairs behind it, on
+[Kotlin](https://kotlinlang.org/) 2.3 and [Ktor](https://ktor.io/) 3.1.
+Android draws that Compose UI directly with
 [Compose Multiplatform](https://www.jetbrains.com/compose-multiplatform/) 1.11
 and [Haze](https://github.com/chrisbanes/haze) for the floating-bar blur; iOS
-draws its own in [SwiftUI](https://developer.apple.com/xcode/swiftui/), taking
-its colours, type, spacing, motion and icon paths from the same Kotlin token
-layer rather than a second copy of them. Summaries run on-device via
+is the one platform that composes its own, in
+[SwiftUI](https://developer.apple.com/xcode/swiftui/) over `iosMain/bridge/`,
+taking its colours, type, spacing, motion and icon paths from the same Kotlin
+token layer rather than a second copy of them. Summaries run on-device via
 [ML Kit GenAI](https://developer.android.com/ai) / Gemini Nano; reading aloud
-is Android's own `TextToSpeech`; the optional Readback tab queries
-[readback](https://github.com/MKS-01/readback)'s `library.db` read-only — all
-three are Android-only for now, so the iOS app is the reading half. No
-navigation library, no ViewModel, no DI, no database — a ceiling chosen on
-purpose.
+is Android's own `TextToSpeech`, and `AVSpeechSynthesizer` on iOS through the
+same shared `Flow<SpeechProgress>` contract; the optional Readback tab queries
+[readback](https://github.com/MKS-01/readback)'s `library.db` read-only,
+Android-only for now. No navigation library, no ViewModel, no DI, no
+database — a ceiling chosen on purpose.
+
+<p align="center">
+  <img src="docs/media/kmp-architecture.png" alt="commonMain holds the business logic (data, links, notion, pomodoro, reader, speech, summary), the Compose UI itself, and the design tokens. Android draws that Compose UI directly through platform actuals. iOS goes through iosMain/bridge/, which wraps AppGraph in an observable, Obj-C-safe layer, and iosApp draws its own SwiftUI from the same tokens">
+</p>
 
 ```bash
 ./gradlew ktlintCheck    # several rules deliberately off, see .editorconfig

@@ -7,7 +7,7 @@ RSS feed, and hear posts read back as audio, with a focus timer around it all.
 Used mostly on an Android phone, one-handed, so everything sits in the lower
 third of the screen.
 
-**Two UIs.** Android, desktop and Wasm draw with Compose Multiplatform from
+**Two UIs.** Android draws with Compose Multiplatform from
 `composeApp/src/commonMain/kotlin/dev/mks/duskread/ui/`. **iOS draws with
 SwiftUI**, in `iosApp/iosApp/`, over the same Kotlin through
 `composeApp/src/iosMain/.../bridge/`. Both read the same design values from
@@ -64,20 +64,19 @@ keeps the rest.
 
 ```bash
 ./gradlew :androidApp:installDebug        # the normal loop, ~5s warm
-./gradlew :composeApp:compileKotlinDesktop # fast sanity check that common code compiles
+./gradlew :composeApp:compileAndroidMain  # fast sanity check that common code compiles
 ```
 
-**Do not build iOS or Wasm unless asked** — a cold Kotlin/Native build is over
-ten minutes. Do build iOS when the change touches `iosMain/` or `iosApp/`;
-that is the target it ships on.
+**Do not build iOS unless asked** — a cold Kotlin/Native build is over ten
+minutes. Do build iOS when the change touches `iosMain/` or `iosApp/`; that
+is the target it ships on.
 
 Gradle task names differ from a normal Android project because `composeApp`
 uses the AGP 9 `androidLibrary` KMP DSL, not `com.android.library`:
 
 - `:composeApp:compileAndroidMain` — **not** `compileDebugKotlinAndroid`, which
   does not exist and will fail with "task not found"
-- `:androidApp:compileDebugSources`, `:composeApp:compileKotlinDesktop`,
-  `:composeApp:compileKotlinWasmJs`, `:composeApp:compileKotlinIosSimulatorArm64`
+- `:androidApp:compileDebugSources`, `:composeApp:compileKotlinIosSimulatorArm64`
 
 Compiling proves nothing about layout. For any UI change, check it on a device:
 
