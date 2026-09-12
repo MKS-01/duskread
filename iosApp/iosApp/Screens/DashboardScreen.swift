@@ -17,6 +17,7 @@ struct DashboardScreen: View {
     @Environment(PomodoroStore.self) private var pomodoro
     @Environment(SuggestionsStore.self) private var suggestions
     @Environment(PrefsStore.self) private var prefs
+    @Environment(BarCollapse.self) private var collapse
     @Environment(\.dusk) private var dusk
 
     var body: some View {
@@ -41,6 +42,7 @@ struct DashboardScreen: View {
             .padding(.top, 10)
             .padding(.bottom, Layout.barClearance)
         }
+        .tracksBarCollapse(collapse)
         .background(dusk.background)
         .refreshable { await feeds.sync(); suggestions.refresh() }
         .onAppear { suggestions.refresh() }
@@ -71,9 +73,9 @@ struct DashboardScreen: View {
     private var nextUp: some View {
         VStack(alignment: .leading, spacing: 14) {
             EyebrowHeader(label: "Next up") {
-                DuskIcon(path: IconPaths.shared.Shuffle, size: 18, tint: dusk.onSurfaceVariant)
-                    .contentShape(Rectangle())
-                    .onTapGesture { suggestions.shuffle() }
+                RowToggle(path: IconPaths.shared.Shuffle, tint: dusk.onSurfaceVariant) {
+                    suggestions.shuffle()
+                }
             }
 
             if suggestions.picks.isEmpty {
@@ -157,14 +159,17 @@ struct DashboardScreen: View {
                     }
                 }
                 if feeds.feeds.count > 3 {
-                    HStack(spacing: 6) {
-                        Text("\(feeds.feeds.count - 3) more")
-                            .dusk(.sectionLabel)
-                            .foregroundStyle(dusk.primary)
-                        DuskIcon(path: IconPaths.shared.Chevron, size: 14, tint: dusk.primary)
+                    Button(action: onOpenFollowing) {
+                        HStack(spacing: 6) {
+                            Text("\(feeds.feeds.count - 3) more")
+                                .dusk(.sectionLabel)
+                                .foregroundStyle(dusk.primary)
+                            DuskIcon(path: IconPaths.shared.Chevron, size: 14, tint: dusk.primary)
+                        }
+                        .padding(.vertical, 8)
+                        .contentShape(Rectangle())
                     }
-                    .contentShape(Rectangle())
-                    .onTapGesture(perform: onOpenFollowing)
+                    .buttonStyle(.plain)
                 }
             }
         }

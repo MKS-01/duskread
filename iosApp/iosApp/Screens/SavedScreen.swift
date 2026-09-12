@@ -8,6 +8,7 @@ import SwiftUI
 struct SavedScreen: View {
     @Environment(LinksStore.self) private var links
     @Environment(BrowserRouter.self) private var browser
+    @Environment(BarCollapse.self) private var collapse
     @Environment(\.dusk) private var dusk
 
     @State private var filter: LinkFilter = .all
@@ -43,6 +44,7 @@ struct SavedScreen: View {
             .padding(.horizontal, Layout.listGutter)
             .padding(.bottom, Layout.barClearance)
         }
+        .tracksBarCollapse(collapse)
         .background(dusk.background)
         .task { await links.backfillTitles() }
     }
@@ -113,15 +115,12 @@ struct SavedScreen: View {
             last: last,
             onTap: { open(link) }
         ) {
-            DuskIcon(
+            RowToggle(
                 path: link.read ? IconPaths.shared.Check : IconPaths.shared.External,
-                size: 18,
                 // The affordance glyph keeps a permanently muted hint of the
                 // accent: it marks "this leaves the app" regardless of state.
                 tint: link.read ? dusk.onSurfaceVariant : dusk.primary.opacity(0.75)
-            )
-            .contentShape(Rectangle())
-            .onTapGesture { links.toggleRead(link) }
+            ) { links.toggleRead(link) }
         }
         // A context menu, not a swipe, until the Compose gesture is ported.
         // That one changes its own label at 40% travel and never settles, and

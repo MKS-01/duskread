@@ -9,6 +9,7 @@ struct FollowingScreen: View {
     @Environment(FeedsStore.self) private var feeds
     @Environment(BrowserRouter.self) private var browser
     @Environment(LinksStore.self) private var links
+    @Environment(BarCollapse.self) private var collapse
     @Environment(\.dusk) private var dusk
 
     @State private var expanded: Set<String> = []
@@ -40,6 +41,7 @@ struct FollowingScreen: View {
             .padding(.horizontal, Layout.listGutter)
             .padding(.bottom, Layout.barClearance)
         }
+        .tracksBarCollapse(collapse)
         .background(dusk.background)
         .refreshable { await feeds.sync() }
     }
@@ -116,11 +118,9 @@ struct FollowingScreen: View {
                     if isOpen { expanded.remove(feed.id) } else { expanded.insert(feed.id) }
                 }
             }
-            .contextMenu {
-                if managing {
-                    Button("Unfollow", role: .destructive) { feeds.remove(feed) }
-                }
-            }
+            // Only offered while managing — an empty context menu still
+            // swallows the long press, which makes the row feel stuck.
+            .unfollowMenu(managing) { feeds.remove(feed) }
 
             if isOpen {
                 VStack(alignment: .leading, spacing: 0) {
@@ -154,13 +154,10 @@ struct FollowingScreen: View {
             onTap: { open(post) }
         ) {
             let saved = links.links.contains { $0.url == post.url }
-            DuskIcon(
+            RowToggle(
                 path: saved ? IconPaths.shared.BookmarkFilled : IconPaths.shared.Bookmark,
-                size: 18,
                 tint: saved ? dusk.primary : dusk.onSurfaceVariant
-            )
-            .contentShape(Rectangle())
-            .onTapGesture {
+            ) {
                 if let existing = links.links.first(where: { $0.url == post.url }) {
                     links.remove(existing)
                 } else {
@@ -222,13 +219,10 @@ struct TopicsScreen: View {
                         onTap: { open(post) }
                     ) {
                         let saved = links.links.contains { $0.url == post.url }
-                        DuskIcon(
+                        RowToggle(
                             path: saved ? IconPaths.shared.BookmarkFilled : IconPaths.shared.Bookmark,
-                            size: 18,
                             tint: saved ? dusk.primary : dusk.onSurfaceVariant
-                        )
-                        .contentShape(Rectangle())
-                        .onTapGesture {
+                        ) {
                             if let existing = links.links.first(where: { $0.url == post.url }) {
                                 links.remove(existing)
                             } else {
@@ -248,5 +242,16 @@ struct TopicsScreen: View {
 
     private func open(_ post: FeedPost) {
         browser.open(post.url)
+    }
+}
+
+private extension View {
+    @ViewBuilder
+    func unfollowMenu(_ managing: Bool, remove: @escaping () -> Void) -> some View {
+        if managing {
+            contextMenu { Button("Unfollow", role: .destructive, action: remove) }
+        } else {
+            self
+        }
     }
 }

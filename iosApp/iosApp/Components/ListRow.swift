@@ -23,32 +23,42 @@ struct ListRow<Trailing: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .top, spacing: 10) {
-                MonogramBadge(host: host, accent: tone == .accent)
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(title)
-                        .dusk(.titleSmall)
-                        .foregroundStyle(tone == .accent ? dusk.primary : dusk.onSurface)
-                        .lineLimit(titleLineLimit)
-                        .multilineTextAlignment(.leading)
-                        .fixedSize(horizontal: false, vertical: true)
-                    if !meta.isEmpty {
-                        HStack(spacing: 10) {
-                            ForEach(meta) { item in
-                                Text(item.text)
-                                    .dusk(.code)
-                                    .foregroundStyle(item.accent ? dusk.primary : dusk.onSurfaceVariant)
-                                    .lineLimit(1)
+                // The row's own tap area stops short of the trailing slot.
+                // Covering the whole row and letting the trailing control sit
+                // inside it means two gestures over the same pixels — the
+                // toggle fires and the row opens with it, or neither does.
+                Button(action: onTap) {
+                    HStack(alignment: .top, spacing: 10) {
+                        MonogramBadge(host: host, accent: tone == .accent)
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text(title)
+                                .dusk(.titleSmall)
+                                .foregroundStyle(tone == .accent ? dusk.primary : dusk.onSurface)
+                                .lineLimit(titleLineLimit)
+                                .multilineTextAlignment(.leading)
+                                .fixedSize(horizontal: false, vertical: true)
+                            if !meta.isEmpty {
+                                HStack(spacing: 10) {
+                                    ForEach(meta) { item in
+                                        Text(item.text)
+                                            .dusk(.code)
+                                            .foregroundStyle(item.accent ? dusk.primary : dusk.onSurfaceVariant)
+                                            .lineLimit(1)
+                                    }
+                                }
                             }
                         }
+                        Spacer(minLength: 8)
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
                 }
-                Spacer(minLength: 8)
+                .buttonStyle(.plain)
+
                 trailing()
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .opacity(tone == .faded ? 0.5 : 1)
-            .contentShape(Rectangle())
-            .onTapGesture(perform: onTap)
 
             ListRowDivider(last: last)
         }

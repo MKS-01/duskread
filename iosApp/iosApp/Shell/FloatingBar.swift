@@ -123,3 +123,18 @@ final class BarCollapse {
         run = 0
     }
 }
+
+extension View {
+    /// Feeds this scroll view's offset to the bar.
+    ///
+    /// Applied **to** a `ScrollView`, never above one: the modifier resolves
+    /// against the nearest scroll view, so on an ancestor it silently matches
+    /// nothing and the bar simply never moves.
+    func tracksBarCollapse(_ collapse: BarCollapse) -> some View {
+        onScrollGeometryChange(for: CGFloat.self) { geometry in
+            geometry.contentOffset.y
+        } action: { _, offset in
+            collapse.track(offset: offset)
+        }
+    }
+}

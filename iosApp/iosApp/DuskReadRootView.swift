@@ -34,6 +34,7 @@ struct DuskReadRootView: View {
         .environment(host.suggestions)
         .environment(host.notion)
         .environment(browser)
+        .environment(collapse)
         .environment(\.dusk, theme)
         .background(theme.background.ignoresSafeArea())
         .onAppear { tintBrowser(theme) }
@@ -84,19 +85,17 @@ struct DuskReadRootView: View {
 
     @ViewBuilder
     private var tabContent: some View {
-        ScrollTracker(collapse: collapse) {
-            switch tab {
-            case .home:
-                DashboardScreen(
-                    onOpenFocus: { destination = .focus },
-                    onOpenSaved: { tab = .saved },
-                    onOpenFollowing: { tab = .following }
-                )
-            case .following:
-                FollowingScreen(onOpenTopics: { destination = .topics($0) })
-            case .saved:
-                SavedScreen()
-            }
+        switch tab {
+        case .home:
+            DashboardScreen(
+                onOpenFocus: { destination = .focus },
+                onOpenSaved: { tab = .saved },
+                onOpenFollowing: { tab = .following }
+            )
+        case .following:
+            FollowingScreen(onOpenTopics: { destination = .topics($0) })
+        case .saved:
+            SavedScreen()
         }
     }
 
@@ -119,6 +118,7 @@ struct DuskReadRootView: View {
         .environment(host.suggestions)
         .environment(host.notion)
         .environment(browser)
+        .environment(collapse)
         .environment(\.dusk, theme)
     }
 
@@ -145,16 +145,3 @@ struct DuskReadRootView: View {
 }
 
 /// Feeds scroll offset to [BarCollapse].
-private struct ScrollTracker<Content: View>: View {
-    let collapse: BarCollapse
-    @ViewBuilder var content: () -> Content
-
-    var body: some View {
-        content()
-            .onScrollGeometryChange(for: CGFloat.self) { geometry in
-                geometry.contentOffset.y
-            } action: { _, offset in
-                collapse.track(offset: offset)
-            }
-    }
-}
