@@ -13,6 +13,7 @@
 <p align="center">
   <a href="https://www.notion.com/product/dev"><img src="https://img.shields.io/badge/Notion_·_curation-b45f3c?style=flat-square&logo=notion&logoColor=white" alt="Curated through Notion"></a>
   <a href="https://www.jetbrains.com/compose-multiplatform/"><img src="https://img.shields.io/badge/Kotlin_·_Compose_Multiplatform-1a1a1a?style=flat-square&logo=kotlin&logoColor=white" alt="Kotlin and Compose Multiplatform"></a>
+  <a href="https://developer.apple.com/xcode/swiftui/"><img src="https://img.shields.io/badge/iOS_·_SwiftUI-1a1a1a?style=flat-square&logo=swift&logoColor=white" alt="SwiftUI on iOS"></a>
   <img src="https://img.shields.io/badge/Android_12+-1a1a1a?style=flat-square&logo=android&logoColor=white" alt="Android 12 and up">
   <a href="LICENSE"><img src="https://img.shields.io/badge/MIT-1a1a1a?style=flat-square" alt="MIT License"></a>
 </p>
@@ -60,8 +61,9 @@ colour drained out.
 
 ## Getting started
 
-> Android is the app, built and tested day to day. Desktop, web and iOS
-> compile from the same source to prove it travels.
+> Android is the app, built and tested day to day. iOS draws its own UI in
+> SwiftUI over the same Kotlin; desktop and web compile from the Compose one
+> to prove it travels.
 
 ```bash
 git clone https://github.com/MKS-01/duskread.git && cd duskread
@@ -77,7 +79,7 @@ token in Settings.
 | **Android** | 12 and up (`minSdk` 31, compile/target 36) |
 | **Gradle** | 9.3.1, via the wrapper |
 | **For summaries** | A phone with **AICore** — Pixel 9+, Galaxy S24+ and similar. No emulator has it |
-| **For iOS** | Xcode, plus [XcodeGen](https://github.com/yonaskolb/XcodeGen) |
+| **For iOS** | Xcode and [XcodeGen](https://github.com/yonaskolb/XcodeGen); iOS 18 and up |
 
 <details>
 <summary><strong>Desktop, web and iOS</strong></summary>
@@ -97,16 +99,21 @@ minutes or more; incremental after that.
 
 ## How it's built
 
-One `commonMain` source set feeds Android, desktop, web and iOS; storage,
-audio, the summariser and the HTTP client are `expect`/`actual` pairs behind
-it. UI is [Compose Multiplatform](https://www.jetbrains.com/compose-multiplatform/)
-1.11 with [Haze](https://github.com/chrisbanes/haze) for the floating-bar
-blur, on [Kotlin](https://kotlinlang.org/) 2.3 and [Ktor](https://ktor.io/)
-3.1. Summaries run on-device via [ML Kit GenAI](https://developer.android.com/ai)
-/ Gemini Nano; reading aloud is Android's own `TextToSpeech`; the optional
-Readback tab queries [readback](https://github.com/MKS-01/readback)'s
-`library.db` read-only. No navigation library, no ViewModel, no DI, no
-database — a ceiling chosen on purpose.
+One `commonMain` source set holds the libraries, the ranking and the sync for
+every platform; storage, audio, the summariser and the HTTP client are
+`expect`/`actual` pairs behind it, on [Kotlin](https://kotlinlang.org/) 2.3
+and [Ktor](https://ktor.io/) 3.1. Android, desktop and web draw it with
+[Compose Multiplatform](https://www.jetbrains.com/compose-multiplatform/) 1.11
+and [Haze](https://github.com/chrisbanes/haze) for the floating-bar blur; iOS
+draws its own in [SwiftUI](https://developer.apple.com/xcode/swiftui/), taking
+its colours, type, spacing, motion and icon paths from the same Kotlin token
+layer rather than a second copy of them. Summaries run on-device via
+[ML Kit GenAI](https://developer.android.com/ai) / Gemini Nano; reading aloud
+is Android's own `TextToSpeech`; the optional Readback tab queries
+[readback](https://github.com/MKS-01/readback)'s `library.db` read-only — all
+three are Android-only for now, so the iOS app is the reading half. No
+navigation library, no ViewModel, no DI, no database — a ceiling chosen on
+purpose.
 
 ```bash
 ./gradlew ktlintCheck    # several rules deliberately off, see .editorconfig

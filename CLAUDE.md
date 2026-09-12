@@ -2,10 +2,17 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-DuskRead — a Compose Multiplatform reading app: save a link, follow a blog's
+DuskRead — a Kotlin Multiplatform reading app: save a link, follow a blog's
 RSS feed, and hear posts read back as audio, with a focus timer around it all.
 Used mostly on an Android phone, one-handed, so everything sits in the lower
 third of the screen.
+
+**Two UIs.** Android, desktop and Wasm draw with Compose Multiplatform from
+`composeApp/src/commonMain/kotlin/dev/mks/duskread/ui/`. **iOS draws with
+SwiftUI**, in `iosApp/iosApp/`, over the same Kotlin through
+`composeApp/src/iosMain/.../bridge/`. Both read the same design values from
+`ui/theme/DesignTokens.kt` and `ui/theme/IconPaths.kt` — never hard-code a
+colour, radius, duration or glyph on either side.
 
 The four things the app does, and where each lives:
 
@@ -51,7 +58,8 @@ keeps the rest.
 ```
 
 **Do not build iOS or Wasm unless asked** — a cold Kotlin/Native build is over
-ten minutes.
+ten minutes. Do build iOS when the change touches `iosMain/` or `iosApp/`;
+that is the target it ships on.
 
 Gradle task names differ from a normal Android project because `composeApp`
 uses the AGP 9 `androidLibrary` KMP DSL, not `com.android.library`:
@@ -86,11 +94,24 @@ xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp \
 
 xcrun simctl boot "iPhone 17" 2>/dev/null; open -a Simulator
 APP_PATH=$(find ~/Library/Developer/Xcode/DerivedData/iosApp-*/Build/Products/Debug-iphonesimulator \
-  -maxdepth 1 -name "iosApp.app")
+  -maxdepth 1 -name "DuskRead.app")
 xcrun simctl install "iPhone 17" "$APP_PATH"
 xcrun simctl launch "iPhone 17" dev.mks.duskread
 xcrun simctl io "iPhone 17" screenshot /tmp/ios_check.png
 ```
+
+The product is `DuskRead.app`, not `iosApp.app` — the scheme is still
+`iosApp`, but `PRODUCT_NAME` is the app's real name so that `CFBundleName` is
+what the Settings app and permission prompts say. Deployment target is iOS 18
+(`@Observable`, `onScrollGeometryChange`).
+
+**Adding a Swift file needs `xcodegen generate` before it builds** — the Xcode
+project is generated from `project.yml` and gitignored, so a file dropped into
+`iosApp/iosApp/` is invisible until the project is regenerated. A "cannot find
+X in scope" error for something you just wrote is almost always this.
+
+Editing a Swift file only is a plain `xcodebuild`; editing Kotlin means the
+pre-build script recompiles the framework first.
 
 The `xcodebuild` step itself shells back out to Gradle via a pre-build
 script (`:composeApp:embedAndSignAppleFrameworkForXcode`) — Xcode only links
@@ -135,21 +156,36 @@ aggregate task would be `:composeApp:allTests`. Do not invent test commands.
 
 Use `ui/theme/DuskReadIcons.kt`, not `Icons.Filled.*` — the set is stroked to match
 the type weight, and mixing in a filled Material glyph is immediately visible.
-Add new ones there as vector paths.
+
+The shapes live in `ui/theme/IconPaths.kt` as SVG path data, because SwiftUI
+parses the same strings — `DuskReadIcons` only builds `ImageVector`s from
+them. **Add a new glyph there**, not as a `PathBuilder` block, or iOS will not
+have it. Don't reach for SF Symbols on the Swift side either: the set is drawn
+from one construction rule at one stroke weight, and a system glyph beside it
+is immediately visible.
 
 ## Colour and design tokens
 
 All colour comes from `MaterialTheme.colorScheme`, defined in
-`ui/theme/Theme.kt`. There are two schemes and the app swaps between them at
-runtime: **Paper Black** (near-black ground, warm-white ink, a single
-terracotta accent) and **Ink**, the same layout with the hue drained out —
-lightness, weight and spacing are the only things left to separate elements.
-So never hard-code a `Color(0x…)` in a screen: a literal survives the swap to
-Ink and immediately looks wrong.
+`ui/theme/Theme.kt` — which now builds itself from `DesignTokens`, where the
+values actually live so Swift can read them too. There are two schemes and
+the app swaps between them at runtime: **Paper Black** (near-black ground,
+warm-white ink, a single terracotta accent) and **Ink**, the same layout with
+the hue drained out — lightness, weight and spacing are the only things left
+to separate elements. So never hard-code a `Color(0x…)` in a screen: a
+literal survives the swap to Ink and immediately looks wrong.
 
 Sizes that carry a decision — reading gutters, corner radii, the bar
-clearance — live in `ui/theme/Tokens.kt`. Optical one-off nudges stay inline;
-naming one implies a system that is not there.
+clearance — live in `ui/theme/Tokens.kt`, which is the `Dp` face of
+`DesignTokens`. Add a value to `DesignTokens` and expose it through `Tokens`,
+not the other way round. Optical one-off nudges stay inline; naming one
+implies a system that is not there.
+
+A token expressed as a distance from *system* furniture does not port by its
+number: Android's gesture inset is a few dp where iPhone's home-indicator safe
+area is about 34pt, so `BarInset` is applied on iOS as "at least this much
+from the bottom edge, safe area counting towards it". Pure values — radii,
+stroke, gaps, durations — port as they are.
 
 ## The skills in `.claude/skills/`
 
@@ -175,7 +211,7 @@ with `/review-animations`.
 
 ### This project
 
-`duskread-design-system` for Compose UI work, `duskread-readme` for
+`duskread-design-system` for UI work on either side, `duskread-readme` for
 `README.md` (what belongs there versus in `docs/architecture.md`, the fixed
 section order, the facts to re-derive from `libs.versions.toml`),
 `duskread-setup` for standing the app up from a fresh clone (the two Notion
@@ -193,8 +229,17 @@ native Android apps; this is Compose Multiplatform.** Anything Android-only
 they suggest — Compose MediaQuery, Android instrumentation tests — can only
 live in `androidMain` or `androidApp`, never `commonMain`.
 
-State is plain `remember { mutableStateOf(...) }` hoisted into `App.kt` — no
-ViewModel, no DI, no navigation library. Keep it that way unless asked.
+State is plain snapshot state hoisted into `App.kt`, but behind
+`data/Observed.kt` so each holder is a `StateFlow` as well — one setter writes
+both, so Compose recomposes as before and the iOS bridge can subscribe.
+Libraries are constructed by `data/AppGraph.kt` and reached through
+`LocalAppGraph`; the `rememberX()` factories are one-liners over it now. Still
+no ViewModel, no DI framework, no navigation library. Keep it that way unless
+asked.
+
+On the Swift side, state is `@Observable` stores in `iosApp/iosApp/Bridge/`,
+each holding a `Cancellable` per subscription — cancel it on `deinit`, or the
+collector outlives the view and keeps the graph alive.
 
 ## Commits
 
