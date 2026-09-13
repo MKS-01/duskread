@@ -97,8 +97,9 @@ minutes or more; incremental after that.
 
 One `commonMain` source set holds the libraries, the ranking, the sync and the
 Compose UI itself, shared between Android and iOS; storage, audio, the
-summariser and the HTTP client are `expect`/`actual` pairs behind it, on
-[Kotlin](https://kotlinlang.org/) 2.3 and [Ktor](https://ktor.io/) 3.1.
+summariser, the focus timer and the HTTP client are `expect`/`actual` pairs
+behind it, on [Kotlin](https://kotlinlang.org/) 2.3 and
+[Ktor](https://ktor.io/) 3.1.
 Android draws that Compose UI directly with
 [Compose Multiplatform](https://www.jetbrains.com/compose-multiplatform/) 1.11
 and [Haze](https://github.com/chrisbanes/haze) for the floating-bar blur; iOS
