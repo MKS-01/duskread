@@ -258,7 +258,7 @@ migrations.
 | `signals.skipped` | per-URL skips, bounded |
 | `notion.database.sources`, `notion.database.reading`, `notion.page.parent`, `notion.page.home`, `notion.sync.last` | connection state |
 | `summaries` | generated summaries, newest first, bounded — a second look at an article costs no AICore quota |
-| `user.name`, `intro.seen`, `theme.mono`, `summary.length`, `readback.enabled`, `speech.voice`, `swipe.default` | preferences |
+| `user.name`, `intro.seen`, `theme.mono`, `readback.enabled`, `speech.voice`, `swipe.default` | preferences |
 
 The Notion **token is not here.** It lives in a separate `SecretStore` —
 `duskread_secrets` on Android, AES-GCM under a hardware-backed keystore key.

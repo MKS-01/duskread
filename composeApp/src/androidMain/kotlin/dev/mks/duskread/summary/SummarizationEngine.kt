@@ -20,39 +20,94 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 /**
+ * How much summary an article has earned, from how much article there is.
+ *
+ * This used to be the reader's to choose, as a pair of chips in Settings.
+ * Making it a setting asked the wrong person: nobody knows, before reading
+ * it, whether a given post wants a sentence or a paragraph — and whichever
+ * chip was set applied to every article afterwards, so a 300-word note and a
+ * 4,000-word essay came back the same length. The article knows, and its word
+ * count is the one thing we already have when the question is asked.
+ *
+ * The bands are the whole of the model's range: AICore's summarisation
+ * feature is configured with a number of points and offers exactly three.
+ * [Standard] is new — the middle step was left unused while this was a chip,
+ * on the grounds that it was not different enough from either neighbour to be
+ * worth making someone choose it. That objection was about choosing, not
+ * about the output, and there is no longer anyone to choose.
+ *
+ * Android-only on purpose. The thresholds are meaningless without the engine
+ * they configure, and `Summariser` is the contract `commonMain` owns; this is
+ * the adapter's own business.
+ */
+internal enum class SummaryDepth(val outputType: Int) {
+    Brief(SummarizerOptions.OutputType.ONE_BULLET),
+    Standard(SummarizerOptions.OutputType.TWO_BULLETS),
+    Full(SummarizerOptions.OutputType.THREE_BULLETS),
+    ;
+
+    companion object {
+        /**
+         * Counted by [wordCount], so this and the send budget agree on what a
+         * word is. That budget is well above [FullFrom], so a piece long
+         * enough to be truncated is long enough to be [Full] either way and
+         * it does not matter that this reads the text after the cut.
+         */
+        fun of(text: String): SummaryDepth = when (wordCount(text)) {
+            in 0..<StandardFrom -> Brief
+            in StandardFrom..<FullFrom -> Standard
+            else -> Full
+        }
+    }
+}
+
+// A post under this is a note: one point is the whole of it. Above [FullFrom]
+// is a long read, where three points is the most the model will give and the
+// least the piece deserves. The middle band is the ordinary blog post.
+private const val StandardFrom = 500
+private const val FullFrom = 1_500
+
+/**
  * AICore's summarisation feature, wrapped as a [Summariser]'s working parts.
  *
  * The model is told "article, N points, English" and nothing else — there is
  * no prompt to write, so the register is the feature's to decide and what
- * comes back is a list every time. N is what [SummaryLength] sets.
- * [parseSummary] turns that into the paragraph the panel draws. See
+ * comes back is a list every time. N is what [SummaryDepth] reads off the
+ * article. [parseSummary] turns that into the paragraph the panel draws. See
  * [MlKitSummariser] for why this is the only engine left.
+ *
+ * One client per depth, built on first use and kept. The output type is baked
+ * into `SummarizerOptions` at construction, so a depth that varies per article
+ * cannot share one client — and rebuilding on every summary would rebind to
+ * AICore each time, which is latency paid in front of the reader. Three thin
+ * clients is the cheaper end of that trade.
  *
  * Bridged from `ListenableFuture` by hand rather than by pulling in
  * `kotlinx-coroutines-guava`: two small suspending helpers against a
  * dependency that exists for exactly these three call sites.
  */
-internal class SummarizationEngine(private val context: Context, private val length: SummaryLength) {
-    private var client: Summarizer? = null
+internal class SummarizationEngine(private val context: Context) {
+    private val clients = mutableMapOf<SummaryDepth, Summarizer>()
 
-    private fun client(): Summarizer = client ?: Summarization.getClient(
-        SummarizerOptions.builder(context)
-            .setInputType(SummarizerOptions.InputType.ARTICLE)
-            // The one dial this feature exposes, and so the one the length
-            // setting is built on. Two of the three are used: the middle step
-            // is not different enough from either to be worth a third chip.
-            .setOutputType(
-                when (length) {
-                    SummaryLength.Short -> SummarizerOptions.OutputType.ONE_BULLET
-                    SummaryLength.Full -> SummarizerOptions.OutputType.THREE_BULLETS
-                },
-            )
-            .setLanguage(SummarizerOptions.Language.ENGLISH)
-            // A word count only estimates tokens, so a page that is one
-            // enormous paragraph can still overshoot. Truncating beats refusing.
-            .setLongInputAutoTruncationEnabled(true)
-            .build(),
-    ).also { client = it }
+    /**
+     * [SummaryDepth.Full] is the default because the callers that do not name
+     * a depth — the feature check and the download — are asking about the
+     * *feature*, which is one model provisioned once whatever the output type.
+     * Any client answers those identically; this one picks the depth most
+     * likely to be wanted again afterwards.
+     */
+    private fun client(depth: SummaryDepth = SummaryDepth.Full): Summarizer = clients.getOrPut(depth) {
+        Summarization.getClient(
+            SummarizerOptions.builder(context)
+                .setInputType(SummarizerOptions.InputType.ARTICLE)
+                .setOutputType(depth.outputType)
+                .setLanguage(SummarizerOptions.Language.ENGLISH)
+                // A word count only estimates tokens, so a page that is one
+                // enormous paragraph can still overshoot. Truncating beats refusing.
+                .setLongInputAutoTruncationEnabled(true)
+                .build(),
+        )
+    }
 
     suspend fun status(): SummariserState = runCatchingCancellable {
         when (client().checkFeatureStatus().await()) {
@@ -104,7 +159,7 @@ internal class SummarizationEngine(private val context: Context, private val len
     fun summarise(text: String): Flow<String> = callbackFlow {
         val answer = StringBuilder()
         val request = SummarizationRequest.builder(text).build()
-        val future: ListenableFuture<*> = client().runInference(
+        val future: ListenableFuture<*> = client(SummaryDepth.of(text)).runInference(
             request,
             StreamingCallback { chunk ->
                 answer.append(chunk)
@@ -125,8 +180,8 @@ internal class SummarizationEngine(private val context: Context, private val len
     }
 
     fun close() {
-        runCatching { client?.close() }
-        client = null
+        clients.values.forEach { client -> runCatching { client.close() } }
+        clients.clear()
     }
 }
 
@@ -139,7 +194,7 @@ internal class SummarizationEngine(private val context: Context, private val len
  * so it reached [describe], fell through to its unknown-failure fallback, and
  * a panel closed while the feature check was still in flight left the shared
  * summariser reading "The model could not be reached." — for the rest of the
- * process, since [Summarisers] holds one instance per length.
+ * process, since [Summarisers] holds one for the life of it.
  */
 private inline fun <T> runCatchingCancellable(block: () -> T): Result<T> = try {
     Result.success(block())

@@ -31,11 +31,11 @@ import kotlinx.coroutines.launch
  * Nothing about the article leaves the device, which is why a cloud model —
  * better at this, and one dependency away — is not what sits behind this.
  */
-private class MlKitSummariser(context: Context, length: SummaryLength) : Summariser {
+private class MlKitSummariser(context: Context) : Summariser {
     override var state: SummariserState by mutableStateOf(SummariserState.Checking)
         private set
 
-    private val summarization = SummarizationEngine(context, length)
+    private val summarization = SummarizationEngine(context)
 
     /**
      * The download runs here, not in whichever panel asked for it: a reader
@@ -85,27 +85,20 @@ private class MlKitSummariser(context: Context, length: SummaryLength) : Summari
 }
 
 /**
- * One summariser per length, for as long as the process lives. Each host used
- * to build its own, and closing one took its binding and any download with
- * it; sharing is what makes "it downloads once" true.
+ * One summariser for as long as the process lives. Each host used to build its
+ * own, and closing one took its binding and any download with it; sharing is
+ * what makes "it downloads once" true.
  *
- * The held one is closed when the length changes, which is a deliberate act
- * in Settings and the only moment a client configured for the other shape is
- * obsolete. The model is on the device by then, so that costs a rebind, not a
- * second download.
+ * There used to be one of these per length, closed and rebuilt when the
+ * setting changed. Length is the article's now rather than the reader's, and
+ * the several clients it needs are the engine's own business — see
+ * [SummaryDepth] — so nothing above here has a reason to hold more than one.
  */
 private object Summarisers {
-    private var held: Pair<SummaryLength, MlKitSummariser>? = null
+    private var held: MlKitSummariser? = null
 
     // The application context: this outlives any activity holding a panel.
-    fun of(context: Context, length: SummaryLength): MlKitSummariser {
-        held?.let { (heldLength, summariser) ->
-            if (heldLength == length) return summariser
-            summariser.close()
-        }
-
-        return MlKitSummariser(context.applicationContext, length).also { held = length to it }
-    }
+    fun of(context: Context): MlKitSummariser = held ?: MlKitSummariser(context.applicationContext).also { held = it }
 }
 
 /**
@@ -144,9 +137,9 @@ private fun Throwable.named(): String = "The model could not be reached (${this:
 
 /** Not disposed on leaving: the instance is shared and its binding lives as long as the process. */
 @Composable
-actual fun rememberSummariser(length: SummaryLength): Summariser {
+actual fun rememberSummariser(): Summariser {
     val context = LocalContext.current
-    val summariser = remember(context, length) { Summarisers.of(context, length) }
+    val summariser = remember(context) { Summarisers.of(context) }
 
     LaunchedEffect(summariser) { summariser.refresh() }
 

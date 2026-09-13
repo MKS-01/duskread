@@ -5,7 +5,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import dev.mks.duskread.speech.VoiceChoice
-import dev.mks.duskread.summary.SummaryLength
 import dev.mks.duskread.summary.SwipeDefault
 import kotlinx.coroutines.flow.StateFlow
 
@@ -26,9 +25,6 @@ class UserPrefs(private val store: KeyValueStore) {
     private val observedIntroSeen = Observed(store.getBoolean(KeyIntroSeen))
     private val observedMono = Observed(store.getBoolean(KeyMono, fallback = DefaultMono))
     private val observedReadbackEnabled = Observed(store.getBoolean(KeyReadback))
-    private val observedSummaryLength = Observed(
-        store.getString(KeySummaryLength)?.let { name -> SummaryLength.entries.firstOrNull { it.name == name } } ?: SummaryLength.Full,
-    )
     private val observedVoice = Observed(
         store.getString(KeyVoice)?.let { name -> VoiceChoice.entries.firstOrNull { it.name == name } } ?: VoiceChoice.System,
     )
@@ -81,18 +77,6 @@ class UserPrefs(private val store: KeyValueStore) {
     /** [readbackEnabled] for observers outside a composition; see [Observed]. */
     val readbackEnabledUpdates: StateFlow<Boolean> get() = observedReadbackEnabled.updates
 
-    /**
-     * How long a summary the reader wants. Stored by name rather than
-     * ordinal, so reordering the enum one day cannot silently repoint an
-     * existing reader at a different length; an unknown name falls back to
-     * the default, which is the engine's own maximum.
-     */
-    var summaryLength: SummaryLength by observedSummaryLength
-        private set
-
-    /** [summaryLength] for observers outside a composition; see [Observed]. */
-    val summaryLengthUpdates: StateFlow<SummaryLength> get() = observedSummaryLength.updates
-
     /** A blank name is stored as absent, so "skip" and "cleared" mean the same thing. */
     fun updateName(value: String?) {
         val cleaned = value?.trim()?.takeIf { it.isNotEmpty() }
@@ -127,9 +111,9 @@ class UserPrefs(private val store: KeyValueStore) {
     /**
      * Which voice reads an article aloud.
      *
-     * Stored by name rather than ordinal, for the reason [summaryLength]
-     * already gives: a voice added to the middle of the enum one day must not
-     * silently repoint an existing reader at a different one.
+     * Stored by name rather than ordinal: a voice added to the middle of the
+     * enum one day must not silently repoint an existing reader at a
+     * different one. Every enum-valued preference here is stored that way.
      *
      * An unknown name falls back to [VoiceChoice.System], which is also the
      * only voice guaranteed to exist on every phone.
@@ -143,11 +127,6 @@ class UserPrefs(private val store: KeyValueStore) {
     fun updateVoice(value: VoiceChoice) {
         voice = value
         store.putString(KeyVoice, value.name)
-    }
-
-    fun updateSummaryLength(value: SummaryLength) {
-        summaryLength = value
-        store.putString(KeySummaryLength, value.name)
     }
 
     /**
@@ -187,7 +166,6 @@ class UserPrefs(private val store: KeyValueStore) {
         updateName(null)
         updateMono(DefaultMono)
         updateVoice(VoiceChoice.System)
-        updateSummaryLength(SummaryLength.Full)
         updateSwipeDefault(SwipeDefault.Summary)
 
         introSeen = false
@@ -204,7 +182,6 @@ class UserPrefs(private val store: KeyValueStore) {
         const val KeyName = "user.name"
         const val KeyIntroSeen = "intro.seen"
         const val KeyMono = "theme.mono"
-        const val KeySummaryLength = "summary.length"
         const val KeyReadback = "readback.enabled"
         const val KeyVoice = "speech.voice"
         const val KeySwipeDefault = "swipe.default"

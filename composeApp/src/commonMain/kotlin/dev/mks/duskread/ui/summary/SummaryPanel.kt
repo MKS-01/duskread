@@ -31,7 +31,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.mks.duskread.data.LocalAppGraph
-import dev.mks.duskread.data.rememberUserPrefs
 import dev.mks.duskread.links.loadArticle
 import dev.mks.duskread.links.rememberReadingSignals
 import dev.mks.duskread.speech.SpeechSession
@@ -115,14 +114,13 @@ fun SummaryPanel(
      */
     autoPlay: Boolean = false,
 ) {
-    val prefs = rememberUserPrefs()
-    val summariser = rememberSummariser(prefs.summaryLength)
+    val summariser = rememberSummariser()
     val cache = rememberSummaryCache()
     val signals = rememberReadingSignals()
     val client = LocalAppGraph.current.http
     val scope = rememberCoroutineScope()
 
-    var stage by remember(target.url, prefs.summaryLength) { mutableStateOf<Stage>(Stage.Waiting) }
+    var stage by remember(target.url) { mutableStateOf<Stage>(Stage.Waiting) }
     val engineState = summariser.state
 
     // Held so pressing play does not refetch a page the summariser has already
@@ -188,8 +186,8 @@ fun SummaryPanel(
     // article happened to leave `SpeechSession` doing.
     LaunchedEffect(target.url) { if (autoPlay) togglePlay() }
 
-    LaunchedEffect(target.url, engineState, prefs.summaryLength) {
-        cache.summaryFor(target.url, prefs.summaryLength)?.let {
+    LaunchedEffect(target.url, engineState) {
+        cache.summaryFor(target.url)?.let {
             stage = Stage.Done(it)
             return@LaunchedEffect
         }
@@ -236,7 +234,7 @@ fun SummaryPanel(
                     return@LaunchedEffect
                 }
 
-                val summary = parseSummary(answer, target.url, target.title, engineState.model, Clock.System.now().toEpochMilliseconds(), prefs.summaryLength)
+                val summary = parseSummary(answer, target.url, target.title, engineState.model, Clock.System.now().toEpochMilliseconds())
                 if (summary == null) {
                     stage = Stage.Failed("The model answered with nothing usable. Try again?")
                     return@LaunchedEffect

@@ -1,7 +1,6 @@
 package dev.mks.duskread.bridge
 
 import dev.mks.duskread.data.AppGraph
-import dev.mks.duskread.summary.SummaryLength
 import dev.mks.duskread.summary.SwipeDefault
 
 /**
@@ -13,7 +12,10 @@ import dev.mks.duskread.summary.SwipeDefault
  * gather them, not this side of the bridge.
  *
  * `voice` is absent on purpose. iOS has no `Speaker` actual, so offering a
- * voice setting here would be offering a control that changes nothing.
+ * voice setting here would be offering a control that changes nothing. The
+ * summary length is absent for the sharper version of the same reason: there
+ * is no such setting on either platform any more, because an article's length
+ * decides it — and iOS has no summariser to decide it for in the first place.
  */
 class PrefsBridge internal constructor(private val graph: AppGraph) {
     private val prefs get() = graph.prefs
@@ -23,8 +25,6 @@ class PrefsBridge internal constructor(private val graph: AppGraph) {
     fun observeIntroSeen(onEach: (Boolean) -> Unit): Cancellable = prefs.introSeenUpdates.watch(onEach)
 
     fun observeMono(onEach: (Boolean) -> Unit): Cancellable = prefs.monoUpdates.watch(onEach)
-
-    fun observeSummaryLength(onEach: (SummaryLength) -> Unit): Cancellable = prefs.summaryLengthUpdates.watch(onEach)
 
     fun observeSwipeDefault(onEach: (SwipeDefault) -> Unit): Cancellable = prefs.swipeDefaultUpdates.watch(onEach)
 
@@ -39,8 +39,6 @@ class PrefsBridge internal constructor(private val graph: AppGraph) {
     fun markIntroSeen() = prefs.markIntroSeen()
 
     fun updateMono(value: Boolean) = prefs.updateMono(value)
-
-    fun updateSummaryLength(value: SummaryLength) = prefs.updateSummaryLength(value)
 
     fun updateSwipeDefault(value: SwipeDefault) = prefs.updateSwipeDefault(value)
 

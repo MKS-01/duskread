@@ -13,15 +13,16 @@ import kotlinx.coroutines.flow.emptyFlow
  * [text] is deliberately one field: the engine's output shape varies with its
  * mood, and a panel split into gist and body changes shape with it.
  *
- * [length] is stored so the cache can tell a short summary from a full one —
- * they are different answers to the same article, not one trimmed.
+ * No length field any more. It existed so the cache could tell a short
+ * summary from a full one while the reader could ask for either; now the
+ * length follows from the article's own word count, so an article has exactly
+ * one right answer and the url alone identifies it.
  */
 data class ArticleSummary(
     val url: String,
     val text: String,
     val model: String,
     val createdAt: Long,
-    val length: SummaryLength,
 )
 
 /**
@@ -41,27 +42,6 @@ data class ArticleSummary(
 enum class SwipeDefault(val label: String) {
     Summary("Summary"),
     ReadAloud("Read aloud"),
-}
-
-/**
- * How much summary the reader wants.
- *
- * Two options, and they are the engine's own: AICore's summarisation feature
- * is configured with a number of points, so [Short] and [Full] ask it for
- * genuinely different answers rather than trimming one answer down.
- *
- * A word limit was tried first and thrown away. A limit can only cut, never
- * lengthen, and three points from this model often run under any ceiling
- * worth naming — so every setting produced identical text and the numbers
- * described a limit nothing reached. Two settings that always differ beat
- * three that usually do not.
- *
- * The choice is baked into the client at construction, so changing it builds
- * a new one; see `Summarisers`.
- */
-enum class SummaryLength(val label: String) {
-    Short("Short"),
-    Full("Full"),
 }
 
 /**
@@ -98,6 +78,12 @@ sealed interface SummariserState {
  * No choice of model, because the feature that would take one answers
  * `FEATURE_NOT_FOUND` on real hardware; see `MlKitSummariser`.
  *
+ * No choice of length either, and that one is a decision rather than a
+ * limitation: how much summary an article wants is a property of the article,
+ * not of the reader's mood, so [summarise] takes the text and sizes its own
+ * answer. See `SummaryDepth` for where the sizing happens and why it has to
+ * live on the Android side.
+ *
  * [summarise] emits the answer *so far*, cumulative, so a caller renders the
  * latest value and never concatenates. Generation takes seconds on a phone,
  * and text arriving a few words at a time is the difference between a feature
@@ -128,7 +114,7 @@ object UnavailableSummariser : Summariser {
 }
 
 @Composable
-expect fun rememberSummariser(length: SummaryLength): Summariser
+expect fun rememberSummariser(): Summariser
 
 /**
  * Whether this platform has a summariser at all — not whether the model is

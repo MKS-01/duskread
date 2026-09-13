@@ -19,6 +19,18 @@ internal fun truncateWords(text: String, maxWords: Int): String {
 }
 
 /**
+ * How long a piece is, by the same reckoning [truncateWords] uses.
+ *
+ * Shared rather than counted again where it is needed, because two places now
+ * ask: the budget that decides what to *send*, and `SummaryDepth`, which
+ * decides how much to ask back. Two definitions of "a word" that drifted
+ * apart would put an article on one side of a threshold and the other side of
+ * the budget, which is the kind of disagreement nothing on screen would
+ * explain.
+ */
+internal fun wordCount(text: String): Int = text.split(Whitespace).count { it.isNotBlank() }
+
+/**
  * Reads back whatever the engine wrote, as prose.
  *
  * The engine returns a bulleted list, always — that is what it was built to
@@ -30,7 +42,7 @@ internal fun truncateWords(text: String, maxWords: Int): String {
  * instead of dashes are all recoverable. An empty answer is not, and is the
  * only case this returns null for.
  */
-internal fun parseSummary(raw: String, url: String, title: String, model: String, now: Long, length: SummaryLength): ArticleSummary? {
+internal fun parseSummary(raw: String, url: String, title: String, model: String, now: Long): ArticleSummary? {
     val text = raw.replace("\r\n", "\n").split('\n')
         // Order matters, and getting it wrong cost a bug: the answer arrives
         // as `GIST: <title> — …`, so testing for the title while the label is
@@ -49,7 +61,7 @@ internal fun parseSummary(raw: String, url: String, title: String, model: String
 
     if (text.isBlank()) return null
 
-    return ArticleSummary(url = url, text = text, model = model, createdAt = now, length = length)
+    return ArticleSummary(url = url, text = text, model = model, createdAt = now)
 }
 
 /** Bullets carry no full stop, and three unclosed ones read as one lost sentence. */

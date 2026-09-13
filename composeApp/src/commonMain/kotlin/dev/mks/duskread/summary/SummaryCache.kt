@@ -33,8 +33,12 @@ class SummaryCache(private val store: KeyValueStore) {
     /** [summaries] for observers outside a composition; see [Observed]. */
     val summariesUpdates: StateFlow<Map<String, ArticleSummary>> get() = observedSummaries.updates
 
-    /** Short and full are different answers, so the other length is a miss. */
-    fun summaryFor(url: String, length: SummaryLength): ArticleSummary? = summaries[url]?.takeIf { it.length == length }
+    /**
+     * The url alone. Length used to be part of the question, because the
+     * reader could ask the same article for a short answer or a full one;
+     * an article sizes its own summary now, so there is only one to find.
+     */
+    fun summaryFor(url: String): ArticleSummary? = summaries[url]
 
     /** Newest first, oldest dropped: a convenience, not a record. */
     fun put(summary: ArticleSummary) {
@@ -65,20 +69,22 @@ class SummaryCache(private val store: KeyValueStore) {
             summary.text.clean(),
             summary.model.clean(),
             summary.createdAt.toString(),
-            summary.length.name,
         ).joinToString(FieldSeparator.toString())
     }
 
     private fun decode(record: String): ArticleSummary? {
         val fields = record.split(FieldSeparator)
-        if (fields.size < 5) return null
+        // Four, not five: records written before length stopped being a field
+        // still carry it, and are read by ignoring the tail rather than being
+        // dropped. Re-summarising a month of reading to gain nothing would be
+        // the phone's own silicon spent on a format change.
+        if (fields.size < 4) return null
 
         return ArticleSummary(
             url = fields[0].ifBlank { return null },
             text = fields[1],
             model = fields[2],
             createdAt = fields[3].toLongOrNull() ?: 0L,
-            length = SummaryLength.entries.firstOrNull { it.name == fields[4] } ?: return null,
         )
     }
 

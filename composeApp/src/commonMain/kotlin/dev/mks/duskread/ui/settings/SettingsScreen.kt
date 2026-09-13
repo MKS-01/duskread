@@ -65,7 +65,6 @@ import dev.mks.duskread.speech.VoiceChoice
 import dev.mks.duskread.speech.rememberSpeaker
 import dev.mks.duskread.speech.speechSupported
 import dev.mks.duskread.summary.SummariserState
-import dev.mks.duskread.summary.SummaryLength
 import dev.mks.duskread.summary.SwipeDefault
 import dev.mks.duskread.summary.rememberSummariser
 import dev.mks.duskread.summary.rememberSummaryCache
@@ -190,16 +189,16 @@ fun SettingsScreen(
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 16.dp, vertical = 8.dp),
             ) {
-                // Hidden, not disabled, off Android. The length chips choose
-                // between two shapes of a summary that this platform cannot
-                // produce at all, and `SummarySettings` binds the engine as
-                // its first act — on a target where that engine is a stub,
-                // the section is a control to learn to ignore and a needless
-                // allocation behind it.
+                // Hidden, not disabled, off Android. What is left in the
+                // section is the state of an engine this platform does not
+                // have, down to a download button for a model it cannot run,
+                // and `SummarySettings` binds that engine as its first act —
+                // on a target where it is a stub, the section is a control to
+                // learn to ignore and a needless allocation behind it.
                 if (summariesSupported()) {
                     EyebrowHeader(text = "SUMMARIES")
                     Spacer(Modifier.height(14.dp))
-                    SummarySettings(prefs)
+                    SummarySettings()
 
                     Spacer(Modifier.height(28.dp))
                 }
@@ -362,19 +361,21 @@ private fun ThemeRow(mono: Boolean, onToggleTheme: () -> Unit) {
 }
 
 /**
- * How long a summary should be, whether the model is there, and a way to
- * throw away what it has written.
+ * Whether the model is there, and a way to throw away what it has written.
  *
- * Length is asked of the engine rather than trimmed out of its answer, so
- * the two settings are genuinely different summaries — which is why an
- * article already summarised at one is regenerated when read at the other.
+ * There is no length control any more. It was two chips and a note, and it
+ * asked the reader a question they could not answer in advance: how long a
+ * summary a piece wants is a property of the piece, not a standing
+ * preference, and whichever chip was set applied to a 300-word note and a
+ * 4,000-word essay alike. `SummaryDepth` reads it off the article instead, so
+ * what is left here is the state of the engine rather than its settings.
  *
  * This is the one screen that binds the engine deliberately: everywhere else
  * the summariser is built only when a summary is actually asked for.
  */
 @Composable
-private fun SummarySettings(prefs: UserPrefs) {
-    val summariser = rememberSummariser(prefs.summaryLength)
+private fun SummarySettings() {
+    val summariser = rememberSummariser()
     val cache = rememberSummaryCache()
     val scope = rememberCoroutineScope()
     val state = summariser.state
@@ -384,25 +385,6 @@ private fun SummarySettings(prefs: UserPrefs) {
             text = "Summaries are generated on this phone. Nothing about an article is sent anywhere.",
             fontSize = 12.5.sp,
             lineHeight = 17.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Spacer(Modifier.height(12.dp))
-
-        Row(horizontalArrangement = Arrangement.spacedBy(Space.ChipGap)) {
-            SummaryLength.entries.forEach { length ->
-                SummaryChip(
-                    label = length.label,
-                    tone = if (prefs.summaryLength == length) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                    onClick = { prefs.updateSummaryLength(length) },
-                )
-            }
-        }
-        Spacer(Modifier.height(10.dp))
-
-        Text(
-            text = lengthNote(prefs.summaryLength),
-            fontSize = 11.5.sp,
-            lineHeight = 16.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.height(14.dp))
@@ -452,16 +434,6 @@ private fun TransferAction(label: String, onClick: () -> Unit) {
             .clickable(onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 7.dp),
     )
-}
-
-/**
- * Described by what you get to read, not by the number of points the engine
- * is configured with — that number is an implementation detail of AICore and
- * means nothing to someone deciding whether to open an article.
- */
-private fun lengthNote(length: SummaryLength): String = when (length) {
-    SummaryLength.Short -> "A sentence or two — just enough to decide."
-    SummaryLength.Full -> "A short paragraph. The most this phone's model will give."
 }
 
 /**
@@ -706,12 +678,12 @@ private fun ResetSettings(
 /**
  * Which voice reads an article aloud.
  *
- * Chips rather than a list of rows, the same control `SummarySettings` uses
- * directly above it — two mutually exclusive options with a one-line
- * consequence underneath is exactly the shape that already exists on this
- * screen, and a second shape for the same question would only make the screen
- * less predictable. The selected chip takes the accent, which is the
- * "selected control" exception to the one-accent rule rather than a new one.
+ * Chips rather than a list of rows: a small set of mutually exclusive options
+ * with a one-line consequence underneath is the shape this screen already
+ * uses for the swipe default below, and a second shape for the same kind of
+ * question would only make the screen less predictable. The selected chip
+ * takes the accent, which is the "selected control" exception to the
+ * one-accent rule rather than a new one.
  *
  * The readback chip only appears once its tab does, because choosing it
  * otherwise would point playback at a library with no way to reach or
