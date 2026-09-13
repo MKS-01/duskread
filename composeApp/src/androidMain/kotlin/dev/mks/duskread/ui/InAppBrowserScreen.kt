@@ -90,29 +90,8 @@ private enum class BrowserMode { Reader, Original }
 private enum class PanelIntent { Summary, ReadAloud }
 
 /**
- * A reference article, opened without leaving the app — as the article, not
- * as the page it arrived in.
- *
- * The default is a reader view: the page is fetched, reduced to headline,
- * lead image and body by [dev.mks.duskread.links.extractArticle], and
- * rendered into a document this app styles. Injecting CSS into the live page
- * to hide its header and footer was the other option and is the worse one —
- * it only hides the elements you can name, every site names them
- * differently, and the cookie bar and newsletter interstitial are not among
- * them.
- *
- * The live page is always one tap away, and is what shows when extraction
- * finds nothing — a site that renders its body in JavaScript hands a plain
- * HTTP GET an empty shell, and no heuristic fixes that.
- *
- * Not Chrome Custom Tabs, for the original view either: those hand the page
- * to whatever browser is default, so its light-or-dark rendering follows the
- * *system* theme rather than this app's, and a Custom Tab's colour scheme
- * only skins the browser's own chrome. An embedded [WebView] with
- * [WebSettingsCompat]'s algorithmic darkening can repaint the page itself.
- * The cost is real: no shared cookies or logins with the reader's actual
- * browser, and a site that refuses framing here has nowhere else to go —
- * [DuskReadIcons.External] is always one tap away as the escape hatch.
+ * A reference article, opened without leaving the app — as the article, not as the page
+ * it arrived in.
  */
 @Composable
 fun InAppBrowserScreen(url: String, mono: Boolean, onClose: () -> Unit, modifier: Modifier = Modifier) {
@@ -125,33 +104,27 @@ fun InAppBrowserScreen(url: String, mono: Boolean, onClose: () -> Unit, modifier
     var currentUrl by remember { mutableStateOf(url) }
     var progress by remember { mutableStateOf(0f) }
 
-    // Set only when the *main frame* fails. A page whose analytics script
-    // cannot load has not failed; a page that cannot load has.
+    // Set only when the *main frame* fails. A page whose analytics script cannot load has
+    // not failed; a page that cannot load has.
     var loadFailed by remember { mutableStateOf(false) }
 
     var article by remember(url) { mutableStateOf<Article?>(null) }
     var extracting by remember(url) { mutableStateOf(true) }
     var mode by remember(url) { mutableStateOf(BrowserMode.Reader) }
-    // Closed by default, and per article: following a link out of one piece
-    // into another should not carry the first one's panel with it.
-    //
-    // A nullable intent rather than a plain boolean, because the panel now
-    // has two doors onto the same card — the existing summary button and the
-    // read-aloud button beside it — and the only thing that differs between
-    // them is whether the panel starts speaking the instant it opens. Which
-    // door was used is the one thing a boolean cannot carry.
+    // Closed by default, and per article: following a link out of one piece into another
+    // should not carry the first one's panel with it.
     var panelIntent by remember(url) { mutableStateOf<PanelIntent?>(null) }
     var summaryBusy by remember(url) { mutableStateOf(false) }
-    // What the WebView currently holds. Without it, every recomposition that
-    // touches mode or article would reload the page underneath the reader.
+    // What the WebView currently holds. Without it, every recomposition that touches mode
+    // or article would reload the page underneath the reader.
     var loaded by remember(url) { mutableStateOf("") }
 
     PlatformBackHandler(enabled = true) {
         webView?.takeIf { it.canGoBack() }?.goBack() ?: onClose()
     }
 
-    // A post opened from a followed feed often needs no request at all: the
-    // feed itself carried the publisher's own markup for it, already clean.
+    // A post opened from a followed feed often needs no request at all: the feed itself
+    // carried the publisher's own markup for it, already clean.
     val cached = feedPosts.postFor(url)
     LaunchedEffect(url) {
         article = loadArticle(client, url, cached?.title, cached?.content)
@@ -160,18 +133,15 @@ fun InAppBrowserScreen(url: String, mono: Boolean, onClose: () -> Unit, modifier
         extracting = false
     }
 
-    // Read once, outside the WebView factory: that lambda runs a single time
-    // on first composition, so a value it captures is frozen at whatever the
-    // theme was then. Fine here — this screen closes and reopens across a
-    // theme change, it never lives through one.
+    // Read once, outside the WebView factory: that lambda runs a single time on first
+    // composition, so a value it captures is frozen at whatever the theme was then.
     val ground = MaterialTheme.colorScheme.background.toArgb()
     val palette = MaterialTheme.colorScheme.readerPalette(mono)
 
     LaunchedEffect(webView, mode, article, extracting) {
         val view = webView ?: return@LaunchedEffect
-        // Nothing loads until extraction has answered. Showing the live page
-        // in the meantime would mean fetching it twice and watching it get
-        // replaced.
+        // Nothing loads until extraction has answered. Showing the live page in the
+        // meantime would mean fetching it twice and watching it get replaced.
         if (extracting) return@LaunchedEffect
 
         val readable = article.takeIf { mode == BrowserMode.Reader }
@@ -182,9 +152,8 @@ fun InAppBrowserScreen(url: String, mono: Boolean, onClose: () -> Unit, modifier
 
         if (readable != null) {
             progress = 1f
-            // Base URL is the article's own: it makes the body's relative
-            // links resolve and keeps the document same-origin with the
-            // images it loads.
+            // Base URL is the article's own: it makes the body's relative links resolve
+            // and keeps the document same-origin with the images it loads.
             view.loadDataWithBaseURL(readable.url, articleDocument(readable, palette), "text/html", "utf-8", readable.url)
         } else {
             view.loadUrl(currentUrl)
@@ -198,18 +167,16 @@ fun InAppBrowserScreen(url: String, mono: Boolean, onClose: () -> Unit, modifier
                 readerAvailable = article != null,
                 readerActive = mode == BrowserMode.Reader && article != null,
                 onToggleReader = { mode = if (mode == BrowserMode.Reader) BrowserMode.Original else BrowserMode.Reader },
-                // Hidden until there is an article, for the same reason the
-                // reader toggle is: the summary is made from the extracted
-                // text, so on a page that yielded none there is nothing to
-                // summarise and the control could only disappoint.
+                // Hidden until there is an article, for the same reason the reader toggle
+                // is: the summary is made from the extracted text.
                 summaryAvailable = article != null && summariesSupported(),
                 summaryActive = panelIntent == PanelIntent.Summary,
                 summaryBusy = summaryBusy,
                 onToggleSummary = {
                     panelIntent = if (panelIntent == PanelIntent.Summary) null else PanelIntent.Summary
                 },
-                // Same gate, on speech rather than the summariser: without
-                // extracted text there is nothing to read aloud either.
+                // Same gate, on speech rather than the summariser: without extracted text
+                // there is nothing to read aloud either.
                 readAloudAvailable = article != null && speechSupported(),
                 readAloudActive = panelIntent == PanelIntent.ReadAloud,
                 onToggleReadAloud = {
@@ -233,9 +200,7 @@ fun InAppBrowserScreen(url: String, mono: Boolean, onClose: () -> Unit, modifier
                 )
             }
             Box(Modifier.fillMaxSize()) {
-                // The article could not be built from cache and could not be
-                // fetched. Saying so in the app's own voice beats handing the
-                // reader a browser error page they cannot act on.
+                // The article could not be built from cache and could not be fetched.
                 if (loadFailed && article == null) {
                     Box(Modifier.fillMaxSize().padding(horizontal = 20.dp), contentAlignment = Alignment.Center) {
                         EmptyState(
@@ -253,18 +218,11 @@ fun InAppBrowserScreen(url: String, mono: Boolean, onClose: () -> Unit, modifier
                             darken(settings)
                             // A light flash while the WebView inflates and before the
                             // page paints would undo the whole point of forcing dark.
-                            // The app's own ground, not a hardcoded black — this used to
-                            // be pure black while the app itself sits on #101010, which
-                            // is the kind of seam that makes an embedded browser feel
-                            // like a different app wearing this one's toolbar.
                             setBackgroundColor(ground)
                             settings.javaScriptEnabled = true
                             settings.domStorageEnabled = true
-                            // Otherwise the WebView focuses the first focusable
-                            // element when a document loads and scrolls it into
-                            // view — which on a reader document, where the first
-                            // link can be several screens down, means the article
-                            // opens somewhere in its own middle.
+                            // Otherwise the WebView focuses the first focusable element
+                            // when a document loads and scrolls it into view.
                             settings.setNeedInitialFocus(false)
                             webChromeClient = object : WebChromeClient() {
                                 override fun onProgressChanged(view: WebView, newProgress: Int) {
@@ -276,11 +234,8 @@ fun InAppBrowserScreen(url: String, mono: Boolean, onClose: () -> Unit, modifier
                                 }
                             }
                             webViewClient = object : WebViewClient() {
-                                // Without this the WebView renders Chrome's own
-                                // "Webpage not available" inside a reading app,
-                                // which is both ugly and unhelpful — it names a
-                                // net:: error code at someone who wanted to read
-                                // an article on a train.
+                                // Without this the WebView renders Chrome's own "Webpage
+                                // not available" inside a reading app.
                                 override fun onReceivedError(
                                     view: WebView,
                                     request: WebResourceRequest,
@@ -289,9 +244,8 @@ fun InAppBrowserScreen(url: String, mono: Boolean, onClose: () -> Unit, modifier
                                     if (request.isForMainFrame) loadFailed = true
                                 }
 
-                                // Anything that isn't itself a page — a mailto:,
-                                // an intent: link, an app deep link — has no
-                                // business loading inside this WebView.
+                                // Anything that isn't itself a page — a mailto: , an
+                                // intent: link, an app deep link.
                                 override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                                     val target = request.url.toString()
                                     if (!target.startsWith("http")) {
@@ -300,11 +254,7 @@ fun InAppBrowserScreen(url: String, mono: Boolean, onClose: () -> Unit, modifier
                                     }
 
                                     // A link followed out of the reader leaves the
-                                    // extracted article behind: what it points at
-                                    // has not been extracted, so it can only be
-                                    // the live page. Claiming the load here stops
-                                    // the effect above from fetching it a second
-                                    // time when the mode flips.
+                                    // extracted article behind.
                                     loaded = "live:$target"
                                     mode = BrowserMode.Original
                                     return false
@@ -324,19 +274,11 @@ fun InAppBrowserScreen(url: String, mono: Boolean, onClose: () -> Unit, modifier
                     },
                 )
 
-                // The WebView holds nothing yet — extraction is still an HTTP
-                // fetch away — so without this the screen is a bare rectangle
-                // of `ground` for however long that takes.
+                // The WebView holds nothing yet — extraction is still an HTTP fetch away.
                 if (extracting) ArticleSkeleton(Modifier.fillMaxSize())
 
-                // Over the article rather than beside it: the summary is a
-                // second look at what is already on screen, and pushing the
-                // page aside to show four lines would lose the thing being
-                // summarised.
-                // Tapping the article dismisses the panel. No ripple and no
-                // scrim: the page underneath stays legible, which is the
-                // point of floating over it, so the only sign this layer is
-                // there is that the first tap closes the summary.
+                // Over the article rather than beside it: the summary is a second look at
+                // what is already on screen.
                 if (panelIntent != null) {
                     Box(
                         Modifier
@@ -364,11 +306,6 @@ fun InAppBrowserScreen(url: String, mono: Boolean, onClose: () -> Unit, modifier
 
 /**
  * The summary panel, sliding up from the bottom edge.
- *
- * Its own composable rather than an `AnimatedVisibility` written inline: at
- * the call site both the column's scoped overload and the plain one are in
- * scope, and the column's wins — which is not the one that can be aligned
- * inside the box the WebView lives in.
  */
 @Composable
 private fun SummaryOverArticle(
@@ -394,10 +331,8 @@ private fun SummaryOverArticle(
                 onBusyChange = onBusyChange,
                 modifier = Modifier
                     .navigationBarsPadding()
-                    // 12dp either side and clear of the gesture handle, as
-                    // the design system's card draws it — the panel is
-                    // bottom-anchored, so its own inset is all that separates
-                    // it from the edge of the screen.
+                    // 12dp either side and clear of the gesture handle, as the design
+                    // system's card draws it — the panel is bottom-anchored.
                     .padding(horizontal = 12.dp)
                     .padding(top = 14.dp, bottom = 16.dp),
             )
@@ -406,36 +341,15 @@ private fun SummaryOverArticle(
 }
 
 /**
- * Stands in for [dev.mks.duskread.links.articleDocument]'s own shape — source
- * line, title, lead image, body copy — so the screen looks like a page
- * arriving rather than a blank one waiting to be told what to become.
- *
- * **Drawn from the document's own measurements.** [Layout.ReadingGutter] and
- * the 20dp top inset are `articleDocument`'s body padding, and the lead block
- * carries [Radius.Inline] because its `.lead` rule does. A skeleton only works
- * if nothing moves when the text lands, and that holds only while both sides
- * read from the same numbers: this sat at a hand-written 20dp and shifted the
- * whole page 2dp on arrival.
- *
- * **The status line replaces the source line.** It used to be an icon and a
- * sentence centred in the lead block — which made a placeholder the one
- * boxed, filled card left anywhere in the app, and put the only words on
- * screen halfway down a page that had not arrived. In the slot where
- * `.source` prints the hostname, uppercase and muted, it is where the eye
- * already is and it is replaced by real content rather than vanishing.
- *
- * **The pulse travels rather than breathes.** One phase, offset per row, so
- * the page reads as filling in from the top; a single alpha driving every bar
- * at once made the whole screen throb in unison, which looks like a fault
- * rather than work in progress.
+ * Stands in for [dev.mks.duskread.links.articleDocument]'s own shape — source line,
+ * title, lead image, body copy.
  */
 @Composable
 private fun ArticleSkeleton(modifier: Modifier = Modifier) {
     val transition = rememberInfiniteTransition(label = "extracting")
 
-    // Linear and restarting, not eased and reversing: the easing lives in the
-    // triangle wave below, and a reversing phase would run the highlight back
-    // up the page, which reads as undoing rather than loading.
+    // Linear and restarting, not eased and reversing: the easing lives in the triangle
+    // wave below, and a reversing phase would run the highlight back up the page.
     val phase by transition.animateFloat(
         initialValue = 0f,
         targetValue = 1f,
@@ -452,8 +366,8 @@ private fun ArticleSkeleton(modifier: Modifier = Modifier) {
             .padding(top = 20.dp),
     ) {
         Text(
-            // Uppercase and letter-spaced to match `.source`, whose slot this
-            // is standing in.
+            // Uppercase and letter-spaced to match `.source`, whose slot this is standing
+            // in.
             text = "FETCHING THE ARTICLE…",
             style = MaterialTheme.typography.labelSmall,
             letterSpacing = 0.08.em,
@@ -471,17 +385,12 @@ private fun ArticleSkeleton(modifier: Modifier = Modifier) {
         SkeletonBar(1f, 180.dp, phase, index = 2, shape = RoundedCornerShape(Radius.Inline))
         Spacer(Modifier.height(24.dp))
 
-        // As many lines as there is room for, rather than a fixed eight that
-        // ran out half way down and left the rest of the screen blank — which
-        // read as an article that had finished loading and was mostly empty.
-        // An article is longer than a screen; its placeholder should be too.
+        // As many lines as there is room for, rather than a fixed eight that ran out half
+        // way down and left the rest of the screen blank.
         BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
             val rows = (maxHeight / BodyLineSlot).toInt().coerceAtLeast(1)
             Column {
                 repeat(rows) { line ->
-                    // Cycled, so the short line that stands in for the end of
-                    // a paragraph keeps recurring instead of the page turning
-                    // into one unbroken block.
                     SkeletonBar(BodyLineWidths[line % BodyLineWidths.size], BodyLineHeight, phase, index = 3 + line)
                     Spacer(Modifier.height(BodyLineGap))
                 }
@@ -491,9 +400,8 @@ private fun ArticleSkeleton(modifier: Modifier = Modifier) {
 }
 
 /**
- * [Radius.Chip] by default, the app's softened corner — a text placeholder is
- * standing in for a line of prose, and a fully rounded pill would make it read
- * as a control instead.
+ * [Radius.Chip] by default, the app's softened corner — a text placeholder is standing in
+ * for a line of prose, and a fully rounded pill would make it read as a control instead.
  */
 @Composable
 private fun SkeletonBar(
@@ -515,10 +423,6 @@ private fun SkeletonBar(
 
 /**
  * Where one row sits in the travelling pulse.
- *
- * A triangle wave rather than a sine or a raw phase: it has no seam where it
- * wraps, so the highlight leaves the bottom of the page and re-enters the top
- * without a visible jump.
  */
 private fun pulseAlpha(phase: Float, index: Int): Float {
     val shifted = (phase - index * SkeletonStagger).mod(1f)
@@ -536,9 +440,8 @@ private val BodyLineGap = 14.dp
 private val BodyLineSlot = BodyLineHeight + BodyLineGap
 
 /**
- * Slow for UI — the sub-300ms rule in `Motion` is for a control answering a
- * touch, and this is ambient. Fast enough to look alive, slow enough that it
- * is not competing with the article for attention when it arrives.
+ * Slow for UI — the sub-300ms rule in `Motion` is for a control answering a touch, and
+ * this is ambient.
  */
 private const val SkeletonPulseMs = 1_400
 
@@ -580,9 +483,8 @@ private fun BrowserToolbar(
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f).padding(horizontal = 6.dp),
         )
-        // Hidden rather than disabled when there is no article: a control that
-        // can never do anything on this page is one the reader has to learn to
-        // ignore.
+        // Hidden rather than disabled when there is no article: a control that can never
+        // do anything on this page is one the reader has to learn to ignore.
         if (readerAvailable) {
             ToolbarButton(
                 icon = DuskReadIcons.Reader,
@@ -592,9 +494,8 @@ private fun BrowserToolbar(
             )
         }
         if (summaryAvailable) {
-            // The glyph becomes the spinner rather than sitting beside one:
-            // the article stays readable while the model runs, and this is
-            // the only thing on screen that should move.
+            // The glyph becomes the spinner rather than sitting beside one: the article
+            // stays readable while the model runs.
             if (summaryBusy) {
                 Box(Modifier.size(40.dp), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(
@@ -612,11 +513,7 @@ private fun BrowserToolbar(
                 )
             }
         }
-        // Its own button rather than something found by first opening the
-        // summary: the swipe already taught the app to draw a line between
-        // "open this and see" and "start talking immediately", and the
-        // reader deserves the same direct route, not two taps to get there.
-        // It opens the same card either way — see `PanelIntent`.
+        // Its own button rather than something found by first opening the summary.
         if (readAloudAvailable) {
             ToolbarButton(
                 icon = DuskReadIcons.Waveform,
@@ -648,10 +545,8 @@ private fun ToolbarButton(icon: ImageVector, label: String, onClick: () -> Unit,
 }
 
 /**
- * The current scheme as CSS, so a rendered article is the same page as the app
- * around it rather than a white rectangle wearing its toolbar. Alpha is
- * dropped: every one of these is opaque, and `#RRGGBBAA` is not understood by
- * every WebView still in the field.
+ * The current scheme as CSS, so a rendered article is the same page as the app around it
+ * rather than a white rectangle wearing its toolbar.
  */
 @Composable
 private fun androidx.compose.material3.ColorScheme.readerPalette(mono: Boolean): ReaderPalette = ReaderPalette(
@@ -667,15 +562,8 @@ private fun androidx.compose.material3.ColorScheme.readerPalette(mono: Boolean):
 private fun Color.css(): String = "#" + (toArgb() and 0xFFFFFF).toString(16).padStart(6, '0')
 
 /**
- * Algorithmic darkening (the modern replacement for `FORCE_DARK_ON`) is what
- * actually repaints a page that never declared a dark theme of its own,
- * rather than merely honouring one the page opted into. Falls back to the
- * older API on WebView builds too old to know about the new one, and does
- * nothing on a WebView too old for either — there is no third option.
- *
- * The reader view is unaffected either way: its document declares
- * `color-scheme: dark`, which is exactly the "the page handles this itself"
- * signal that turns algorithmic darkening off for it.
+ * Algorithmic darkening (the modern replacement for `FORCE_DARK_ON`) is what actually
+ * repaints a page that never declared a dark theme of its own.
  */
 private fun darken(settings: android.webkit.WebSettings) {
     if (WebViewFeature.isFeatureSupported(WebViewFeature.ALGORITHMIC_DARKENING)) {

@@ -15,10 +15,8 @@ data class PomodoroState(
 }
 
 /**
- * Holds the current session so the UI reads the same state regardless of what
- * is actually driving the countdown — a plain coroutine on most platforms, or
- * an Android foreground service, which is the only one of the two that
- * survives the app being backgrounded.
+ * Holds the current session so the UI reads the same state regardless of what is actually
+ * driving the countdown — a plain coroutine on most platforms.
  */
 object PomodoroClock {
     private val _state = MutableStateFlow(PomodoroState())
@@ -53,9 +51,8 @@ interface PomodoroController {
 }
 
 /**
- * Composable for the same reason as `rememberUrlOpener` — Android needs a
- * `Context` to reach its foreground service, and that is only available from
- * composition.
+ * Composable for the same reason as `rememberUrlOpener` — Android needs a `Context` to
+ * reach its foreground service, and that is only available from composition.
  */
 @Composable
 expect fun rememberPomodoroController(): PomodoroController

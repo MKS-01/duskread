@@ -1,11 +1,8 @@
 import ComposeApp
 import SwiftUI
 
-/// The big-timer mode: a full-screen destination for when the point is to
-/// actually stare at the clock rather than glance at a corner.
-///
-/// Bottom-anchored, like every other surface in this app — it is used
-/// one-handed, so the controls sit where the thumb already is.
+/// The big-timer mode: a full-screen destination for when the point is to actually stare
+/// at the clock rather than glance at a corner.
 struct FocusScreen: View {
     let onClose: () -> Void
 

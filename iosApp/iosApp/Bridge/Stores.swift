@@ -3,11 +3,8 @@ import Foundation
 import Observation
 import SwiftUI
 
-/// SwiftUI's view of the saved links.
-///
-/// One `Cancellable` per subscription, released on `deinit`. That is not
-/// tidiness: a collector that outlives its observer keeps the Kotlin graph
-/// alive and goes on delivering into a view that is gone.
+/// SwiftUI's view of the saved links. One `Cancellable` per subscription, released on
+/// `deinit`.
 @Observable
 final class LinksStore {
     private(set) var links: [SavedLink] = []
@@ -42,8 +39,8 @@ final class LinksStore {
 
     func clear() { bridge.clear() }
 
-    /// Fetches titles for anything saved without one. The work is Kotlin's;
-    /// this is only the trigger, so the two UIs backfill identically.
+    /// Fetches titles for anything saved without one. The work is Kotlin's; this is only
+    /// the trigger, so the two UIs backfill identically.
     func backfillTitles() async {
         try? await bridge.backfillTitles()
     }
@@ -129,7 +126,6 @@ final class FeedsStore {
     }
 }
 
-/// The focus timer.
 @Observable
 final class PomodoroStore {
     private(set) var state: PomodoroState
@@ -174,8 +170,8 @@ final class SuggestionsStore {
         refresh()
     }
 
-    /// Re-seeding re-ranks rather than re-randomising, so shuffle means
-    /// "something else good" and not "anything at all".
+    /// Re-seeding re-ranks rather than re-randomising, so shuffle means "something else
+    /// good" and not "anything at all".
     func shuffle() {
         seed &+= 1
         refresh()
@@ -243,11 +239,8 @@ final class NotionStore {
     }
 }
 
-/// Reading an article aloud.
-///
-/// Holds what the transport needs and nothing else: what is playing, how far
-/// through, and whether it is paused. The read itself is Kotlin's — fetch,
-/// extract, speak — so this is a remote control, not a player.
+/// Reading an article aloud. Holds what the transport needs and nothing else: what is
+/// playing, how far through, and whether it is paused.
 @Observable
 final class SpeechStore {
     private(set) var title: String?
@@ -263,9 +256,8 @@ final class SpeechStore {
 
     var available: Bool { bridge.isReady() }
 
-    /// Why it cannot speak, in the words the shared side chose — a missing
-    /// voice and a missing engine need different answers, and neither is
-    /// something this side should word for itself.
+    /// Why it cannot speak, in the words the shared side chose — a missing voice and a
+    /// missing engine need different answers.
     var unavailableReason: String? { bridge.status() }
 
     func speak(title: String, url: String) {

@@ -34,25 +34,19 @@ import dev.mks.duskread.ui.theme.Motion
 fun App() = ProvideAppGraph { DuskRead() }
 
 /**
- * Split from [App] only so the graph is in scope: every `rememberX()` below
- * now resolves through `LocalAppGraph`, which has to be provided by an
- * ancestor rather than by the composable reading it.
+ * Split from [App] only so the graph is in scope: every `rememberX()` below now resolves
+ * through `LocalAppGraph`.
  */
 @Composable
 private fun DuskRead() {
     val prefs = rememberUserPrefs()
 
-    // Both themes are dark; this picks the colourless one. Persisted through
-    // prefs so a reader who drops into Ink stays there until they switch back
-    // by hand, even across a process kill. The home-screen icon and splash
-    // don't follow this — they're Ink's, always; see AndroidManifest.xml.
+    // Both themes are dark; this picks the colourless one.
     val mono = prefs.mono
 
     DuskReadTheme(mono = mono) {
-        // Outermost, so every screen — onboarding and the overlays included —
-        // reads the same window class, and so a desktop window being dragged
-        // wider re-lays-out everything rather than only what happens to be
-        // below Home.
+        // Outermost, so every screen — onboarding and the overlays included — reads the
+        // same window class.
         WindowClassProvider(Modifier.fillMaxSize()) {
             Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                 if (!prefs.introSeen) {
@@ -68,10 +62,8 @@ private fun DuskRead() {
                 var homeTab by remember { mutableStateOf(HomeTab.HOME) }
                 var focusMode by remember { mutableStateOf(false) }
 
-                // Tapping a running session on the home-screen widget should
-                // land on the timer rather than on whichever tab the app was
-                // last showing. Focus is an overlay rather than a tab, so it
-                // needs its own way in from outside Compose; see FocusRequest.
+                // Tapping a running session on the home-screen widget should land on the
+                // timer rather than on whichever tab the app was last showing.
                 val focusRequested by FocusRequest.open.collectAsState()
                 LaunchedEffect(focusRequested) {
                     if (focusRequested) {
@@ -90,9 +82,8 @@ private fun DuskRead() {
                         onTabChange = { homeTab = it },
                     )
 
-                    // The big-timer mode: a full-screen destination for whenever
-                    // the point is to actually stare at the clock, not glance at a
-                    // corner. Closing it never stops the session underneath.
+                    // The big-timer mode: a full-screen destination for whenever the
+                    // point is to actually stare at the clock, not glance at a corner.
                     AnimatedVisibility(
                         visible = focusMode,
                         enter = fadeIn(tween(Motion.PushIn)) + slideInVertically(tween(Motion.PushIn)) { it / 8 },
@@ -101,13 +92,12 @@ private fun DuskRead() {
                         FocusScreen(onClose = { focusMode = false })
                     }
 
-                    // A summary asked for by swiping a row, wherever that row
-                    // was. Under the reader below, which hosts its own panel
-                    // over its own article.
+                    // A summary asked for by swiping a row, wherever that row was. Under
+                    // the reader below, which hosts its own panel over its own article.
                     SummaryOverlay()
 
-                    // Android's embedded reader browser; a no-op everywhere else.
-                    // See `PlatformOverlay`.
+                    // Android's embedded reader browser; a no-op everywhere else. See
+                    // `PlatformOverlay`.
                     PlatformOverlay(mono = mono)
                 }
             }

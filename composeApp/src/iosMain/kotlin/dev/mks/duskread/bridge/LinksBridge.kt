@@ -7,9 +7,6 @@ import dev.mks.duskread.links.savedAgo
 
 /**
  * The saved-links library, minus everything Obj-C cannot carry.
- *
- * Every default argument is spelled out: Kotlin defaults do not survive the
- * export, so `save(url)` would simply not exist on the Swift side.
  */
 class LinksBridge internal constructor(private val graph: AppGraph) {
     private val library get() = graph.links
@@ -35,9 +32,8 @@ class LinksBridge internal constructor(private val graph: AppGraph) {
     fun clear() = library.clear()
 
     /**
-     * Fetches titles for anything saved without one — the same backfill the
-     * Compose Saved tab runs on open, kept here so the HTTP client stays behind
-     * the facade. Suspending, so Swift gets `await`.
+     * Fetches titles for anything saved without one — the same backfill the Compose Saved
+     * tab runs on open, kept here so the HTTP client stays behind the facade.
      */
     suspend fun backfillTitles() {
         library.links.filterNot { it.fetched }.forEach { link ->

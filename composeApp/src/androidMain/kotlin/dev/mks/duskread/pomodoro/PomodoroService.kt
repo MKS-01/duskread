@@ -19,11 +19,6 @@ import kotlinx.coroutines.launch
 
 /**
  * Keeps a focus session counting down while the app is backgrounded.
- *
- * Holds [PomodoroClock] directly rather than exposing a bound interface —
- * the UI only ever needs to read the shared state, so no call ever needs to
- * cross the Binder. Start/pause/resume/reset all arrive as plain intents,
- * including from the notification's own action buttons.
  */
 class PomodoroService : Service() {
     private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
@@ -96,15 +91,8 @@ class PomodoroService : Service() {
     }
 
     /**
-     * Hands the home-screen widget the session's deadline so it can draw a
-     * countdown the system ticks for itself.
-     *
-     * Called only from the five transitions — start, pause, resume, reset,
-     * finish — and deliberately *not* from [tick]. The notification has to be
-     * rewritten every second because it shows a number we compute; the widget
-     * does not, because it shows a number the launcher computes from a
-     * deadline. Publishing here per-second would throw that away and make the
-     * widget the most expensive thing in the app.
+     * Hands the home-screen widget the session's deadline so it can draw a countdown the
+     * system ticks for itself.
      */
     private fun publishToWidget() {
         val state = PomodoroClock.state.value
@@ -170,12 +158,7 @@ class PomodoroService : Service() {
     }
 
     /**
-     * Two channels, not one: the ticking countdown updates once a second and
-     * has to stay silent (IMPORTANCE_LOW, no vibration) or it would buzz the
-     * reader's pocket all session long. "Session complete" is the one moment
-     * that should actually interrupt them, and a channel's importance can't
-     * be changed after creation — so it gets its own HIGH-importance channel
-     * with vibration built in rather than a one-off manual vibrate() call.
+     * Two channels, not one.
      */
     private fun ensureChannels() {
         val manager = getSystemService(NotificationManager::class.java) ?: return

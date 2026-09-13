@@ -1,8 +1,8 @@
 import ComposeApp
 import SwiftUI
 
-/// Every blog followed, with its host, how far behind you are, and its newest
-/// post. Expanding a row shows the three latest without leaving the list.
+/// Every blog followed, with its host, how far behind you are, and its newest post.
+/// Expanding a row shows the three latest without leaving the list.
 struct FollowingScreen: View {
     let onOpenTopics: (Feed) -> Void
 
@@ -118,8 +118,8 @@ struct FollowingScreen: View {
                     if isOpen { expanded.remove(feed.id) } else { expanded.insert(feed.id) }
                 }
             }
-            // Only offered while managing — an empty context menu still
-            // swallows the long press, which makes the row feel stuck.
+            // Only offered while managing — an empty context menu still swallows the long
+            // press, which makes the row feel stuck.
             .unfollowMenu(managing) { feeds.remove(feed) }
 
             if isOpen {

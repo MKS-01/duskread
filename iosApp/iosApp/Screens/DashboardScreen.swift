@@ -1,11 +1,8 @@
 import ComposeApp
 import SwiftUI
 
-/// Home: what to read next, the timer, and how far behind the blogs are.
-///
-/// Three sections and no more. The ranking already decided what matters, so a
-/// dashboard that also showed counts, streaks and history would be undoing
-/// that work in the name of completeness.
+/// Home: what to read next, the timer, and how far behind the blogs are. Three sections
+/// and no more.
 struct DashboardScreen: View {
     let onOpenFocus: () -> Void
     let onOpenSaved: () -> Void

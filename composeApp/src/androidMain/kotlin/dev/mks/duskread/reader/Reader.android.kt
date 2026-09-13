@@ -45,17 +45,8 @@ private const val LibraryDbName = "library.db"
 private const val AudioDirName = "audio"
 
 /**
- * Reads a synced readback library through Android's Storage Access
- * Framework — scoped storage means an arbitrary external path cannot just be
- * opened, so the user grants a persistent read permission to the folder once
- * via the system picker, and everything after that goes through
- * [DocumentFile] rather than a raw filesystem path.
- *
- * `library.db` cannot be queried directly from a SAF stream, so it is copied
- * into the app's cache on every load. That is deliberate, not a shortcut:
- * sync is manual and infrequent (the user's own script, run periodically),
- * so a fresh copy per open is simpler than file-watching a tree that rarely
- * changes, and the db is at most a few hundred KB.
+ * Reads a synced readback library through Android's Storage Access Framework — scoped
+ * storage means an arbitrary external path cannot just be opened.
  */
 internal class AndroidReadRepository(private val context: Context, private val store: KeyValueStore) : ReadRepository {
     private val _source = MutableStateFlow(ReaderSource.NOT_CONFIGURED)
@@ -77,11 +68,7 @@ internal class AndroidReadRepository(private val context: Context, private val s
     }
 
     /**
-     * The picker returns whatever folder the user tapped "use this folder" on
-     * — nothing stops that being a subfolder (e.g. `audio/` itself) rather
-     * than the `readback-audio-db` root. Verifying `library.db` is actually
-     * there before committing to it turns that mistake into a clear message
-     * instead of a silent, permanently-empty "no reads found".
+     * The picker returns whatever folder the user tapped "use this folder" on.
      */
     fun onFolderPicked(uri: Uri) {
         val tree = DocumentFile.fromTreeUri(context, uri)
@@ -105,16 +92,8 @@ internal class AndroidReadRepository(private val context: Context, private val s
 
         val cacheFile = File(context.cacheDir, LibraryDbName)
 
-        // Everything past this point is a boundary this app doesn't control
-        // on the other side of: the SAF copy can fail mid-read (IOException),
-        // a folder can pass the onFolderPicked check and still not have
-        // synced a single read yet, in which case readback hasn't created
-        // the `reads` table at all (SQLiteException), and an older or newer
-        // readback build's schema can be missing a column this one expects
-        // (getColumnIndexOrThrow throws IllegalArgumentException, not
-        // SQLiteException). All of that degrades to "no reads" rather than
-        // crashing — this runs on every launch via the dashboard's readback
-        // card, so an uncaught exception here takes the whole app down with it.
+        // Everything past this point is a boundary this app doesn't control on the other
+        // side of: the SAF copy can fail mid-read (IOException).
         try {
             context.contentResolver.openInputStream(dbDoc.uri)?.use { input ->
                 cacheFile.outputStream().use { output -> input.copyTo(output) }
@@ -188,11 +167,8 @@ actual fun ReaderSourcePicker(repository: ReadRepository, compact: Boolean) {
 
     if (compact) {
         Column(horizontalAlignment = Alignment.End) {
-            // Same hairline-and-softened-corner language as the sort chips —
-            // this is "change where the library comes from", not a
-            // destination on par with Newest/Oldest, so it no longer sits in
-            // that row, but it keeps that row's weight rather than reading
-            // as a bare, smaller glyph next to it.
+            // Same hairline-and-softened-corner language as the sort chips — this is
+            // "change where the library comes from".
             Icon(
                 imageVector = DuskReadIcons.FolderConnect,
                 contentDescription = "Choose folder",

@@ -12,12 +12,7 @@ import platform.UIKit.UIColor
 import platform.UIKit.UIViewController
 
 /**
- * The iOS counterpart to Custom Tabs: `SFSafariViewController`, presented over
- * the app. Same reasoning — Safari's session, reader mode and share sheet, but
- * a Done button back to where the reader was.
- *
- * Non-web schemes (`mailto:`, App Store links) go to the system, which Safari
- * View Controller cannot show anyway.
+ * The iOS counterpart to Custom Tabs: `SFSafariViewController`, presented over the app.
  */
 @Composable
 actual fun rememberUrlOpener(): (String) -> Unit {
@@ -45,11 +40,6 @@ actual fun rememberUrlOpener(): (String) -> Unit {
 
 /**
  * Safari proper, not the in-app sheet.
- *
- * `SFSafariViewController` does share Safari's cookies, so a sign-in would
- * mostly work — but the reader still ends up copying a secret inside a sheet
- * this app presented, and then has to get back out of it. Handing the task to
- * the browser leaves it where tasks belong.
  */
 @Composable
 actual fun rememberExternalUrlOpener(): (String) -> Unit = remember {

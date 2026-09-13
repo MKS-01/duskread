@@ -8,15 +8,6 @@ import kotlinx.coroutines.flow.emptyFlow
 
 /**
  * A read of an article, as one block of prose.
- *
- * [model] rides along because a summary is only as good as what wrote it, and
- * [text] is deliberately one field: the engine's output shape varies with its
- * mood, and a panel split into gist and body changes shape with it.
- *
- * No length field any more. It existed so the cache could tell a short
- * summary from a full one while the reader could ask for either; now the
- * length follows from the article's own word count, so an article has exactly
- * one right answer and the url alone identifies it.
  */
 data class ArticleSummary(
     val url: String,
@@ -26,18 +17,7 @@ data class ArticleSummary(
 )
 
 /**
- * Which of the two a left swipe opens the panel already doing, chosen once in
- * Settings.
- *
- * The panel always does both — it is one card that summarises and reads
- * aloud, never two — so this is not "which feature" the way it would have
- * been before they merged. It is only ever "does it start speaking the
- * moment it opens", the one thing about the panel a single pull cannot show
- * on its own and has to be decided ahead of time instead.
- *
- * Lives beside [SummaryLength] rather than in `ui/summary/`, the package that
- * actually reads it: `UserPrefs` needs it too, and `data/` importing from
- * `ui/` would be the layering running backwards.
+ * Which of the two a left swipe opens the panel already doing, chosen once in Settings.
  */
 enum class SwipeDefault(val label: String) {
     Summary("Summary"),
@@ -45,13 +25,8 @@ enum class SwipeDefault(val label: String) {
 }
 
 /**
- * What the engine can do right now, which is not a constant: a model can be
- * absent, downloadable, mid-download or ready, and the same device moves
- * between all four in an afternoon.
- *
- * [Checking] is the initial state rather than an optimistic guess — asking
- * the system takes a round trip, and a panel that opens claiming "download
- * the model" before it knows is worse than one that says nothing.
+ * What the engine can do right now, which is not a constant: a model can be absent,
+ * downloadable, mid-download or ready.
  */
 sealed interface SummariserState {
     data object Checking : SummariserState
@@ -69,25 +44,6 @@ sealed interface SummariserState {
 
 /**
  * The on-device summariser, as the app sees it.
- *
- * An interface in common with one real implementation, the shape `Reader` and
- * `AudioPlayer` already use: the engine is Android-only, but Saved, the
- * reader and Settings are common code and must compile — and quietly hide the
- * control — on the other four targets.
- *
- * No choice of model, because the feature that would take one answers
- * `FEATURE_NOT_FOUND` on real hardware; see `MlKitSummariser`.
- *
- * No choice of length either, and that one is a decision rather than a
- * limitation: how much summary an article wants is a property of the article,
- * not of the reader's mood, so [summarise] takes the text and sizes its own
- * answer. See `SummaryDepth` for where the sizing happens and why it has to
- * live on the Android side.
- *
- * [summarise] emits the answer *so far*, cumulative, so a caller renders the
- * latest value and never concatenates. Generation takes seconds on a phone,
- * and text arriving a few words at a time is the difference between a feature
- * that feels alive and a spinner that feels broken.
  */
 interface Summariser {
     val state: SummariserState
@@ -117,23 +73,14 @@ object UnavailableSummariser : Summariser {
 expect fun rememberSummariser(): Summariser
 
 /**
- * Whether this platform has a summariser at all — not whether the model is
- * downloaded, which only [Summariser.state] can answer.
- *
- * The two questions have different costs. This one is a constant per platform
- * and decides whether a row offers the gesture; the real question means
- * binding to a system service, which a list that may never summarise anything
- * has no business doing.
+ * Whether this platform has a summariser at all — not whether the model is downloaded,
+ * which only [Summariser.state] can answer. The two questions have different costs.
  */
 expect fun summariesSupported(): Boolean
 
 /**
- * What to summarise, and whatever of it we already have.
- *
- * [text] is set when the caller has already reduced the page — the reader has
- * it the moment its view opens. [feedContent] is the middle case: a feed that
- * carried the publisher's own markup, which `loadArticle` can use instead of
- * going out at all. A row has neither, so the panel fetches.
+ * What to summarise, and whatever of it we already have. [text] is set when the caller
+ * has already reduced the page — the reader has it the moment its view opens.
  */
 data class SummaryTarget(
     val url: String,
@@ -144,11 +91,6 @@ data class SummaryTarget(
 
 /**
  * A summary asked for from a list row, waiting for the panel that can show it.
- *
- * The same handoff as `InAppBrowserRequest` and `ToastRequest`, for the same
- * reason: the swipe happens in a row several composables deep in a lazy list,
- * and the only sensible place to float a panel is the top of the app. The
- * reader does not use this — it hosts its own panel over its own article.
  */
 object SummaryRequest {
     private val _target = MutableStateFlow<SummaryTarget?>(null)

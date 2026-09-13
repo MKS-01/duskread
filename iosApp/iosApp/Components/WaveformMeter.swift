@@ -1,9 +1,8 @@
 import ComposeApp
 import SwiftUI
 
-/// The per-row meter, and the "no signal" ornament when flat.
-///
-/// Intrinsic width, not stretched: `barWidth * count + gap * (count - 1)`.
+/// The per-row meter, and the "no signal" ornament when flat. Intrinsic width, not
+/// stretched: `barWidth * count + gap * (count - 1)`.
 struct WaveformMeter: View {
     var progress: Double
     var barCount: Int = 18
@@ -33,18 +32,10 @@ struct WaveformMeter: View {
         .frame(height: height)
     }
 
-    /// The mockup's off-state bar sits between the hairline and the meta grey;
-    /// the hairline all but vanishes at this width and full meta grey competes
-    /// with the title.
+    /// The mockup's off-state bar sits between the hairline and the meta grey.
     private var dim: Color { dusk.onSurfaceVariant.opacity(0.55) }
 
     /// The same integer hash the Compose meter uses, reproduced exactly.
-    ///
-    /// Not "something random-looking": the silhouette is what makes a row's
-    /// meter read as *this* clip's, so a different hash would change every
-    /// row in the app. Quantised onto the same eleven steps, with the same
-    /// nudge keeping each bar three steps clear of its neighbour — a run of
-    /// similar bars reads as a rendering glitch.
     static func heights(count: Int, seed: Int32) -> [CGFloat] {
         var steps = [Int32](repeating: 0, count: count)
         var previous: Int32 = -9

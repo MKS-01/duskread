@@ -2,28 +2,13 @@ package dev.mks.duskread.ui.theme
 
 /**
  * The icon set as SVG path data.
- *
- * The glyphs used to be built with Compose's `PathBuilder` DSL, which meant
- * they could only ever be drawn by Compose — and a SwiftUI shell would have
- * needed all twenty-two redrawn by hand, in a second hand, diverging from the
- * first on the first correction. Path strings are the one representation both
- * renderers can read: [DuskReadIcons] parses them into an `ImageVector`, Swift
- * parses the same strings into a `Path`.
- *
- * Every glyph is drawn on a 24x24 viewport and stroked at 2.4 with round caps
- * and joins. That is not per-icon data — it is the construction rule the whole
- * set shares — so it lives in the renderers, not here.
- *
- * Where an icon was two separate stroked paths, it is one path string with two
- * subpaths. With identical stroke settings on both, that draws the same.
  */
 object IconPaths {
     val Home = IconPath("M4 12L12 5.5L20 12M6.5 13.5L6.5 20M17.5 13.5L17.5 20M12 20L12 15.5")
 
     /**
-     * Outer ring.
-     * Inner ring.
-     * Centre, stroked rather than filled, to match the rest of the set.
+     * Outer ring. Inner ring. Centre, stroked rather than filled, to match the rest of
+     * the set.
      */
     val Target = IconPath("M3.6 12a8.4 8.4 0 1 1 16.8 0a8.4 8.4 0 1 1 -16.8 0ZM8.6 12a3.4 3.4 0 1 1 6.8 0a3.4 3.4 0 1 1 -6.8 0ZM11.3 12a0.7 0.7 0 1 1 1.4 0a0.7 0.7 0 1 1 -1.4 0Z")
 
@@ -70,12 +55,6 @@ object IconPaths {
 }
 
 /**
- * One glyph.
- *
- * [filled] is the *on* half of a pair and nothing else. The set is otherwise
- * entirely unfilled on purpose: a control with two states has to be tellable
- * apart at icon size, and a tint change is a colour difference — the one thing
- * the Ink scheme deliberately does not have. Filled and hollow survive the
- * palette swap; terracotta and grey do not.
+ * One glyph. [filled] is the *on* half of a pair and nothing else.
  */
 data class IconPath(val d: String, val filled: Boolean = false)

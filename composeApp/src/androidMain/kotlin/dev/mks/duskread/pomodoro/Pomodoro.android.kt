@@ -8,9 +8,8 @@ import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.flow.StateFlow
 
 /**
- * Talks to [PomodoroService] purely through intents — start/pause/resume/reset
- * are one-way fire-and-forget calls, and the result is read back from the
- * shared [PomodoroClock] rather than a callback.
+ * Talks to [PomodoroService] purely through intents — start/pause/resume/reset are
+ * one-way fire-and-forget calls.
  */
 private class AndroidPomodoroController(private val context: Context) : PomodoroController {
     override val state: StateFlow<PomodoroState> = PomodoroClock.state

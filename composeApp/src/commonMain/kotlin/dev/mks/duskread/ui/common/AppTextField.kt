@@ -27,16 +27,7 @@ import dev.mks.duskread.ui.theme.Mono
 import dev.mks.duskread.ui.theme.Radius
 
 /**
- * The one text field shape in the app: a hairline-bordered box with square
- * (well — 10dp, the same as every other bordered control) corners rather
- * than the fully circular pill each input used to draw for itself. A pill
- * is the shape of a button, and every one of these fields sat next to actual
- * pill buttons (Save, Follow, Add links) that needed to look different from
- * the thing they acted on — this is what makes that difference legible.
- *
- * One component rather than four near-identical copies (Saved's paste field,
- * the feed-follow field, the settings name field, the import box) means a
- * future change to how a field looks only has one place to happen.
+ * The one text field shape in the app.
  */
 @Composable
 fun AppTextField(

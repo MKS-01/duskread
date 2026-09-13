@@ -25,40 +25,43 @@ the architecture doc.
 
 `CLAUDE.md` sets the style; this is how it looks in practice.
 
-**Every file and public type carries a prose KDoc saying why it exists.**
-Never a restatement of the signature — "Returns the canonical URL" is noise
-beside `fun canonicalUrl`. `links/CanonicalUrl.kt` is the model: what the
-thing is for, the problem that forced it, the rule it lives by in bold, then
-the road not taken and why.
+**Every file and public type carries a prose KDoc saying why it exists, in
+two lines or fewer.** Never a restatement of the signature — "Returns the
+canonical URL" is noise beside `fun canonicalUrl`. `links/CanonicalUrl.kt` is
+the model: one sentence on what the thing is for and the rule it lives by,
+not the backstory behind it.
 
-**Inline `//` comments justify a choice or flag a hazard**, and sit directly
-above the line they are about:
+**Inline `//` comments justify a choice or flag a hazard**, same two-line
+limit, and sit directly above the line they are about:
 
 ```kotlin
-// Resolution is a network call and can fail; the raw address is still
-// worth following, since fetchFeed may well accept what discovery
-// could not confirm.
+// The raw address is still worth following if resolution fails — fetchFeed
+// may accept what discovery could not confirm.
 val resolved = runCatching { discoverFeedUrl(http, source.feedUrl) }.getOrDefault(source.feedUrl)
 ```
 
 Good triggers for one: a value that looks arbitrary (why 900 characters, why
 350 ms), an ordering that matters, a refusal (why this does *not* do the
-obvious thing), a workaround for something outside this repo.
+obvious thing), a workaround for something outside this repo. If the reason
+needs more than two lines, it is either a `docs/architecture.md` decision
+(see below) or it belongs in the commit message, not the comment.
 
 **Mechanics:**
 
 - British spelling in prose — colour, behaviour, normalised, amortised.
   Identifiers stay American.
 - Hard-wrap comments at 80–90 columns. Content strings do not wrap.
-- Match the surrounding density. It is the house style, not decoration — a
-  file with a comment every few lines should not gain a bare patch, and one
-  that reads cleanly should not gain three restatements of its own code.
+- Two lines, no exceptions — not for a subtle bug, not for a tradeoff with
+  three good reasons behind it. Say the one reason that matters most; the
+  rest goes in the commit message.
 - No `TODO`. Open work goes in an issue or a commit message, not in a comment
   nobody sweeps.
 
 **Do not write:** a comment that repeats the line, a changelog ("was X, now
-Y" — that is what git is for), a name in place of a reason, or a block that
-will be wrong the first time the code changes.
+Y" — that is what git is for), a name in place of a reason, a block that will
+be wrong the first time the code changes, or a comment at all where the code
+already says it — `link.topic?.let { ... }` needs no "only when known" above
+it.
 
 ## When it belongs in `docs/architecture.md`
 

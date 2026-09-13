@@ -19,20 +19,16 @@ import androidx.compose.ui.unit.dp
 import dev.mks.duskread.ui.theme.SectionLabel
 
 /**
- * A section's small-caps label with a hairline trailing off to the right of
- * it on the *same* line — the one repeating way every section on Home,
- * Readback and Saved opens, so the screen reads as rule-and-rhythm rather
- * than a stack of boxes. This is not a rule sitting under the label: the
- * line is what is left of the row after the label and any trailing content,
- * the way a printed section head trails a line off into the margin.
+ * A section's small-caps label with a hairline trailing off to the right of it on the
+ * *same* line — the one repeating way every section on Home, Readback and Saved opens.
  */
 @Composable
 fun EyebrowHeader(
     text: String,
     modifier: Modifier = Modifier,
     icon: ImageVector? = null,
-    // Defaults to the accent, but a lower-priority section — read history
-    // under an unread list, say — can ask for the quieter muted tone instead.
+    // Defaults to the accent, but a lower-priority section — read history under an unread
+    // list, say — can ask for the quieter muted tone instead.
     tint: Color? = null,
     trailing: (@Composable () -> Unit)? = null,
 ) {

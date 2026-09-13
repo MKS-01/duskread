@@ -4,12 +4,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
 /**
- * Lets Android-only entry points outside Compose — right now just a tapped
- * notification — ask [HomeScreen] to switch tabs, without either side
- * depending on the other. `MainActivity` lives in the host `androidApp`
- * module and reads the intent extra; `ReaderPlaybackService` sets that extra
- * when it builds the notification's content intent. Neither can call into
- * `HomeScreen` directly, so this is the one shared handoff point.
+ * Lets Android-only entry points outside Compose — right now just a tapped notification —
+ * ask [HomeScreen] to switch tabs, without either side depending on the other.
  */
 object HomeTabRequest {
     private val _target = MutableStateFlow<HomeTab?>(null)

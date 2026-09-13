@@ -82,28 +82,12 @@ private const val CollapsedScale = 0.82f
 
 /**
  * Which of the bar's two faces is on screen.
- *
- * They are mutually exclusive by design: the whole point of the swap is that
- * there is only ever one floating object above the nav bar, never a stack of
- * them competing for the same thumb.
- *
- * Getting out of the way is no longer a third face. It used to collapse to a
- * bare icon, which cost the reader every control and the answer to "where am
- * I" for the sake of some pixels; the bar now slides down instead and keeps
- * both.
  */
 private enum class BarFace { TABS, PLAYER }
 
 /**
- * What the floating transport shows, merged from whichever of Readback or a
- * live read is actually playing — see `HomeScreen`, which builds this and
- * stops whichever source is not it before starting the other, so the bar
- * never has two things to be about at once.
- *
- * One shape for both rather than a `ReadItem?` and a speech session side by
- * side, because [PlayerFace] and [TransportBar] only ever want to draw one
- * thing playing, and building that union twice — once per caller — was two
- * chances for the two transports to disagree about what "playing" means.
+ * What the floating transport shows, merged from whichever of Readback or a live read is
+ * actually playing — see `HomeScreen`.
  */
 data class NowPlaying(
     val title: String,
@@ -120,13 +104,6 @@ data class NowPlaying(
 
 /**
  * Tracks scroll direction so the bar can shrink out of the way while reading.
- *
- * Hysteretic rather than a plain sign check on each delta: a fling delivers
- * alternating small deltas as its curve flattens out, and reacting to every
- * one of them makes the bar flicker. So a *run* in one direction has to build
- * up before anything happens, and the two thresholds are asymmetric on
- * purpose — losing the controls should take a deliberate scroll, getting them
- * back should feel like it costs nothing.
  */
 @Stable
 class BarCollapse(private val collapseRun: Float, private val expandRun: Float) : NestedScrollConnection {
@@ -137,16 +114,10 @@ class BarCollapse(private val collapseRun: Float, private val expandRun: Float) 
 
     override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
         val dy = available.y
-        // A zero delta is not a direction. Nested scroll delivers them —
-        // a fling settling, a list already at its end, a gesture that turns
-        // out to be horizontal — and treating one as a reversal reset the run
-        // to nothing, so a genuine scroll could fail to move the bar at all.
-        // That was the bar feeling like it ignored you.
+        // A zero delta is not a direction.
         if (dy == 0f) return Offset.Zero
 
-        // Direction change restarts the run rather than merely subtracting
-        // from it, otherwise a long scroll down leaves a debt that swallows
-        // the first flick back up.
+        // Direction change restarts the run rather than merely subtracting from it.
         run = if ((run > 0f) != (dy > 0f)) dy else run + dy
         if (run < -collapseRun) collapsed = true
         if (run > expandRun) collapsed = false
@@ -169,27 +140,8 @@ fun rememberBarCollapse(): BarCollapse {
 }
 
 /**
- * The floating pill at the bottom of the home screen.
- *
- * It sits within thumb reach, which is the whole argument for moving
- * navigation down here from a top app bar. Search stays off it — a fifth icon
- * would cost more width than a search field is worth, so it lives inside the
- * Following tab instead, the one screen that actually needs it.
- *
- * Icons carry it alone — with four destinations and nothing else on the row,
- * there is nothing to disambiguate, and labels were costing width on the one
- * axis a phone cannot spare. The active tab is marked by a filled disc
- * instead. Labels remain in [HomeTab] for the accessibility contentDescription.
- *
- * The transport lives *inside* this pill rather than on a second pill above
- * it. Two stacked glass slabs ate a third of the reachable zone and pushed
- * every list's bottom padding around as playback started and stopped; one pill
- * that swaps its contents costs no height at all. Playback wins the bar by
- * default because it is the transient thing — navigation is one tap away
- * behind the trailing tab icon, and reappears on its own as soon as you use it.
- *
- * The bar blurs whatever scrolls beneath it rather than sitting on an opaque
- * slab, so the list stays visible as it passes underneath.
+ * The floating pill at the bottom of the home screen. It sits within thumb reach, which
+ * is the whole argument for moving navigation down here from a top app bar.
  */
 @Composable
 fun FloatingBar(
@@ -207,23 +159,19 @@ fun FloatingBar(
     collapse: BarCollapse,
     modifier: Modifier = Modifier,
     /**
-     * False where the tabs are behind something — a full-screen surface
-     * covering the screen the bar belongs to. The bar is then a transport
-     * and nothing else: no tab face to fall back to, and no peeking at
-     * destinations that cannot be reached without closing what is on top.
+     * False where the tabs are behind something — a full-screen surface covering the
+     * screen the bar belongs to.
      */
     tabsAvailable: Boolean = true,
 ) {
     val scheme = MaterialTheme.colorScheme
 
-    // Peeking at the tabs is a momentary thing, not a mode: any new read, and
-    // any tab actually chosen, hands the bar back to the transport.
+    // Peeking at the tabs is a momentary thing, not a mode: any new read, and any tab
+    // actually chosen, hands the bar back to the transport.
     var peekingTabs by remember { mutableStateOf(false) }
     LaunchedEffect(nowPlaying?.title) { peekingTabs = false }
 
-    // Held past the end of playback: `nowPlaying` goes null the instant you
-    // hit stop, and reading it directly would blank the title and the rest
-    // of the face while it was still animating out.
+    // Held past the end of playback: `nowPlaying` goes null the instant you hit stop.
     val shown = remember { mutableStateOf<NowPlaying?>(null) }
     nowPlaying?.let { shown.value = it }
 
@@ -232,19 +180,8 @@ fun FloatingBar(
         else -> BarFace.TABS
     }
 
-    // Out of the way, not gone: it shrinks in place rather than sliding down
-    // toward the edge. A slide used to be part of this — the MacBook-dock
-    // idea of a bar sinking into the edge it recedes toward — but anchored to
-    // the *screen* bottom rather than to its own resting position, that slide
-    // read as the bar drifting down and crowding the gesture area on every
-    // collapse, not as one continuous recession. Shrinking alone, anchored to
-    // [TransformOrigin] below, says "quieter" without also saying "lower".
-    //
-    // Shrinking used to be rejected on its own — the buttons are 42dp against
-    // a 56dp bar, so shrinking a *tappable* bar would take them under thumb
-    // size — but collapsed, they already aren't individually tappable: the
-    // whole pill becomes one target for [collapse]'s `expand()` below.
-    // Nothing here is losing precision that wasn't already gone.
+    // Out of the way, not gone: it shrinks in place rather than sliding down toward the
+    // edge.
     val scale by animateFloatAsState(
         targetValue = if (collapse.collapsed) CollapsedScale else 1f,
         animationSpec = tween(
@@ -260,10 +197,8 @@ fun FloatingBar(
             .graphicsLayer {
                 scaleX = scale
                 scaleY = scale
-                // Bottom-centre, not the pill's own centre: shrinking toward
-                // the middle reads as the bar deflating in place, shrinking
-                // toward the edge it's already sliding into reads as one
-                // continuous motion of sinking away.
+                // Bottom-centre, not the pill's own centre: shrinking toward the middle
+                // reads as the bar deflating in place.
                 transformOrigin = TransformOrigin(0.5f, 1f)
             }
             .clip(CircleShape)
@@ -277,8 +212,8 @@ fun FloatingBar(
                     noiseFactor = 0.04f,
                 ),
             )
-            // A brighter top edge is what actually sells glass: real glass
-            // catches light where it curves away from you.
+            // A brighter top edge is what actually sells glass: real glass catches light
+            // where it curves away from you.
             .border(
                 width = 1.dp,
                 brush = Brush.verticalGradient(
@@ -290,24 +225,12 @@ fun FloatingBar(
             ),
         contentAlignment = Alignment.Center,
     ) {
-        // No meter behind the transport. The mockup's floating bar carries
-        // icons and nothing else, and every pitch tried here either moirés
-        // into a hatch across the pill or collides with the play control —
-        // the remaining-time readout already answers "how much is left".
+        // No meter behind the transport.
 
         AnimatedContent(
             targetState = face,
-            // The size transform is stated rather than left to the default,
-            // because the two faces are different widths on purpose — tabs
-            // wrap their icons, the transport fills the bar — so this swap is
-            // a resize as much as a crossfade. Unspecified, the width moved on
-            // a spring while the opacity moved on a tween, and the pill
-            // arrived at its new size before the face that wanted it had
-            // finished appearing.
-            //
-            // clip = false because the Box already clips to CircleShape; a
-            // second clip animating its own bounds inside that one is what
-            // made the contents look sheared mid-swap.
+            // The size transform is stated rather than left to the default, because the
+            // two faces are different widths on purpose — tabs wrap their icons.
             transitionSpec = {
                 fadeIn(tween(Motion.Chip)) togetherWith fadeOut(tween(Motion.Fade)) using
                     SizeTransform(clip = false) { _, _ -> tween(Motion.Chip) }
@@ -341,25 +264,17 @@ fun FloatingBar(
             }
         }
 
-        // While peeked the whole bar is one target, not five. A third of a
-        // 42dp button is 14dp, and a tap that lands on the wrong one of three
-        // tabs is worse than a tap that just brings the bar back.
+        // While peeked the whole bar is one target, not five.
         if (collapse.collapsed) {
             Box(Modifier.matchParentSize().clickable(onClick = collapse::expand))
         }
 
-        // Position, shown rather than left to be discovered by dragging: the
-        // strip mirrors the same seek gesture that lives on the title above
-        // it, so scrubbing works from either and this line is never lying
-        // about where a drag on the title would land.
+        // Position, shown rather than left to be discovered by dragging: the strip
+        // mirrors the same seek gesture that lives on the title above it.
         if (face == BarFace.PLAYER) {
             val seekable = shown.value?.seekable == true
 
-            // Where the finger is, while it is down. Without this the fill is
-            // drawn straight from the player's reported position, so a drag
-            // fought the playhead: every pixel asked the player to seek, the
-            // player answered a few frames later with wherever it had actually
-            // landed, and the line snapped back and forth between the two.
+            // Where the finger is, while it is down.
             var scrub by remember { mutableStateOf<Float?>(null) }
             val fraction = scrub ?: (shown.value?.fraction ?: 0f)
 
@@ -372,19 +287,13 @@ fun FloatingBar(
                         if (!seekable) return@pointerInput
                         detectHorizontalDragGestures(
                             onDragStart = { offset -> scrub = (offset.x / size.width).coerceIn(0f, 1f) },
-                            // One seek, on release. Asking a MediaPlayer to
-                            // seek on every drag event is what makes a scrub
-                            // stutter — each one interrupts the decode it just
-                            // started for the last.
+                            // One seek, on release.
                             onDragEnd = {
                                 scrub?.let { onSeek(it) }
                                 scrub = null
                             },
                             onDragCancel = { scrub = null },
                         ) { change, _ ->
-                            // Consumed, or the list underneath treats the same
-                            // drag as its own scroll and the bar collapses
-                            // while you are scrubbing on it.
                             change.consume()
                             scrub = (change.position.x / size.width).coerceIn(0f, 1f)
                         }
@@ -399,20 +308,8 @@ fun FloatingBar(
 }
 
 /**
- * The theme toggle and Settings ride at the trailing end, behind [BarDivider]
- * — neither is a destination like the tabs before it, so neither gets to
- * look like one. Reachable from every tab rather than stranded at the top of
- * Home alone, which is where both started: the theme toggle made this move
- * first, and Settings had stayed behind only because [NavRail] — the same
- * far-end slot, for the wide layout — was the one place it was ever a single
- * tap away from every screen. Home's own gear stays too; the wide layout has
- * carried the same duplication since the rail was built, and a reader moving
- * between window sizes should not have Settings change location under them.
- *
- * [tabs] rather than `HomeTab.entries` because Readback is hidden unless it
- * has been switched on — see `UserPrefs.readbackEnabled`. The bar widens and
- * narrows with the list, which is the whole reason it wraps its icons rather
- * than filling the pill.
+ * The theme toggle and Settings ride at the trailing end, behind [BarDivider] — neither
+ * is a destination like the tabs before it, so neither gets to look like one.
  */
 @Composable
 private fun TabsFace(
@@ -442,9 +339,8 @@ private fun TabsFace(
 }
 
 /**
- * The transport, sized to fill the bar's whole width — unlike [TabsFace],
- * which wraps its icons. A [Box] takes the larger of its children, so this is
- * what makes the pill itself widen and narrow as playback comes and goes.
+ * The transport, sized to fill the bar's whole width — unlike [TabsFace], which wraps its
+ * icons.
  */
 @Composable
 private fun PlayerFace(
@@ -478,12 +374,8 @@ private fun PlayerFace(
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier
                 .weight(1f)
-                // The visible line along the pill's foot is the discoverable
-                // scrub target; this is the same gesture repeated over the
-                // title so a drag doesn't have to land in a 20dp-tall strip.
-                // A no-op registration when unseekable, not an omitted one:
-                // the title should not suddenly respond to a drag it ignored
-                // a moment ago just because something else started playing.
+                // The visible line along the pill's foot is the discoverable scrub
+                // target.
                 .pointerInput(nowPlaying.seekable) {
                     if (nowPlaying.seekable) {
                         detectHorizontalDragGestures { change, _ ->
@@ -500,10 +392,7 @@ private fun PlayerFace(
         )
         Spacer(Modifier.width(6.dp))
         BarButton(DuskReadIcons.Close, "Stop", diameter = 34.dp, iconSize = 13.dp, onClick = onStop)
-        // The way back to navigation. It shows the tab you are already on, so
-        // it reads as "return to where you were" rather than as a fourth
-        // destination — and it is absent, not inert, where there is nothing
-        // to go back to: a button that does nothing is worse than no button.
+        // The way back to navigation.
         if (tabsAvailable) {
             BarDivider()
             BarButton(selected.icon, "Show tabs", onClick = onShowTabs)
@@ -522,10 +411,8 @@ private fun BarDivider() {
 }
 
 /**
- * Every touch target in the bar: a circular tap area with an optional filled
- * disc behind it. One composable rather than a tab variant and a plain-icon
- * variant, because both faces need both behaviours and the 42dp target is the
- * thing that must not drift between them.
+ * Every touch target in the bar: a circular tap area with an optional filled disc behind
+ * it.
  */
 @Composable
 private fun BarButton(

@@ -12,20 +12,10 @@ import kotlinx.coroutines.flow.StateFlow
 
 /**
  * Everything about the Notion connection except the credential.
- *
- * Deliberately a sibling of `UserPrefs` rather than four more properties on
- * it: this is the only state in the app that describes a connection to
- * somewhere else, and it is the state a disconnect has to clear wholesale.
- * Keeping it separate means [clear] is one obvious call rather than four
- * assignments someone will one day only do three of.
- *
- * The token is not here. It lives in `SecretStore`, and the split is the
- * point — see `SecretStore.kt`.
  */
 class NotionPrefs(private val store: KeyValueStore) {
-    // Snapshot state and a StateFlow in one, so Compose and the iOS bridge read
-    // the same value. Declared up here because a delegate has to exist before
-    // the property delegating to it.
+    // Snapshot state and a StateFlow in one, so Compose and the iOS bridge read the same
+    // value.
     private val observedSourcesDatabaseId = Observed(store.getString(SourcesKey))
     private val observedReadingDatabaseId = Observed(store.getString(ReadingKey))
     private val observedParentPageId = Observed(store.getString(ParentKey))
@@ -41,13 +31,6 @@ class NotionPrefs(private val store: KeyValueStore) {
 
     /**
      * The `Reading List` database saved links sync against.
-     *
-     * An id of its own because there are two tables, not because either half
-     * is optional: `provision` resolves both or neither, so this being set
-     * with [sourcesDatabaseId] null — or the reverse — is not a state the app
-     * reaches. It *was* optional while both ids were pasted in by hand, when
-     * pulling your followed blogs and configuring nothing else was a
-     * reasonable thing to want; `runFullSync` carried a branch for it.
      */
     var readingDatabaseId: String? by observedReadingDatabaseId
         private set
@@ -56,11 +39,7 @@ class NotionPrefs(private val store: KeyValueStore) {
     val readingDatabaseIdUpdates: StateFlow<String?> get() = observedReadingDatabaseId.updates
 
     /**
-     * The page the reader shared with the token, inside which [homePageId]
-     * was created.
-     *
-     * Held so a later repair — a home page deleted in Notion, say — can rebuild
-     * without asking the same question twice.
+     * The page the reader shared with the token, inside which [homePageId] was created.
      */
     var parentPageId: String? by observedParentPageId
         private set
@@ -70,11 +49,6 @@ class NotionPrefs(private val store: KeyValueStore) {
 
     /**
      * The `DuskRead` page the two databases live in.
-     *
-     * Separate from [parentPageId] because they answer different questions:
-     * one is where the reader let the app in, the other is what the app built
-     * there. Conflating them would mean a second connection creating a second
-     * home page inside the first.
      */
     var homePageId: String? by observedHomePageId
         private set
@@ -119,20 +93,8 @@ class NotionPrefs(private val store: KeyValueStore) {
     }
 
     /**
-     * Whether an automatic sync is due.
-     *
-     * Deliberately says nothing about whether the databases are known. It used
-     * to refuse until [sourcesDatabaseId] was set, which was right when that id
-     * was pasted in by hand and wrong the moment `provision` started resolving
-     * it: a reader who had just connected would have been refused every sync
-     * forever, because the sync is the only thing that would have found the id.
-     * Whether there is a credential at all is the caller's check — see
-     * `NotionAuth.bearer`.
-     *
-     * [hasUnpushedWork] overrides the timer, and that is the point of it: the
-     * clock is there to stop four openings in an evening costing four syncs,
-     * not to make something just pasted in wait four hours to exist anywhere
-     * else. Fresh feeds can wait; a link the reader deliberately saved cannot.
+     * Whether an automatic sync is due. Deliberately says nothing about whether the
+     * databases are known.
      */
     fun dueForSync(now: Long, hasUnpushedWork: Boolean): Boolean {
         val last = lastSyncAt ?: return true
@@ -146,9 +108,8 @@ class NotionPrefs(private val store: KeyValueStore) {
         parentPageId = null
         homePageId = null
         lastSyncAt = null
-        // [LegacyNameKey] has no field behind it any more, and is cleared
-        // anyway: an install that ran the old code still has the string
-        // sitting in its store, and a disconnect should not leave it there.
+        // [LegacyNameKey] has no field behind it any more, and is cleared anyway: an
+        // install that ran the old code still has the string sitting in its store.
         listOf(SourcesKey, ReadingKey, ParentKey, HomeKey, LastSyncKey, LegacyNameKey)
             .forEach { store.putString(it, null) }
     }
@@ -161,17 +122,14 @@ class NotionPrefs(private val store: KeyValueStore) {
         const val LastSyncKey = "notion.sync.last"
 
         /**
-         * The cached name of *the* database, from when there was one of them
-         * and its id was typed in by hand. Nothing writes it now; it survives
-         * only so [clear] can remove what an older install left behind.
+         * The cached name of *the* database, from when there was one of them and its id
+         * was typed in by hand.
          */
         const val LegacyNameKey = "notion.database.name"
 
         /**
-         * Four hours. Long enough that opening the app repeatedly in an
-         * evening costs one sync, short enough that a morning's reading is
-         * current. A feed publishes a few times a week; there is nothing to
-         * gain from checking more often than a meal.
+         * Four hours. Long enough that opening the app repeatedly in an evening costs one
+         * sync, short enough that a morning's reading is current.
          */
         const val AutoSyncAfterMs = 4L * 60 * 60 * 1000
     }

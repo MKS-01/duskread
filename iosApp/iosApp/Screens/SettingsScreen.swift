@@ -2,10 +2,6 @@ import ComposeApp
 import SwiftUI
 
 /// Ordered by what you came here to change.
-///
-/// Summaries, voice and swipe are absent rather than disabled: iOS has no
-/// summariser and no speaker, so a control for either would be a promise the
-/// app cannot keep. They appear when those actuals do.
 struct SettingsScreen: View {
     let onClose: () -> Void
 
@@ -56,9 +52,7 @@ struct SettingsScreen: View {
         .padding(.top, 8)
     }
 
-    /// Present only because iOS can now speak. The section is absent rather
-    /// than disabled where it cannot — a control that explains why it does
-    /// nothing is still a control that does nothing.
+    /// Present only because iOS can now speak.
     @ViewBuilder
     private var voice: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -170,8 +164,8 @@ struct SettingsScreen: View {
             .foregroundStyle(dusk.onSurfaceVariant.opacity(0.7))
     }
 
-    /// Relative only, same as the shared side: an absolute date needs a
-    /// calendar library this project does not carry.
+    /// Relative only, same as the shared side: an absolute date needs a calendar library
+    /// this project does not carry.
     private func relative(_ millis: Int64) -> String {
         let formatter = RelativeDateTimeFormatter()
         formatter.unitsStyle = .abbreviated

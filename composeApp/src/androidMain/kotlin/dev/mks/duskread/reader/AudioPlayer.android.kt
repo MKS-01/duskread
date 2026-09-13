@@ -13,14 +13,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 
 /**
- * Talks to [ReaderPlaybackService] purely through intents — a fire-and-forget
- * shape — and reattaches whichever [ReadItem] was last asked to play (from [CurrentReaderItem])
- * onto the shared [ReaderPlaybackClock] state, since the service itself only
- * ever sees a resolved URI, not the item. Both of those are top-level
- * singletons rather than fields on this class specifically so a recreated
- * instance — which happens every time the Readback tab is unmounted and
- * remounted, e.g. switching tabs and back — picks the live session back up
- * instead of losing track of it.
+ * Talks to [ReaderPlaybackService] purely through intents — a fire-and-forget shape.
  */
 internal class AndroidAudioPlayer(
     private val context: Context,

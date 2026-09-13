@@ -9,18 +9,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 /**
- * A plain coroutine tick, lost if the process dies. Used on every platform
- * except Android, where a foreground service takes over so a session
- * survives backgrounding — this app is read mostly on a phone, so a fuller
- * background-execution story elsewhere is not worth the extra platform code
- * yet.
- *
- * A singleton, not one instance per composable: the chip and the full-screen
- * focus mode both call `rememberPomodoroController()`, and if each held its
- * own ticking job, pausing from one would leave the other's job running
- * unseen — the clock would keep silently draining underneath a "paused" UI.
- * One shared engine, independent of any composable's lifecycle, is what
- * makes multiple entry points to the same session safe.
+ * A plain coroutine tick, lost if the process dies.
  */
 internal object SimplePomodoroController : PomodoroController {
     private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())

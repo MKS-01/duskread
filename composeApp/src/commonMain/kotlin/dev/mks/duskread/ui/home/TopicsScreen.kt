@@ -42,25 +42,6 @@ import dev.mks.duskread.ui.theme.SectionLabel
 
 /**
  * Everything one followed blog has posted, as a list you scroll.
- *
- * The digest's carousel on Home deliberately shows a few posts at a time and
- * no more — it is a strip inside a section inside a dashboard, and making it
- * tall enough to browse properly would cost Home the quiet shape the digest
- * exists to keep. This screen is where that constraint is lifted: same posts,
- * same actions, one per row and the full width of the phone, with nothing
- * else on screen competing for the space.
- *
- * Built in the flat-row language the rest of the app moved to, not in the
- * carousel's boxed cards: an eyebrow with its inline rule opens the list, and
- * a row is a sourcechip, a headline, a mono meta line and its own bottom
- * hairline — no container around it. The strip on Home keeps its boxes
- * because a horizontal row of cards has to agree on a size; a list does not,
- * and a box per row here would be the one screen in the app still building
- * them.
- *
- * A full-screen destination rather than a fourth stop on the floating bar,
- * the same as Focus and Settings: it belongs to a feed you picked, so there
- * is nothing for it to show until you have picked one.
  */
 @Composable
 fun TopicsScreen(
@@ -74,9 +55,8 @@ fun TopicsScreen(
 
     Surface(modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
-            // A bare glyph, no circle behind it — the same call the dashboard's
-            // settings icon makes. Chrome around an icon is the boxed-card
-            // habit in miniature.
+            // A bare glyph, no circle behind it — the same call the dashboard's settings
+            // icon makes. Chrome around an icon is the boxed-card habit in miniature.
             Icon(
                 imageVector = DuskReadIcons.Back,
                 contentDescription = "Back",
@@ -90,10 +70,7 @@ fun TopicsScreen(
 
             Spacer(Modifier.height(10.dp))
 
-            // The blog names the screen. There is no fixed title here on
-            // purpose: this screen is only ever reached from one feed's line
-            // in the digest, so a constant word at the top would say less
-            // than the eyebrow already has to say anyway.
+            // The blog names the screen.
             Column(Modifier.padding(horizontal = 16.dp)) {
                 EyebrowHeader(
                     text = feed.label.uppercase(),

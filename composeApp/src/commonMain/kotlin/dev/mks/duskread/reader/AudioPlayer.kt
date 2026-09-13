@@ -11,10 +11,8 @@ data class PlaybackState(
 )
 
 /**
- * Plays one [ReadItem] at a time, resolving [ReadItem.audioFilename] against
- * whatever local folder [ReadRepository] was configured with — never the
- * `audio_path` column, for the same portability reason [ReadRepository]
- * documents.
+ * Plays one [ReadItem] at a time, resolving [ReadItem.audioFilename] against whatever
+ * local folder [ReadRepository] was configured with — never the `audio_path` column.
  */
 interface AudioPlayer {
     val state: StateFlow<PlaybackState>

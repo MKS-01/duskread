@@ -27,16 +27,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
 /**
- * A one-line, self-dismissing confirmation for actions that would otherwise
- * happen silently — saving or removing a link updates a list the reader may
- * not even have on screen (a bookmark tapped from the Following carousel on
- * Home lands in the Saved tab, out of view), and a swipe-to-remove leaves
- * nothing else behind to confirm it actually did anything.
- *
- * A singleton request rather than state threaded through every screen that
- * can trigger one, matching [dev.mks.duskread.links.SharedLinkRequest] and
- * [dev.mks.duskread.ui.home.HomeTabRequest] — the action and the one host
- * that renders it live in different, unrelated composables.
+ * A one-line, self-dismissing confirmation for actions that would otherwise happen
+ * silently.
  */
 object ToastRequest {
     private val _message = MutableStateFlow<String?>(null)

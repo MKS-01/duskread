@@ -73,25 +73,13 @@ import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
 /**
- * Bottom inset for the three tab lists with the bar at rest.
- *
- * Derived rather than typed out: the bar, the gap it keeps from the safe
- * area, and a gap under the last row. Widening [Layout.BarInset] without
- * this moving with it would push the bar up into content the list still
- * thought it had cleared.
- *
- * Constant regardless of [BarCollapse]. The collapsed pill shrinks in place —
- * its own reserved height in the layout tree never changes, only how it
- * paints within that height — so the list underneath was never actually
- * covering anything more or less of it to reclaim.
+ * Bottom inset for the three tab lists with the bar at rest. Derived rather than typed
+ * out: the bar, the gap it keeps from the safe area, and a gap under the last row.
  */
 private val FullClearance = Layout.BarHeight + Layout.BarInset + 32.dp
 
 /**
  * Home: tabs and a floating bar.
- *
- * Everything reachable sits in the lower third of the screen — this is a
- * phone-first app and the top of a 6-inch display is a stretch for one thumb.
  */
 @OptIn(ExperimentalTime::class)
 @Composable
@@ -106,30 +94,19 @@ fun HomeScreen(
 ) {
     val hazeState = remember { HazeState() }
 
-    // Owned here rather than inside ReaderTab so there is exactly one player
-    // for the whole of Home. On Android that is belt and braces — playback is
-    // a foreground service behind singleton state, so a second instance would
-    // still find the same session — but on desktop the player *is* the
-    // session, and two of them would mean the floating bar controlling a
-    // different clip from the one the list started.
+    // Owned here rather than inside ReaderTab so there is exactly one player for the
+    // whole of Home.
     val readRepository = rememberReadRepository()
     val player = rememberAudioPlayer(readRepository)
     val playback by player.state.collectAsState()
 
-    // The speech half of the same idea, driven from here for the same reason
-    // the Readback player is: this is the one place already alive for the
-    // life of the app, so a read started from a swiped row or the reader's
-    // own button survives the panel that started it closing. What actually
-    // turns a request into sound is platform-specific — a foreground service
-    // with its own notification on Android, nothing at all where there is no
-    // engine to drive — see `DriveSpeechSession`'s own KDoc.
+    // The speech half of the same idea, driven from here for the same reason the Readback
+    // player is: this is the one place already alive for the life of the app.
     DriveSpeechSession()
     val speechNowPlaying by SpeechSession.state.collectAsState()
 
-    // At most one of Readback and a live read ever has the floating
-    // transport, because there is only one and it can only be about one
-    // thing. Starting either stops the other rather than layering two audio
-    // streams — a rule enforced here, in the one place that can see both.
+    // At most one of Readback and a live read ever has the floating transport, because
+    // there is only one and it can only be about one thing.
     LaunchedEffect(speechNowPlaying?.playing) {
         if (speechNowPlaying?.playing == true) player.stop()
     }
@@ -137,11 +114,7 @@ fun HomeScreen(
         if (playback.playing) SpeechSession.stop()
     }
 
-    // The single merged description of whatever the transport is about —
-    // see `NowPlaying`'s own KDoc for why this is built once here rather
-    // than by each of [FloatingBar] and [TransportBar] separately. Speech
-    // wins when both happen to be non-null for an instant during the
-    // hand-off above; in steady state only one of them ever is.
+    // The single merged description of whatever the transport is about.
     val nowPlaying: NowPlaying? = speechNowPlaying?.let { speech ->
         NowPlaying(
             title = speech.title,
@@ -167,9 +140,8 @@ fun HomeScreen(
         if (speechNowPlaying != null) SpeechSession.stop() else player.togglePlayPause()
     }
     val onSeekTransport: (Float) -> Unit = { fraction ->
-        // No-op for a live read: `NowPlaying.seekable` is false for one, so
-        // neither transport ever calls this for it in the first place — this
-        // guard is what keeps that true if that ever changes out from under it.
+        // No-op for a live read: `NowPlaying.seekable` is false for one, so neither
+        // transport ever calls this for it in the first place.
         if (speechNowPlaying == null) {
             val duration = playback.durationSec.takeIf { it > 0f } ?: 1f
             player.seekTo(fraction * duration)
@@ -179,9 +151,8 @@ fun HomeScreen(
         if (speechNowPlaying != null) SpeechSession.stop() else player.stop()
     }
 
-    // Lets a tapped Readback notification land on the Readback tab
-    // specifically, rather than just reopening the app onto whatever tab it
-    // last showed.
+    // Lets a tapped Readback notification land on the Readback tab specifically, rather
+    // than just reopening the app onto whatever tab it last showed.
     val requestedTab by HomeTabRequest.target.collectAsState()
     LaunchedEffect(requestedTab) {
         requestedTab?.let {
@@ -190,27 +161,23 @@ fun HomeScreen(
         }
     }
 
-    // Readback is a destination only once it has been switched on, so the tab
-    // list is derived rather than fixed — see `UserPrefs.readbackEnabled`.
+    // Readback is a destination only once it has been switched on, so the tab list is
+    // derived rather than fixed — see `UserPrefs.readbackEnabled`.
     val visibleTabs = remember(prefs.readbackEnabled) {
         HomeTab.entries.filter { it != HomeTab.READBACK || prefs.readbackEnabled }
     }
 
-    // Switching it off while standing on it would leave the selection pointing
-    // at a tab with no way back to it. Falling to Home is the only recovery
-    // that cannot itself be a tab that has since disappeared.
+    // Switching it off while standing on it would leave the selection pointing at a tab
+    // with no way back to it.
     LaunchedEffect(visibleTabs) {
         if (tab !in visibleTabs) onTabChange(HomeTab.HOME)
     }
 
-    // A link shared into the app from a browser. Saved here rather than in the
-    // Saved tab so the share lands whichever tab happens to be showing —
-    // the tab switch that follows is a courtesy, not what makes it work.
+    // A link shared into the app from a browser.
     val links = rememberLinkLibrary()
 
-    // Hoisted beside the library it describes, and passed down rather than
-    // re-remembered per screen: what gets read is one record, and two copies
-    // of it would disagree.
+    // Hoisted beside the library it describes, and passed down rather than re-remembered
+    // per screen: what gets read is one record, and two copies of it would disagree.
     val signals = rememberReadingSignals()
 
     val sharedUrl by SharedLinkRequest.url.collectAsState()
@@ -222,10 +189,7 @@ fun HomeScreen(
         }
     }
 
-    // A pick tapped from the reading-suggestion widget. The widget only ever
-    // hands over a URL — see SuggestionOpenRequest — so the save, the read
-    // toggle and the signal all happen here, through the one live copy of
-    // each, the same four lines NextUpSection's own tap already runs.
+    // A pick tapped from the reading-suggestion widget.
     val openSuggestion = rememberUrlOpener()
     val pendingSuggestion by SuggestionOpenRequest.pending.collectAsState()
     LaunchedEffect(pendingSuggestion) {
@@ -240,15 +204,6 @@ fun HomeScreen(
     }
 
     // Links captured from the home-screen widget while the app was closed.
-    // Drained here for the same reason a share is saved here — it should land
-    // whichever tab happens to be showing — and *only* here: the widget can
-    // never write to the library itself without racing this copy of it, so
-    // this is the single point where a captured link becomes a saved one.
-    //
-    // The effect keys on a counter rather than on the inbox's contents, so it
-    // runs once on a cold start and again on every resume. `save` returns the
-    // existing entry for a URL already in the list, which makes a double
-    // drain harmless.
     val store = rememberKeyValueStore()
     val inboxPokes by LinkInbox.pokes.collectAsState()
     LaunchedEffect(inboxPokes) {
@@ -259,16 +214,14 @@ fun HomeScreen(
         }
     }
 
-    // The followed-blogs thread on Home: a cache of the last sync plus a
-    // client to run the next one, both owned here so they survive a tab
-    // switch instead of re-fetching every time the dashboard recomposes.
+    // The followed-blogs thread on Home: a cache of the last sync plus a client to run
+    // the next one.
     val feeds = rememberFeedLibrary()
     val feedPosts = rememberFeedPostCache()
     val feedClient = LocalAppGraph.current.http
 
-    // Hoisted here and passed into Settings rather than built there, for the
-    // same reason FeedLibrary is: NotionPrefs writes `notion.sync.last`, and
-    // two instances over one key would disagree the moment either wrote.
+    // Hoisted here and passed into Settings rather than built there, for the same reason
+    // FeedLibrary is: NotionPrefs writes `notion.sync.last`.
     val notionPrefs = rememberNotionPrefs()
     val notionAuth = LocalAppGraph.current.notionAuth
     val notionApi = LocalAppGraph.current.notionApi
@@ -291,13 +244,8 @@ fun HomeScreen(
     LaunchedEffect(Unit) {
         val now = Clock.System.now().toEpochMilliseconds()
 
-        // Anything saved, read or retitled since the last sync has not reached
-        // Notion yet. `changedAt` is stamped by every mutator, so comparing it
-        // to the last sync is an exact answer with nothing extra to track.
-        //
-        // Deletions have to be asked about separately: a removed link is no
-        // longer in `links` to carry a `changedAt`, so on its own a delete
-        // would sit unsynced until something else happened to be pending.
+        // Anything saved, read or retitled since the last sync has not reached Notion
+        // yet.
         val since = notionPrefs.lastSyncAt ?: 0L
         val unpushed = links.links.any { it.changedAt > since } || links.removedUrls.values.any { it > since }
         if (!notionPrefs.dueForSync(now, unpushed)) return@LaunchedEffect
@@ -316,37 +264,15 @@ fun HomeScreen(
         }
     }
 
-    // Wide windows get the rail-and-transport plan instead of the floating
-    // bar; see `ui/layout/WindowClass.kt` and the design system's "Wide"
-    // section. Read once here and passed down as a boolean rather than read
-    // again in each branch, so the two layouts can never disagree about
-    // which one is running.
+    // Wide windows get the rail-and-transport plan instead of the floating bar; see
+    // `ui/layout/WindowClass.kt` and the design system's "Wide" section.
     val wide = LocalWindowClass.current.isWide
 
-    // Shared by all three tabs so the bar's collapse survives switching
-    // between them — each tab owns its own scroll position, but the bar is one
-    // object and should not pop back open just because you changed lists.
+    // Shared by all three tabs so the bar's collapse survives switching between them —
+    // each tab owns its own scroll position.
     val collapse = rememberBarCollapse()
 
     // Clearance for the last card, and the one thing here that does animate.
-    //
-    // It used to grow while the player was docked above the bar, and that was
-    // right to remove: playback starting is unrelated to what the reader is
-    // doing, so the list shifted under them unprompted. This is the opposite
-    // case. The change is *caused* by the scroll that triggers it and moves
-    // with the bar it is clearing, in lockstep and on the same curve — the
-    // reader is not surprised by it, they asked for it by scrolling.
-    //
-    // `top` is more generous than it used to be: with no per-tab title left
-    // above the first card, that clearance is the only thing keeping content
-    // off the status bar.
-    //
-    // Wide drops most of the bottom clearance: the transport is a sibling in
-    // a Column there rather than something floating over the list, so the
-    // list already ends where the transport begins and padding for it would
-    // be a second gap under the first.
-    //
-    // Constant rather than animated with [collapse] — see [FullClearance].
     val listPadding = PaddingValues(
         start = if (wide) Layout.WideListGutter else 16.dp,
         end = if (wide) Layout.WideListGutter else 16.dp,
@@ -354,35 +280,25 @@ fun HomeScreen(
         bottom = if (wide) 28.dp else FullClearance,
     )
 
-    // Owned here rather than in `App.kt`, unlike Focus mode: Settings needs
-    // `links`, which already lives at this level, and threading a whole
-    // `LinkLibrary` up to `App.kt` and back down would exist only to move
-    // this one flag up alongside it.
+    // Owned here rather than in `App.kt`, unlike Focus mode: Settings needs `links`,
+    // which already lives at this level.
     var showSettings by remember { mutableStateOf(false) }
 
-    // The feed whose posts fill [TopicsScreen], or null when nobody has
-    // opened one. Owned here for the same reason as `showSettings`: the
-    // screen needs `feedPosts` and `links`, both of which already live at
-    // this level, and lifting it to `App.kt` would mean threading them up
-    // there and straight back down.
+    // The feed whose posts fill [TopicsScreen], or null when nobody has opened one.
     var topicsFeed by remember { mutableStateOf<Feed?>(null) }
 
-    // The last feed opened, kept after `topicsFeed` clears. Without it the
-    // screen would empty itself the instant Back is pressed and spend its
-    // whole exit animation as a blank surface sliding away.
+    // The last feed opened, kept after `topicsFeed` clears.
     var lastTopicsFeed by remember { mutableStateOf<Feed?>(null) }
     LaunchedEffect(topicsFeed) { topicsFeed?.let { lastTopicsFeed = it } }
 
-    // Read as a boolean through `derivedStateOf` so the bar's visibility
-    // recomposes once when the keyboard opens or closes, not on every frame
-    // of the inset animation that carries it there.
+    // Read as a boolean through `derivedStateOf` so the bar's visibility recomposes once
+    // when the keyboard opens or closes.
     val density = LocalDensity.current
     val imeInsets = WindowInsets.ime
     val imeVisible by remember(density) { derivedStateOf { imeInsets.getBottom(density) > 0 } }
 
-    // Hoisted out of the layout branch below so the two plans share one
-    // definition of "the tabs" — the rail layout and the floating-bar layout
-    // differ in what surrounds the content, never in what the content is.
+    // Hoisted out of the layout branch below so the two plans share one definition of
+    // "the tabs".
     val tabs: @Composable (Modifier) -> Unit = { tabModifier ->
         AnimatedContent(
             targetState = tab,
@@ -393,22 +309,14 @@ fun HomeScreen(
                     (slideOutHorizontally(tween(200)) { -it / 6 * offset } + fadeOut(tween(140)))
             },
             modifier = tabModifier
-                // The measure cap, and the only thing standing between a
-                // 1180dp window and a paste field a metre wide. Left-aligned
-                // against the rail rather than centred in the window: the
-                // eye returns to the same left edge on every line, and a
-                // column floating in the middle of the ground has no edge to
-                // return to. Below the breakpoint this is inert — the phone
-                // is narrower than the cap by definition.
+                // The measure cap, and the only thing standing between a 1180dp window
+                // and a paste field a metre wide.
                 .then(if (wide) Modifier.widthIn(max = Layout.ReadingMeasure) else Modifier)
                 .nestedScroll(collapse)
                 .hazeSource(hazeState)
                 .statusBarsPadding()
-                // Without this the keyboard draws over the tab rather than
-                // shrinking it, so a field low in a list — the feed address
-                // on Home is the worst case, it sits in the last section —
-                // opens underneath the thing covering it. Resizing the tab
-                // is what lets the list scroll the focused field into view.
+                // Without this the keyboard draws over the tab rather than shrinking it,
+                // so a field low in a list — the feed address on Home is the worst case.
                 .imePadding(),
             label = "tab",
         ) { current ->
@@ -455,11 +363,8 @@ fun HomeScreen(
 
     Box(modifier.fillMaxSize()) {
         if (wide) {
-            // Rail and transport are siblings of the content here, not
-            // floating over it: with room to spare, furniture anchored to
-            // the window's own edges beats anything that has to blur what it
-            // covers. The transport keeps the bottom because it outlives
-            // whichever pane is above it.
+            // Rail and transport are siblings of the content here, not floating over it:
+            // with room to spare.
             Column(Modifier.fillMaxSize()) {
                 Row(Modifier.weight(1f).fillMaxWidth()) {
                     NavRail(
@@ -491,9 +396,7 @@ fun HomeScreen(
             tabs(Modifier.fillMaxSize())
         }
 
-        // Top, not bottom: the floating bar already owns the bottom of the
-        // screen, and a toast landing there would either sit on top of it or
-        // shove it aside for two seconds every time a link is saved.
+        // Top, not bottom: the floating bar already owns the bottom of the screen.
         ToastHost(
             modifier = Modifier
                 .align(Alignment.TopCenter)
@@ -501,12 +404,8 @@ fun HomeScreen(
                 .padding(top = 12.dp),
         )
 
-        // Same overlay shape as Focus mode in `App.kt`: a full-screen
-        // destination on top of everything else, reached from a door in the
-        // Saved tab rather than a fourth stop on the floating bar.
-        // Same overlay shape again, one level down: opened from the all-posts
-        // row at the foot of an expanded digest line on the dashboard
-        // underneath.
+        // Same overlay shape as Focus mode in `App.kt`: a full-screen destination on top
+        // of everything else.
         AnimatedVisibility(
             visible = topicsFeed != null,
             enter = fadeIn(tween(Motion.PushIn)) + slideInVertically(tween(Motion.PushIn)) { it / 8 },
@@ -533,16 +432,10 @@ fun HomeScreen(
                 onToggleTheme = onToggleTheme,
                 onClose = { showSettings = false },
                 // The same three Home's own sync uses, not fresh copies.
-                // FeedLibrary rewrites its whole blob on every mutation, so a
-                // second instance here would clobber whatever this one wrote
-                // the moment Home next persisted — the hazard LinkInbox
-                // exists to avoid on the links side.
                 feeds = feeds,
                 feedPosts = feedPosts,
                 feedClient = feedClient,
-                // Same instance Home ranks with, so the Discovery block
-                // explains the picks actually on screen rather than a second
-                // reading of the same store.
+                // Same instance Home ranks with.
                 signals = signals,
                 notion = notionPrefs,
                 auth = notionAuth,
@@ -550,38 +443,11 @@ fun HomeScreen(
             )
         }
 
-        // There is no scrim gradient under the bar any more. The bar blurs
-        // whatever passes beneath it, so fading that content to the
-        // background colour would defeat the effect.
-        //
-        // The horizontal padding is what bounds the bar's width: the
-        // transport face fills it, the tab face wraps and centres inside
-        // it. Playback already outlives the Readback tab; keeping the
-        // transport here rather than in the tab is what makes the controls
-        // outlive it too, instead of sending you to the notification shade.
-        //
-        // It leaves entirely while the keyboard is up. Riding above the
-        // keyboard was worse than hiding: it eats a bar's height out of an
-        // already halved screen and puts a blurred pill against the
-        // keyboard's own edge, and there is nothing on it worth reaching
-        // mid-sentence — every field here commits with its own inline
-        // action or the IME's Done key.
-        //
-        // Drawn *after* the two full-screen surfaces above rather than before
-        // them, so a read started from Topics or Settings still has its
-        // transport: those surfaces cover the whole screen, and a bar
-        // underneath one of them is a player nobody can reach — the panel's
-        // own pause was the only control there, and it went with the panel.
-        // What they do take away is navigation: the tabs belong to the screen
-        // they cover, so over one of them this is the transport and nothing
-        // else, and it is not there at all when there is nothing to transport.
+        // There is no scrim gradient under the bar any more.
         val coveredByASurface = topicsFeed != null || showSettings
         val barVisible = !wide && !imeVisible && (!coveredByASurface || nowPlaying != null)
 
-        // What anything else bottom-anchored has to clear — see
-        // [BottomFurniture]. The wide layout's transport is a sibling at the
-        // window's own edge rather than a floating pill, so it needs no
-        // inset of its own.
+        // What anything else bottom-anchored has to clear — see [BottomFurniture].
         val furniture = when {
             barVisible -> Layout.BarInset + Layout.BarHeight + Space.CardGap
             wide && nowPlaying != null -> Layout.BarHeight + Space.CardGap
@@ -608,9 +474,7 @@ fun HomeScreen(
                 mono = mono,
                 onToggleTheme = onToggleTheme,
                 onOpenSettings = { showSettings = true },
-                // The tabs are behind whatever is covering the bar, so
-                // peeking at them there would offer a destination that
-                // cannot be reached without first closing the surface on top.
+                // The tabs are behind whatever is covering the bar.
                 tabsAvailable = !coveredByASurface,
                 collapse = collapse,
                 modifier = Modifier

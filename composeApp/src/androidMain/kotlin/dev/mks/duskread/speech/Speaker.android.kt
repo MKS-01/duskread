@@ -19,17 +19,6 @@ import java.util.Locale
 
 /**
  * The platform's own text-to-speech, which is already on the phone.
- *
- * Chosen over a neural voice for the first pass because it costs nothing —
- * no dependency, no download, no APK growth — and because it makes the whole
- * path real end to end: the article is extracted, chunked, spoken, and
- * interrupted correctly. A better-sounding voice is a swap behind [Speaker]
- * once that path is known to work, not a prerequisite for building it.
- *
- * Quality is honestly uneven. On a Pixel or a recent Samsung the Google engine
- * is decent; on a budget OEM phone with the stock engine it is flat. That is
- * the argument for the downloadable neural voice that comes next, and it is an
- * argument this class does not have to answer.
  */
 internal class SystemSpeaker(context: Context) : Speaker {
     private var engine: TextToSpeech? = null
@@ -38,22 +27,14 @@ internal class SystemSpeaker(context: Context) : Speaker {
         private set
 
     /**
-     * Settles once `onInit` has answered, so [speak] can wait for the engine
-     * rather than refuse the read.
-     *
-     * `onInit` is asynchronous and takes anything from a few hundred
-     * milliseconds to a couple of seconds on a cold engine, and until it
-     * lands [state] is `Unavailable("Starting up…")` — which [speak] used to
-     * read as "this phone cannot speak" and close on. Every read starts a
-     * fresh [SpeechPlaybackService] (it calls `stopSelf` when a read ends),
-     * so that race was in play on *every* read, not just the first: press
-     * play, the transport appears for an instant, and nothing is ever said.
+     * Settles once `onInit` has answered, so [speak] can wait for the engine rather than
+     * refuse the read.
      */
     private val ready = CompletableDeferred<SpeakerState>()
 
     init {
-        // The constructor's callback is the only way to learn whether the
-        // engine came up; there is no synchronous form of this question.
+        // The constructor's callback is the only way to learn whether the engine came up;
+        // there is no synchronous form of this question.
         engine = TextToSpeech(context.applicationContext) { status ->
             val settled = if (status == TextToSpeech.SUCCESS) evaluate() else SpeakerState.Unavailable(NoEngine)
             state = settled
@@ -65,8 +46,8 @@ internal class SystemSpeaker(context: Context) : Speaker {
         state = if (engine == null) {
             SpeakerState.Unavailable(NoEngine)
         } else {
-            // Same wait as [speak]: asked before `onInit` has landed,
-            // `setLanguage` answers for an engine that isn't up yet.
+            // Same wait as [speak]: asked before `onInit` has landed, `setLanguage`
+            // answers for an engine that isn't up yet.
             withTimeoutOrNull(InitTimeoutMs) { ready.await() }
             evaluate()
         }
@@ -74,11 +55,6 @@ internal class SystemSpeaker(context: Context) : Speaker {
 
     /**
      * Whether a voice for the device's own language is actually installed.
-     *
-     * `setLanguage` is the only reliable way to ask — `availableLanguages` can
-     * return a locale whose data has not been downloaded, and speaking then
-     * fails silently with no audio and no error, which is the single worst
-     * outcome available here.
      */
     private fun evaluate(): SpeakerState {
         val tts = engine ?: return SpeakerState.Unavailable(NoEngine)
@@ -95,19 +71,8 @@ internal class SystemSpeaker(context: Context) : Speaker {
     }
 
     /**
-     * Speaks the article in chunks, reporting the end of each one.
-     *
-     * Chunking is not an optimisation. `speak` silently drops anything past
-     * [TextToSpeech.getMaxSpeechInputLength], which is around four thousand
-     * characters — comfortably shorter than most articles worth listening to,
-     * so a single call would read the opening and stop without saying why.
-     *
-     * Splitting on sentence ends rather than at a fixed offset, because the
-     * engine restarts its prosody at every chunk boundary: broken mid-clause it
-     * is audible as a stumble, broken after a full stop it is just a pause.
-     *
-     * `QUEUE_ADD` after the first chunk, so the queue plays as one continuous
-     * read; the first uses `QUEUE_FLUSH` to cut off whatever was playing.
+     * Speaks the article in chunks, reporting the end of each one. Chunking is not an
+     * optimisation.
      */
     override fun speak(title: String, text: String): Flow<SpeechProgress> = callbackFlow {
         val tts = engine
@@ -116,14 +81,12 @@ internal class SystemSpeaker(context: Context) : Speaker {
             return@callbackFlow
         }
 
-        // Waited for, not tested — see [ready]. The timeout is what stops a
-        // wedged engine turning a silent failure into a transport that sits
-        // at nought per cent forever, which is the worse of the two.
+        // Waited for, not tested — see [ready].
         val settled = withTimeoutOrNull(InitTimeoutMs) { ready.await() }
             ?: SpeakerState.Unavailable("The voice engine didn't start.")
 
-        // Closed *with* the reason rather than silently: the caller shows it,
-        // and "nothing happened" is the one outcome a reader cannot act on.
+        // Closed *with* the reason rather than silently: the caller shows it, and
+        // "nothing happened" is the one outcome a reader cannot act on.
         when (settled) {
             is SpeakerState.Ready -> Unit
             is SpeakerState.NeedsVoice -> {
@@ -136,13 +99,13 @@ internal class SystemSpeaker(context: Context) : Speaker {
             }
         }
 
-        // The title is read first and counted as part of the whole, so the
-        // progress bar starts where the audio starts.
+        // The title is read first and counted as part of the whole, so the progress bar
+        // starts where the audio starts.
         val chunks = chunk("$title. \n\n$text")
         val total = chunks.sumOf { it.length }
 
-        // Where each chunk begins in the whole, so a word offset reported
-        // within a chunk can be turned into an offset through the article.
+        // Where each chunk begins in the whole, so a word offset reported within a chunk
+        // can be turned into an offset through the article.
         val offsets = chunks.runningFold(0) { acc, part -> acc + part.length }
 
         tts.setOnUtteranceProgressListener(
@@ -150,13 +113,7 @@ internal class SystemSpeaker(context: Context) : Speaker {
                 override fun onStart(utteranceId: String?) = Unit
 
                 /**
-                 * Per-word progress, which is the only thing that makes this
-                 * look alive.
-                 *
-                 * [onDone] alone fires once per chunk — up to 3,500 characters
-                 * apart, which on a long article is a meter that sits still
-                 * for a minute at a time and reads as a hung player. This
-                 * fires for every word the engine is about to speak.
+                 * Per-word progress, which is the only thing that makes this look alive.
                  */
                 override fun onRangeStart(utteranceId: String?, start: Int, end: Int, frame: Int) {
                     val index = utteranceId?.toIntOrNull() ?: return
@@ -185,26 +142,20 @@ internal class SystemSpeaker(context: Context) : Speaker {
         chunks.forEachIndexed { index, part ->
             val mode = if (index == 0) TextToSpeech.QUEUE_FLUSH else TextToSpeech.QUEUE_ADD
 
-            // Checked, because a refused `speak` is silent. It returns ERROR
-            // and simply never calls the listener, so without this the panel
-            // waits at nought per cent for an utterance that was never queued
-            // — indistinguishable, to the reader, from a very long article.
+            // Checked, because a refused `speak` is silent.
             if (tts.speak(part, mode, null, index.toString()) == TextToSpeech.ERROR) {
                 close(IllegalStateException("The voice engine refused to speak this."))
                 return@callbackFlow
             }
         }
 
-        // Leaving the screen stops the audio. Without this the queue outlives
-        // the collector and keeps reading an article nobody is looking at.
+        // Leaving the screen stops the audio. Without this the queue outlives the
+        // collector and keeps reading an article nobody is looking at.
         awaitClose { tts.stop() }
     }
 
     override fun pause() {
-        // The platform has no pause, only stop — the queue is discarded, not
-        // held. Callers that need resume-in-place have to re-speak from an
-        // offset, which is why `speak` reports characters rather than a
-        // percentage.
+        // The platform has no pause, only stop — the queue is discarded, not held.
         engine?.stop()
     }
 
@@ -228,9 +179,8 @@ internal class SystemSpeaker(context: Context) : Speaker {
         text.split(SentenceEnd).forEach { sentence ->
             if (sentence.isBlank()) return@forEach
 
-            // A single sentence longer than the limit is rare but real — a
-            // wall-of-text paragraph with no punctuation — so it is cut hard
-            // rather than dropped.
+            // A single sentence longer than the limit is rare but real — a wall-of-text
+            // paragraph with no punctuation — so it is cut hard rather than dropped.
             if (sentence.length > limit) {
                 if (current.isNotEmpty()) {
                     parts += current.toString()
@@ -255,16 +205,13 @@ internal class SystemSpeaker(context: Context) : Speaker {
         const val NoEngine = "This phone has no text-to-speech engine."
 
         /**
-         * Well under the platform's own cap. `getMaxSpeechInputLength` is the
-         * hard limit, and sitting on it means a chunk that grew by one
-         * character during assembly is silently truncated.
+         * Well under the platform's own cap.
          */
         const val SafeChunk = 3_500
 
         /**
-         * How long to wait for `onInit` before calling the engine wedged.
-         * A cold Google TTS takes a second or two; nothing that has not
-         * answered in five is going to.
+         * How long to wait for `onInit` before calling the engine wedged. A cold Google
+         * TTS takes a second or two; nothing that has not answered in five is going to.
          */
         const val InitTimeoutMs = 5_000L
 
@@ -275,24 +222,12 @@ internal class SystemSpeaker(context: Context) : Speaker {
 
 /**
  * The speaker for [voice], torn down when it leaves the composition.
- *
- * A `TextToSpeech` holds a binding to a system service, and one left unbound
- * leaks it for the life of the process — the same class of hazard the
- * playback service documents. `DisposableEffect` rather than `remember` alone
- * is what closes it.
- *
- * [VoiceChoice.ReadbackLibrary] is not a speech engine — it routes playback to
- * the synced WAV library through `AudioPlayer` instead — so there is nothing
- * for this to build.
  */
 @Composable
 actual fun rememberSpeaker(voice: VoiceChoice): Speaker {
     val context = LocalContext.current
 
-    // Every voice this app offers speaks through the platform engine. The
-    // readback library is not a speech engine at all — playback for it routes
-    // to the synced WAVs through `AudioPlayer` — and `VoiceChoice.engine` is
-    // what sends spoken text here instead.
+    // Every voice this app offers speaks through the platform engine.
     val speaker = remember(context) { SystemSpeaker(context) }
     DisposableEffect(speaker) { onDispose { speaker.release() } }
     return speaker

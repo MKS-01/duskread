@@ -5,21 +5,7 @@ import android.content.Intent
 import dev.mks.duskread.data.keyValueStore
 
 /**
- * What the home-screen widget draws, and the one channel for telling it to
- * redraw.
- *
- * The widget itself lives in the `androidApp` host module, which depends on
- * this one and not the other way round, so [PomodoroService] cannot call it.
- * Rather than invert the modules for a countdown, the service writes the state
- * here and broadcasts [ActionRefresh]; the provider registers for that action
- * and re-renders. The coupling is one string.
- *
- * State is written as wall-clock milliseconds, not `elapsedRealtime`, because
- * `elapsedRealtime` resets on reboot and a stale value would render as a
- * session that is somehow still running. Wall clock survives a reboot and a
- * deadline in the past is unambiguously over. The chronometer's own base is
- * converted back to elapsed time at render, which is the only place the two
- * clocks need to meet.
+ * What the home-screen widget draws, and the one channel for telling it to redraw.
  */
 object WidgetState {
     const val ActionRefresh = "dev.mks.duskread.widget.REFRESH"
@@ -34,11 +20,8 @@ object WidgetState {
     fun focusRunning(context: Context): Boolean = keyValueStore(context).getBoolean(KeyFocusRunning)
 
     /**
-     * Records a session with [remainingSeconds] left, or clears it when the
-     * session is over. Called from every [PomodoroService] transition, so the
-     * widget is only ever written to at the two or three moments a session
-     * actually changes — never on the per-second tick that drives the
-     * notification.
+     * Records a session with [remainingSeconds] left, or clears it when the session is
+     * over.
      */
     fun setFocus(context: Context, remainingSeconds: Int, running: Boolean) {
         val store = keyValueStore(context)
@@ -54,11 +37,6 @@ object WidgetState {
 
     /**
      * The transient capture confirmation, or null once it has aged out.
-     *
-     * Two parts rather than one sentence: the host is the answer to "what did
-     * I just save", the label is the answer to "did it work", and the widget
-     * sets them at different sizes. Joining them into a string here would
-     * mean splitting it again at render.
      */
     fun flash(context: Context): Flash? {
         val store = keyValueStore(context)

@@ -52,10 +52,8 @@ object DuskReadIcons {
     val Home: ImageVector by lazy { icon("Home", IconPaths.Home) }
 
     /**
-     * Practice: a target. Questions are aimed at something specific — the one
-     * insight that unlocks them — which a lightning bolt does not say. Rings
-     * rather than bars because a target has no bar-built equivalent; it keeps
-     * the set's weight and round terminal instead.
+     * Practice: a target. Questions are aimed at something specific — the one insight
+     * that unlocks them — which a lightning bolt does not say.
      */
     val Target: ImageVector by lazy { icon("Target", IconPaths.Target) }
 
@@ -84,8 +82,8 @@ object DuskReadIcons {
     val Waveform: ImageVector by lazy { icon("Waveform", IconPaths.Waveform) }
 
     /**
-     * A folder with a small link badge — for connecting the Reader to a
-     * synced readback folder for the first time.
+     * A folder with a small link badge — for connecting the Reader to a synced readback
+     * folder for the first time.
      */
     val FolderConnect: ImageVector by lazy { icon("FolderConnect", IconPaths.FolderConnect) }
 
@@ -94,11 +92,6 @@ object DuskReadIcons {
 
     /**
      * Saved links: a bookmark.
-     *
-     * Not a chain-link glyph, which is what "link" usually gets — a chain says
-     * *this is a URL*, and the tab is not about URLs, it is about things put
-     * aside to read. A bookmark is the only thing in this set that means
-     * "later".
      */
     val Bookmark: ImageVector by lazy { icon("Bookmark", IconPaths.Bookmark) }
 
@@ -106,36 +99,19 @@ object DuskReadIcons {
     val BookmarkFilled: ImageVector by lazy { icon("BookmarkFilled", IconPaths.BookmarkFilled) }
 
     /**
-     * Feed: three bulleted rules, a list of things followed rather than a
-     * single article read.
-     *
-     * Used to be ascending bars — a signal getting stronger, standing in for
-     * the RSS dot and its broadcast arcs — but on the tab bar that read as a
-     * literal signal-strength glyph, not "following". A short bar next to a
-     * long one is still the set's own vocabulary (the round line cap turns
-     * the short one into a dot, so this is bars all the way down) but reads
-     * unambiguously as a list.
+     * Feed: three bulleted rules, a list of things followed rather than a single article
+     * read.
      */
     val Feed: ImageVector by lazy { icon("Feed", IconPaths.Feed) }
 
     /**
      * Reader: a column of text with a ragged last line.
-     *
-     * The one icon in the set that is horizontal rather than barred, and
-     * deliberately so — the thing it stands for *is* lines of text, and
-     * turning those on their side to satisfy the Bar rule would draw
-     * something that no longer says "article".
      */
     val Reader: ImageVector by lazy { icon("Reader", IconPaths.Reader) }
 
     /**
-     * Summary: three rules, each shorter than the last — an article read
-     * down to a paragraph.
-     *
-     * Left-aligned and stepping in from the right, as drawn in the design
-     * system's concept sheet. A symmetrical wedge was tried and reads as a
-     * filter or a funnel; ragged-right reads as text getting shorter, which
-     * is what this actually does.
+     * Summary: three rules, each shorter than the last — an article read down to a
+     * paragraph.
      */
     val Summary: ImageVector by lazy { icon("Summary", IconPaths.Summary) }
 
@@ -143,36 +119,25 @@ object DuskReadIcons {
     val Check: ImageVector by lazy { icon("Check", IconPaths.Check) }
 
     /**
-     * Settings: three tracks, each with a knob drawn as a crossing bar rather
-     * than a filled dot — the sliders *are* bars, the same construction as
-     * [Waveform] and [Feed].
+     * Settings: three tracks, each with a knob drawn as a crossing bar rather than a
+     * filled dot — the sliders *are* bars.
      */
     val Settings: ImageVector by lazy { icon("Settings", IconPaths.Settings) }
 
     /**
-     * Offline: [Feed]'s bars struck through — a fetch that could not reach the
-     * network, told apart from a page that simply has nothing better to say
-     * for itself. Reuses Feed's exact bars rather than a signal-bar or
-     * cloud glyph: this set draws "can't reach the network" as the thing that
-     * usually *would* be read failing to arrive, not as a generic warning icon.
+     * Offline: [Feed]'s bars struck through — a fetch that could not reach the network,
+     * told apart from a page that simply has nothing better to say for itself.
      */
     val Offline: ImageVector by lazy { icon("Offline", IconPaths.Offline) }
 
     /**
      * Contrast: a ring with bars fanning inward, standing in for a half-fill.
-     *
-     * The theme toggle swaps colour for greyscale, not light for dark, so the
-     * usual sun/moon pair would say the wrong thing — this reads as one dial
-     * either way, differing only in how much of it is shaded, and the shading
-     * is drawn the same way the waveform is: bars, not a flat fill.
      */
     val Contrast: ImageVector by lazy { icon("Contrast", IconPaths.Contrast) }
 
     /**
-     * Search: a ring and a handle, same as everywhere else — one of the few
-     * shapes in the set that cannot be built from bars, so it borrows the
-     * plain stroke weight and round terminal instead, the way Target and
-     * Shuffle already do.
+     * Search: a ring and a handle, same as everywhere else — one of the few shapes in the
+     * set that cannot be built from bars.
      */
     val Search: ImageVector by lazy { icon("Search", IconPaths.Search) }
 }

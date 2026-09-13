@@ -16,9 +16,8 @@ import dev.mks.duskread.ui.theme.Motion
 actual fun PlatformOverlay(mono: Boolean) {
     val requested by InAppBrowserRequest.url.collectAsState()
 
-    // Held past the request going null so the close animation fades out the
-    // page it was actually showing, rather than a blank screen — same reason
-    // `FloatingBar` holds onto `nowPlaying` through its own exit transition.
+    // Held past the request going null so the close animation fades out the page it was
+    // actually showing, rather than a blank screen.
     val shown = remember { mutableStateOf<String?>(null) }
     requested?.let { shown.value = it }
 

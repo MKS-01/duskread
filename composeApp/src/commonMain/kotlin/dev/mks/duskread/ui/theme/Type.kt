@@ -20,12 +20,8 @@ import duskread.composeapp.generated.resources.jost_semibold
 import org.jetbrains.compose.resources.Font
 
 /**
- * Jost, everywhere — a geometric grotesk built from circles and straight
- * lines, which is why it pairs with [DuskReadIcons]' Bar hand rather than
- * merely tolerating it: both are drawn from the same handful of angles. Four
- * static weights (not the variable font) because static weights are what
- * render correctly on every target Compose Multiplatform reaches here,
- * including Wasm. SIL Open Font License; files under `composeResources/font/`.
+ * Jost, everywhere — a geometric grotesk built from circles and straight lines, which is
+ * why it pairs with [DuskReadIcons]' Bar hand rather than merely tolerating it.
  */
 @Composable
 fun DuskReadFontFamily(): FontFamily = FontFamily(
@@ -36,9 +32,8 @@ fun DuskReadFontFamily(): FontFamily = FontFamily(
 )
 
 /**
- * Tuned for reading long-form notes on a phone: slightly larger body text and
- * looser line height than the Material defaults, set in [DuskReadFontFamily]
- * rather than the platform default.
+ * Tuned for reading long-form notes on a phone: slightly larger body text and looser line
+ * height than the Material defaults.
  */
 @Suppress("ktlint:standard:function-naming")
 fun AlgoTypography(fontFamily: FontFamily): Typography {
@@ -78,16 +73,8 @@ val SectionLabel: TextStyle
     get() = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp, letterSpacing = 1.sp)
 
 /**
- * Inconsolata, for anything that means data rather than prose: durations,
- * complexity notation, code. Previously `FontFamily.Monospace`, which is a
- * request rather than a font — it resolves to a different face on every
- * platform (Droid Sans Mono on Android, Menlo on iOS, the browser default on
- * Wasm), so the same duration label looked like a different app depending on
- * where it ran. A bundled family removes that variance the same way
- * [DuskReadFontFamily] already does for prose.
- *
- * Not `@ReadOnlyComposable` — loading a resource font is a `remember`-backed
- * read, which that annotation forbids.
+ * Inconsolata, for anything that means data rather than prose: durations, complexity
+ * notation, code.
  */
 val Mono: FontFamily
     @Composable
@@ -103,19 +90,8 @@ val CodeStyle: TextStyle
     get() = TextStyle(fontFamily = Mono, fontSize = 12.5.sp, lineHeight = 20.sp)
 
 /**
- * The type scale flattened to plain numbers, for the SwiftUI shell.
- *
- * Read off the live [Typography] rather than restated as literals. Only two
- * styles in this file are fully the app's own — [SectionLabel] and
- * [CodeStyle] — while the rest are Material 3's scale re-fonted and selectively
- * overridden by [AlgoTypography]. Copying M3's numbers into a token file would
- * pin a version of them by hand and put the app one dependency bump away from
- * a scale that no longer matches itself, so this reads whatever is actually in
- * effect instead.
- *
- * Keyed by the Material role name so both sides say `"bodyMedium"` and neither
- * has to know what that resolves to. The three `display` styles are omitted:
- * nothing in the app uses them.
+ * The type scale flattened to plain numbers, for the SwiftUI shell. Read off the live
+ * [Typography] rather than restated as literals.
  */
 fun duskReadTypeSpecs(typography: Typography): Map<String, TypeSpec> {
     fun spec(style: TextStyle, family: String = "jost") = TypeSpec(
@@ -137,8 +113,8 @@ fun duskReadTypeSpecs(typography: Typography): Map<String, TypeSpec> {
         "labelLarge" to spec(typography.labelLarge),
         "labelMedium" to spec(typography.labelMedium),
         "labelSmall" to spec(typography.labelSmall),
-        // The two the app owns outright. SectionLabel is labelSmall reopened
-        // at 11sp/1sp tracking; CodeStyle is the only mono style there is.
+        // The two the app owns outright. SectionLabel is labelSmall reopened at 11sp/1sp
+        // tracking; CodeStyle is the only mono style there is.
         "sectionLabel" to spec(typography.labelSmall).copy(size = 11.0, tracking = 1.0),
         "code" to TypeSpec(family = "inconsolata", weight = FontWeight.Normal.weight, size = 12.5, lineHeight = 20.0, tracking = 0.0),
     )

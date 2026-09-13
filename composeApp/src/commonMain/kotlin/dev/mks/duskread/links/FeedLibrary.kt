@@ -13,16 +13,13 @@ import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
 /**
- * The blogs followed for [syncFeeds] to pull from, persisted through
- * [KeyValueStore] with the same delimited-string encoding [LinkLibrary] uses —
- * a handful of feed addresses earns a real database no more than a reading
- * list does.
+ * The blogs followed for [syncFeeds] to pull from, persisted through [KeyValueStore] with
+ * the same delimited-string encoding [LinkLibrary] uses.
  */
 @OptIn(ExperimentalTime::class)
 class FeedLibrary(private val store: KeyValueStore) {
-    // Snapshot state and a StateFlow in one, so Compose and the iOS bridge read
-    // the same value. Declared up here because a delegate has to exist before
-    // the property delegating to it.
+    // Snapshot state and a StateFlow in one, so Compose and the iOS bridge read the same
+    // value.
     private val observedFeeds = Observed(load())
 
     var feeds: List<Feed> by observedFeeds
@@ -32,21 +29,15 @@ class FeedLibrary(private val store: KeyValueStore) {
     val feedsUpdates: StateFlow<List<Feed>> get() = observedFeeds.updates
 
     /**
-     * Follows [rawUrl], or returns the existing feed if it's already followed.
-     * Null if not a link at all.
-     *
-     * [title] and [topic] are what the Notion sync knows and a hand-typed URL
-     * does not. An already-followed feed keeps whatever it has rather than
-     * being rewritten, so re-running a sync is genuinely idempotent — except
-     * that a feed still missing either one will take it, which is how an
-     * existing follow picks up a topic the first time Notion supplies one.
+     * Follows [rawUrl], or returns the existing feed if it's already followed. Null if
+     * not a link at all.
      */
     fun add(rawUrl: String, title: String? = null, topic: String? = null): Feed? {
         if (!looksLikeUrl(rawUrl)) return null
 
         val url = normaliseUrl(rawUrl).trim()
-        // Same rule as a saved link: `…/feed` and `…/feed/` are one blog, and
-        // following it twice would double every post it publishes.
+        // Same rule as a saved link: `…/feed` and `…/feed/` are one blog, and following
+        // it twice would double every post it publishes.
         feeds.firstOrNull { sameArticle(it.url, url) }?.let { existing ->
             val filled = existing.copy(
                 title = existing.title?.takeIf { it.isNotBlank() } ?: title?.takeIf { it.isNotBlank() },
@@ -77,9 +68,7 @@ class FeedLibrary(private val store: KeyValueStore) {
     }
 
     /**
-     * Unfollows everything at once, for the reset in Settings — the only
-     * caller. Rows in Notion's `Sources` stay where they are; nothing in this
-     * app has ever deleted one, and a reset is not the moment to start.
+     * Unfollows everything at once, for the reset in Settings — the only caller.
      */
     fun clear() {
         feeds = emptyList()
@@ -103,9 +92,8 @@ class FeedLibrary(private val store: KeyValueStore) {
             id = fields[0],
             url = fields[1].ifBlank { return null },
             addedAt = fields[2].toLongOrNull() ?: 0L,
-            // Positional and appended last, so records written before feeds
-            // carried a name or a topic still decode — the same tolerance
-            // SavedLink uses.
+            // Positional and appended last, so records written before feeds carried a
+            // name or a topic still decode — the same tolerance SavedLink uses.
             title = fields.getOrNull(3)?.takeIf { it.isNotBlank() },
             topic = fields.getOrNull(4)?.takeIf { it.isNotBlank() },
         )

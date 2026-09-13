@@ -15,13 +15,8 @@ import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 
 /**
- * One row of `Reading List`, reduced to what the sync reconciles.
- *
- * [saved] is the whole reason this table can be shared with everything else
- * the reader files in Notion. Roughly fifty rows there are articles pulled
- * from feeds and mail that nobody chose — a saved link is the deliberate
- * subset, and the checkbox is what separates the two. Only ticked rows ever
- * reach the phone.
+ * One row of `Reading List`, reduced to what the sync reconciles. [saved] is the whole
+ * reason this table can be shared with everything else the reader files in Notion.
  */
 data class NotionArticle(
     val pageId: String,
@@ -61,16 +56,8 @@ data class ReadingSyncSummary(
 }
 
 /**
- * Saved links, both directions, in one pass.
- *
- * The order matters and is not arbitrary: query once, pull what Notion has,
- * then push what the phone has. Pulling first means a link that arrived from
- * another device is already present when the push runs and gets matched rather
- * than created a second time.
- *
- * Nothing here deletes or archives a Notion row. The app is a working set over
- * an archive it does not own — the same rule the source pull follows, and the
- * reason [LinkLibrary.removedUrls] has to exist.
+ * Saved links, both directions, in one pass. The order matters and is not arbitrary:
+ * query once, pull what Notion has, then push what the phone has.
  */
 @OptIn(ExperimentalTime::class)
 suspend fun syncReadingList(
@@ -90,21 +77,15 @@ suspend fun syncReadingList(
         is NotionResult.Ok -> result.value.mapNotNull(::parseArticle)
     }
 
-    // Two indexes because a row can be known two ways: by the id the app wrote
-    // when it created the row, and — for a row Claude filed from mail before
-    // the app ever saw it — by its address alone.
+    // Two indexes because a row can be known two ways: by the id the app wrote when it
+    // created the row, and.
     val byId = rows.filter { it.duskreadId != null }.associateBy { it.duskreadId }
     val byUrl = rows.associateBy { canonicalUrl(it.url) }
 
-    // Refusals go up first. Running this after the pull left a window where a
-    // row could be read as still saved, and after the push it could be
-    // re-ticked by the very link that was just deleted.
+    // Refusals go up first.
     var dismissed = 0
     links.removedKeys.forEach { key ->
         val row = byUrl[key] ?: return@forEach
-        // Only once. Without this every sync would rewrite the same rows for
-        // as long as the tombstone lives, and `last_edited_time` is what the
-        // whole reconciliation rests on.
         if (row.dismissed && !row.saved) return@forEach
 
         val result = client.updatePage(row.pageId, dismissal())
@@ -114,24 +95,17 @@ suspend fun syncReadingList(
 
     var pulled = 0
     // A dismissed row is refused here as well as by the local tombstone list.
-    // The tombstones are what make a delete instant; this is what makes it
-    // survive a reinstall, a second device, and anything that files into this
-    // table without asking the phone.
     rows.filter { it.saved && !it.dismissed }.forEach { row ->
         val url = normaliseUrl(row.url)
         val created = links.upsertFromNotion(
             SavedLink(
-                // A row Claude filed has no id yet; minting one here means the
-                // push below claims it, and every sync after this matches on
-                // the id rather than re-deriving it from the address.
+                // A row Claude filed has no id yet; minting one here means the push below
+                // claims it.
                 id = row.duskreadId ?: ("n-" + row.pageId.filterNot { it == '-' }.take(12)),
                 url = url,
                 title = row.title,
                 description = row.excerpt,
-                // Notion's own dates where it has them. Falling back to the
-                // edit time made an article filed months ago read as "saved 2
-                // minutes ago" the moment it was pulled, because the edit time
-                // is when the row was last touched, not when it was filed.
+                // Notion's own dates where it has them.
                 savedAt = row.savedAt ?: row.lastEditedAt,
                 readAt = row.readAt ?: row.lastEditedAt.takeIf { row.read },
                 changedAt = row.lastEditedAt,
@@ -154,22 +128,10 @@ suspend fun syncReadingList(
         }
 
         // Two different writes, because they answer to different rules.
-        //
-        // Claiming a row — stamping the id the app knows it by, and ticking
-        // Saved for a link the app is holding — cannot conflict with anything
-        // a person did in Notion, so it is not subject to the timestamp. That
-        // matters: a row filed from Gmail is pulled with `changedAt` set to
-        // its own `last_edited_time`, so it is never "newer" and would never
-        // be claimed at all.
-        //
-        // Changing its content can conflict, so it waits until the phone is
-        // genuinely the newer of the two.
         val localIsNewer = link.changedAt > row.lastEditedAt
 
-        // Compared against what a write would actually set: a null description
-        // writes nothing, so counting it as a difference would rewrite the row
-        // on every sync forever and make `last_edited_time` meaningless — the
-        // one thing this whole reconciliation rests on.
+        // Compared against what a write would actually set: a null description writes
+        // nothing.
         val contentDiffers = row.read != link.read ||
             row.title != link.title ||
             (link.description != null && row.excerpt != link.description) ||
@@ -195,21 +157,11 @@ suspend fun syncReadingList(
 
 /**
  * The status option names this database actually uses.
- *
- * Notion ships `Not started` / `In progress` / `Done` and its DDL will not
- * rename them, so a reading list that says `Unread` / `Read` is renamed by
- * hand. Reading the names out of the schema's own groups — `to_do` for unread,
- * `complete` for read — means either spelling works and neither is written
- * down here.
  */
 private fun statusNames(schema: JsonObject): StatusNames {
     val column = schema["properties"]?.jsonObject?.get("Status")?.jsonObject
 
-    // A select, not a status. This is what a table built by the fallback in
-    // `createReadingList` looks like, and also what someone gets who made the
-    // column by hand without reaching for Notion's status type. There are no
-    // groups to read, so the names are matched against the spellings this app
-    // writes and the ones Notion ships.
+    // A select, not a status.
     column?.get("select")?.jsonObject?.let { select ->
         val options = select["options"]?.jsonArray.orEmpty()
             .mapNotNull { (it as? JsonObject)?.get("name")?.stringOrNull() }
@@ -246,11 +198,6 @@ private fun statusNames(schema: JsonObject): StatusNames {
 
 /**
  * The two option names, and which of Notion's two column types holds them.
- *
- * [select] is not a preference — it is a fact about the table in front of us,
- * and every read and write of the column has to agree with it. A `status`
- * value written into a `select` column is silently ignored by Notion, which
- * would look exactly like a reading list that never remembers what was read.
  */
 private data class StatusNames(val unread: String, val read: String, val select: Boolean) {
     /** `{"status": {...}}` or `{"select": {...}}`, whichever this table takes. */
@@ -264,14 +211,6 @@ private data class StatusNames(val unread: String, val read: String, val select:
 
 /**
  * A link as Notion properties.
- *
- * Built explicitly rather than parsed generically, unlike the read side: the
- * shapes a write uses are few and fixed, and getting one wrong should be a
- * compile-time-ish mistake in one place rather than a silent no-op.
- *
- * The URL is written only on create. It is the natural key the whole match
- * falls back to, and rewriting it on every update would let a normalisation
- * change quietly orphan a row from the link that owns it.
  */
 private fun properties(link: SavedLink, status: StatusNames, includeUrl: Boolean): JsonObject = buildJsonObject {
     put(
@@ -289,11 +228,8 @@ private fun properties(link: SavedLink, status: StatusNames, includeUrl: Boolean
     put("Duskread ID", richText(link.id))
     put("Saved", buildJsonObject { put("checkbox", JsonPrimitive(true)) })
     put("Status", status.value(if (link.read) status.read else status.unread))
-    // Paired with Status rather than folded into it: Status answers whether,
-    // this answers when, and a reading history that survives a replaced phone
-    // needs the second one written down somewhere that is not the phone.
-    // Cleared explicitly when a link goes back to unread, since a stale date
-    // beside "Unread" is worse than no date.
+    // Paired with Status rather than folded into it: Status answers whether, this answers
+    // when.
     put(
         "Read At",
         buildJsonObject {
@@ -301,9 +237,6 @@ private fun properties(link: SavedLink, status: StatusNames, includeUrl: Boolean
         },
     )
     link.description?.let { put("Excerpt", richText(it.take(1_900))) }
-    // Only when known. Writing a null select would clear a topic someone
-    // filed by hand in Notion, and the app's silence about a subject is not
-    // the same as knowing it has none.
     link.topic?.let { put("Topic", buildJsonObject { put("select", buildJsonObject { put("name", JsonPrimitive(it)) }) }) }
     if (includeUrl) {
         put(
@@ -315,12 +248,6 @@ private fun properties(link: SavedLink, status: StatusNames, includeUrl: Boolean
 
 /**
  * "Not interested" — the only refusal this app can express upstream.
- *
- * The row is kept, not deleted or archived: the point is to remember the
- * refusal, and a deleted row is indistinguishable from one that was never
- * filed. Anything filling this table can skip a ticked row; without it, an
- * article deleted on the phone is unknown to everything except that phone and
- * arrives again on the next pass.
  */
 private fun dismissal(): JsonObject = buildJsonObject {
     put("Dismissed", buildJsonObject { put("checkbox", JsonPrimitive(true)) })
@@ -329,10 +256,6 @@ private fun dismissal(): JsonObject = buildJsonObject {
 
 /**
  * The two properties that say "this row is that link".
- *
- * Written on its own when nothing else needs to change, so a row someone
- * filed in Notion gets adopted on the first sync that sees it rather than
- * waiting for an edit on the phone that may never come.
  */
 private fun claim(link: SavedLink): JsonObject = buildJsonObject {
     put("Duskread ID", richText(link.id))
@@ -372,8 +295,8 @@ fun parseArticle(row: JsonObject): NotionArticle? {
         title = title.ifBlank { url },
         excerpt = prop("Excerpt")?.get("rich_text")?.jsonArray.orEmpty().plainText().trim().takeIf { it.isNotBlank() },
         topic = (prop("Topic")?.get("select") as? JsonObject)?.get("name")?.stringOrNull(),
-        // Matched by name against both the stock spelling and the one a
-        // reading list would rename it to, so the rename is safe either way.
+        // Matched by name against both the stock spelling and the one a reading list
+        // would rename it to, so the rename is safe either way.
         read = statusName == "Done" || statusName == ReadOption,
         saved = (prop("Saved")?.get("checkbox") as? JsonPrimitive)?.content?.toBooleanStrictOrNull() ?: false,
         dismissed = (prop("Dismissed")?.get("checkbox") as? JsonPrimitive)?.content?.toBooleanStrictOrNull() ?: false,

@@ -15,15 +15,6 @@ import androidx.compose.ui.unit.sp
 
 /**
  * "Nothing here yet", for a whole screen with nothing else on it.
- *
- * No icon badge — that used to be two layered rings around a hand-drawn
- * glyph, sitting dead centre a third of the way down a mostly blank screen.
- * In its place, a flat waveform at zero height: the same meter every row
- * with content uses, saying "no signal" literally rather than decorating the
- * absence with a badge. Left-aligned and meant to be placed low on the
- * screen by the caller (see the `Box(..., contentAlignment = BottomStart)`
- * wrappers at each call site) — an empty state sitting dead centre is the
- * exact thing this replaces.
  */
 @Composable
 fun EmptyState(
@@ -60,10 +51,8 @@ fun EmptyState(
 }
 
 /**
- * The inline equivalent of [EmptyState] for a section of Home rather than a
- * whole screen — just the two lines, no waveform and no badge. A section
- * this small has no "lower third" problem to solve; it only needs to say
- * what's missing without competing with the eyebrow header right above it.
+ * The inline equivalent of [EmptyState] for a section of Home rather than a whole screen
+ * — just the two lines, no waveform and no badge.
  */
 @Composable
 fun CompactEmptyState(

@@ -46,8 +46,8 @@ struct OnboardingScreen: View {
         .background(dusk.background)
     }
 
-    /// A blank name is not an error — it gets a generated one, the same way
-    /// the Compose screen does, so the greeting always has something to say.
+    /// A blank name is not an error — it gets a generated one, the same way the Compose
+    /// screen does, so the greeting always has something to say.
     private func finish() {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         onDone(trimmed.isEmpty ? nil : trimmed)

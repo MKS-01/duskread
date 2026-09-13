@@ -7,16 +7,8 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpHeaders
 
 /**
- * A page reduced to the part worth reading: headline, lead image, body — with
- * the navigation, the share rail, the newsletter box, the related-posts grid
- * and the footer left behind.
- *
- * [bodyHtml] is a sanitised fragment, not a document: a small set of
- * structural tags with every attribute except `href`, `src` and `alt`
- * stripped, so it can be dropped into a page this app styles rather than one
- * the publisher styles. [text] is the same content flattened, which is what
- * a readback pass would speak and what [extractArticle] measures to decide
- * whether it found an article at all.
+ * A page reduced to the part worth reading: headline, lead image, body — with the
+ * navigation, the share rail, the newsletter box.
  */
 data class Article(
     val url: String,
@@ -28,13 +20,6 @@ data class Article(
 
 /**
  * The article for [url], preferring what the feed already gave us.
- *
- * A feed that carries `<content:encoded>` has handed over the publisher's own
- * clean markup — no chrome to guess at, and no second request. That is
- * strictly better than extraction *when it is the whole post*, which is why
- * [articleFromFeed] returns null for a summary-only feed rather than letting
- * a two-paragraph teaser stand in for the article; the fetch below then runs
- * as it would have anyway.
  */
 suspend fun loadArticle(
     client: HttpClient,
@@ -49,9 +34,7 @@ fun articleFromFeed(url: String, title: String?, contentHtml: String?): Article?
 
     val body = sanitiseHtml(contentHtml, url)
     val text = body.textOf()
-    // A teaser is not an article. The bar is higher than the one extraction
-    // has to clear because falling through costs only a request we were
-    // willing to make, while accepting a summary costs the reader the post.
+    // A teaser is not an article.
     if (text.length < MinFeedArticleChars) return null
 
     return Article(
@@ -76,21 +59,12 @@ suspend fun fetchArticle(client: HttpClient, url: String): Article? {
 }
 
 /**
- * Readability in miniature: throw away the tags that are never article body,
- * score what is left, take the winner.
- *
- * Pure, and separate from the fetch, because everything hard about this is in
- * the scoring — being able to run it over a saved page without a network is
- * worth the extra function.
- *
- * Returns null rather than a best effort when nothing scores: a JavaScript-
- * rendered site serves a near-empty shell to a plain HTTP GET and there is no
- * heuristic that fixes that, so the honest answer is "no article here" and
- * the caller shows the live page instead.
+ * Readability in miniature: throw away the tags that are never article body, score what
+ * is left, take the winner.
  */
 fun extractArticle(html: String, url: String): Article? {
-    // Read before stripping: `og:` tags live in <head>, and <h1> is usually
-    // inside a <header> that the strip below is about to remove.
+    // Read before stripping: `og:` tags live in <head>, and <h1> is usually inside a
+    // <header> that the strip below is about to remove.
     val title = html.metaContent("og:title")
         ?: html.firstMatch(HeadingPattern)?.textOf()?.takeIf { it.isNotBlank() }
         ?: html.firstMatch(DocTitlePattern)?.tidy()
@@ -113,11 +87,6 @@ fun extractArticle(html: String, url: String): Article? {
 
 /**
  * Removes what can never be the article, by name.
- *
- * `<header>` goes too, even though a post's own headline often sits in one:
- * the title has already been read off `og:title` by the time this runs, and
- * keeping headers to save that one case means keeping every site-wide
- * masthead as a body candidate.
  */
 private fun String.stripNoise(): String {
     var text = this
@@ -127,12 +96,6 @@ private fun String.stripNoise(): String {
 
 /**
  * The highest-scoring container, tightened.
- *
- * Scoring alone reliably picks *a* wrapper around the article and just as
- * reliably picks one several levels too high — a page-wide `<div id="root">`
- * contains the article's text and therefore scores at least as well as the
- * article does. So after the winner is chosen, the smallest block inside it
- * that still scores nearly as well replaces it: same words, less scaffolding.
  */
 private fun String.bestBlock(): String? {
     val scored = scanBlocks(this)
@@ -154,13 +117,8 @@ private fun String.bestBlock(): String? {
 private class Block(val name: String, val attrs: String, val start: Int, val end: Int)
 
 /**
- * Walks the tags keeping a stack, which is the one thing a regex cannot do:
- * `<div>` nests, so no pattern can say where a given one ends.
- *
- * Only containers are tracked, and an unclosed one is discarded when its
- * parent closes rather than being treated as an error — real pages leave tags
- * open constantly and a scanner that gives up on the first one would extract
- * nothing from half the web.
+ * Walks the tags keeping a stack, which is the one thing a regex cannot do: `<div>`
+ * nests, so no pattern can say where a given one ends.
  */
 private fun scanBlocks(html: String): List<Block> {
     val open = ArrayDeque<Block>()
@@ -188,19 +146,10 @@ private fun scanBlocks(html: String): List<Block> {
 
 /**
  * How much this block reads like prose.
- *
- * Length carries the score because articles are long, but link density is the
- * discriminator that actually matters: a nav column, a related-posts list and
- * a tag cloud are all mostly text *inside anchors*, and nothing else
- * separates them from a paragraph by size alone. `class`/`id` hints are a
- * tiebreak rather than a rule — they are the part of this most likely to be
- * wrong on any given site, so they scale a score, never set one.
  */
 private fun Block.score(html: String): Double {
-    // Cheapest possible reject first: a block whose *markup* is shorter than
-    // the text an article needs cannot pass, and this runs for every <div> on
-    // the page — the text extraction below is far too expensive to reach for
-    // a nav bar.
+    // Cheapest possible reject first: a block whose *markup* is shorter than the text an
+    // article needs cannot pass, and this runs for every <div> on the page.
     if (end - start < MinBlockChars) return 0.0
 
     val inner = html.substring(start, end)
@@ -218,32 +167,22 @@ private fun Block.score(html: String): Double {
     val hint = attrs.lowercase()
     if (PositiveHint.containsMatchIn(hint)) score *= 1.25
     if (NegativeHint.containsMatchIn(hint)) score *= 0.4
-    // <article> and <main> are the publisher saying it outright. Rare enough
-    // to be worth trusting loudly when present.
+    // <article> and <main> are the publisher saying it outright. Rare enough to be worth
+    // trusting loudly when present.
     if (name == "article" || name == "main") score *= 1.6
 
     return score
 }
 
 /**
- * Keeps the tags that carry structure and drops the rest, unwrapping rather
- * than deleting so their text survives.
- *
- * Attributes go with them: a publisher's `class` is meaningless once the
- * stylesheet is gone, an inline `style` would fight the app's own, and a
- * `srcset` pointing at a CDN's responsive set is more markup than a
- * single-column reader needs. `href`, `src` and `alt` are the three that
- * still mean something here.
+ * Keeps the tags that carry structure and drops the rest, unwrapping rather than deleting
+ * so their text survives.
  */
 private fun sanitiseHtml(fragment: String, baseUrl: String): String {
     val out = StringBuilder()
     var cursor = 0
-    // A `<meta content="…">` sitting in the body is the publisher naming its
-    // social-card image, and Blogger — which is a large share of the feeds
-    // anyone follows — then repeats that image as a real <img> above the
-    // article. It is the same artwork as the post's hero at a different crop,
-    // so leaving it in shows the reader the picture twice before the first
-    // sentence. Declared as metadata, dropped as content.
+    // A `<meta content="…">` sitting in the body is the publisher naming its social-card
+    // image, and Blogger — which is a large share of the feeds anyone follows.
     val declared = MetaContentPattern.findAll(fragment).mapNotNull { it.groupValues[1].trim().takeIf(String::isNotEmpty) }.toSet()
 
     for (tag in TagPattern.findAll(fragment)) {
@@ -278,9 +217,8 @@ private fun sanitiseHtml(fragment: String, baseUrl: String): String {
 }
 
 /**
- * Lazy-loading puts a placeholder — a spacer GIF, a blurred data URI — in
- * `src` and the real file in a `data-` attribute, so `src` has to be the last
- * thing tried rather than the first.
+ * Lazy-loading puts a placeholder — a spacer GIF, a blurred data URI — in `src` and the
+ * real file in a `data-` attribute.
  */
 private fun String.imageSource(): String? = attr(DataSrcPattern)
     ?: attr(SrcsetPattern)?.substringBefore(',')?.trim()?.substringBefore(' ')?.takeIf { it.isNotEmpty() }
@@ -303,8 +241,8 @@ private fun String.escapeAttribute(): String = replace("&", "&amp;").replace("\"
 private val TagPattern = Regex("""<(/?)([a-zA-Z][a-zA-Z0-9]*)([^>]*)>""")
 private val Containers = setOf("div", "article", "main", "section")
 
-// Unwrapped rather than kept: everything that shapes a paragraph, plus the
-// two inline tags a body loses meaning without.
+// Unwrapped rather than kept: everything that shapes a paragraph, plus the two inline
+// tags a body loses meaning without.
 private val AllowedTags = setOf(
     "p", "h2", "h3", "h4", "ul", "ol", "li", "blockquote", "pre", "code",
     "em", "strong", "b", "i", "a", "img", "figure", "figcaption", "br", "hr",
@@ -334,19 +272,15 @@ private val ImgSrcPattern = Regex("""<img[^>]+src="([^"]+)"""", RegexOption.IGNO
 // Tracking pixels, spacers and icon sets, which are <img> tags but not pictures.
 private val NonPictureImage = Regex("""\.svg|\.gif|/pixel|1x1|spacer|avatar|icon|logo|badge|emoji""", RegexOption.IGNORE_CASE)
 
-// A paragraph holding only a line break or a non-breaking space is a
-// publisher's spacer, and unwrapping the <div> around it has already removed
-// whatever made it look intentional. Left in, it reads as a hole.
+// A paragraph holding only a line break or a non-breaking space is a publisher's spacer.
 private val EmptyParagraph = Regex("""<p>(?:\s|<br>|&nbsp;)*</p>""", RegexOption.IGNORE_CASE)
 
 // A stack of <br> is how a WYSIWYG editor writes a gap it has no style for.
-// The reader document has margins of its own, so one is a line break and four
-// are a hole in the article.
 private val BreakRun = Regex("""(?:<br>\s*){2,}""", RegexOption.IGNORE_CASE)
 private val BlankRun = Regex("""\n{3,}""")
 
-// A block has to be at least a few paragraphs before it is worth scoring, and
-// the winner has to be a real read before it is worth showing.
+// A block has to be at least a few paragraphs before it is worth scoring, and the winner
+// has to be a real read before it is worth showing.
 private const val MinBlockChars = 250
 private const val MinParagraphs = 2
 private const val MinArticleChars = 400

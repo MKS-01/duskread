@@ -8,11 +8,6 @@ import dev.mks.duskread.links.syncFeeds
 
 /**
  * Followed blogs and their cached posts.
- *
- * Every sync entry point in `FeedSync` takes an `HttpClient` as its first
- * argument; the whole point of this class is that Swift never sees one. The
- * graph's single client is supplied here instead, which also means iOS gets
- * the same one connection pool the rest of the app uses.
  */
 class FeedsBridge internal constructor(private val graph: AppGraph) {
     fun observeFeeds(onEach: (List<Feed>) -> Unit): Cancellable = graph.feeds.feedsUpdates.watch(onEach)
@@ -35,10 +30,6 @@ class FeedsBridge internal constructor(private val graph: AppGraph) {
 
     /**
      * Resolves whatever was pasted to a real feed address, then follows it.
-     *
-     * Discovery and adding are one call because they are one intent: a reader
-     * pastes a blog's home page, not its `atom.xml`, and splitting the two
-     * across the bridge would only give Swift a chance to do half of it.
      */
     suspend fun follow(rawUrl: String, title: String?, topic: String?): Feed? {
         val resolved = runCatching { discoverFeedUrl(graph.http, rawUrl) }.getOrNull() ?: rawUrl

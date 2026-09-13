@@ -13,15 +13,6 @@ import kotlin.time.Clock
 
 /**
  * What this reader has actually done with a host's articles.
- *
- * One record per **host**, not per link, because a link is read once and then
- * gone — a per-link record could never inform the next pick, which is the
- * only thing these numbers exist for.
- *
- * [skips] is deliberately the weakest of the three. A skip is "not right
- * now", not a dislike: the failure mode of any recommender over a list of
- * forty items is that it prunes itself to five and then repeats them, and the
- * only defence is a skip term too weak to do that.
  */
 data class HostSignal(
     val host: String,
@@ -35,21 +26,12 @@ data class HostSignal(
 )
 
 /**
- * The record of what gets read, written from the places the app already knows
- * something happened and read only by [Recommender].
- *
- * Same flat separator-packed encoding as [FeedPostCache] and for the same
- * reason: this is a few dozen short records, and a database would be
- * ceremony. Two keys rather than one because the topic half is written by a
- * different layer on a different schedule, and a device with no on-device
- * model never writes it at all — an absent topic map is the normal case, not
- * a degraded one. A third key holds skipped posts, which are the only signal
- * here that is about one article rather than about a source.
+ * The record of what gets read, written from the places the app already knows something
+ * happened and read only by [Recommender].
  */
 class ReadingSignals(private val store: KeyValueStore) {
-    // Snapshot state and a StateFlow in one, so Compose and the iOS bridge read
-    // the same value. Declared up here because a delegate has to exist before
-    // the property delegating to it.
+    // Snapshot state and a StateFlow in one, so Compose and the iOS bridge read the same
+    // value.
     private val observedByHost = Observed(loadHosts())
     private val observedTopicReads = Observed(loadTopics())
     private val observedSkippedPosts = Observed(loadSkips())
@@ -69,13 +51,6 @@ class ReadingSignals(private val store: KeyValueStore) {
 
     /**
      * url -> when the shuffle stepped past it.
-     *
-     * Separate from [byHost] because a skip is about *this article*, and
-     * folding it into the host record — which is what this class used to do —
-     * meant shuffling past one post penalised every post that blog had ever
-     * published while doing nothing at all to the one on screen, which could
-     * return on the very next tap. At a pool of two hundred, where the shuffle
-     * is how the pool is navigated, that is backwards.
      */
     var skippedPosts: Map<String, Long> by observedSkippedPosts
         private set
@@ -93,26 +68,17 @@ class ReadingSignals(private val store: KeyValueStore) {
     }
 
     /**
-     * Interest short of a read: a summary was asked for. Someone who asks
-     * what is in an article is telling us something even if they never open
-     * it, and that is worth more than nothing and less than reading it.
+     * Interest short of a read: a summary was asked for.
      */
     fun recordOpen(url: String) = update(url) { it.copy(opens = it.opens + 1) }
 
     /**
      * Shuffle stepped past this one.
-     *
-     * Written twice, deliberately: once against the exact url, which is what
-     * actually suppresses this post for a day or so, and once against the host
-     * as the weak "this source is not landing today" hint it always should
-     * have been on its own.
      */
     fun recordSkip(url: String) {
         val now = Clock.System.now().toEpochMilliseconds()
 
-        // Oldest-first eviction on a bounded map. A skip is short-lived and
-        // the pool is finite, so an unbounded list would only ever grow —
-        // and the entries that matter are the recent ones by definition.
+        // Oldest-first eviction on a bounded map.
         val current = loadSkips() + (url to now)
         skippedPosts = if (current.size <= MaxSkippedPosts) {
             current
@@ -141,12 +107,7 @@ class ReadingSignals(private val store: KeyValueStore) {
     }
 
     /**
-     * Re-reads the store before writing rather than trusting the in-memory
-     * copy. Signals are written from three different screens, and composition
-     * may well hold more than one instance of this class backed by the same
-     * store — without this, whichever wrote last would silently drop what the
-     * others had recorded. A parse per write is nothing at this size, and
-     * writes are rare: a read, a skip, a summary.
+     * Re-reads the store before writing rather than trusting the in-memory copy.
      */
     private fun update(url: String, change: (HostSignal) -> HostSignal) {
         val host = hostOf(url).ifBlank { return }
@@ -179,8 +140,8 @@ class ReadingSignals(private val store: KeyValueStore) {
     }
 
     private fun decodeHost(record: String): HostSignal? {
-        // Four, not six: a record written before skips carried a timestamp
-        // decodes as it always did rather than being dropped.
+        // Four, not six: a record written before skips carried a timestamp decodes as it
+        // always did rather than being dropped.
         val fields = record.split(FieldSeparator)
         if (fields.size < 4) return null
 

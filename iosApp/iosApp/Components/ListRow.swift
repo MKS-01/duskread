@@ -2,12 +2,6 @@ import ComposeApp
 import SwiftUI
 
 /// What every list in the app is built from.
-///
-/// Saved, a followed blog's topics and the readback library had each grown
-/// their own row before this existed on the Compose side; this is the same
-/// skeleton, not a fourth copy of it. Geometry is deliberately the same: a
-/// 22pt monogram chip, a 10pt gap, the title at two lines, and a meta line
-/// spaced 10pt.
 struct ListRow<Trailing: View>: View {
     let host: String
     let title: String
@@ -24,9 +18,6 @@ struct ListRow<Trailing: View>: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .top, spacing: 10) {
                 // The row's own tap area stops short of the trailing slot.
-                // Covering the whole row and letting the trailing control sit
-                // inside it means two gestures over the same pixels — the
-                // toggle fires and the row opens with it, or neither does.
                 Button(action: onTap) {
                     HStack(alignment: .top, spacing: 10) {
                         MonogramBadge(host: host, accent: tone == .accent)
@@ -73,8 +64,8 @@ extension ListRow where Trailing == EmptyView {
     }
 }
 
-/// The accent is mostly reserved for the one row actually doing something.
-/// `faded` is the read half of a list, not a disabled state.
+/// The accent is mostly reserved for the one row actually doing something. `faded` is the
+/// read half of a list, not a disabled state.
 enum RowTone { case normal, accent, faded }
 
 struct RowMetaItem: Identifiable {
@@ -83,8 +74,8 @@ struct RowMetaItem: Identifiable {
     var accent: Bool = false
 }
 
-/// Split out because a swipe host has to keep the hairline still while the row
-/// slides over it.
+/// Split out because a swipe host has to keep the hairline still while the row slides
+/// over it.
 struct ListRowDivider: View {
     var last: Bool
     var topSpacing: CGFloat = 15

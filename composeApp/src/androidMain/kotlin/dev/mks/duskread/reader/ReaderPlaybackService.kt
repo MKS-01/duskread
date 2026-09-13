@@ -25,22 +25,15 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
- * Runs a read's audio in a foreground service with a real `MediaSession`, so
- * playback survives the app being backgrounded and exposes proper media
- * controls — a notification with play/pause, lock-screen transport, and
- * Bluetooth/headset buttons — rather than a plain `MediaPlayer` tied to an
- * Activity that dies with it.
+ * Runs a read's audio in a foreground service with a real `MediaSession`, so playback
+ * survives the app being backgrounded and exposes proper media controls.
  */
 class ReaderPlaybackService : Service() {
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var player: MediaPlayer? = null
 
-    // [player] is assigned before prepareAsync() completes, so the error
-    // listener can catch an async failure — which leaves a window where
-    // start()/pause()/seekTo() would otherwise land on a MediaPlayer still in
-    // its Initialized/Preparing state and throw IllegalStateException. This
-    // tracks the one further thing callers actually need to know: whether
-    // onPreparedListener has fired for the *current* player yet.
+    // [player] is assigned before prepareAsync() completes, so the error listener can
+    // catch an async failure.
     private var ready = false
     private var progressJob: Job? = null
     private lateinit var session: MediaSessionCompat
@@ -85,22 +78,13 @@ class ReaderPlaybackService : Service() {
         release()
         title = requestedTitle
 
-        // Android 12+ kills the process if startForeground() hasn't landed
-        // within a few seconds of startForegroundService() (called from
-        // AndroidAudioPlayer.play()). Preparing a MediaPlayer is async and can
-        // run past that window on a slow read, so the foreground state is
-        // claimed immediately with a placeholder notification and swapped for
-        // the real one once onPreparedListener fires below.
+        // Android 12+ kills the process if startForeground() hasn't landed within a few
+        // seconds of startForegroundService() (called from AndroidAudioPlayer.play()).
         startForeground(NotificationId, buildNotification(playing = false))
 
         val mediaPlayer = MediaPlayer()
-        // A second ActionPlay can arrive (a fast switch to a different read)
-        // while this instance is still preparing. start() releases it and
-        // moves player on to a new instance, but a callback already in
-        // flight on the looper isn't guaranteed to be dropped by that —
-        // every listener below re-checks it's still the current player
-        // before touching anything, so a late callback from a superseded
-        // track is a no-op instead of a call into a released MediaPlayer.
+        // A second ActionPlay can arrive (a fast switch to a different read) while this
+        // instance is still preparing. start() releases it and moves player on to a new.
         mediaPlayer.setOnPreparedListener { prepared ->
             if (player !== mediaPlayer) return@setOnPreparedListener
             ready = true
@@ -121,21 +105,16 @@ class ReaderPlaybackService : Service() {
             publish(playing = false, positionMs = completed.duration, durationMs = completed.duration)
             stopForeground(STOP_FOREGROUND_DETACH)
         }
-        // A stale/revoked URI or a corrupt file moves MediaPlayer into an
-        // error state that rejects every further call until reset — without
-        // this, the next resume()/pause()/seek() the notification or media
-        // session sends crashes with IllegalStateException instead of the
-        // read just failing to start.
+        // A stale/revoked URI or a corrupt file moves MediaPlayer into an error state
+        // that rejects every further call until reset — without this.
         mediaPlayer.setOnErrorListener { _, _, _ ->
             if (player === mediaPlayer) stopAndRelease()
             true
         }
 
         try {
-            // setDataSource can throw synchronously (IOException, a bad URI,
-            // a revoked permission) — a system boundary this app doesn't
-            // control the failure modes of, so it's caught broadly rather
-            // than enumerated.
+            // setDataSource can throw synchronously (IOException, a bad URI, a revoked
+            // permission).
             mediaPlayer.setDataSource(this, uri)
             player = mediaPlayer
             mediaPlayer.prepareAsync()
@@ -145,11 +124,7 @@ class ReaderPlaybackService : Service() {
         }
     }
 
-    // Guarded by [ready] rather than just a null check on [player]: the
-    // notification's toggle button (and the media session's transport
-    // controls) are reachable the instant playback is requested, but
-    // start()/pause()/seekTo() throw IllegalStateException if called before
-    // onPreparedListener has actually fired for this player.
+    // Guarded by [ready] rather than just a null check on [player].
     private fun resume() {
         val current = player ?: return
         if (!ready) return
@@ -176,14 +151,8 @@ class ReaderPlaybackService : Service() {
     }
 
     /**
-     * The only path that should clear [CurrentReaderItem] — [release] alone
-     * is also called from [start] to tear down the *previous* player before
-     * a new one begins, and clearing the current item there wiped out the
-     * item [AndroidAudioPlayer] had just set a moment earlier, so the card
-     * (and the pinned bar) flashed open and immediately closed again on
-     * every play(). Genuinely stopping — the stop action, swiping the
-     * notification away, or the app's task being killed — comes through
-     * here instead.
+     * The only path that should clear [CurrentReaderItem] — [release] alone is also
+     * called from [start] to tear down the *previous* player before a new one begins.
      */
     private fun stopAndRelease() {
         release()
@@ -260,8 +229,8 @@ class ReaderPlaybackService : Service() {
             .setContentText(if (playing) "Playing" else "Paused")
             .setSmallIcon(android.R.drawable.ic_media_play)
             .setOnlyAlertOnce(true)
-            // Swipeable in every state, not just paused — swiping it away is
-            // how playback actually stops, via the delete intent below.
+            // Swipeable in every state, not just paused — swiping it away is how playback
+            // actually stops, via the delete intent below.
             .setOngoing(false)
             .setContentIntent(contentIntent())
             .setDeleteIntent(stopIntent)
@@ -271,13 +240,8 @@ class ReaderPlaybackService : Service() {
     }
 
     /**
-     * Tapping the notification body should bring the app back to the Readback
-     * tab specifically, whether or not the process is still alive — this
-     * module never references `MainActivity` directly (it lives in the host
-     * `androidApp` module, and a library can't depend back on its host), so
-     * the launcher intent is resolved by package instead of by class, with
-     * [OpenReadbackTabExtra] carrying the "which tab" signal `MainActivity`
-     * reads back out.
+     * Tapping the notification body should bring the app back to the Readback tab
+     * specifically, whether or not the process is still alive.
      */
     private fun contentIntent(): PendingIntent? {
         val launchIntent = packageManager.getLaunchIntentForPackage(packageName)

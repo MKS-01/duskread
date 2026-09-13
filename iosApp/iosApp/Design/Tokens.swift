@@ -2,11 +2,6 @@ import ComposeApp
 import SwiftUI
 
 /// Layout, radius, stroke and spacing, read from the shared module.
-///
-/// These are thin because they have to be: the moment a number is typed on
-/// this side rather than read from `DesignTokens`, the two UIs have started
-/// drifting. Kotlin's `dp` and SwiftUI's points are the same unit at the same
-/// scale, so there is nothing to convert.
 enum Layout {
     static let readingGutter = CGFloat(DesignTokens.shared.ReadingGutter)
     static let listGutter = CGFloat(DesignTokens.shared.ListGutter)
@@ -27,8 +22,8 @@ enum Radius {
 }
 
 enum Stroke {
-    /// One **point**, not one physical pixel — the hairline is a weight, not a
-    /// hardware detail, and `1 / UIScreen.scale` would make it vanish.
+    /// One **point**, not one physical pixel — the hairline is a weight, not a hardware
+    /// detail, and `1 / UIScreen.scale` would make it vanish.
     static let hairline = CGFloat(DesignTokens.shared.StrokeHairline)
 }
 
@@ -37,12 +32,8 @@ enum Space {
     static let cardGap = CGFloat(DesignTokens.shared.CardGap)
 }
 
-/// Durations, mirrored as timing curves rather than springs.
-///
-/// The shared UI has four `tween`s on Compose's default easing and not one
-/// spring anywhere. SwiftUI's idiom is springs, and reaching for one here
-/// would be redesigning the motion rather than porting it — so this is the
-/// same cubic Compose uses, at the same four durations.
+/// Durations, mirrored as timing curves rather than springs. The shared UI has four
+/// `tween`s on Compose's default easing and not one spring anywhere.
 enum Motion {
     static let pushIn = seconds(DesignTokens.shared.MotionPushIn)
     static let popFade = seconds(DesignTokens.shared.MotionPopFade)

@@ -12,19 +12,10 @@ import kotlinx.coroutines.flow.StateFlow
 
 /**
  * Summaries already generated, kept so a second look costs nothing.
- *
- * Generation is seconds of the phone's own silicon and shows up as heat, and
- * AICore meters inference per app — so this is what keeps an afternoon of
- * reading inside the quota.
- *
- * Same flat-store encoding as [dev.mks.duskread.links.FeedPostCache], for the
- * same reason: this is a few dozen short records and a database would be
- * ceremony.
  */
 class SummaryCache(private val store: KeyValueStore) {
-    // Snapshot state and a StateFlow in one, so Compose and the iOS bridge read
-    // the same value. Declared up here because a delegate has to exist before
-    // the property delegating to it.
+    // Snapshot state and a StateFlow in one, so Compose and the iOS bridge read the same
+    // value.
     private val observedSummaries = Observed(load())
 
     var summaries: Map<String, ArticleSummary> by observedSummaries
@@ -33,11 +24,6 @@ class SummaryCache(private val store: KeyValueStore) {
     /** [summaries] for observers outside a composition; see [Observed]. */
     val summariesUpdates: StateFlow<Map<String, ArticleSummary>> get() = observedSummaries.updates
 
-    /**
-     * The url alone. Length used to be part of the question, because the
-     * reader could ask the same article for a short answer or a full one;
-     * an article sizes its own summary now, so there is only one to find.
-     */
     fun summaryFor(url: String): ArticleSummary? = summaries[url]
 
     /** Newest first, oldest dropped: a convenience, not a record. */
@@ -74,10 +60,8 @@ class SummaryCache(private val store: KeyValueStore) {
 
     private fun decode(record: String): ArticleSummary? {
         val fields = record.split(FieldSeparator)
-        // Four, not five: records written before length stopped being a field
-        // still carry it, and are read by ignoring the tail rather than being
-        // dropped. Re-summarising a month of reading to gain nothing would be
-        // the phone's own silicon spent on a format change.
+        // Four, not five: records written before length stopped being a field still carry
+        // it, and are read by ignoring the tail rather than being dropped.
         if (fields.size < 4) return null
 
         return ArticleSummary(
@@ -95,8 +79,8 @@ class SummaryCache(private val store: KeyValueStore) {
         const val FieldSeparator = ''
         const val RecordSeparator = ''
 
-        // Roughly a month of reading. Far below what the store can hold, and
-        // the point is the article opened twice this week, not an archive.
+        // Roughly a month of reading. Far below what the store can hold, and the point is
+        // the article opened twice this week, not an archive.
         const val MaxSummaries = 60
     }
 }

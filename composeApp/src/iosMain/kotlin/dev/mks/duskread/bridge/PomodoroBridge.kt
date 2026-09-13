@@ -7,16 +7,8 @@ import dev.mks.duskread.pomodoro.clockLabel
 import dev.mks.duskread.pomodoro.iosPomodoroController
 
 /**
- * The focus timer.
- *
- * Independent of the graph — the timer persists nothing, and a session that
- * outlives the process is not something this app claims to offer. The
- * controller iOS uses is `internal` to the shared module, so it cannot be
- * constructed from Swift directly; this is the way in.
- *
- * [clockLabelFor] exists so Swift does not grow a second copy of the `mm:ss`
- * padding, which is the sort of thing that drifts by one character and is
- * noticed a year later.
+ * The focus timer. Independent of the graph — the timer persists nothing, and a session
+ * that outlives the process is not something this app claims to offer.
  */
 class PomodoroBridge internal constructor() {
     private val controller: PomodoroController = iosPomodoroController()

@@ -150,10 +150,12 @@ aggregate task would be `:composeApp:allTests`. Do not invent test commands.
 
 ## Conventions that differ from Kotlin defaults
 
-- **KDoc says why, not what.** Every file and public type carries a prose
-  comment explaining why the thing exists or why it is designed that way, never
-  a restatement of the signature. Inline `//` comments justify a choice or flag
-  a hazard. Match this density — it is the house style, not decoration.
+- **KDoc says why, not what, in two lines or fewer.** Every file and public
+  type carries a short comment on why it exists or why it is shaped that way,
+  never a restatement of the signature. Inline `//` comments justify a choice
+  or flag a hazard, same limit. No exceptions for a tricky bug or tradeoff —
+  the detail that does not fit goes in the commit message or, if it is a
+  standing decision, `docs/architecture.md`, not a longer comment.
 - **British spelling in prose and comments** (colour, behaviour, amortised,
   normalised); identifiers stay American (`color`, `AudioPlayer`).
 - **Private file-level constants are PascalCase**, not `SCREAMING_SNAKE_CASE`:

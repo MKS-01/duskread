@@ -17,17 +17,8 @@ import dev.mks.duskread.ui.theme.Radius
 import dev.mks.duskread.ui.theme.Stroke
 
 /**
- * The bordered pill this feature says everything with — the length choices in
- * Settings, and the button that starts a download.
- *
- * One shape rather than two that merely resemble each other: Settings stacks
- * the download action directly under the length chips, and the two reading as
- * different orders of control is what would make that section look assembled
- * rather than designed.
- *
- * Selection and action are both carried by [tone] alone — border and ink,
- * never a fill. That is the rule Readback's sort control follows, and it is
- * what keeps the accent meaning "this one" where several pills sit together.
+ * The bordered pill this feature says everything with — the length choices in Settings,
+ * and the button that starts a download.
  */
 @Composable
 internal fun SummaryChip(label: String, tone: Color, onClick: () -> Unit) {

@@ -30,8 +30,8 @@ private const val TopicAffinityWeight = 0.7f
 private const val FitWeight = 0.45f
 
 /**
- * A weak hint that a source is not landing. Halved when the per-post term
- * below arrived and took over the job this was being asked to do alone.
+ * A weak hint that a source is not landing. Halved when the per-post term below arrived
+ * and took over the job this was being asked to do alone.
  */
 private const val SkipPenaltyWeight = 0.15f
 
@@ -39,8 +39,8 @@ private const val SkipPenaltyWeight = 0.15f
 private const val SkipHalfLifeMs = 7L * 24 * 60 * 60 * 1000
 
 /**
- * Stepping past *this* post. Large enough to sink it outright, because that is
- * exactly what the reader just asked for by tapping shuffle.
+ * Stepping past *this* post. Large enough to sink it outright, because that is exactly
+ * what the reader just asked for by tapping shuffle.
  */
 private const val PostSkipWeight = 1.4f
 
@@ -48,22 +48,13 @@ private const val PostSkipWeight = 1.4f
 private const val PostSkipHalfLifeMs = 2L * 24 * 60 * 60 * 1000
 
 /**
- * The shuffle. Large enough to reorder a genuinely close field, small enough
- * not to outvote freshness.
- *
- * Was 0.35, which was wrong once the pool grew: across the three days holding
- * most of a fresh sync, freshness only spans about 0.41 (see below), so a
- * jitter of 0.35 meant the top of the list was mostly noise.
+ * The shuffle. Large enough to reorder a genuinely close field, small enough not to
+ * outvote freshness.
  */
 private const val JitterWeight = 0.18f
 
 /**
  * Freshness half-life. Four days, not the fortnight this started at.
- *
- * A fortnight is the right answer to "is this still worth reading" and the
- * wrong one to "which of these forty posts from this week". At 14 days a
- * three-day-old post scores 0.86 against a new one's 1.0 — a spread too
- * narrow to order anything. At four days the same pair spans 1.0 to 0.59.
  */
 private const val FreshnessHalfLifeMs = 4L * 24 * 60 * 60 * 1000
 
@@ -81,13 +72,6 @@ private const val DefaultMinutes = 7f
 
 /**
  * One thing Home could offer, from either half of the app.
- *
- * The merged pool is the part that does not exist anywhere else: a saved link
- * and a post from a followed blog are different records with different
- * lifetimes, and the whole point of ranking is that they compete on equal
- * terms. [savedId] is what tells them apart afterwards — non-null means the
- * reader already owns this one, null means opening it has to save it first or
- * the signal is lost with the next sync.
  */
 data class Candidate(
     val url: String,
@@ -118,16 +102,11 @@ data class Scored(
 
 /**
  * Everything unread the app knows about, as one pool.
- *
- * A feed post already in the library is dropped rather than merged: the saved
- * copy carries the read state, and two rows for one article would be a bug
- * the reader can see.
  */
 fun pool(links: LinkLibrary, cache: FeedPostCache, feeds: List<Feed> = emptyList()): List<Candidate> {
     val topicByFeed = feeds.associate { it.id to it.topic }
-    // A saved link belongs to no feed, but it often comes from a blog that is
-    // followed — so fall back to matching on host. Costs one small map and
-    // covers most of what anyone saves.
+    // A saved link belongs to no feed, but it often comes from a blog that is followed —
+    // so fall back to matching on host.
     val topicByHost = feeds.filter { it.topic != null }.associate { it.host to it.topic }
 
     val saved = links.links.filterNot { it.read }.map { link ->
@@ -137,16 +116,15 @@ fun pool(links: LinkLibrary, cache: FeedPostCache, feeds: List<Feed> = emptyList
             host = link.host,
             date = link.savedAt,
             body = link.description,
-            // What Notion filed beats what the host implies: a newsletter
-            // arriving by mail has a topic and no followed feed to match on,
-            // which is exactly the case the host lookup cannot serve.
+            // What Notion filed beats what the host implies: a newsletter arriving by
+            // mail has a topic and no followed feed to match on.
             tag = link.topic ?: topicByHost[link.host],
             savedId = link.id,
         )
     }
 
-    // Canonical, so a feed post already saved under a slightly different
-    // address is recognised rather than offered a second time.
+    // Canonical, so a feed post already saved under a slightly different address is
+    // recognised rather than offered a second time.
     val known = links.links.mapTo(mutableSetOf()) { canonicalUrl(it.url) }
     val posts = cache.postsByFeed.values.asSequence().flatten()
         .filterNot { canonicalUrl(it.url) in known }
@@ -167,15 +145,8 @@ fun pool(links: LinkLibrary, cache: FeedPostCache, feeds: List<Feed> = emptyList
 }
 
 /**
- * Score every candidate and return them best-first.
- *
- * Pure: no Compose, no I/O, no clock of its own. [now] and [seed] are passed
- * in so the same pool ranks the same way twice, which is what makes the
- * Discovery block in Settings worth anything.
- *
- * [seed] is the shuffle. Re-seeding re-ranks without abandoning the ranking,
- * so shuffle means "something else good" rather than "anything at all" —
- * which is the whole difference from the `random()` this replaces.
+ * Score every candidate and return them best-first. Pure: no Compose, no I/O, no clock of
+ * its own.
  */
 fun rank(
     candidates: List<Candidate>,
@@ -192,10 +163,8 @@ fun rank(
 
         val freshness = candidate.date?.let { decay(now - it, FreshnessHalfLifeMs) } ?: 0f
 
-        // Only a saved link can be stale — a feed post the reader has never
-        // seen is not something they are forgetting. Ramps in over the month
-        // after the threshold rather than switching on, so nothing jumps to
-        // the top of the list on one particular morning.
+        // Only a saved link can be stale — a feed post the reader has never seen is not
+        // something they are forgetting.
         val stale = if (candidate.savedId != null && candidate.date != null) {
             val idle = now - candidate.date
             if (idle <= StaleAfterMs) 0f else 1f - decay(idle - StaleAfterMs, StaleAfterMs)
@@ -212,17 +181,14 @@ fun rank(
             (1f - abs(estimate - target) / max(target.toFloat(), estimate)).coerceIn(0f, 1f)
         } ?: 0f
 
-        // Saturating, so the tenth skip of a host costs barely more than the
-        // third, and decaying, so a host skipped past last week is not still
-        // being punished for it today.
+        // Saturating, so the tenth skip of a host costs barely more than the third, and
+        // decaying.
         val skip = signal?.let { it ->
             val raw = 1f - 1f / (1f + it.skips)
             raw * (it.lastSkipAt?.let { at -> decay(now - at, SkipHalfLifeMs) } ?: 1f)
         } ?: 0f
 
-        // The one signal here about an article rather than a source. Tapping
-        // shuffle is an explicit "not this one", so it is answered by sinking
-        // this one and nothing else.
+        // The one signal here about an article rather than a source.
         val postSkip = signals.skippedPosts[candidate.url]?.let { at -> decay(now - at, PostSkipHalfLifeMs) } ?: 0f
 
         val terms = mapOf(
@@ -253,10 +219,8 @@ private fun affinity(count: Int, total: Int): Float {
 }
 
 /**
- * Stable per-candidate noise in 0..1.
- *
- * Derived from the url so it does not move under a scroll, and from the seed
- * so a shuffle moves all of them at once.
+ * Stable per-candidate noise in 0..1. Derived from the url so it does not move under a
+ * scroll, and from the seed so a shuffle moves all of them at once.
  */
 private fun jitter(url: String, seed: Int): Float {
     var h = url.hashCode() * 31 + seed
@@ -267,13 +231,8 @@ private fun jitter(url: String, seed: Int): Float {
 }
 
 /**
- * Body words over [WordsPerMinute], falling back to a flat guess for a
- * candidate whose length nothing knows.
- *
- * [Candidate.words] first, because a feed post counted its own at sync time —
- * this runs for every candidate on every re-rank, and splitting the cached
- * markup here is what a shuffle tap used to cost. Splitting is kept only for a
- * saved link's description, which is a sentence or two.
+ * Body words over [WordsPerMinute], falling back to a flat guess for a candidate whose
+ * length nothing knows.
  */
 internal fun estimatedMinutes(candidate: Candidate): Float {
     val words = candidate.words ?: candidate.body?.split(' ', '\n', '\t')?.count { it.isNotBlank() } ?: 0
@@ -282,21 +241,8 @@ internal fun estimatedMinutes(candidate: Candidate): Float {
 }
 
 /**
- * The [count] to actually show, at most one per source.
- *
- * Applied *after* ranking rather than as another term inside it, on purpose.
- * Every score has to stay explicable on its own — "why is that at the top" is
- * a question that gets asked on the phone with no debugger, and a diversity
- * penalty folded into the arithmetic would make the honest answer "because of
- * what else happened to be in the list", which is no answer at all.
- *
- * Two followed blogs can be near-duplicates by design — JetBrains publishes a
- * general feed and a Kotlin one, and the same post appears in both — so
- * without this a good day at one publisher fills every row.
- *
- * Falls back to filling from the remainder rather than returning short: three
- * rows from two sources is worse than three rows from three, and much better
- * than one row and a gap.
+ * The [count] to actually show, at most one per source. Applied *after* ranking rather
+ * than as another term inside it, on purpose.
  */
 fun topPicks(ranked: List<Scored>, count: Int): List<Scored> {
     val seen = mutableSetOf<String>()

@@ -40,40 +40,23 @@ object Layout {
 
     /**
      * What the floating bar keeps between itself and the safe area.
-     *
-     * On top of `navigationBarsPadding()`, not instead of it — and larger
-     * than it looks like it needs to be. Under gesture navigation that inset
-     * is only a few dp, so the bar was landing all but on the home pill: two
-     * floating things a thumb-width apart, one of them the system's. This is
-     * the gap that stops them reading as one control.
      */
     val BarInset = DesignTokens.BarInset.dp
 
     /**
-     * The one width that changes the plan: below it the floating bar, above
-     * it the rail. One threshold rather than a size-class ladder because
-     * there are only two layouts to choose between — naming Medium and
-     * Expanded separately would imply a third that does not exist.
-     *
-     * The name is older than the layout. It was drawn for a list pane beside
-     * a detail pane; what was actually built is a rail beside one column
-     * capped at [ReadingMeasure], and the pane it was sized against — and the
-     * `ListPaneWidth` token that sized it — are both gone. 720 still holds
-     * for the layout that exists: a landscape phone is still held, still
-     * thumb-driven, and stays on the bar.
+     * The one width that changes the plan: below it the floating bar, above it the rail.
      */
     val TwoPaneBreakpoint = DesignTokens.TwoPaneBreakpoint.dp
 
     /**
-     * The vertical navigation rail replacing the floating bar when wide.
-     * Narrow enough to read as an edge rather than a column of its own.
+     * The vertical navigation rail replacing the floating bar when wide. Narrow enough to
+     * read as an edge rather than a column of its own.
      */
     val RailWidth = DesignTokens.RailWidth.dp
 
     /**
-     * The widest a column of prose is allowed to get, regardless of how much
-     * room there is around it. Roughly 68 characters at body size — past that
-     * the eye loses the start of the next line.
+     * The widest a column of prose is allowed to get, regardless of how much room there
+     * is around it.
      */
     val ReadingMeasure = DesignTokens.ReadingMeasure.dp
 
@@ -84,25 +67,19 @@ object Layout {
 /** Corner radii, largest to smallest. */
 object Radius {
     /**
-     * Dashboard and list cards. 14dp rather than the 20dp this used to be —
-     * the app draws its own data (waveforms, meters, a stroked icon set) and
-     * a heavily rounded card reads as a generic Material surface sitting on
-     * top of it rather than a panel drawn in the same instrument-panel hand.
+     * Dashboard and list cards.
      */
     val Card = DesignTokens.RadiusCard.dp
 
     /**
-     * Everything that sits inside or below a card: the filled call-to-action,
-     * text fields, dashboard and list rows, the timer's state chips. One step
-     * tighter than [Card] so a row never competes with the panel holding it.
+     * Everything that sits inside or below a card: the filled call-to-action, text
+     * fields, dashboard and list rows, the timer's state chips.
      */
     val Inline = DesignTokens.RadiusInline.dp
 
     /**
-     * The mockup's `.pill` and `.sourcechip`: 3dp, which at these sizes is a
-     * softened corner rather than a rounded one. Anything rounder turns a
-     * sort control into a Material chip and the source cell into an avatar,
-     * both of which fight the squared-off waveform they sit beside.
+     * The mockup's `.pill` and `.sourcechip`: 3dp, which at these sizes is a softened
+     * corner rather than a rounded one.
      */
     val Chip = DesignTokens.RadiusChip.dp
 }
@@ -123,11 +100,6 @@ object Space {
 
 /**
  * Durations, in milliseconds.
- *
- * The visualiser and the navigation deliberately move at different speeds:
- * navigation should feel immediate, whereas a tone change is teaching — the
- * reader has to *see* an element switch from being examined to being
- * discarded, so it is slow enough to follow.
  */
 object Motion {
     /** Pushing to a full-screen destination: the incoming screen slides and fades in. */

@@ -10,12 +10,6 @@ import dev.mks.duskread.notion.runFullSync
 
 /**
  * Notion setup and sync, with every type Obj-C cannot carry left behind.
- *
- * `NotionClient` traffics in `JsonObject` and takes an `HttpClient`, and
- * `NotionResult` is a sealed hierarchy whose exhaustive `when` does not survive
- * the export — Swift would get an opaque base class and no way to switch on it.
- * So results are flattened to [NotionOutcome] here, where the mapping is
- * written once, rather than in every Swift call site.
  */
 class NotionBridge internal constructor(private val graph: AppGraph) {
     fun hasToken(): Boolean = graph.notionAuth.let { graph.keyValueStore.getString(NotionTokenKey) != null }
@@ -35,10 +29,6 @@ class NotionBridge internal constructor(private val graph: AppGraph) {
 
     /**
      * Finds or creates the two databases.
-     *
-     * [parentPageId] is null on the first attempt: provisioning answers with
-     * the pages it can see when it needs to be told where to put them, and the
-     * caller comes back having picked one.
      */
     suspend fun provisionDatabases(parentPageId: String?): NotionOutcome = when (val result = provision(graph.notionApi, graph.notionPrefs, parentPageId)) {
         is NotionResult.Ok -> when (val state = result.value) {
@@ -46,9 +36,8 @@ class NotionBridge internal constructor(private val graph: AppGraph) {
             is Provisioning.NeedsParent -> NotionOutcome(status = NotionStatus.NEEDS_PARENT, pages = state.pages)
             is Provisioning.NoPagesShared -> NotionOutcome(status = NotionStatus.NO_PAGES_SHARED)
         }
-        // Every failure carries its own sentence already — the whole point
-        // of the sealed hierarchy is that the wording lives with the case,
-        // so Swift shows `message` rather than composing its own.
+        // Every failure carries its own sentence already — the whole point of the sealed
+        // hierarchy is that the wording lives with the case.
         is NotionResult.Failure -> NotionOutcome(status = result.status(), message = result.message)
     }
 

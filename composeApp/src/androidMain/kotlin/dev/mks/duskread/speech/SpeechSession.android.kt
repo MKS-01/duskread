@@ -8,12 +8,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
 
 /**
- * Forwards [SpeechSession.request] to [SpeechPlaybackService] purely through
- * intents, the same fire-and-forget shape `AndroidAudioPlayer` already uses
- * to talk to `ReaderPlaybackService`. Nothing here holds playback state of
- * its own — [SpeechSession.state] is what the service publishes back into,
- * and every reader of it (the floating bar, whichever panel started the
- * read) already watches that directly.
+ * Forwards [SpeechSession.request] to [SpeechPlaybackService] purely through intents.
  */
 @Composable
 actual fun DriveSpeechSession() {
@@ -23,11 +18,8 @@ actual fun DriveSpeechSession() {
     LaunchedEffect(request) {
         val current = request
         if (current == null) {
-            // Also reached right after the service's own natural-completion
-            // or explicit-stop path clears the request — a stop sent to an
-            // already-stopped service is a harmless no-op, and the
-            // alternative (trying to tell the difference) is not worth the
-            // service having to report back which one it was.
+            // Also reached right after the service's own natural-completion or
+            // explicit-stop path clears the request.
             context.startService(Intent(context, SpeechPlaybackService::class.java).setAction(SpeechPlaybackService.ActionStop))
             return@LaunchedEffect
         }

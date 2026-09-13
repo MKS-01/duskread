@@ -1,8 +1,8 @@
 import ComposeApp
 import SwiftUI
 
-/// Section headers: a small uppercase label with the rule trailing off on the
-/// same line, never above or below it.
+/// Section headers: a small uppercase label with the rule trailing off on the same line,
+/// never above or below it.
 struct EyebrowHeader<Trailing: View>: View {
     let label: String
     var tint: Color?
@@ -19,8 +19,7 @@ struct EyebrowHeader<Trailing: View>: View {
                 .fill(dusk.outlineVariant)
                 .frame(height: Stroke.hairline)
                 .frame(maxWidth: .infinity)
-                // The rule yields first; the label and the actions keep their
-                // width.
+                // The rule yields first; the label and the actions keep their width.
                 .layoutPriority(-1)
             trailing()
         }
@@ -33,9 +32,7 @@ extension EyebrowHeader where Trailing == EmptyView {
     }
 }
 
-/// A sort or filter control. Uppercase mono, a hairline border at the chip
-/// radius, and **never** filled — selection is carried by border and text
-/// colour alone, which is the only thing that survives the Ink swap.
+/// A sort or filter control.
 struct Pill: View {
     let label: String
     var active: Bool
@@ -61,8 +58,8 @@ struct Pill: View {
     }
 }
 
-/// The one filled call-to-action. Corners at the inline radius, not a pill —
-/// a capsule button reads as Material, which is the thing this set avoids.
+/// The one filled call-to-action. Corners at the inline radius, not a pill — a capsule
+/// button reads as Material, which is the thing this set avoids.
 struct PrimaryButton: View {
     let label: String
     var enabled: Bool = true
@@ -86,8 +83,8 @@ struct PrimaryButton: View {
     }
 }
 
-/// The one text-field shape: hairline border at the inline radius, never a
-/// pill, placeholder drawn rather than borrowed from the system.
+/// The one text-field shape: hairline border at the inline radius, never a pill,
+/// placeholder drawn rather than borrowed from the system.
 struct AppTextField: View {
     let placeholder: String
     @Binding var text: String
@@ -114,8 +111,8 @@ struct AppTextField: View {
     }
 }
 
-/// A word-form action sitting on an eyebrow's rule. The label says what the
-/// next tap does, not what the current state is.
+/// A word-form action sitting on an eyebrow's rule. The label says what the next tap
+/// does, not what the current state is.
 struct HeaderAction: View {
     let label: String
     var onTap: () -> Void
@@ -127,8 +124,8 @@ struct HeaderAction: View {
             Text(label)
                 .dusk(.sectionLabel)
                 .foregroundStyle(dusk.onSurfaceVariant)
-                // Never wraps: these sit on an eyebrow's rule, and a two-line
-                // action pushes the whole header out of shape.
+                // Never wraps: these sit on an eyebrow's rule, and a two-line action
+                // pushes the whole header out of shape.
                 .lineLimit(1)
                 .fixedSize()
                 .contentShape(Rectangle())
@@ -138,9 +135,6 @@ struct HeaderAction: View {
 }
 
 /// The bordered square icon button.
-///
-/// A bare glyph with only padding reads noticeably smaller than everything
-/// bordered around it — that is the bug this shape fixes, not a preference.
 struct IconButton: View {
     let path: IconPath
     var onTap: () -> Void
@@ -163,11 +157,6 @@ struct IconButton: View {
 }
 
 /// A glyph that toggles something on a row.
-///
-/// The drawn icon stays at the size the design asks for while the tap area is
-/// padded out to something a thumb can actually hit — a bare 18pt glyph is
-/// well under what Apple asks for, and on a row it sits next to another tap
-/// target, so a near miss does the wrong thing rather than nothing.
 struct RowToggle: View {
     let path: IconPath
     let tint: Color

@@ -20,42 +20,24 @@ internal fun truncateWords(text: String, maxWords: Int): String {
 
 /**
  * How long a piece is, by the same reckoning [truncateWords] uses.
- *
- * Shared rather than counted again where it is needed, because two places now
- * ask: the budget that decides what to *send*, and `SummaryDepth`, which
- * decides how much to ask back. Two definitions of "a word" that drifted
- * apart would put an article on one side of a threshold and the other side of
- * the budget, which is the kind of disagreement nothing on screen would
- * explain.
  */
 internal fun wordCount(text: String): Int = text.split(Whitespace).count { it.isNotBlank() }
 
 /**
  * Reads back whatever the engine wrote, as prose.
- *
- * The engine returns a bulleted list, always — that is what it was built to
- * emit — so a list is the input here, not a failure. Markers, labels and the
- * article's own title come off, and the fragments are joined into a paragraph
- * with each closed so the seam does not show.
- *
- * Forgiving otherwise: stray emphasis, a lead-in above the answer, numbers
- * instead of dashes are all recoverable. An empty answer is not, and is the
- * only case this returns null for.
  */
 internal fun parseSummary(raw: String, url: String, title: String, model: String, now: Long): ArticleSummary? {
     val text = raw.replace("\r\n", "\n").split('\n')
-        // Order matters, and getting it wrong cost a bug: the answer arrives
-        // as `GIST: <title> — …`, so testing for the title while the label is
-        // still attached matches nothing and the title reaches the panel.
+        // Order matters, and getting it wrong cost a bug: the answer arrives as `GIST:
+        // <title> — …`.
         .map { it.trim().removeEmphasis().withoutBulletMarker().withoutLabel() }
-        // The title is already on screen above this, so restating it spends
-        // the first line on something the reader can see.
+        // The title is already on screen above this, so restating it spends the first
+        // line on something the reader can see.
         .filterNot { it.isTitle(title) }
         .map { it.withoutTitlePrefix(title) }
         // A lead-in ("Here is the summary:") is not part of the summary.
         .filterNot { it.isBlank() || it.endsWith(":") }
-        // Flattened into one paragraph, each fragment closed so the seam
-        // does not show.
+        // Flattened into one paragraph, each fragment closed so the seam does not show.
         .joinToString(" ") { it.closed() }
         .trim()
 
@@ -71,9 +53,8 @@ private fun String.closed(): String = if (isEmpty() || last() in SentenceEnd) th
 private fun String.withoutLabel(): String = replaceFirst(Label, "").trim()
 
 /**
- * Compared on letters and digits alone: a restated title is rarely
- * character-identical — title-cased, or missing the site name, or with a full
- * stop the original never had.
+ * Compared on letters and digits alone: a restated title is rarely character-identical —
+ * title-cased, or missing the site name, or with a full stop the original never had.
  */
 private fun String.isTitle(title: String): Boolean {
     val key = title.titleKey()
@@ -110,8 +91,8 @@ private fun String.withoutBulletMarker(): String = replaceFirst(BulletMarker, ""
 
 /** The panel draws plain text, so `**Netflix**` would arrive with its asterisks showing. */
 private fun String.removeEmphasis(): String = replace(Emphasis) { match ->
-    // Two alternatives, one of which is always empty — asterisks captured in
-    // the first group, underscores in the second.
+    // Two alternatives, one of which is always empty — asterisks captured in the first
+    // group, underscores in the second.
     match.groupValues[1].ifEmpty { match.groupValues[2] }
 }
 

@@ -69,17 +69,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
- * The blogs followed for [syncFeeds] to pull from: a digest, not a carousel —
- * one line per feed, "host — N new", rather than a nested strip of clipped
- * cards competing with the rest of Home for weight. Tapping a line is what
- * expands it into the actual posts, so the browsing feature underneath
- * (save a post straight from its feed without ever visiting Saved) survives
- * without costing the digest its quiet, three-lines-and-done shape.
- *
- * Nothing here is a saved link on its own. What [FeedPostCache] holds is a
- * cache of the last successful sync, replaced only when Sync runs again —
- * tapping a post's bookmark is the one thing that copies it into
- * [LinkLibrary], where the Saved tab and the rest of the app can see it.
+ * The blogs followed for [syncFeeds] to pull from: a digest, not a carousel — one line
+ * per feed, "host — N new".
  */
 @Composable
 fun FollowingDigest(
@@ -90,19 +81,14 @@ fun FollowingDigest(
     onOpenTopics: (Feed) -> Unit,
     modifier: Modifier = Modifier,
     /**
-     * Sizes the true empty state — no feeds followed at all — against the
-     * viewport below it, the same way Saved's own paste field does. Built by
-     * the caller because `fillParentMaxHeight` only resolves inside the
-     * `LazyItemScope` this composable is invoked from.
+     * Sizes the true empty state — no feeds followed at all — against the viewport below
+     * it, the same way Saved's own paste field does.
      */
     emptyStateModifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
-    // Open by default with nothing followed yet, the same reason Saved's own
-    // paste field is never hidden behind a toggle: a reader's first visit is
-    // exactly when the one thing to do here is add something, and gating that
-    // behind a small "Manage" label in the corner meant the empty state had
-    // no way to act on itself — a title and a sentence, nothing to tap.
+    // Open by default with nothing followed yet, the same reason Saved's own paste field
+    // is never hidden behind a toggle.
     var managing by remember { mutableStateOf(feedLibrary.feeds.isEmpty()) }
     var feedUrl by remember { mutableStateOf("") }
     var discovering by remember { mutableStateOf(false) }
@@ -111,14 +97,12 @@ fun FollowingDigest(
     var expanded by remember { mutableStateOf<String?>(null) }
     var searching by remember { mutableStateOf(false) }
     var query by remember { mutableStateOf("") }
-    // Most-new-first by default — the same bias NEXT UP ranks by, so the feed
-    // most worth a look leads the list rather than whichever was followed
-    // first.
+    // Most-new-first by default — the same bias NEXT UP ranks by, so the feed most worth
+    // a look leads the list rather than whichever was followed first.
     var sortNewest by remember { mutableStateOf(true) }
 
-    // Following a blog by its homepage rather than its exact feed address is
-    // the common case — this is what turns "swmansion.com/blog/" into the
-    // `/rss.xml` underneath it before it ever reaches [FeedLibrary].
+    // Following a blog by its homepage rather than its exact feed address is the common
+    // case.
     fun follow() {
         val typed = feedUrl
         if (discovering || !looksLikeUrl(typed)) return
@@ -152,11 +136,8 @@ fun FollowingDigest(
         }
     }
 
-    // Blank leaves every feed and every post exactly as they were; a query
-    // narrows both — a feed whose name matches keeps its usual posts, one
-    // that doesn't is kept only for the posts inside it that do, so a topic
-    // typed here can surface a single article from a blog followed for
-    // something else entirely.
+    // Blank leaves every feed and every post exactly as they were; a query narrows both —
+    // a feed whose name matches keeps its usual posts.
     val topics = feedLibrary.feeds.filter { feed ->
         val posts = postCache.postsByFeed[feed.id].orEmpty()
         if (posts.isEmpty()) return@filter false
@@ -249,19 +230,15 @@ fun FollowingDigest(
 
         topics.forEachIndexed { index, feed ->
             val all = postCache.postsByFeed[feed.id].orEmpty()
-            // A feed matched by its own name keeps its usual posts; one that
-            // only surfaced because a post inside it matched shows just that
-            // post, so a topic search doesn't dump an unrelated blog's whole
-            // archive onto the screen.
+            // A feed matched by its own name keeps its usual posts; one that only
+            // surfaced because a post inside it matched shows just that post.
             val posts = if (query.isBlank() || feed.matches(query)) all else all.filter { it.matches(query) }
             val isOpen = expanded == feed.id || query.isNotBlank()
             DigestLine(
                 feed = feed,
                 newCount = posts.count { !linkLibrary.isSaved(it.url) },
-                // The newest post's own title, not shown once the row is open
-                // and that same post is sitting right underneath it — the
-                // hint's whole job is answering "is this worth opening" before
-                // you do.
+                // The newest post's own title, not shown once the row is open and that
+                // same post is sitting right underneath it.
                 hint = if (isOpen) null else posts.firstOrNull()?.title,
                 open = isOpen,
                 onToggle = { expanded = if (expanded == feed.id) null else feed.id },
@@ -274,10 +251,8 @@ fun FollowingDigest(
                     onOpenAll = { onOpenTopics(feed) },
                 )
             }
-            // A hairline, not a gap — the same divider every other list in
-            // the app puts between its rows, so a page of feeds reads as a
-            // list rather than a stack of paragraphs with nothing between
-            // them.
+            // A hairline, not a gap — the same divider every other list in the app puts
+            // between its rows.
             if (index != topics.lastIndex) HairlineDivider()
         }
     }
@@ -292,18 +267,13 @@ private fun Feed.matches(query: String): Boolean = label.contains(query, ignoreC
 private fun FeedPost.matches(query: String): Boolean = title.contains(query, ignoreCase = true)
 
 /**
- * One line of the digest — "host — N new", the count in the accent when
- * there's something unsaved and a plain dash otherwise — plus a second,
- * quieter one: the newest post's own title, the fact that answers "is this
- * worth opening" before the tap that finds out. Tapping the row expands the
- * carousel below in place, rather than navigating anywhere — a digest line is
- * a summary of a thread, not a link to a different screen.
+ * One line of the digest — "host — N new", the count in the accent when there's something
+ * unsaved and a plain dash otherwise — plus a second, quieter one.
  */
 @Composable
 private fun DigestLine(feed: Feed, newCount: Int, hint: String?, open: Boolean, onToggle: () -> Unit) {
-    // A right chevron is "expand" everywhere else in the app (Chevron, on a
-    // row that opens something); rotating it to point down is what says
-    // "this one is already open" without a second glyph to learn.
+    // A right chevron is "expand" everywhere else in the app (Chevron, on a row that
+    // opens something).
     val rotation by animateFloatAsState(if (open) 90f else 0f, tween(Motion.Chip), label = "chevron")
 
     Column(
@@ -314,19 +284,8 @@ private fun DigestLine(feed: Feed, newCount: Int, hint: String?, open: Boolean, 
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                // The publisher's name when the Notion sync supplied one, the
-                // host when it did not — see Feed.label.
-                //
-                // Jost, not Inconsolata — the tokens doc is explicit that mono
-                // is for a value, not a name: "if a label names a section
-                // rather than reporting a value, it is not mono." A feed's
-                // name is a name, the same as every post title underneath it
-                // once this opens, so it needs the same family [TopicRow]
-                // draws those in (`bodyLarge`) — but SemiBold (`titleSmall`)
-                // next to Regular read as shouting rather than a header,
-                // since the row above it is smaller than what it introduces.
-                // Medium is the one step this set actually has between the
-                // two.
+                // The publisher's name when the Notion sync supplied one, the host when
+                // it did not — see Feed.label.
                 text = feed.label,
                 style = MaterialTheme.typography.bodyLarge,
                 fontSize = 14.sp,
@@ -354,9 +313,8 @@ private fun DigestLine(feed: Feed, newCount: Int, hint: String?, open: Boolean, 
         hint?.let {
             Spacer(Modifier.height(4.dp))
             Text(
-                // Same family as the title above it, one notch down in size
-                // and colour — a hint, not a second heading. Mono would read
-                // it as a fact rather than a name, and a headline is a name.
+                // Same family as the title above it, one notch down in size and colour —
+                // a hint, not a second heading.
                 text = it,
                 style = MaterialTheme.typography.bodyLarge,
                 fontSize = 12.5.sp,
@@ -369,19 +327,8 @@ private fun DigestLine(feed: Feed, newCount: Int, hint: String?, open: Boolean, 
 }
 
 /**
- * The posts behind one digest line, revealed on tap: the newest few as flat
- * rows, then the way through to all of them.
- *
- * This used to be a horizontal strip of boxed cards, which was the last
- * boxed surface left on Home and the reason the strip existed at all — a row
- * of cards has to agree on a width, so it could only ever show two at a time
- * and clip the third. Rows have no such constraint. They are also the same
- * rows [TopicsScreen] is built from, so opening a feed in full is a change
- * of length rather than a change of language.
- *
- * Three, not all of them: this is still a section inside a dashboard, and a
- * digest line that expanded into fifteen rows would push everything under it
- * off the screen. The rest are one tap further on.
+ * The posts behind one digest line, revealed on tap: the newest few as flat rows, then
+ * the way through to all of them.
  */
 @Composable
 private fun TopicPreview(feed: Feed, posts: List<FeedPost>, linkLibrary: LinkLibrary, onOpenAll: () -> Unit) {
@@ -390,8 +337,8 @@ private fun TopicPreview(feed: Feed, posts: List<FeedPost>, linkLibrary: LinkLib
             TopicRow(
                 post = post,
                 host = feed.host,
-                // Never the last thing in the column — the all-posts row
-                // always follows, so every preview row keeps its hairline.
+                // Never the last thing in the column — the all-posts row always follows,
+                // so every preview row keeps its hairline.
                 last = false,
                 linkLibrary = linkLibrary,
                 topic = feed.topic,
@@ -403,9 +350,7 @@ private fun TopicPreview(feed: Feed, posts: List<FeedPost>, linkLibrary: LinkLib
 }
 
 /**
- * The door to [TopicsScreen], as a row rather than a card at the end of a
- * strip: a reader who wants more than the preview holds should not have to
- * scroll a carousel to its end to find out that more exists.
+ * The door to [TopicsScreen], as a row rather than a card at the end of a strip.
  */
 @Composable
 private fun AllPostsRow(count: Int, onClick: () -> Unit) {
@@ -470,9 +415,8 @@ private fun FeedManagePanel(
         )
 
         if (feeds.isEmpty()) {
-            // Sits low in the remaining viewport, the same treatment Saved
-            // gives its own first-run state — a single grey line under the
-            // field was the whole rest of the screen left plain.
+            // Sits low in the remaining viewport, the same treatment Saved gives its own
+            // first-run state.
             Box(Modifier.fillMaxWidth().then(emptyStateModifier), contentAlignment = Alignment.BottomStart) {
                 EmptyState(
                     title = "Nothing followed yet",
@@ -481,10 +425,8 @@ private fun FeedManagePanel(
                 )
             }
         } else {
-            // Flush on the background with a hairline between rows, like
-            // every other list in the app. This was the last filled container
-            // in the Following section, and a panel of rows behind a "Manage"
-            // toggle is no more a card than the rows it was holding.
+            // Flush on the background with a hairline between rows, like every other list
+            // in the app.
             Column(Modifier.fillMaxWidth().padding(top = 10.dp)) {
                 feeds.forEachIndexed { index, feed ->
                     Row(
@@ -492,11 +434,7 @@ private fun FeedManagePanel(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
-                            // The full path, not just the host — a feed
-                            // followed by its blog's homepage instead of its
-                            // actual RSS/Atom endpoint fetches real HTML with
-                            // nothing to parse, and looks identical to a
-                            // working feed if only the host is shown here.
+                            // The full path, not just the host.
                             text = feed.url.removePrefix("https://").removePrefix("http://"),
                             fontFamily = Mono,
                             fontSize = 11.sp,

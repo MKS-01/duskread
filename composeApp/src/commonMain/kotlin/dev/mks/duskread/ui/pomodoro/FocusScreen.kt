@@ -54,15 +54,8 @@ import dev.mks.duskread.ui.theme.Radius
 import dev.mks.duskread.ui.theme.Stroke
 
 /**
- * The big-timer mode: a session used as its own destination rather than a
- * corner chip, for whenever the point is to actually stare at the clock. The
- * chip and this screen read the same [dev.mks.duskread.pomodoro.PomodoroController],
- * so closing this never stops a running session — it only stops looking at it.
- *
- * Bottom-anchored rather than centred: the close button aside, everything a
- * thumb can reach lives in the lower third, same as the floating bar it sits
- * above. Centring the clock looked considered on a design file and useless on
- * a phone held one-handed.
+ * The big-timer mode: a session used as its own destination rather than a corner chip,
+ * for whenever the point is to actually stare at the clock.
  */
 @Composable
 fun FocusScreen(onClose: () -> Unit, modifier: Modifier = Modifier) {
@@ -125,9 +118,8 @@ fun FocusScreen(onClose: () -> Unit, modifier: Modifier = Modifier) {
 
                 if (!state.idle) {
                     Spacer(Modifier.height(20.dp))
-                    // Elapsed is filled, remaining is not — the same construction
-                    // as the readback progress, so one visual language covers
-                    // audio and time alike.
+                    // Elapsed is filled, remaining is not — the same construction as the
+                    // readback progress.
                     WaveformMeter(
                         progress = state.elapsedFraction,
                         modifier = Modifier.height(26.dp),
@@ -174,10 +166,8 @@ fun FocusScreen(onClose: () -> Unit, modifier: Modifier = Modifier) {
 }
 
 /**
- * What "Custom" on the length picker opens into: a bare minute count rather
- * than a full duration picker, since every other length in this app is
- * already just a number of minutes. Digits only, capped at 3 characters —
- * plenty for anything a focus session would reasonably run to.
+ * What "Custom" on the length picker opens into: a bare minute count rather than a full
+ * duration picker.
  */
 @Composable
 private fun CustomLengthEntry(onStart: (Int) -> Unit, onCancel: () -> Unit) {
@@ -212,10 +202,8 @@ private val PomodoroState.elapsedFraction: Float
     }
 
 /**
- * A bordered pill, never filled — the same `.pill`/`.pill.sel` shape as the
- * sort chips on Readback and the length picker above this one. The "active"
- * option (Pause while running, one of the length choices once tapped) gets
- * the brighter border and text; nothing here is a filled button.
+ * A bordered pill, never filled — the same `.pill`/`.pill.sel` shape as the sort chips on
+ * Readback and the length picker above this one.
  */
 @Composable
 private fun FocusOption(text: String, onClick: () -> Unit, primary: Boolean = false) {

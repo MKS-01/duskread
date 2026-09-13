@@ -4,18 +4,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
 /**
- * Lets something outside Compose ask for the full-screen Focus view.
- *
- * The same handoff shape as `HomeTabRequest` and `SharedLinkRequest`, and for
- * the same reason. Focus mode is a plain `remember`ed flag in `App.kt` with no
- * way in from outside, which was fine while the only way to reach it was
- * tapping Home. The home-screen widget adds a second door: tapping a session
- * already counting down should land on the timer, not on whichever tab the app
- * last showed.
- *
- * Deliberately not a tab. Focus is an overlay over Home rather than a
- * destination beside it, so it cannot be expressed as a `HomeTabRequest` and
- * needs its own one-bit channel.
+ * Lets something outside Compose ask for the full-screen Focus view. The same handoff
+ * shape as `HomeTabRequest` and `SharedLinkRequest`, and for the same reason.
  */
 object FocusRequest {
     private val _open = MutableStateFlow(false)

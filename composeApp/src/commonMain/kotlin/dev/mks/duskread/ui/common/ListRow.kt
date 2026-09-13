@@ -26,30 +26,12 @@ import dev.mks.duskread.ui.theme.Mono
 
 /**
  * How much of the screen's one accent a row is allowed to take.
- *
- * The Amplitude direction lets exactly one row on a screen be coloured — the
- * playing read — and lets a finished row recede instead of being struck
- * through. Everything else is [Normal]. Kept as three named states rather
- * than a pair of booleans because they are mutually exclusive: a row cannot
- * be both the one that is playing and one that is done with.
  */
 enum class RowTone { Normal, Accent, Faded }
 
 /**
- * The list row every screen in this app is built from: sourcechip, title, a
- * mono meta line, an optional trailing glyph, and its own bottom hairline.
- *
- * Saved, Readback and a followed blog's topics had each grown their own copy
- * of this — same 22dp chip, same 14/19 title, same 10.5sp mono meta, same
- * 15dp-hairline-15dp divider, written out three times. The differences
- * between them are real and stay real: how many facts the meta line carries,
- * what sits at the right end, whether the row is playing or read, and (for
- * Readback) a waveform under it. The *skeleton* was never a difference, and
- * three copies of a number is three chances for one of them to move.
- *
- * Sizes live here now. A screen that wants a different row does not adjust
- * one of these numbers locally — that is how the three copies drifted apart
- * in the first place.
+ * The list row every screen in this app is built from: sourcechip, title, a mono meta
+ * line, an optional trailing glyph, and its own bottom hairline.
  */
 @Composable
 fun ListRow(
@@ -80,10 +62,8 @@ fun ListRow(
 }
 
 /**
- * The row without its divider, for the one caller that cannot use [ListRow]
- * whole: Saved wraps its rows in a swipe-to-remove box, and the hairline has
- * to stay put while the row slides out from over it — a divider travelling
- * with the row would look like part of the thing being removed.
+ * The row without its divider, for the one caller that cannot use [ListRow] whole: Saved
+ * wraps its rows in a swipe-to-remove box.
  */
 @Composable
 fun ListRowBody(
@@ -103,9 +83,7 @@ fun ListRowBody(
     Column(
         modifier
             .fillMaxWidth()
-            // Recession, not a strikethrough: a done row is the same row with
-            // less of it, which is why this is one alpha over the whole thing
-            // rather than a second set of colours.
+            // Recession, not a strikethrough: a done row is the same row with less of it.
             .alpha(if (tone == RowTone.Faded) 0.5f else 1f)
             .clickable(onClick = onClick),
     ) {
@@ -143,14 +121,8 @@ fun ListRowBody(
 }
 
 /**
- * The gap and hairline that separate one row from the next, and only the gap
- * when there is no next. Separate from [ListRowBody] so the two can be put
- * back together around something — see that function for the case.
- *
- * [topSpacing] is the one metric a caller may lower, and only to hold the
- * *optical* gap steady: a row that ends in a tappable control ends in that
- * control's own padding, so it needs less space of its own to sit the same
- * distance off the hairline.
+ * The gap and hairline that separate one row from the next, and only the gap when there
+ * is no next.
  */
 @Composable
 fun ListRowDivider(last: Boolean, topSpacing: Dp = 15.dp) {
@@ -162,9 +134,8 @@ fun ListRowDivider(last: Boolean, topSpacing: Dp = 15.dp) {
 }
 
 /**
- * The 1dp hairline itself, with no baked-in spacing — callers that already
- * own their own gaps (a row with vertical padding, say) want just the line,
- * not [ListRowDivider]'s spacer pair on top of it.
+ * The 1dp hairline itself, with no baked-in spacing — callers that already own their own
+ * gaps (a row with vertical padding, say) want just the line.
  */
 @Composable
 fun HairlineDivider(modifier: Modifier = Modifier) {
@@ -172,13 +143,8 @@ fun HairlineDivider(modifier: Modifier = Modifier) {
 }
 
 /**
- * One fact on a row's meta line — a host, a duration, a word count, a
- * time-ago. Mono, because everything in this app that is data rather than
- * prose is.
- *
- * [accent] is for the single fact that follows a playing row's title into the
- * accent; the rest of the line stays muted even then, which is what keeps the
- * colour meaning "this one is playing" rather than decorating the row.
+ * One fact on a row's meta line — a host, a duration, a word count, a time-ago. Mono,
+ * because everything in this app that is data rather than prose is.
  */
 @Composable
 fun RowMeta(text: String, accent: Boolean = false, modifier: Modifier = Modifier) {

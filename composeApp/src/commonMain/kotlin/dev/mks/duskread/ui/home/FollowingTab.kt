@@ -21,16 +21,7 @@ import io.ktor.client.HttpClient
 import kotlinx.coroutines.launch
 
 /**
- * The followed blogs, on their own screen rather than a digest at the foot of
- * Home.
- *
- * [FollowingDigest] used to be the last section of the dashboard's own
- * `LazyColumn`, which meant a reader with more than a handful of feeds never
- * got a scroll of its own — the digest was one item among four, and grew or
- * shrank with however much of it Home was willing to give up. This tab is
- * that same digest with a `LazyColumn` and pull-to-refresh of its own, sized
- * to however many feeds are actually followed rather than to what fits under
- * NEXT UP and the two other sections above it.
+ * The followed blogs, on their own screen rather than a digest at the foot of Home.
  */
 @Composable
 fun FollowingTab(
@@ -66,12 +57,8 @@ fun FollowingTab(
                     client = client,
                     onOpenTopics = onOpenTopics,
                     modifier = Modifier.fillMaxWidth(),
-                    // Only resolvable here: `fillParentMaxHeight` is a member
-                    // of `LazyItemScope`, which only this lambda has. Reserved
-                    // only for the true zero state — a reader who has feeds
-                    // but is mid-search or has the manage panel open for some
-                    // other reason should never have the list shoved down by
-                    // space held for an empty state that isn't showing.
+                    // Only resolvable here: `fillParentMaxHeight` is a member of
+                    // `LazyItemScope`, which only this lambda has.
                     emptyStateModifier = if (feeds.feeds.isEmpty()) Modifier.fillParentMaxHeight(0.65f) else Modifier,
                 )
             }

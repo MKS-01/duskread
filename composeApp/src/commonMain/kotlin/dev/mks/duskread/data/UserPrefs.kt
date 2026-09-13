@@ -9,18 +9,12 @@ import dev.mks.duskread.summary.SwipeDefault
 import kotlinx.coroutines.flow.StateFlow
 
 /**
- * The first state in this app that is genuinely mutable and outlives a
- * composition, so it is also the first that needs an owner.
- *
- * It is a plain class rather than a ViewModel: there is no async work, no
- * lifecycle to survive beyond the process, and nothing to inject. Reads come
- * from an in-memory snapshot taken at construction; writes go straight through
- * to the store, so nothing can be lost by a process dying between the two.
+ * The first state in this app that is genuinely mutable and outlives a composition, so it
+ * is also the first that needs an owner.
  */
 class UserPrefs(private val store: KeyValueStore) {
-    // Snapshot state and a StateFlow in one, so Compose and the iOS bridge read
-    // the same value. Declared up here because a delegate has to exist before
-    // the property delegating to it.
+    // Snapshot state and a StateFlow in one, so Compose and the iOS bridge read the same
+    // value.
     private val observedName = Observed(store.getString(KeyName)?.takeIf { it.isNotBlank() })
     private val observedIntroSeen = Observed(store.getBoolean(KeyIntroSeen))
     private val observedMono = Observed(store.getBoolean(KeyMono, fallback = DefaultMono))
@@ -45,9 +39,7 @@ class UserPrefs(private val store: KeyValueStore) {
     val introSeenUpdates: StateFlow<Boolean> get() = observedIntroSeen.updates
 
     /**
-     * The monochrome ("Ink") scheme, kept across restarts until changed by
-     * hand. Ink by default — the app opens colourless and a reader opts into
-     * an accent, not the other way round.
+     * The monochrome ("Ink") scheme, kept across restarts until changed by hand.
      */
     var mono: Boolean by observedMono
         private set
@@ -56,20 +48,8 @@ class UserPrefs(private val store: KeyValueStore) {
     val monoUpdates: StateFlow<Boolean> get() = observedMono.updates
 
     /**
-     * Whether the Readback tab is shown at all.
-     *
-     * Off by default, and there is no visible switch for it. The tab browses a
-     * `library.db` that the separate readback project generates on a laptop
-     * and a hand-rolled sync step copies onto the device — machinery nobody
-     * who installs this from a store has, so for them the tab is a quarter of
-     * the navigation that can only ever be empty.
-     *
-     * Hidden rather than deleted: this repo is the open half of a two-project
-     * setup, and removing the reader would strand the other half. The way in
-     * is three taps on the version line in Settings, which is a developer
-     * gesture on purpose — anyone who has the sync script also knows where the
-     * gesture is documented, and anyone who does not is never shown a switch
-     * they have no way to use.
+     * Whether the Readback tab is shown at all. Off by default, and there is no visible
+     * switch for it.
      */
     var readbackEnabled: Boolean by observedReadbackEnabled
         private set
@@ -99,10 +79,7 @@ class UserPrefs(private val store: KeyValueStore) {
         readbackEnabled = !readbackEnabled
         store.putBoolean(KeyReadback, readbackEnabled)
 
-        // Switching the tab off takes its voice with it. Left alone, a reader
-        // who had chosen the readback library would be pointed at a source
-        // they can no longer see, reach or change — the Voice list stops
-        // offering the row that would let them pick something else.
+        // Switching the tab off takes its voice with it.
         if (!readbackEnabled && voice == VoiceChoice.ReadbackLibrary) updateVoice(VoiceChoice.System)
 
         return readbackEnabled
@@ -110,13 +87,6 @@ class UserPrefs(private val store: KeyValueStore) {
 
     /**
      * Which voice reads an article aloud.
-     *
-     * Stored by name rather than ordinal: a voice added to the middle of the
-     * enum one day must not silently repoint an existing reader at a
-     * different one. Every enum-valued preference here is stored that way.
-     *
-     * An unknown name falls back to [VoiceChoice.System], which is also the
-     * only voice guaranteed to exist on every phone.
      */
     var voice: VoiceChoice by observedVoice
         private set
@@ -130,11 +100,8 @@ class UserPrefs(private val store: KeyValueStore) {
     }
 
     /**
-     * Whether the left swipe opens the panel already speaking, or waits for
-     * the play button. `Summary`, not `ReadAloud`, by default — the panel is
-     * a summary that also plays, not the other way round, and a swipe that
-     * starts talking before anyone asked for it is the more surprising of
-     * the two ways to get this wrong.
+     * Whether the left swipe opens the panel already speaking, or waits for the play
+     * button.
      */
     var swipeDefault: SwipeDefault by observedSwipeDefault
         private set
@@ -148,19 +115,7 @@ class UserPrefs(private val store: KeyValueStore) {
     }
 
     /**
-     * Every preference back to the day the app was installed, for the reset in
-     * Settings.
-     *
-     * It used to clear the name and the intro flag alone, which was right when
-     * those were all there was and quietly wrong ever since: a reader who
-     * erased everything kept their theme, summary length, voice and swipe
-     * default, and — worse — kept the Readback tab switched on, a developer
-     * gesture surviving the one action whose whole promise is that nothing
-     * does.
-     *
-     * [readbackEnabled] is the reason this writes `false` rather than removing
-     * the key: `getBoolean` has no third answer, so absent and off are the
-     * same state, and being explicit costs nothing.
+     * Every preference back to the day the app was installed, for the reset in Settings.
      */
     fun reset() {
         updateName(null)

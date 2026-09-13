@@ -22,30 +22,13 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 
 /**
- * Runs a read's synthesis in a foreground service with a real notification,
- * for the same reason `ReaderPlaybackService` does: TextToSpeech driven from
- * a Composable's `LaunchedEffect` stops the moment Android decides the app is
- * in the background, silently and without appeal — background execution
- * limits do not make an exception for "but a person is listening to this".
- * A foreground service is the one thing Android trusts to keep going, and it
- * comes with the obligation this pays: a notification saying so, with a way
- * to stop it, for exactly as long as it runs.
- *
- * No play/pause toggle, unlike Readback's own notification — see
- * [SystemSpeaker.pause]'s own note. The platform engine this runs on has no
- * true pause, only stop-and-restart-from-the-beginning, and a button that
- * promised to resume and instead started over would be worse than not
- * offering the button.
+ * Runs a read's synthesis in a foreground service with a real notification, for the same
+ * reason `ReaderPlaybackService` does.
  */
 class SpeechPlaybackService : Service() {
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
-    // Built once, in [onCreate] rather than lazily on the first ActionPlay,
-    // so `TextToSpeech`'s async `onInit` has a head start on the network of
-    // intents (app → this service) that a tap on "Read this aloud" already
-    // takes a moment to arrive through. Kept across reads within the same
-    // service instance rather than rebuilt per read, which is what lets a
-    // second read start speaking immediately instead of re-racing `onInit`.
+    // Built once, in [onCreate] rather than lazily on the first ActionPlay.
     private var speaker: SystemSpeaker? = null
     private var job: Job? = null
 
@@ -86,10 +69,7 @@ class SpeechPlaybackService : Service() {
         speaker?.stop()
         title = requestedTitle
 
-        // Same claim-first-swap-later shape `ReaderPlaybackService` uses: a
-        // placeholder notification lands immediately so Android 12+'s
-        // few-second window on `startForegroundService()` never lapses,
-        // regardless of how long synthesis takes to actually begin.
+        // Same claim-first-swap-later shape `ReaderPlaybackService` uses.
         startForeground(NotificationId, buildNotification())
         publish(SpeechNowPlaying(key, requestedTitle, fraction = 0f, playing = true))
 
@@ -101,25 +81,14 @@ class SpeechPlaybackService : Service() {
                 }
             }
 
-            // A read that cannot happen has to say so. Everything the speaker
-            // refuses — no engine, no voice installed, an engine that never
-            // came up — used to end here as a swallowed exception, and all
-            // the reader saw was the transport appearing and vanishing again.
-            // A cancellation is not a failure: it is this read being
-            // superseded by a newer one, which needs no announcement.
+            // A read that cannot happen has to say so.
             outcome.exceptionOrNull()?.let { failure ->
                 if (failure !is CancellationException) {
                     ToastRequest.show(failure.message ?: "Couldn't read this aloud.")
                 }
             }
-            // Reached on natural completion, on failure, and when [job] is
-            // cancelled by a newer `start()` superseding this one — in the
-            // last case `SpeechSession` has already moved on to the new
-            // read by the time this runs, and `stopAndRelease` clearing it
-            // out from under that would be exactly the bug the same-request
-            // guard in `SummaryPanel`'s own effect exists to avoid. Stopping
-            // is only correct when this is still the read `SpeechSession`
-            // thinks is playing.
+            // Reached on natural completion, on failure, and when [job] is cancelled by a
+            // newer `start()` superseding this one.
             if (SpeechSession.state.value?.key == key) stopAndRelease()
         }
     }
@@ -174,10 +143,6 @@ class SpeechPlaybackService : Service() {
 
     /**
      * Tapping the notification body reopens the app wherever it already was.
-     * Unlike Readback's own notification there is no one right tab to
-     * return to — a read can start from Saved, Following or the reader
-     * itself — so this is a plain relaunch rather than one carrying a
-     * "which tab" extra.
      */
     private fun contentIntent(): PendingIntent? {
         val launchIntent = packageManager.getLaunchIntentForPackage(packageName)

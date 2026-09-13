@@ -78,24 +78,6 @@ import dev.mks.duskread.ui.theme.SectionLabel
 
 /**
  * Saved links: the blogs and articles worth reading, one URL at a time.
- *
- * Readback is a synced library of audio someone else prepared; a link here is
- * whatever the reader found themselves, still as text. This is where those
- * go, and it is the only screen in the app whose contents the reader writes.
- *
- * Told apart from Readback's rows by what they leave out rather than a
- * different shape: unread and read share the same flat row, recession alone
- * — reduced opacity and a trailing tick — marks one as done.
- *
- * A link is saved immediately with a title guessed from its URL, and the page
- * is fetched afterwards to replace that guess. The alternative — blocking the
- * save on a network round trip — means a share from the browser can fail
- * because a tunnel ate the request, which is exactly when you are saving
- * things to read later.
- *
- * Fetching lives here rather than beside the library so it only runs while
- * this screen is open. Anything still unfetched is retried the next time you
- * visit, which doubles as the retry path for links saved offline.
  */
 @Composable
 fun LinksTab(
@@ -110,30 +92,22 @@ fun LinksTab(
     val pending = library.links.filterNot { it.fetched }
     LaunchedEffect(pending.map { it.id }) {
         pending.forEach { link ->
-            // One at a time on purpose: this is a handful of links, and a
-            // sequential walk keeps the list settling top-down rather than
-            // rearranging itself in bursts.
+            // One at a time on purpose: this is a handful of links, and a sequential walk
+            // keeps the list settling top-down rather than rearranging itself in bursts.
             val meta = runCatching { fetchLinkMetadata(client, link.url) }.getOrNull()
             if (meta == null) library.markFetchFailed(link.id) else library.describe(link.id, meta.title, meta.description)
         }
     }
 
-    // The spinner tracks the real fetch loop above rather than a fixed
-    // delay — refreshAll() only flips `fetched` back to false, so "done" is
-    // whenever `pending` drains again, the same signal that loop already runs on.
+    // The spinner tracks the real fetch loop above rather than a fixed delay —
+    // refreshAll() only flips `fetched` back to false.
     var refreshing by remember { mutableStateOf(false) }
     LaunchedEffect(pending.isEmpty()) {
         if (pending.isEmpty()) refreshing = false
     }
 
-    // Three controls, all folded away until asked for: a filter, a search
-    // field and the paste box itself. Saved is a list you come back to, and
-    // by the time it is worth searching it is long enough that a permanently
-    // parked paste field is the least useful thing on the screen — sharing
-    // from the browser is how most links actually arrive. Open with it
-    // showing while there is nothing saved, for the same reason Following
-    // opens on Manage: a first visit is exactly when adding is the only
-    // thing to do here.
+    // Three controls, all folded away until asked for: a filter, a search field and the
+    // paste box itself.
     var adding by remember { mutableStateOf(library.links.isEmpty()) }
     var searching by remember { mutableStateOf(false) }
     var query by remember { mutableStateOf("") }
@@ -141,9 +115,8 @@ fun LinksTab(
 
     val matching = library.links.filter { it.matches(query) }
     val (read, unread) = matching.partition { it.read }
-    // The filter picks which of the two sections exist at all rather than
-    // reordering anything: UNREAD and READ are already the shape of this
-    // screen, so "Unread" is that heading on its own, not a third layout.
+    // The filter picks which of the two sections exist at all rather than reordering
+    // anything: UNREAD and READ are already the shape of this screen.
     val showUnread = filter != LinkFilter.READ && unread.isNotEmpty()
     val showRead = filter != LinkFilter.UNREAD && read.isNotEmpty()
 
@@ -208,9 +181,8 @@ fun LinksTab(
 
             if (library.links.isEmpty()) {
                 item("empty") {
-                    // Fills the rest of the viewport below the paste field so the
-                    // empty state sits low on the screen rather than pinned under
-                    // it the way a plain list item would.
+                    // Fills the rest of the viewport below the paste field so the empty
+                    // state sits low on the screen rather than pinned under it the way a.
                     Box(Modifier.fillMaxWidth().fillParentMaxHeight(0.65f), contentAlignment = Alignment.BottomStart) {
                         EmptyState(
                             title = "Nothing saved yet",
@@ -220,10 +192,8 @@ fun LinksTab(
                     }
                 }
             } else if (!showUnread && !showRead) {
-                // Narrowed to nothing — which is a fact about the query or the
-                // filter, not about the library, so it says which one and stays
-                // compact rather than taking over a screen that still has
-                // content one tap away.
+                // Narrowed to nothing — which is a fact about the query or the filter,
+                // not about the library.
                 item("no-matches") {
                     CompactEmptyState(
                         title = if (query.isNotBlank()) "Nothing matches “$query”" else "Nothing ${filter.label.lowercase()} here",
@@ -264,10 +234,7 @@ fun LinksTab(
                 }
             }
 
-            // Read links stay, under their own heading. They are the record: what
-            // was read and when, which is the question a reading list gets asked
-            // long after the reading is done. Sorted by when they were read rather
-            // than saved, so the section reads as a history.
+            // Read links stay, under their own heading.
             if (showRead) {
                 item("read-head") {
                     EyebrowHeader(
@@ -299,10 +266,7 @@ fun LinksTab(
 }
 
 /**
- * What the pills above the list choose between. Read links are kept forever
- * and eventually outnumber the unread ones, which is the whole reason this
- * exists: "Unread" is the reading queue, "Read" is the record, "All" is the
- * screen as it always was.
+ * What the pills above the list choose between.
  */
 private enum class LinkFilter(val label: String) {
     ALL("All"),
@@ -311,10 +275,7 @@ private enum class LinkFilter(val label: String) {
 }
 
 /**
- * What the search field looks at: the three facts a row actually shows. The
- * URL is deliberately not searched — a query typed here is remembered words,
- * and matching a slug inside an address surfaces rows whose visible text has
- * nothing to do with what was typed.
+ * What the search field looks at: the three facts a row actually shows.
  */
 private fun SavedLink.matches(query: String): Boolean = query.isBlank() ||
     title.contains(query, ignoreCase = true) ||
@@ -322,12 +283,8 @@ private fun SavedLink.matches(query: String): Boolean = query.isBlank() ||
     topic?.contains(query, ignoreCase = true) == true
 
 /**
- * The paste field: a flat, full-width pill rather than a bordered text field
- * with its own chrome — the same shape as a `.pill` control everywhere else
- * in the app, just wide. It offers the clipboard rather than reading it
- * silently — a screen that quietly knows what you copied elsewhere is
- * unsettling, and one tap is a small price for the reader staying in charge
- * of that.
+ * The paste field: a flat, full-width pill rather than a bordered text field with its own
+ * chrome — the same shape as a `.pill` control everywhere else in the app, just wide.
  */
 @Composable
 private fun AddLinkField(onSave: (String) -> Boolean, modifier: Modifier = Modifier) {
@@ -407,12 +364,7 @@ private fun AddLinkField(onSave: (String) -> Boolean, modifier: Modifier = Modif
 }
 
 /**
- * One saved link: a monogram, title, host and a relative timestamp — nothing
- * more. A read row is the exact same shape at half opacity with a trailing
- * tick, never a strikethrough or a second layout; recession alone is what
- * tells them apart. Removal is a swipe, not a button — no tap target on this
- * row destroys anything, and a swipe carries its own undo (let go halfway and
- * nothing happens) which no icon can offer.
+ * One saved link: a monogram, title, host and a relative timestamp — nothing more.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -428,44 +380,29 @@ private fun LinkRow(
     val swipeDefault = rememberUserPrefs().swipeDefault
 
     // The two directions swapped when the summary panel learned to read aloud.
-    // Listening is the thing a saved row is reached for most, and it had ended
-    // up as the deep half of a metered pull; it gets the leftward swipe, which
-    // is the easier one for a right thumb, and Remove takes the other side.
-    //
-    // Nothing about removal got easier or harder in the move: it is the same
-    // single-threshold pull with the same worded warning, in the other
-    // direction.
     val dismiss = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->
             when (value) {
-                // Same commitment as removal, nothing destroyed. The panel
-                // does its own fetching, so this hands over the little the row
-                // knows and lets it spring back.
+                // Same commitment as removal, nothing destroyed.
                 SwipeToDismissBoxValue.EndToStart ->
                     SummaryRequest.open(SummaryTarget(link.url, link.title))
 
                 SwipeToDismissBoxValue.StartToEnd -> onRemove()
                 SwipeToDismissBoxValue.Settled -> Unit
             }
-            // Never let the box settle into a dismissed state of its own: the
-            // row is gone from the list the moment onRemove lands, and a box
-            // holding a "dismissed" position would flash the background of a
-            // row that no longer exists.
+            // Never let the box settle into a dismissed state of its own: the row is gone
+            // from the list the moment onRemove lands.
             false
         },
     )
 
     Column(Modifier.fillMaxWidth()) {
-        // The body and the divider are placed separately, rather than using
-        // `ListRow` whole, so the hairline stays put while the row slides out
-        // from over it — see `ListRowBody`.
+        // The body and the divider are placed separately, rather than using `ListRow`
+        // whole, so the hairline stays put while the row slides out from over it.
         SwipeToDismissBox(
             state = dismiss,
-            // Only where there is something to run: a gesture whose whole
-            // outcome is a panel explaining that it cannot work is worse than
-            // no gesture at all. Either half is enough — a phone with a voice
-            // and no on-device model still has a use for this panel, which is
-            // then a player with an explanation where the summary would be.
+            // Only where there is something to run: a gesture whose whole outcome is a
+            // panel explaining that it cannot work is worse than no gesture at all.
             enableDismissFromEndToStart = summariesSupported() || speechSupported(),
             backgroundContent = {
                 if (dismiss.dismissDirection == SwipeToDismissBoxValue.EndToStart) {
@@ -479,16 +416,13 @@ private fun LinkRow(
                 host = link.host,
                 title = link.title,
                 onClick = onOpen,
-                // The box slides the row over its own background, so the row
-                // needs one of its own — without it the remove background
-                // shows through the gaps between the words.
+                // The box slides the row over its own background, so the row needs one of
+                // its own.
                 modifier = Modifier.background(scheme.background),
                 tone = if (link.read) RowTone.Faded else RowTone.Normal,
                 trailing = {
-                    // Only a read row carries the tick — matching the unread
-                    // row above it exactly, sourcechip and two facts, nothing
-                    // more. Still tappable, so marking something read is
-                    // reversible without having to reopen it.
+                    // Only a read row carries the tick — matching the unread row above it
+                    // exactly, sourcechip and two facts, nothing more.
                     if (link.read) {
                         Icon(
                             imageVector = DuskReadIcons.Check,
@@ -500,9 +434,7 @@ private fun LinkRow(
                             tint = scheme.onSurfaceVariant,
                         )
                     } else if (link.fetchFailed) {
-                        // A retry that reaches in and refetches this one link,
-                        // rather than making a couldn't-load row wait for a
-                        // pull-to-refresh over the whole list to try again.
+                        // A retry that reaches in and refetches this one link.
                         Icon(
                             imageVector = DuskReadIcons.Offline,
                             contentDescription = "Couldn't load — retry",
@@ -524,9 +456,8 @@ private fun LinkRow(
                     },
                 )
 
-                // The subject, when something knew it — Notion filed it, or the
-                // feed it came from carries one. A fact on the line, the same
-                // as it is on Home; assigning one is Notion's job.
+                // The subject, when something knew it — Notion filed it, or the feed it
+                // came from carries one.
                 link.topic?.let { RowMeta(it) }
             }
         }
@@ -544,9 +475,7 @@ private fun RemoveBackground(progress: Float) {
             .height(52.dp)
             .background(MaterialTheme.colorScheme.primaryContainer)
             .padding(horizontal = 16.dp),
-        // Start-aligned: this is the rightward pull now, so the background is
-        // uncovered from the left edge and a label at the far right would stay
-        // hidden under the row for most of the gesture.
+        // Start-aligned: this is the rightward pull now.
         horizontalArrangement = Arrangement.Start,
         verticalAlignment = Alignment.CenterVertically,
     ) {

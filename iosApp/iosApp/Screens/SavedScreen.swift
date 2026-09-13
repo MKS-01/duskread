@@ -2,9 +2,6 @@ import ComposeApp
 import SwiftUI
 
 /// The reading queue: unread leads, read stays under its own heading.
-///
-/// The split is the point — a single list sorted by date buries the three
-/// things you actually meant to read under thirty you already have.
 struct SavedScreen: View {
     @Environment(LinksStore.self) private var links
     @Environment(BrowserRouter.self) private var browser
@@ -118,14 +115,12 @@ struct SavedScreen: View {
         ) {
             RowToggle(
                 path: link.read ? IconPaths.shared.Check : IconPaths.shared.External,
-                // The affordance glyph keeps a permanently muted hint of the
-                // accent: it marks "this leaves the app" regardless of state.
+                // The affordance glyph keeps a permanently muted hint of the accent: it
+                // marks "this leaves the app" regardless of state.
                 tint: link.read ? dusk.onSurfaceVariant : dusk.primary.opacity(0.75)
             ) { links.toggleRead(link) }
         }
         // A context menu, not a swipe, until the Compose gesture is ported.
-        // That one changes its own label at 40% travel and never settles, and
-        // half-porting it would leave a gesture that looks the same and is not.
         .contextMenu {
             if speech.available {
                 Button("Read aloud") { speech.speak(title: link.title, url: link.url) }
@@ -194,8 +189,8 @@ enum LinkFilter: CaseIterable {
     }
 }
 
-/// The "no signal" ornament: a flat meter, left-aligned, with the message
-/// under it rather than centred in the middle of the screen.
+/// The "no signal" ornament: a flat meter, left-aligned, with the message under it rather
+/// than centred in the middle of the screen.
 struct EmptyState: View {
     let title: String
     var message: String?

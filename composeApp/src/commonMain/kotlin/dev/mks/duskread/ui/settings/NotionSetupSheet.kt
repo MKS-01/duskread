@@ -59,43 +59,8 @@ import dev.mks.duskread.ui.theme.Stroke
 import kotlinx.coroutines.launch
 
 /**
- * Connecting Notion, as four steps that check themselves.
- *
- * This replaces two masked ID fields and a page of external documentation. The
- * old Settings section could only ever report the *last* thing that failed —
- * "Database not found" covers a mistyped ID, a database shared with the wrong
- * integration, and a token that reaches nothing at all, and those have nothing
- * in common except the sentence. Splitting the setup into steps that each know
- * whether they are done means the screen can point at the one that isn't.
- *
- * Step ③ is the reason this is a sheet rather than a tooltip. Notion's API
- * cannot create anything at the workspace root — see `NotionProvision.kt` — so
- * a page has to be shared with the token by hand, in a menu three levels deep
- * that nobody finds by guessing. It gets the literal menu path, a link, and a
- * button that re-checks rather than a paragraph asking the reader to trust
- * that they did it right.
- *
- * **It says "optional" first, and means it.** Nothing reaches this sheet
- * except a deliberate tap on Settings ▸ Notion ▸ Set up — onboarding does not
- * mention Notion and no screen refuses to render without it — so the copy is
- * written for someone who has never heard of a Notion access token and may
- * well close this again. That is also what a store reviewer does: opens the
- * app, uses it, never signs into anything.
- *
- * The wording follows Notion's own, deliberately: **personal access token**,
- * created with **New token**, starting `ntn_`. Someone matching two screens
- * cannot afford a third synonym, which is what this sheet had — a title
- * saying "token", a body saying "secret" and a field saying "personal access
- * token", for one string. The `ntn_` shape is the half that survives Notion
- * relabelling the button again.
- *
- * The portal link opens in the reader's *own* browser, not the in-app one —
- * see `rememberExternalUrlOpener`. Signing in and copying a secret inside a
- * WebView this app owns is the wrong place to ask for a password.
- *
- * The steps are not navigable. A reader cannot be on step ④ with step ② unmet,
- * so the sheet computes where it is from what is true rather than from where
- * anyone tapped.
+ * Connecting Notion, as four steps that check themselves. This replaces two masked ID
+ * fields and a page of external documentation.
  */
 @Composable
 fun NotionSetupSheet(
@@ -122,9 +87,6 @@ fun NotionSetupSheet(
 
     /**
      * One attempt at the whole of steps ③ and ④.
-     *
-     * [parentPageId] is set only when the reader has just tapped a page in the
-     * picker; every other call lets `provision` work it out.
      */
     fun run(parentPageId: String? = null) {
         if (busy) return
@@ -182,9 +144,8 @@ fun NotionSetupSheet(
             Column(
                 Modifier
                     .fillMaxSize()
-                    // Same order and the same union as SettingsScreen, and for
-                    // the same reason: the token field is low enough down that
-                    // an open keyboard would otherwise cover it.
+                    // Same order and the same union as SettingsScreen, and for the same
+                    // reason.
                     .windowInsetsPadding(WindowInsets.navigationBars.union(WindowInsets.ime))
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 16.dp, vertical = 8.dp),
@@ -246,12 +207,8 @@ fun NotionSetupSheet(
                                             token = ""
                                             tokenSaved = true
                                             onTokenSaved()
-                                            // Straight on to the next step: the
-                                            // token is only ever saved in order
-                                            // to be used, and a reader who has
-                                            // just pasted one should not have to
-                                            // find a second button to find out
-                                            // whether it worked.
+                                            // Straight on to the next step: the token is
+                                            // only ever saved in order to be used.
                                             run()
                                         }
                                         .padding(start = 10.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
@@ -274,8 +231,8 @@ fun NotionSetupSheet(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
 
-                    // The picker, only when the choice is real. One accessible
-                    // page is chosen without asking; see `provision`.
+                    // The picker, only when the choice is real. One accessible page is
+                    // chosen without asking; see `provision`.
                     choices.forEach { page ->
                         Spacer(Modifier.height(8.dp))
                         PageChoice(page = page, enabled = !busy) { run(page.id) }
@@ -326,12 +283,8 @@ fun NotionSetupSheet(
 }
 
 /**
- * One step: a number, a title, and whatever it takes to satisfy it.
- *
- * Only the step being worked on takes the accent — the one-accent rule. A
- * finished step goes quiet and keeps a tick, because a column of four accented
- * ticks would put four competing marks on one surface and say nothing about
- * where the reader actually is.
+ * One step: a number, a title, and whatever it takes to satisfy it. Only the step being
+ * worked on takes the accent — the one-accent rule.
  */
 @Composable
 private fun Step(
@@ -378,8 +331,8 @@ private fun Step(
             )
         }
 
-        // Indented to the width of the numeral and its gap, so the steps read
-        // as a numbered list rather than four unrelated blocks.
+        // Indented to the width of the numeral and its gap, so the steps read as a
+        // numbered list rather than four unrelated blocks.
         Column(Modifier.padding(start = 32.dp, top = 8.dp)) { content() }
     }
 }

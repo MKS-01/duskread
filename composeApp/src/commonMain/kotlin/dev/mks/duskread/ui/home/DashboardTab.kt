@@ -75,13 +75,7 @@ import kotlinx.coroutines.launch
 import kotlin.time.Clock
 
 /**
- * Home: a dashboard rather than a list. Four sections that earn their own
- * weight instead of four identically-boxed cards — each opens with the same
- * label-and-rule cadence and sits flush on the background, the way every
- * other screen in the Amplitude direction does. Something saved to read and
- * something already turned into audio lead the screen, ahead of the focus
- * timer: the content pick answers "what am I opening this for", and the
- * timer is only useful once that's decided.
+ * Home: a dashboard rather than a list.
  */
 @Composable
 fun DashboardTab(
@@ -107,11 +101,8 @@ fun DashboardTab(
     PullToRefreshBox(
         isRefreshing = refreshing,
         onRefresh = {
-            // The one thing on this screen that can go stale without the
-            // reader doing anything — saved links and the readback library
-            // are both re-read reactively the moment their own tab opens,
-            // but nobody re-fetches a followed blog until Sync now is
-            // tapped. This is the same call that button makes.
+            // The one thing on this screen that can go stale without the reader doing
+            // anything.
             if (feeds.feeds.isEmpty()) return@PullToRefreshBox
             scope.launch {
                 refreshing = true
@@ -132,12 +123,8 @@ fun DashboardTab(
             modifier = Modifier.fillMaxWidth(),
             contentPadding = contentPadding,
         ) {
-            // Settings used to live only here, behind a gear next to the
-            // greeting — the row stayed even with no name to show, purely to
-            // give it somewhere to be. It now has a permanent slot of its own
-            // in the tab bar (and, on a wide window, the rail), reachable from
-            // every screen rather than Home alone, so the row has nothing left
-            // to justify existing when there is no greeting to show.
+            // Settings used to live only here, behind a gear next to the greeting — the
+            // row stayed even with no name to show, purely to give it somewhere to be.
             greeting?.let {
                 item("head") {
                     Text(
@@ -149,24 +136,19 @@ fun DashboardTab(
                 }
             }
 
-            // Only on a genuine first run — nothing saved, nothing followed — and
-            // gone the moment either exists. NEXT UP already answers "what's
-            // empty right now" in its own compact, in-dashboard way further
-            // down; this answers a different question that only a blank slate
-            // asks: "what is this app for at all". Once there is one saved
-            // link or one followed blog the reader has already answered that
-            // themselves, and the hero would be a banner nobody needed twice.
+            // Only on a genuine first run — nothing saved, nothing followed — and gone
+            // the moment either exists.
             if (links.links.isEmpty() && feeds.feeds.isEmpty()) {
                 item("welcome") { WelcomeSection() }
             }
 
-            // Leads the screen — a specific thing to read, ahead of the general
-            // habit prompt below it.
+            // Leads the screen — a specific thing to read, ahead of the general habit
+            // prompt below it.
             item("next-up") {
                 NextUpSection(links = links, signals = signals, feeds = feeds, feedPosts = feedPosts, onOpenSaved = onOpenSaved)
             }
-            // Dropped entirely rather than shown empty: its every branch ends
-            // in "open the Readback tab", and there is no such tab to open.
+            // Dropped entirely rather than shown empty: its every branch ends in "open
+            // the Readback tab", and there is no such tab to open.
             if (showReadback) {
                 item("readback") { ReadbackSection(player = player, onOpen = onOpenReadback) }
             }
@@ -238,18 +220,6 @@ private fun PillButton(text: String, onClick: () -> Unit) {
 
 /**
  * The newest read, or the one actually playing — and playable from here.
- *
- * It used to show `listReads().first()` with a meter hardcoded to zero and a
- * tap that only opened the tab, which meant the one section on Home about
- * audio was the one section that could not tell you any audio was running.
- * Start something from the Readback tab, come back, and this still showed a
- * flat bar under a different title.
- *
- * So: whatever is playing wins over whatever is newest — the read in your
- * ears is more "today" than the newest file on disk — the meter follows the
- * real position, and the row plays rather than navigates. Tapping a read to
- * play it is what the same row does in the Readback tab, and two rows that
- * look identical should not do different things.
  */
 @Composable
 private fun ReadbackSection(
@@ -277,8 +247,8 @@ private fun ReadbackSection(
         EyebrowHeader(
             text = "TODAY'S READBACK",
             icon = DuskReadIcons.Waveform,
-            // The way to the full library, kept off the row now that the row
-            // itself plays.
+            // The way to the full library, kept off the row now that the row itself
+            // plays.
             trailing = if (item != null) {
                 {
                     Icon(
@@ -298,10 +268,8 @@ private fun ReadbackSection(
         Spacer(Modifier.height(12.dp))
 
         when {
-            // Said plainly rather than as a prompt: on a platform with no
-            // folder to point at, "connect your library" is an instruction
-            // that cannot be followed, and a reader who tries it finds the
-            // Readback tab explaining the same thing from the other end.
+            // Said plainly rather than as a prompt: on a platform with no folder to point
+            // at, "connect your library" is an instruction that cannot be followed.
             !readbackSupported() -> {
                 CompactEmptyState(
                     title = "Readback needs a device",
@@ -331,8 +299,8 @@ private fun ReadbackSection(
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f),
-                        // The playing row is the only coloured thing on the
-                        // screen, the same rule the Readback tab follows.
+                        // The playing row is the only coloured thing on the screen, the
+                        // same rule the Readback tab follows.
                         color = if (playing) {
                             MaterialTheme.colorScheme.primary
                         } else {
@@ -374,16 +342,7 @@ private fun ReadbackSection(
 }
 
 /**
- * The door to the Following tab: a summary, not the digest that used to sit
- * here.
- *
- * That digest — every followed feed, each expandable into its own posts — is
- * a real screen's worth of content once more than a couple of blogs are
- * followed, and Home is not where a screen's worth of anything belongs. What
- * stays here is the shape of what's waiting, not all of it: the total, and
- * the two or three feeds actually carrying it. A single count line said the
- * same thing in fewer words but read as an afterthought under Focus; naming
- * the blogs is what makes this a summary rather than a number.
+ * The door to the Following tab: a summary, not the digest that used to sit here.
  */
 @Composable
 private fun FollowingShortcut(
@@ -393,9 +352,8 @@ private fun FollowingShortcut(
     onOpen: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // Sorted rather than filtered to exactly the unread: a feed with nothing
-    // new yet is still worth naming if it's one of only two followed, so the
-    // cutoff is "the top few" rather than "only the ones with something new".
+    // Sorted rather than filtered to exactly the unread: a feed with nothing new yet is
+    // still worth naming if it's one of only two followed.
     val byNewest = remember(feeds.feeds, feedPosts.postsByFeed, links.links) {
         feeds.feeds.map { feed ->
             feed to feedPosts.postsByFeed[feed.id].orEmpty().count { !links.isSaved(it.url) }
@@ -440,11 +398,8 @@ private fun FollowingShortcut(
                 byNewest.take(FollowingPreviewRows).forEach { (feed, count) ->
                     Row(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
                         Text(
-                            // Jost, not mono — a feed's name is a name, and
-                            // the tokens doc reserves Inconsolata for a
-                            // reported value, not a section's own label. See
-                            // the matching note on `DigestLine` in
-                            // FollowingSection.kt.
+                            // Jost, not mono — a feed's name is a name, and the tokens
+                            // doc reserves Inconsolata for a reported value.
                             text = feed.label,
                             fontSize = 12.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -488,21 +443,6 @@ private const val FollowingPreviewRows = 3
 
 /**
  * A first look at the app, not a first look at emptiness.
- *
- * Everything else on this screen is a section reporting on state — NEXT UP
- * says what there is to read, FOCUS what there is to time, FOLLOWING what
- * there is to browse — and every one of them has an honest, small answer for
- * "nothing yet". Stacked together on a genuine first run, three honest small
- * answers in a row read as an app that has nothing in it, not as an app
- * waiting to be used. This is the difference: one place that says what the
- * four pillars add up to, so the sections underneath can stay exactly as
- * quiet as they already are.
- *
- * Deliberately not [EmptyState] with a call to action — there is no single
- * button that would be right here. Saving a link, following a blog and
- * starting a focus session are three unrelated gestures in three unrelated
- * places, and a hero that only pointed at one of them would misrepresent the
- * other two.
  */
 @Composable
 private fun WelcomeSection(modifier: Modifier = Modifier) {
@@ -531,22 +471,8 @@ private fun WelcomeSection(modifier: Modifier = Modifier) {
 }
 
 /**
- * The one section on Home that makes a *choice* rather than reporting local
- * state — and now it chooses over both halves of the app.
- *
- * The pool is every unread saved link plus every cached post from a followed
- * blog that is not already saved, ranked by [rank]. That merge is the point:
- * `FeedPostCache` holds dozens of real, dated posts that were previously
- * reachable only by tapping a digest line open, so the app's best content sat
- * one deliberate gesture away from the section meant to say "here, read this".
- *
- * A hero and two runners-up rather than a single pick, because one row reads
- * as a decree and a list reads as a browse. Three is enough to feel chosen
- * from without the section becoming a fourth list.
- *
- * No boxes: rows sit flush on the background under their own hairline, the
- * same skeleton every other list in the app uses. A recommendation is not a
- * different kind of thing and should not look like one.
+ * The one section on Home that makes a *choice* rather than reporting local state — and
+ * now it chooses over both halves of the app.
  */
 
 @Composable
@@ -560,19 +486,15 @@ private fun NextUpSection(
 ) {
     val open = rememberUrlOpener()
 
-    // Only the *length*, not the countdown: mapped and de-duplicated so a
-    // running timer does not recompose this section once a second for a
-    // number it does not draw. A five-minute session should not be offered a
-    // twenty-minute essay; nothing else about the timer matters here.
+    // Only the *length*, not the countdown: mapped and de-duplicated so a running timer
+    // does not recompose this section once a second for a number it does not draw.
     val controller = rememberPomodoroController()
     val focusMinutes by remember(controller) {
         controller.state.map { it.totalSeconds.takeIf { seconds -> seconds > 0 }?.div(60) }.distinctUntilChanged()
     }.collectAsState(initial = null)
 
-    // The seed *is* the shuffle. Re-seeding re-ranks without abandoning the
-    // ranking, so a shuffle offers something else good rather than anything
-    // at all. Started from the day so the pick is stable across a morning's
-    // worth of openings rather than re-rolling on every recomposition.
+    // The seed *is* the shuffle. Re-seeding re-ranks without abandoning the ranking, so a
+    // shuffle offers something else good rather than anything at all.
     var shuffles by remember { mutableStateOf(0) }
     val day = remember { (Clock.System.now().toEpochMilliseconds() / 86_400_000L).toInt() }
 
@@ -595,9 +517,7 @@ private fun NextUpSection(
         )
     }
 
-    // At most one row per source. Two followed blogs can be near-duplicates by
-    // design — JetBrains publishes both a general and a Kotlin feed — so a
-    // straight take(3) can spend the whole section on one publisher.
+    // At most one row per source.
     val picks = remember(ranked) { topPicks(ranked, count = 3) }
     val hero = picks.firstOrNull()
     val runnersUp = picks.drop(1)
@@ -613,8 +533,8 @@ private fun NextUpSection(
                         modifier = Modifier
                             .size(26.dp)
                             .clickable {
-                                // Recorded before the re-seed: the skip is
-                                // about the thing that was on screen.
+                                // Recorded before the re-seed: the skip is about the
+                                // thing that was on screen.
                                 hero?.let { signals.recordSkip(it.candidate.url) }
                                 shuffles++
                             }
@@ -658,12 +578,8 @@ private fun NextUpSection(
 }
 
 /**
- * Opening a candidate is also the moment its signal is recorded, and for a
- * feed post it is the moment it becomes the reader's own.
- *
- * That save is not a convenience. `FeedPostCache` is replaced wholesale on
- * the next sync, so a post read straight out of it would be read and
- * forgotten — the record of having read it would go with the cache.
+ * Opening a candidate is also the moment its signal is recorded, and for a feed post it
+ * is the moment it becomes the reader's own. That save is not a convenience.
  */
 private fun openCandidate(
     scored: Scored,
@@ -677,21 +593,13 @@ private fun openCandidate(
     val id = candidate.savedId ?: links.save(candidate.url, candidate.title, candidate.tag)?.id
     id?.let { links.toggleRead(it) }
     signals.recordRead(candidate.url)
-    // The other half of the topic term: without this, tags are read on every
-    // candidate and never credited to anything, and topic affinity stays the
-    // zero it has always been.
+    // The other half of the topic term: without this, tags are read on every candidate
+    // and never credited to anything.
     candidate.tag?.let { signals.recordTopicRead(it) }
 }
 
 /**
- * One row of the section. The hero gets two lines of title, a runner-up one —
- * the difference in weight is what makes the first one a recommendation and
- * the rest alternatives, without either of them needing a label saying so.
- *
- * The meta line is the house's two facts, three when a topic is known: host,
- * subject, and how long this will take. The subject takes the middle slot
- * because it is the one that says *why this*, and it is simply absent for a
- * candidate from a feed Notion has not filed.
+ * One row of the section.
  */
 @Composable
 private fun NextUpRow(scored: Scored, hero: Boolean, last: Boolean, onOpen: () -> Unit) {

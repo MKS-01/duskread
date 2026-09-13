@@ -3,14 +3,6 @@ import SwiftUI
 import UIKit
 
 /// The type scale, read back from the live Compose `Typography`.
-///
-/// Roles are named the way Material names them because that is what the shared
-/// side calls them; a screen asks for `.dusk(.bodyMedium)` and neither side has
-/// to know what that resolves to.
-///
-/// Both families are bundled. Inconsolata in particular must not fall back to
-/// `.monospaced`, which resolves to Menlo here — the exact variance the bundled
-/// face was added to remove.
 enum TypeRole: String {
     case headlineMedium, headlineSmall
     case titleLarge, titleMedium, titleSmall
@@ -23,8 +15,8 @@ enum TypeRole: String {
 struct DuskTextStyle {
     let font: Font
     let tracking: CGFloat
-    /// Extra leading, which is what SwiftUI's `lineSpacing` actually means —
-    /// not the total line height Compose specifies.
+    /// Extra leading, which is what SwiftUI's `lineSpacing` actually means — not the
+    /// total line height Compose specifies.
     let lineSpacing: CGFloat
 }
 
@@ -41,9 +33,8 @@ enum DuskType {
             ? inconsolata(weight: Int(spec.weight))
             : jost(weight: Int(spec.weight))
         let size = CGFloat(spec.size)
-        // Measured, not assumed: SwiftUI's lineSpacing is extra leading on top
-        // of the face's own line height, and Jost's differs from the 1.2x rule
-        // of thumb enough to read as loose paragraphs.
+        // Measured, not assumed: SwiftUI's lineSpacing is extra leading on top of the
+        // face's own line height.
         let natural = UIFont(name: name, size: size)?.lineHeight ?? size * 1.2
         let made = DuskTextStyle(
             font: .custom(name, size: size),
@@ -54,9 +45,7 @@ enum DuskType {
         return made
     }
 
-    /// Only the four static weights are bundled, so anything between them
-    /// rounds to the nearest one rather than asking for a face that is absent
-    /// and getting a synthesised one.
+    /// Only the four static weights are bundled.
     private static func jost(weight: Int) -> String {
         switch weight {
         case ..<500: return "Jost-Regular"

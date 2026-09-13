@@ -19,17 +19,6 @@ import kotlinx.coroutines.launch
 
 /**
  * The on-device summariser, over AICore's summarisation feature.
- *
- * There were two paths here — the free-form Prompt API first, this as the
- * fallback — until the first turned out never to answer: AICore provisions
- * its capabilities as separate *features*, and a Galaxy S25 reports
- * `FEATURE_NOT_FOUND` for the Prompt API while offering the very same Gemini
- * Nano through this one. The cost is that there is no prompt to write, so the
- * register and length are the feature's to decide and it emits only bullets;
- * [parseSummary] turns those into the paragraph the panel draws.
- *
- * Nothing about the article leaves the device, which is why a cloud model —
- * better at this, and one dependency away — is not what sits behind this.
  */
 private class MlKitSummariser(context: Context) : Summariser {
     override var state: SummariserState by mutableStateOf(SummariserState.Checking)
@@ -38,9 +27,8 @@ private class MlKitSummariser(context: Context) : Summariser {
     private val summarization = SummarizationEngine(context)
 
     /**
-     * The download runs here, not in whichever panel asked for it: a reader
-     * who starts one and closes the panel has not changed their mind, but the
-     * panel's scope dies with it and the engine cancels on flow close.
+     * The download runs here, not in whichever panel asked for it: a reader who starts
+     * one and closes the panel has not changed their mind.
      */
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
@@ -48,16 +36,16 @@ private class MlKitSummariser(context: Context) : Summariser {
     private var download: Job? = null
 
     override suspend fun refresh() {
-        // A download in flight owns [state]; re-probing answers DOWNLOADING
-        // with no bytes, replacing a percentage on screen with a blank one.
+        // A download in flight owns [state]; re-probing answers DOWNLOADING with no
+        // bytes, replacing a percentage on screen with a blank one.
         if (download?.isActive == true) return
 
         state = summarization.status()
     }
 
     /**
-     * Joined, not collected: a caller that goes away stops waiting on the
-     * download without stopping it, and a second asker joins the same job.
+     * Joined, not collected: a caller that goes away stops waiting on the download
+     * without stopping it, and a second asker joins the same job.
      */
     override suspend fun prepare() {
         val running = download?.takeIf { it.isActive } ?: scope.launch { runDownload() }.also { download = it }
@@ -67,14 +55,14 @@ private class MlKitSummariser(context: Context) : Summariser {
     private suspend fun runDownload() {
         summarization.download().collect { state = it }
 
-        // The feature's own status is the truth, and a stream that ends
-        // without a completion event would leave the panel at a percentage.
+        // The feature's own status is the truth, and a stream that ends without a
+        // completion event would leave the panel at a percentage.
         download = null
         refresh()
     }
 
-    // The feature truncates oversized input itself; this keeps what is sent
-    // close to what the model can actually use.
+    // The feature truncates oversized input itself; this keeps what is sent close to what
+    // the model can actually use.
     override fun summarise(title: String, text: String): Flow<String> = summarization.summarise(truncateWords(text, SummaryWordBudget))
 
     fun close() {
@@ -85,14 +73,7 @@ private class MlKitSummariser(context: Context) : Summariser {
 }
 
 /**
- * One summariser for as long as the process lives. Each host used to build its
- * own, and closing one took its binding and any download with it; sharing is
- * what makes "it downloads once" true.
- *
- * There used to be one of these per length, closed and rebuilt when the
- * setting changed. Length is the article's now rather than the reader's, and
- * the several clients it needs are the engine's own business — see
- * [SummaryDepth] — so nothing above here has a reason to hold more than one.
+ * One summariser for as long as the process lives.
  */
 private object Summarisers {
     private var held: MlKitSummariser? = null
@@ -103,9 +84,6 @@ private object Summarisers {
 
 /**
  * Why a summary is not available, in words for the person holding the phone.
- * Anything unrecognised keeps its own message rather than being flattened
- * into "something went wrong", which is never true and never helps. Only the
- * codes the summarisation artifact declares are listed.
  */
 internal fun describe(failure: Throwable): String {
     val code = (failure as? GenAiException)?.errorCode ?: return failure.message ?: failure.named()
@@ -125,13 +103,6 @@ internal fun describe(failure: Throwable): String {
 
 /**
  * The last resort, and the one case that used to name nothing.
- *
- * A throwable with no message arrived as a bare "The model could not be
- * reached.", which is the flattening the doc above rules out — it tells the
- * reader nothing to act on and a bug report nothing to go on, and the app
- * keeps no log to look the real one up in. The class name is what survives:
- * this is the same trade as passing `failure.message` through, which is not
- * prose either.
  */
 private fun Throwable.named(): String = "The model could not be reached (${this::class.simpleName ?: "unknown"})."
 

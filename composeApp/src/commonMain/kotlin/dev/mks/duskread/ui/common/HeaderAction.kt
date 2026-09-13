@@ -16,9 +16,6 @@ import dev.mks.duskread.ui.theme.SectionLabel
 
 /**
  * A word in the trailing slot of an [EyebrowHeader] — Sync now, Manage, Add.
- * Quiet on purpose: it sits on the section's own rule, so it has to read as
- * part of the heading rather than as a button parked on top of it. A toggle
- * says what the next tap does ("Add" / "Done"), never what state it is in.
  */
 @Composable
 fun HeaderAction(label: String, onClick: () -> Unit) {

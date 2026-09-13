@@ -26,13 +26,6 @@ import kotlinx.serialization.json.jsonPrimitive
 
 /**
  * What a Notion call can come back as.
- *
- * Separate cases rather than an exception or a nullable, because Settings has
- * to tell the reader *which* thing is wrong and each one has a different fix:
- * a rejected token is retyped, a missing database is re-copied, a rate limit
- * is waited out, and a network failure is nobody's fault. Collapsing them into
- * "sync failed" would be the difference between a screen that helps and one
- * that shrugs.
  */
 sealed class NotionResult<out T> {
     data class Ok<out T>(val value: T) : NotionResult<T>()
@@ -51,12 +44,8 @@ sealed class NotionResult<out T> {
     data class Network(val detail: String) : Failure("Could not reach Notion")
 
     /**
-     * A 400: the request was reached, understood and refused.
-     *
-     * Split out from [Network] because the two have nothing in common except
-     * that neither worked. This one carries Notion's own body, which is the
-     * only way to tell *why* something was refused — the status-property
-     * fallback in `NotionProvision.kt` turns on reading it.
+     * A 400: the request was reached, understood and refused. Split out from [Network]
+     * because the two have nothing in common except that neither worked.
      */
     data class Rejected(val detail: String) : Failure("Notion refused that — $detail")
 
@@ -71,13 +60,6 @@ inline fun <T, R> NotionResult<T>.then(block: (T) -> NotionResult<R>): NotionRes
 
 /**
  * The Notion REST API, reduced to the calls this app makes.
- *
- * Wraps the shared [HttpClient] rather than configuring one, so the four
- * platform `createHttpClient()` actuals stay the one-liners they are. Reading
- * is `bodyAsText()` into a [JsonObject]: Notion's property values are
- * variant-typed — a `url`, a `select` and a `multi_select` share no shape —
- * so walking the tree is genuinely smaller than modelling every case, and it
- * degrades to null instead of throwing when a column is missing.
  */
 class NotionClient(
     private val client: HttpClient,
@@ -85,10 +67,6 @@ class NotionClient(
 ) {
     /**
      * Every row of a database, following `next_cursor` to the end.
-     *
-     * Paging is not optional even at eighteen rows: Notion caps a page at 100
-     * and the caller has no way to know it was truncated, so a table that
-     * quietly grows past the cap would start silently dropping feeds.
      */
     suspend fun queryAll(databaseId: String): NotionResult<List<JsonObject>> {
         val rows = mutableListOf<JsonObject>()
@@ -121,13 +99,7 @@ class NotionClient(
     }
 
     /**
-     * The database's own schema.
-     *
-     * Wanted for one thing: the names of the `Status` options. Notion's DDL
-     * refuses to rename them from the stock `Not started` / `Done`, so anyone
-     * wanting a reading list to say `Unread` / `Read` does it by hand — and
-     * hard-coding either spelling would break the moment they did. Reading the
-     * schema costs one request per sync and makes the rename a non-event.
+     * The database's own schema. Wanted for one thing: the names of the `Status` options.
      */
     suspend fun schema(databaseId: String): NotionResult<JsonObject> = request { token ->
         client.get("$ApiBase/databases/${databaseId.trim()}") { notionHeaders(token) }
@@ -135,17 +107,6 @@ class NotionClient(
 
     /**
      * Titles matching [query], of one `object` type — `"database"` or `"page"`.
-     *
-     * Only ever the first page of results, unlike [queryAll], and deliberately:
-     * Notion filters by title server-side when [query] is set, so a hundred
-     * matches for a name as specific as "DuskRead Sources" would already mean
-     * something has gone very wrong. The unfiltered call — used to list pages
-     * that could host the databases — is capped for the same reason in
-     * reverse: nobody is going to scroll past a hundred to pick one.
-     *
-     * Search only sees what the credential has been given, which is the whole
-     * reason setup can end at "share one page": an empty result here is not an
-     * error, it is the instruction.
      */
     suspend fun search(objectType: String, query: String? = null): NotionResult<List<JsonObject>> {
         val body = buildJsonObject {
@@ -157,8 +118,8 @@ class NotionClient(
                     put("value", JsonPrimitive(objectType))
                 },
             )
-            // Most-recently-touched first, so the page someone just shared with
-            // the integration is the one at the top of the picker.
+            // Most-recently-touched first, so the page someone just shared with the
+            // integration is the one at the top of the picker.
             put(
                 "sort",
                 buildJsonObject {
@@ -182,11 +143,6 @@ class NotionClient(
 
     /**
      * A plain page under [parentPageId], returning its id.
-     *
-     * Exists because a database cannot be created at the workspace root — the
-     * API requires a page parent — so the databases need something of their
-     * own to live in rather than being scattered into whichever page the
-     * reader happened to share.
      */
     suspend fun createSubPage(parentPageId: String, title: String): NotionResult<String> {
         val body = buildJsonObject {
@@ -222,10 +178,6 @@ class NotionClient(
 
     /**
      * A database under [parentPageId], returning its id.
-     *
-     * [properties] is the schema, in Notion's own DDL shape — see
-     * `NotionProvision.kt`, which is the only caller and holds the two schemas
-     * this app knows how to read back.
      */
     suspend fun createDatabase(
         parentPageId: String,
@@ -282,13 +234,8 @@ class NotionClient(
     }.then { NotionResult.Ok(Unit) }
 
     /**
-     * A write, paced.
-     *
-     * Notion allows roughly three requests a second, and a first push is one
-     * request per saved link — enough to walk straight into the limiter. The
-     * 429 handling in [request] is a recovery; this is the policy that means
-     * it rarely has to fire. Reads are not paced because there is only ever
-     * one of them per sync.
+     * A write, paced. Notion allows roughly three requests a second, and a first push is
+     * one request per saved link — enough to walk straight into the limiter.
      */
     private suspend fun write(call: suspend (String) -> HttpResponse): NotionResult<JsonObject> {
         delay(WriteSpacingMs)
@@ -296,14 +243,8 @@ class NotionClient(
     }
 
     /**
-     * One call, with the token attached and the two failure shapes Notion
-     * imposes handled: a status code that means something specific, and a 429
-     * that wants waiting out.
-     *
-     * The retry is bounded at [MaxAttempts] and honours `Retry-After` when
-     * Notion sends one. Notion allows roughly three requests a second, which
-     * this app will never approach — the backoff is here so a shared-workspace
-     * burst degrades into a slower sync rather than a failed one.
+     * One call, with the token attached and the two failure shapes Notion imposes
+     * handled: a status code that means something specific.
      */
     private suspend fun request(call: suspend (String) -> HttpResponse): NotionResult<JsonObject> {
         val token = auth.bearer() ?: return NotionResult.NotConnected
@@ -319,13 +260,12 @@ class NotionClient(
                 }.getOrElse { NotionResult.Malformed(it.message.orEmpty()) }
 
                 401 -> return NotionResult.Unauthorized
-                // Notion answers 404 both for a database that does not exist
-                // and for one this credential cannot see. Indistinguishable
-                // from here, and the same fix either way.
+                // Notion answers 404 both for a database that does not exist and for one
+                // this credential cannot see.
                 403, 404 -> return NotionResult.NotFound
 
-                // The body, not just the code: a refused schema names the
-                // property it objected to and nothing else can.
+                // The body, not just the code: a refused schema names the property it
+                // objected to and nothing else can.
                 400 -> return NotionResult.Rejected(
                     runCatching { response.bodyAsText() }.getOrDefault("").take(300),
                 )
@@ -353,9 +293,7 @@ class NotionClient(
         const val ApiBase = "https://api.notion.com/v1"
 
         /**
-         * Pinned, not "latest". Notion versions its API by date and a newer
-         * one reshapes databases into data sources; this app asks for the
-         * shape it was written against and will keep getting it.
+         * Pinned, not "latest".
          */
         const val NotionVersionHeader = "Notion-Version"
         const val NotionVersion = "2022-06-28"

@@ -3,16 +3,6 @@ import Foundation
 import Security
 
 /// `SecretStore` backed by the Keychain.
-///
-/// The shared fallback, `PlaintextSecretStore`, writes the Notion token to
-/// preferences in the clear and says so in its own documentation: acceptable
-/// only while a target has no way to enter one. iOS is about to grow exactly
-/// that, so this replaces it rather than inheriting the excuse.
-///
-/// `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly` because a background sync
-/// has to be able to read the token without the phone being unlocked, and
-/// because a credential for one device has no business riding a backup to
-/// another.
 final class KeychainSecretStore: SecretStore {
     private let service: String
 
@@ -37,9 +27,8 @@ final class KeychainSecretStore: SecretStore {
     func put(key: String, value: String?) {
         let query = baseQuery(key)
 
-        // Delete-then-add rather than SecItemUpdate: an update against a
-        // missing item fails, so the add path would need writing anyway, and
-        // this way there is one path instead of two.
+        // Delete-then-add rather than SecItemUpdate: an update against a missing item
+        // fails, so the add path would need writing anyway.
         SecItemDelete(query as CFDictionary)
 
         guard let value, let data = value.data(using: .utf8) else { return }

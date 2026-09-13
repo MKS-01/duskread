@@ -29,12 +29,6 @@ data class NotionPage(val id: String, val title: String)
 
 /**
  * Which of the two databases a resolution is for, and the names it answers to.
- *
- * Two titles each, and the second is the whole migration story: this app's
- * author already has tables called `Sources` and `Reading List` that predate
- * every line in this file. Matching the bare name adopts them instead of
- * building a second pair beside them, which would silently split one library
- * in two.
  */
 enum class NotionDatabaseKind(val title: String, val legacyTitle: String) {
     Sources("DuskRead Sources", "Sources"),
@@ -48,9 +42,6 @@ sealed class Provisioning {
 
     /**
      * More than one page could host them, so the reader picks.
-     *
-     * Only ever raised when the choice is real: a credential with exactly one
-     * accessible page is not asked a question it has one answer to.
      */
     data class NeedsParent(val pages: List<NotionPage>) : Provisioning()
 
@@ -60,19 +51,6 @@ sealed class Provisioning {
 
 /**
  * Resolves both databases, creating whatever is missing.
- *
- * The order is stored id, then search, then create, and it matters:
- *
- * 1. **A stored id wins outright.** This is what makes the change invisible to
- *    an install that was already working — it never searches, never creates,
- *    and never notices any of this happened.
- * 2. **Search by title**, preferred name then bare name. One request per
- *    missing database, once per install, since the answer is then stored.
- * 3. **Create.** Needs a parent, which is where [Provisioning.NeedsParent] and
- *    [Provisioning.NoPagesShared] come from.
- *
- * [parentPageId] is the reader's answer to a previous `NeedsParent`. Passing
- * it skips the page search entirely.
  */
 suspend fun provision(
     api: NotionClient,
@@ -104,16 +82,16 @@ suspend fun provision(
             is NotionResult.Failure -> pages
             is NotionResult.Ok -> when (pages.value.size) {
                 0 -> NotionResult.Ok(Provisioning.NoPagesShared)
-                // One page is not a choice. Asking anyway would be a screen
-                // whose only button is the only option.
+                // One page is not a choice. Asking anyway would be a screen whose only
+                // button is the only option.
                 1 -> provision(api, prefs, pages.value.first().id)
                 else -> NotionResult.Ok(Provisioning.NeedsParent(pages.value))
             }
         }
     }
 
-    // A container of its own rather than dropping two databases into whatever
-    // page was shared: that page is the reader's, and this is the app's.
+    // A container of its own rather than dropping two databases into whatever page was
+    // shared: that page is the reader's, and this is the app's.
     val home = when (val existing = prefs.homePageId) {
         null -> when (val created = api.createSubPage(parent, HomePageTitle)) {
             is NotionResult.Failure -> return created
@@ -155,11 +133,6 @@ private suspend fun resolve(
 
 /**
  * The id of the database titled exactly [title], or null.
- *
- * Exact, case-insensitive, and after trimming — Notion's search matches
- * substrings, so a query for `Sources` also returns `Sources (old)` and
- * `Newsletter Sources`. Adopting either of those would be worse than building
- * a fresh table, because the damage would be quiet and in someone else's data.
  */
 internal suspend fun findDatabase(api: NotionClient, title: String): NotionResult<String?> = api.search(objectType = "database", query = title).then { results ->
     val match = results.firstOrNull { database ->
@@ -170,11 +143,6 @@ internal suspend fun findDatabase(api: NotionClient, title: String): NotionResul
 
 /**
  * Pages that could host the databases.
- *
- * Rows are excluded — a page whose parent is a database is a record inside
- * someone's table, and creating the app's home page inside one would put two
- * databases in a cell. Only pages parented by the workspace or by another page
- * are real places.
  */
 internal suspend fun accessiblePages(api: NotionClient): NotionResult<List<NotionPage>> = api.search(objectType = "page").then { results ->
     NotionResult.Ok(
@@ -190,10 +158,6 @@ internal suspend fun accessiblePages(api: NotionClient): NotionResult<List<Notio
 
 /**
  * A page's title, whatever its title column is called.
- *
- * The key is not fixed: a workspace-level page uses `title`, a page inside a
- * database uses whatever that database named its title property. Finding the
- * one property of `"type": "title"` is the only way that holds for both.
  */
 private fun pageTitle(page: JsonObject): String {
     val properties = page["properties"]?.jsonObject ?: return ""
@@ -225,17 +189,6 @@ private suspend fun createSources(api: NotionClient, homePageId: String): Notion
 
 /**
  * The reading list, with the status column's two spellings tried in turn.
- *
- * `status` is the shape the table wants: it groups its options into `To-do`
- * and `Complete`, which is what lets `statusNames` survive someone renaming
- * `Not started` to `Unread` by hand. But creating one has never been reliable
- * across Notion's API versions, and a refusal here would otherwise cost the
- * reader the whole setup rather than one column.
- *
- * So a 400 falls back to a `select` of the same two names. It is the weaker
- * shape — a select carries no groups, so the rename that `status` survives
- * would break it — but a working table with a plainer column beats a failed
- * connection, and everything downstream reads both (see `statusNames`).
  */
 private suspend fun createReadingList(api: NotionClient, homePageId: String): NotionResult<String> {
     fun schema(status: JsonObject) = buildJsonObject {
@@ -272,9 +225,7 @@ private suspend fun createReadingList(api: NotionClient, homePageId: String): No
         ),
     )
 
-    // Only a refusal falls back. A network failure or a rate limit would come
-    // back the same way from the retry, and turning either into a downgraded
-    // schema would be a silent loss on a fault that had nothing to do with it.
+    // Only a refusal falls back.
     if (withStatus !is NotionResult.Rejected) return withStatus
 
     return api.createDatabase(
@@ -304,10 +255,6 @@ private fun type(name: String): JsonObject = buildJsonObject { put(name, buildJs
 
 /**
  * A select with no options declared.
- *
- * Deliberately empty: writing a select value Notion has not seen adds the
- * option, so the topics a reader ends up with are the ones their feeds
- * actually carry rather than a list guessed here.
  */
 private fun select(): JsonObject = buildJsonObject {
     put("select", buildJsonObject { put("options", buildJsonArray { }) })

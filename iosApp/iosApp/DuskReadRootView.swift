@@ -2,11 +2,6 @@ import ComposeApp
 import SwiftUI
 
 /// The whole app, in SwiftUI.
-///
-/// Navigation is a tab plus a presented destination, not a stack: the shared
-/// app has no navigation library either, and its full-screen surfaces are
-/// overlays over one tree rather than routes. Keeping that shape here means
-/// the two agree about what "back" means.
 struct DuskReadRootView: View {
     @EnvironmentObject private var host: DuskReadHost
     @State private var tab: AppTab = .home
@@ -44,26 +39,16 @@ struct DuskReadRootView: View {
 
     private func shell(_ theme: DuskTheme) -> some View {
         GeometryReader { proxy in
-            // `BarInset` is the gap the bar keeps from the system's own
-            // furniture, and it is sized for Android — where, under gesture
-            // navigation, the system inset is only a few dp and the token has
-            // to supply the clearance itself. iPhone's home-indicator safe
-            // area is already about 34pt, so adding the token on top of it
-            // floats the bar halfway up the screen.
-            //
-            // The intent ports, the arithmetic does not: keep at least
-            // `BarInset` between the bar and the physical bottom edge, and let
-            // the safe area count towards it.
+            // `BarInset` is the gap the bar keeps from the system's own furniture, and it
+            // is sized for Android — where, under gesture navigation.
             let systemInset = proxy.safeAreaInsets.bottom
             let gap = max(0, Layout.barInset - systemInset)
 
             ZStack(alignment: .bottom) {
                 tabContent
                     .safeAreaInset(edge: .bottom) {
-                        // Constant clearance: the pill shrinks *within* the
-                        // space it reserved rather than handing any of it
-                        // back, so the list underneath never reflows as the
-                        // bar collapses.
+                        // Constant clearance: the pill shrinks *within* the space it
+                        // reserved rather than handing any of it back.
                         Color.clear.frame(height: Layout.barHeight + gap)
                     }
 
@@ -75,9 +60,8 @@ struct DuskReadRootView: View {
                     onOpenSettings: { destination = .settings }
                 )
                 .padding(.bottom, gap)
-                // The player face fills the width it is given, so the bar
-                // takes the list's gutter rather than running edge to edge.
-                // The tabs face is intrinsically narrow and ignores it.
+                // The player face fills the width it is given, so the bar takes the
+                // list's gutter rather than running edge to edge.
                 .padding(.horizontal, Layout.listGutter)
                 .contentShape(Capsule())
                 .onTapGesture { if collapse.collapsed { collapse.expand() } }
@@ -128,8 +112,8 @@ struct DuskReadRootView: View {
         .environment(\.dusk, theme)
     }
 
-    /// The reader sheet is UIKit's, so its tint cannot come from the
-    /// environment — it is pushed in whenever the scheme changes.
+    /// The reader sheet is UIKit's, so its tint cannot come from the environment — it is
+    /// pushed in whenever the scheme changes.
     private func tintBrowser(_ theme: DuskTheme) {
         browser.barTint = theme.surface
         browser.controlTint = theme.primary

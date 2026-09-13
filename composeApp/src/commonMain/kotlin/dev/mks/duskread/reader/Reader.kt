@@ -4,10 +4,8 @@ import androidx.compose.runtime.Composable
 import kotlinx.coroutines.flow.StateFlow
 
 /**
- * One past read from readback (github.com/MKS-01/readback) — a personal
- * text-to-speech reader that generates a WAV plus a SQLite row per article
- * or book scan. Field names mirror the `reads` table exactly; this app never
- * writes to that table, only reads it.
+ * One past read from readback (github.com/MKS-01/readback) — a personal text-to-speech
+ * reader that generates a WAV plus a SQLite row per article or book scan.
  */
 data class ReadItem(
     val id: String,
@@ -29,13 +27,7 @@ enum class ReadSort { NEWEST, OLDEST }
 enum class ReaderSource { NOT_CONFIGURED, READY }
 
 /**
- * Read-only access to a readback library. This app is never the writer —
- * readback's own CLI generates reads, and a separate sync step (the user's
- * own script, run periodically) is what gets `library.db` and the `audio/`
- * folder onto this device. Resolving audio must go through
- * [audioFilename][ReadItem.audioFilename] joined against the configured
- * folder, never the `audio_path` column readback itself stores — that path
- * is absolute on the machine that generated the file, not this one.
+ * Read-only access to a readback library.
  */
 interface ReadRepository {
     val source: StateFlow<ReaderSource>
@@ -47,27 +39,14 @@ interface ReadRepository {
 expect fun rememberReadRepository(): ReadRepository
 
 /**
- * Whether this platform can reach a readback library at all — not whether one
- * has been configured, which only [ReadRepository.source] can answer.
- *
- * The two are worth keeping apart because the answers call for opposite
- * screens. `NOT_CONFIGURED` means "point me at the folder", and every screen
- * that says so is offering the reader something to do. A platform with no
- * folder to point at can only say so plainly: a browser tab has no filesystem
- * and iOS has no equivalent of Android's SAF grant, so a prompt there is an
- * instruction that cannot be followed.
- *
- * A constant per platform, deliberately, so a screen can ask it without
- * touching the repository or the disk.
+ * Whether this platform can reach a readback library at all — not whether one has been
+ * configured, which only [ReadRepository.source] can answer.
  */
 expect fun readbackSupported(): Boolean
 
 /**
  * Platform-specific UI for pointing the repository at its data — a
- * Storage-Access-Framework folder picker on Android, a plain path field on
- * desktop. Full prompt when [compact] is false (rendered wherever
- * [ReadRepository.source] is `NOT_CONFIGURED`); a small "change folder"
- * affordance when true, so a wrong pick doesn't require clearing app data.
+ * Storage-Access-Framework folder picker on Android, a plain path field on desktop.
  */
 @Composable
 expect fun ReaderSourcePicker(repository: ReadRepository, compact: Boolean = false)

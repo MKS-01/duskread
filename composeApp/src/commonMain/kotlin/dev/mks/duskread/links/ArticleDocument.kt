@@ -2,11 +2,6 @@ package dev.mks.duskread.links
 
 /**
  * The colours a rendered article borrows from the app.
- *
- * Passed in as CSS hex strings rather than read from `MaterialTheme` here so
- * this file stays a pure string builder with no Compose dependency — and so
- * the caller decides which scheme is in force, which matters because the app
- * swaps between Paper Black and Ink at runtime.
  */
 data class ReaderPalette(
     val background: String,
@@ -19,17 +14,8 @@ data class ReaderPalette(
 )
 
 /**
- * Wraps an [Article] in a document this app styles.
- *
- * This is the whole reason extraction is worth doing. Injecting CSS into the
- * live page to hide its header and footer only ever hides *the parts you
- * named* — every site names them differently, and the cookie bar, the sticky
- * share rail and the newsletter interstitial are not among them. Rebuilding
- * the page from the extracted body means the chrome is gone by construction
- * rather than by selector, and the type, measure and colour are the app's.
- *
- * Deliberately no JavaScript and no remote CSS: the only things that load are
- * the images the body already refers to.
+ * Wraps an [Article] in a document this app styles. This is the whole reason extraction
+ * is worth doing.
  */
 fun articleDocument(article: Article, palette: ReaderPalette): String = """
 <!doctype html>
@@ -89,16 +75,8 @@ ${article.bodyHtml}
 """.trimIndent()
 
 /**
- * The lead image is only worth its vertical space when the article does not
- * already open with one.
- *
- * The test is "is there any image up top", not "is it *this* image", because
- * the two are the same picture under different URLs far more often than not
- * and there is no reliable way to tell: a CDN writes the requested size into
- * the path or the query, so the card's copy and the body's copy of one hero
- * image share neither filename nor extension. Guessing wrong in this
- * direction costs a picture the reader still sees one line further down;
- * guessing wrong in the other shows it to them twice.
+ * The lead image is only worth its vertical space when the article does not already open
+ * with one.
  */
 private fun Article.leadImageTag(): String {
     val image = imageUrl ?: return ""

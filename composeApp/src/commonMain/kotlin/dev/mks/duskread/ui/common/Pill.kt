@@ -16,19 +16,7 @@ import dev.mks.duskread.ui.theme.Radius
 import dev.mks.duskread.ui.theme.Stroke
 
 /**
- * A small bordered pill — `.pill` in the mockup, not a filled chip. The one
- * way this app says "one of these, and this is the one": Readback's
- * Newest/Oldest, Following's sort, Saved's All/Unread/Read.
- *
- * Selection is carried by the border and the text alone. A filled chip would
- * be the only remaining Material surface on any of these screens, and next to
- * a hairline sourcechip it reads as a different app. The accent on the active
- * one is the design system's selected-control exception to the one-accent
- * rule: selection is its own state, not a competitor to whatever is playing.
- *
- * Lived as a private copy in `ReaderTab` and a second in `FollowingSection`
- * before Saved wanted a third; one component, so a change to how selection
- * looks happens once.
+ * A small bordered pill — `.pill` in the mockup, not a filled chip.
  */
 @Composable
 fun Pill(label: String, active: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {

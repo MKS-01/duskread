@@ -9,11 +9,6 @@ import dev.mks.duskread.links.topPicks
 
 /**
  * What the reader has actually read, and the ranking built on top of it.
- *
- * The recommender is here rather than in its own bridge because it is useless
- * without these signals — `rank` takes them directly — and because Swift would
- * otherwise have to hold `LinkLibrary` and `FeedPostCache` just to pass them
- * back in. [nextUp] is the whole of Home's "Next up" in one call.
  */
 class SignalsBridge internal constructor(private val graph: AppGraph) {
     fun recordRead(url: String) = graph.signals.recordRead(url)
@@ -28,9 +23,6 @@ class SignalsBridge internal constructor(private val graph: AppGraph) {
 
     /**
      * The ranked shortlist Home shows.
-     *
-     * [seed] is the shuffle: re-seeding re-ranks rather than re-randomising, so
-     * tapping shuffle means "something else good" rather than "anything at all".
      */
     fun nextUp(count: Int, now: Long, seed: Int, focusMinutes: Int?): List<Scored> {
         val candidates: List<Candidate> = pool(graph.links, graph.feedPosts, graph.feeds.feeds)

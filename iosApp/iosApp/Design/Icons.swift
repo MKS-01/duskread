@@ -1,13 +1,7 @@
 import ComposeApp
 import SwiftUI
 
-/// The shared icon set, drawn from the same path data Compose parses.
-///
-/// Not SF Symbols. The set is built from one construction rule at one stroke
-/// weight and one terminal, and mixing in eight system glyphs would break that
-/// visibly — SF's optical weight does not match a 2.4-on-24 round-capped
-/// stroke. SF Symbols are for chrome that is *meant* to look like the OS: the
-/// share sheet, system context menus.
+/// The shared icon set, drawn from the same path data Compose parses. Not SF Symbols.
 struct DuskIcon: View {
     let path: IconPath
     var size: CGFloat = 24
@@ -21,12 +15,8 @@ struct DuskIcon: View {
     }
 }
 
-/// A parsed `d` string.
-///
-/// Deliberately handles only the four commands the set actually uses — `M`,
-/// `L`, relative arc, `Z`. A general SVG parser would be a lot of surface
-/// area for shapes we generate ourselves and can keep simple; anything new
-/// should extend this consciously rather than arrive unnoticed.
+/// A parsed `d` string. Deliberately handles only the four commands the set actually uses
+/// — `M`, `L`, relative arc, `Z`.
 struct SVGPath: Shape {
     let d: String
 
@@ -99,11 +89,7 @@ private struct Tokeniser {
 }
 
 private extension Path {
-    /// SVG's endpoint-parameterised arc, converted to a centre-parameterised
-    /// one. Every arc in this set is a half-circle pair making a ring, so the
-    /// general conversion is more than is strictly needed — but a special case
-    /// that only works for circles would break the first time an icon is
-    /// redrawn.
+    /// SVG's endpoint-parameterised arc, converted to a centre-parameterised one.
     mutating func addRelativeArc(from: CGPoint, to: CGPoint, rx: CGFloat, ry: CGFloat,
                                  rotation: CGFloat, largeArc: Bool, sweep: Bool) {
         guard rx != 0, ry != 0 else { addLine(to: to); return }
@@ -132,13 +118,7 @@ private extension Path {
         if sweep, endAngle < startAngle { endAngle += 2 * .pi }
         if !sweep, endAngle > startAngle { endAngle -= 2 * .pi }
 
-        // Appended to the *current* subpath, not added as a new one. That
-        // distinction is the whole game: a ring is two half-arcs followed by
-        // `Z`, and if each arc opens its own subpath then `Z` closes only the
-        // second one — drawing its chord straight across the circle.
-        //
-        // Ellipses are a transformed circle because SwiftUI has no ellipse-arc
-        // primitive, and scaling the unit arc is exact.
+        // Appended to the *current* subpath, not added as a new one.
         let transform = CGAffineTransform(translationX: cx, y: cy)
             .rotated(by: phi)
             .scaledBy(x: rx, y: ry)
@@ -154,8 +134,8 @@ private extension Shape {
 }
 
 private extension ScaledShape where Content == SVGPath {
-    /// Stroke over fill, so the filled and hollow variants keep the same
-    /// silhouette and optical weight.
+    /// Stroke over fill, so the filled and hollow variants keep the same silhouette and
+    /// optical weight.
     @ViewBuilder
     func stroked(filled: Bool, width: CGFloat, tint: Color) -> some View {
         if filled {

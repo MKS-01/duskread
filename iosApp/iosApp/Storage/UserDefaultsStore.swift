@@ -1,18 +1,8 @@
 import ComposeApp
 import Foundation
 
-/// `KeyValueStore` backed by `UserDefaults`.
-///
-/// The shared module declares the port and iOS supplies the adapter, rather
-/// than Kotlin reaching for `NSUserDefaults` itself. That is what leaves the
-/// platform decisions on this side — where the suite name, an App Group for a
-/// future widget, and iCloud sync are all changes to this one file.
-///
-/// Booleans go in as their string form on purpose. Kotlin's default
-/// implementations of `getBoolean`/`putBoolean` are written in terms of
-/// `getString`, so storing a native `Bool` here would make the two
-/// representations disagree — and silently, since a missing key just reads as
-/// the fallback.
+/// `KeyValueStore` backed by `UserDefaults`. The shared module declares the port and iOS
+/// supplies the adapter, rather than Kotlin reaching for `NSUserDefaults` itself.
 final class UserDefaultsStore: KeyValueStore {
     private let defaults: UserDefaults
 

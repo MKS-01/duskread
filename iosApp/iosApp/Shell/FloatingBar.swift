@@ -2,16 +2,6 @@ import ComposeApp
 import SwiftUI
 
 /// The one piece of navigation furniture.
-///
-/// A pill that floats above a full-screen surface rather than a bar that
-/// occupies the bottom of one, so the reading surface keeps its height and the
-/// controls stay where a thumb already is. It collapses out of the way while a
-/// list is scrolled down and comes back on the first scroll up.
-///
-/// It has two faces — tabs, or the transport for whatever is being read aloud.
-/// One pill that changes what it is, rather than a player slab appearing above
-/// a tab bar: the reading surface keeps its height either way, and the read
-/// stays reachable from every screen without taking a second row of it.
 struct FloatingBar: View {
     @Binding var tab: AppTab
     let collapsed: Bool
@@ -22,8 +12,8 @@ struct FloatingBar: View {
     @Environment(SpeechStore.self) private var speech
     @Environment(\.dusk) private var dusk
 
-    /// Showing the transport does not mean hiding the tabs forever — tapping
-    /// the title peeks back at them, the way the Compose bar does.
+    /// Showing the transport does not mean hiding the tabs forever — tapping the title
+    /// peeks back at them, the way the Compose bar does.
     @State private var peekingTabs = false
 
     private var showsPlayer: Bool { speech.title != nil && !peekingTabs }
@@ -46,8 +36,8 @@ struct FloatingBar: View {
                 .fill(.ultraThinMaterial)
                 .overlay(Capsule().fill(dusk.surface.opacity(0.62)))
                 .overlay(
-                    // A three-stop gradient rather than a flat border, faking
-                    // the light catching the top edge of a raised surface.
+                    // A three-stop gradient rather than a flat border, faking the light
+                    // catching the top edge of a raised surface.
                     Capsule().strokeBorder(
                         LinearGradient(
                             colors: [dusk.outline.opacity(0.9), dusk.outlineVariant, dusk.outline.opacity(0.4)],
@@ -77,8 +67,8 @@ struct FloatingBar: View {
             barButton(IconPaths.shared.Contrast, active: false, onTap: onToggleTheme)
             barButton(IconPaths.shared.Settings, active: false, onTap: onOpenSettings)
 
-            // Only while something is playing, so the pill can be put back
-            // without waiting for the read to end.
+            // Only while something is playing, so the pill can be put back without
+            // waiting for the read to end.
             if speech.title != nil {
                 barButton(IconPaths.shared.Waveform, active: true) { peekingTabs = false }
             }
@@ -96,9 +86,7 @@ struct FloatingBar: View {
                     .dusk(.labelMedium)
                     .foregroundStyle(dusk.onSurface)
                     .lineLimit(1)
-                // A progress line, not a scrubber. Speech has no seek — the
-                // synthesiser speaks from where it is — so a track that looked
-                // draggable would be a control that does nothing.
+                // A progress line, not a scrubber.
                 GeometryReader { proxy in
                     ZStack(alignment: .leading) {
                         Capsule().fill(dusk.outlineVariant)
@@ -141,12 +129,6 @@ enum AppTab: CaseIterable {
 }
 
 /// Tracks scroll direction to decide whether the bar is out of the way.
-///
-/// The thresholds are asymmetric and the run restarts on a direction change,
-/// both deliberately: a bar that collapsed and expanded on the same distance
-/// would flicker on any scroll that wobbles, and one that subtracted rather
-/// than restarted would need a long pull back up to reappear. Reading up is
-/// meant to bring it back almost immediately.
 @Observable
 final class BarCollapse {
     private(set) var collapsed = false
@@ -183,10 +165,6 @@ final class BarCollapse {
 
 extension View {
     /// Feeds this scroll view's offset to the bar.
-    ///
-    /// Applied **to** a `ScrollView`, never above one: the modifier resolves
-    /// against the nearest scroll view, so on an ancestor it silently matches
-    /// nothing and the bar simply never moves.
     func tracksBarCollapse(_ collapse: BarCollapse) -> some View {
         onScrollGeometryChange(for: CGFloat.self) { geometry in
             geometry.contentOffset.y

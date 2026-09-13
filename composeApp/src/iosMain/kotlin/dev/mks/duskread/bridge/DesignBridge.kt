@@ -8,19 +8,11 @@ import dev.mks.duskread.ui.theme.duskReadTypeSpecs
 
 /**
  * The design system, for the SwiftUI shell.
- *
- * Swift builds its `Color`, `Font` and `CGFloat` values from these rather than
- * from a transcription, so there is one place a radius or an accent changes
- * and both UIs follow. `DesignTokens` is already Compose-free and exports on
- * its own; this exists for the one thing that is not — the type scale, which
- * is read back off the live `Typography` rather than restated.
  */
 class DesignBridge internal constructor() {
     /**
-     * The font family is irrelevant to the metrics — only sizes, weights,
-     * line heights and tracking cross the bridge, and `TypeSpec` names its own
-     * family — so the default one is passed rather than loading Jost through
-     * a composition this cannot enter.
+     * The font family is irrelevant to the metrics — only sizes, weights, line heights
+     * and tracking cross the bridge, and `TypeSpec` names its own family.
      */
     private val specs: Map<String, TypeSpec> = duskReadTypeSpecs(AlgoTypography(FontFamily.Default))
 

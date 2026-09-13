@@ -30,33 +30,8 @@ import dev.mks.duskread.ui.common.PrimaryButton
 import dev.mks.duskread.ui.theme.SectionLabel
 
 /**
- * One screen: what the app is, and an optional name.
- *
- * It used to be a four-panel pager — Saved, Focus, Readback, then the name.
- * Three of those panels described tabs that are one tap away and explain
- * themselves on arrival, so the deck's only real effect was to stand between
- * someone and the app they had just installed. The fourth asked for a Storage
- * Access Framework grant to a synced readback folder, which nobody installing
- * this fresh has; that tab is hidden now (see `UserPrefs.readbackEnabled`) and
- * the panel went with it.
- *
- * What survives is the part that could not be discovered in place: the name,
- * because nothing else in the app would think to ask, and one sentence saying
- * what the four pillars are so the tab bar is not a guess.
- *
- * Still not a gate — the button reads "Get started" whether or not the field
- * has anything in it. What changed is what happens to a blank one: it used
- * to be stored as absent, which was the right call when a bare "Hello,
- * there" was the only alternative, but it meant Settings' own name field —
- * see `NameField` — opened on a reader who had never typed anything with no
- * way to tell whether that was a choice or an oversight. A short, friendly,
- * randomly generated name closes that gap without turning the field back
- * into something that has to be filled in. It reads and edits exactly like
- * a typed one; nothing downstream needs to know the difference.
- *
- * Only onboarding does this. Clearing the name back to blank afterwards, in
- * Settings, is a deliberate act and is still honoured as absent — see
- * `UserPrefs.updateName`.
+ * One screen: what the app is, and an optional name. It used to be a four-panel pager —
+ * Saved, Focus, Readback, then the name.
  */
 @Composable
 fun Onboarding(onDone: (name: String?) -> Unit) {
@@ -130,14 +105,8 @@ fun Onboarding(onDone: (name: String?) -> Unit) {
 }
 
 /**
- * "Reader" plus four characters, so a name nobody typed still reads as one
- * rather than as an error code.
- *
- * The character set skips the pairs a phone font blurs together at this size
- * — `0`/`O`, `1`/`I`/`l` — because the one place this string is ever seen
- * again is Settings' own name field, where it has to be legible enough to
- * recognise as "the thing I never bothered to change" rather than copied
- * out and typed somewhere.
+ * "Reader" plus four characters, so a name nobody typed still reads as one rather than as
+ * an error code.
  */
 private fun randomReaderName(): String {
     val chars = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"

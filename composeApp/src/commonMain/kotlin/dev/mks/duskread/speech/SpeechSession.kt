@@ -14,22 +14,8 @@ data class SpeechNowPlaying(
 )
 
 /**
- * The one place "reading aloud" lives, so it can show up in the same floating
- * transport Readback uses and survive the panel that started it closing.
- *
- * A thin request/state pair, the same shape `SummaryRequest` already proved
- * for handing work from a swiped row to something mounted once at the root.
- * [request] is "please read this"; the coroutine that actually drives a
- * [Speaker] through it lives in `HomeScreen` — the one place already alive
- * for the life of the app, the same place [dev.mks.duskread.reader.AudioPlayer]
- * lives for exactly this reason. [state] is what that coroutine reports back,
- * which is what the floating bar and whichever panel started the read both
- * watch to draw themselves.
- *
- * A single session, not one per caller: starting a new read replaces
- * whatever was already playing, the same as pressing play on a different
- * Readback item does today. There is one floating transport, so there can
- * only ever be one thing in it.
+ * The one place "reading aloud" lives, so it can show up in the same floating transport
+ * Readback uses and survive the panel that started it closing.
  */
 object SpeechSession {
     data class Request(val key: String, val title: String, val text: String)
@@ -47,10 +33,6 @@ object SpeechSession {
 
     /**
      * Stops the read outright.
-     *
-     * There is no pause that resumes from where it left off — the platform
-     * engine this runs on on has none either, see `SystemSpeaker.pause` — so
-     * this is the one control a session offers besides starting a new one.
      */
     fun stop() {
         _request.value = null
@@ -64,21 +46,8 @@ object SpeechSession {
 }
 
 /**
- * Mounted once, for the life of the app — the same place [rememberAudioPlayer]
- * gets called from and for the same reason: whatever actually turns a
- * [SpeechSession] request into sound has to outlive the panel that made it.
- *
- * Not a value-returning `rememberX` the way [rememberSpeaker] is, because
- * nothing needs to hold onto what this returns — the whole point of it is the
- * side effect of watching [SpeechSession.request] and acting on it. On
- * Android that means a foreground service with a real notification, the same
- * shape `ReaderPlaybackService` already uses and for the same reason: a read
- * that stops the moment the app is backgrounded, with no notification saying
- * it was ever happening, is not "reading aloud" so much as "reading aloud
- * until you switch apps", and Android's own background-execution limits will
- * kill unfinished work with no service holding it up regardless. Every other
- * platform has no engine to drive in the first place — see
- * [speechSupported] — so there this does nothing.
+ * Mounted once, for the life of the app — the same place [rememberAudioPlayer] gets
+ * called from and for the same reason.
  */
 @Composable
 expect fun DriveSpeechSession()

@@ -1,12 +1,8 @@
 import ComposeApp
 import SwiftUI
 
-/// The two schemes, and the axis they differ on.
-///
-/// Not `@Environment(\.colorScheme)`: both schemes are dark, and what the
-/// toggle changes is whether there is any hue at all. Reading the system's
-/// light/dark setting would answer a question this app does not ask — and Ink,
-/// the colourless one, is the default.
+/// The two schemes, and the axis they differ on. Not `@Environment(\.colorScheme)`: both
+/// schemes are dark, and what the toggle changes is whether there is any hue at all.
 struct DuskTheme {
     let mono: Bool
 
@@ -41,9 +37,8 @@ extension EnvironmentValues {
 }
 
 extension Color {
-    /// Packed ARGB from Kotlin, which is how `DesignTokens` carries a colour —
-    /// `Color` has no Obj-C representation, and a hex string would only be a
-    /// number pretending not to be one.
+    /// Packed ARGB from Kotlin, which is how `DesignTokens` carries a colour — `Color`
+    /// has no Obj-C representation.
     init(argb: Int64) {
         let value = UInt64(bitPattern: Int64(argb))
         self.init(

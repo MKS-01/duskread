@@ -15,28 +15,8 @@ import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 
 /**
- * AES-GCM under a hardware-backed key, with the ciphertext parked in its own
- * preferences file.
- *
- * Two decisions worth stating, because both had an obvious-looking
- * alternative:
- *
- * **Not `androidx.security:security-crypto`.** `EncryptedSharedPreferences`
- * is the stock answer and is exactly this, but the library has been
- * deprecated by Jetpack with no replacement. Taking a dependency on something
- * already on its way out, to save forty lines the platform provides directly
- * at minSdk 31, is a worse trade than writing them.
- *
- * **Not the app's own preferences file.** The token lives in
- * `duskread_secrets`, never in `algo_atlas` — that file is read by the
- * home-screen widget from a different process, is rewritten wholesale by
- * [dev.mks.duskread.links.LinkLibrary], and is where someone will one day add
- * a debug dump. A credential should not be in the blast radius of any of that.
- *
- * The key never leaves the keystore; only its handle does. Losing it (a
- * restore to a new device, a factory reset) makes the stored value
- * undecryptable, which [get] treats as "no token" rather than an error — the
- * reader is asked to reconnect, which is the honest outcome anyway.
+ * AES-GCM under a hardware-backed key, with the ciphertext parked in its own preferences
+ * file.
  */
 private class KeystoreSecretStore(private val prefs: SharedPreferences) : SecretStore {
     override fun get(key: String): String? {
@@ -44,9 +24,8 @@ private class KeystoreSecretStore(private val prefs: SharedPreferences) : Secret
 
         return runCatching {
             val bytes = Base64.decode(stored, Base64.NO_WRAP)
-            // The IV is written in front of the ciphertext rather than stored
-            // beside it: one value to read, and no way for the two halves to
-            // drift apart.
+            // The IV is written in front of the ciphertext rather than stored beside it:
+            // one value to read, and no way for the two halves to drift apart.
             val iv = bytes.copyOfRange(0, IvLength)
             val body = bytes.copyOfRange(IvLength, bytes.size)
 
@@ -81,9 +60,7 @@ private class KeystoreSecretStore(private val prefs: SharedPreferences) : Secret
                 .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
                 .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
                 .setKeySize(256)
-                // Deliberately not setUserAuthenticationRequired: a sync runs
-                // from a Settings tap and must not demand a fingerprint to
-                // read a token the reader just pasted.
+                // Deliberately not setUserAuthenticationRequired.
                 .build(),
         )
         return generator.generateKey()
@@ -105,7 +82,7 @@ actual fun rememberSecretStore(): SecretStore {
 }
 
 /**
- * The same store without composition, for the same reason
- * [keyValueStore] has one: a sync can be driven from outside the Compose tree.
+ * The same store without composition, for the same reason [keyValueStore] has one: a sync
+ * can be driven from outside the Compose tree.
  */
 fun secretStore(context: Context): SecretStore = KeystoreSecretStore(context.getSharedPreferences("duskread_secrets", Context.MODE_PRIVATE))

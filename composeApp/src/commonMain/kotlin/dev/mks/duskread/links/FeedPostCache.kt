@@ -12,11 +12,6 @@ import kotlinx.coroutines.flow.StateFlow
 
 /**
  * One post as it appeared in a feed the last time that feed synced.
- *
- * [content] is the publisher's own markup for the post, present only for the
- * newest few entries of each feed and truncated even there — see `asPost` in
- * `FeedSync.kt` for why. Null means "not cached", never "the post is empty";
- * the reader fetches and extracts the page in that case.
  */
 data class FeedPost(
     val feedId: String,
@@ -28,27 +23,10 @@ data class FeedPost(
     val publishedAt: Long? = null,
     /**
      * Whether this post can be read with no network.
-     *
-     * Decided at sync time by [dev.mks.duskread.links.articleFromFeed] — the
-     * *same* function the reader calls, given the same truncated body it will
-     * be given. A cheaper approximation would eventually disagree with it, and
-     * a badge that lies about what opens offline is worse than no badge.
-     *
-     * False for a feed that publishes only a teaser: three of the followed
-     * blogs do, and no amount of caching at sync time can fix that.
      */
     val offline: Boolean = false,
     /**
      * How long the article is, counted once at sync time.
-     *
-     * Kept as a number rather than recomputed from [content] because the
-     * ranking needs it for every candidate on every re-rank, and splitting a
-     * couple of megabytes of cached markup on the draw path is what a shuffle
-     * tap used to cost.
-     *
-     * It is also more accurate than [content] could be: this is counted from
-     * the publisher's whole body, before the cache truncates it and before it
-     * is dropped entirely for all but the newest few per feed.
      */
     val words: Int? = null,
 )
@@ -58,18 +36,10 @@ fun Map<String, List<FeedPost>>.postFor(url: String): FeedPost? = values.asSeque
 
 /**
  * What the last successful sync of each feed found, keyed by feed.
- *
- * Home reads straight from this rather than fetching on its own, so a
- * followed blog's posts are there the instant the app opens and only change
- * when the reader presses Sync. A feed that fails to load on a given sync
- * keeps whatever it last had here rather than going blank — [replace] is
- * only called for a feed that actually answered, so "cached until new data
- * arrives" is the default, not something callers have to arrange.
  */
 class FeedPostCache(private val store: KeyValueStore) {
-    // Snapshot state and a StateFlow in one, so Compose and the iOS bridge read
-    // the same value. Declared up here because a delegate has to exist before
-    // the property delegating to it.
+    // Snapshot state and a StateFlow in one, so Compose and the iOS bridge read the same
+    // value.
     private val observedPostsByFeed = Observed(load())
 
     var postsByFeed: Map<String, List<FeedPost>> by observedPostsByFeed
@@ -85,13 +55,6 @@ class FeedPostCache(private val store: KeyValueStore) {
 
     /**
      * Every feed that answered, in one write.
-     *
-     * [persist] re-encodes the whole catalogue, so calling [replace] once per
-     * feed meant a fourteen-feed sync serialised roughly a megabyte fourteen
-     * times over to store it once. Merged rather than assigned, because a feed
-     * that failed this time is absent from [byFeed] and has to keep what it
-     * last had — the same contract [replace] has always honoured by being
-     * called only for a feed that actually answered.
      */
     fun replaceAll(byFeed: Map<String, List<FeedPost>>) {
         if (byFeed.isEmpty()) return
@@ -101,12 +64,6 @@ class FeedPostCache(private val store: KeyValueStore) {
 
     /**
      * Every feed's posts at once, for the reset in Settings.
-     *
-     * [replaceAll] cannot do this: it merges, and it returns early on an empty
-     * map precisely so a sync where nothing answered leaves the cache alone.
-     * Erasing needs the opposite of both, and calling the merge with an empty
-     * map — which is what the reset used to do — cleared nothing at all, so
-     * NEXT UP went on offering posts from blogs that no longer existed.
      */
     fun clear() {
         postsByFeed = emptyMap()
@@ -137,10 +94,8 @@ class FeedPostCache(private val store: KeyValueStore) {
     }
 
     private fun decode(record: String): FeedPost? {
-        // Still three, not seven: records written before posts carried an
-        // image, a body, a date or a word count decode as they always did
-        // rather than being dropped, so a reader who updates the app keeps
-        // their feed lists until the next sync fills the new fields in.
+        // Still three, not seven: records written before posts carried an image, a body,
+        // a date or a word count decode as they always did rather than being dropped.
         val fields = record.split(FieldSeparator)
         if (fields.size < 3) return null
 

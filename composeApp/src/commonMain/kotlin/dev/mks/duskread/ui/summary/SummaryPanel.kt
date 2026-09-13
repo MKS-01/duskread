@@ -73,28 +73,6 @@ private sealed interface Stage {
 
 /**
  * The summary itself: one panel, floating, wherever it was asked for.
- *
- * Everything the summary side of the feature does lives here rather than in
- * its two hosts, which are both "put this panel on screen and hand it a
- * target"; duplicating a fetch-then-generate pipeline across them is how they
- * would drift apart.
- *
- * The listening side does not live here any more. It used to — a `Speaker`,
- * a flow collected inline, a meter drawn in the card — but that meant reading
- * aloud stopped the moment this panel left composition, which is not what
- * Readback playback does and there is no reason listening to an article
- * should behave differently from listening to one. `SpeechSession` is what
- * moved: this panel now only starts and stops it, and the actual transport —
- * play state, progress, the stop button — lives in the same floating bar
- * Readback already uses, which is also why it survives this panel closing.
- *
- * Order matters: a cached summary short-circuits the lot, then the caller's
- * own text if it had any (the reader always does), otherwise a fetch — then
- * generation, streamed, so the panel fills in rather than sits. Reading aloud
- * shares that same fetched text rather than asking for the page twice.
- *
- * A downloadable model is *not* downloaded automatically. Hundreds of
- * megabytes over whatever connection the phone is on is the reader's call.
  */
 @OptIn(ExperimentalTime::class)
 @Composable
@@ -105,12 +83,7 @@ fun SummaryPanel(
     hostShowsBusy: Boolean = false,
     onBusyChange: (Boolean) -> Unit = {},
     /**
-     * Speaks the instant the panel opens rather than waiting for the play
-     * button. The caller's call, not a preference the panel reads for
-     * itself — a swipe honours `UserPrefs.swipeDefault`, the reader's own
-     * dedicated read-aloud button always passes true, and its existing
-     * summary button always passes false; three different answers to the
-     * same question the panel has no way to guess on its own.
+     * Speaks the instant the panel opens rather than waiting for the play button.
      */
     autoPlay: Boolean = false,
 ) {
@@ -123,16 +96,11 @@ fun SummaryPanel(
     var stage by remember(target.url) { mutableStateOf<Stage>(Stage.Waiting) }
     val engineState = summariser.state
 
-    // Held so pressing play does not refetch a page the summariser has already
-    // been out and got. It is also why the two halves belong on one panel: they
-    // want the same article, and asking for it twice was the cost of keeping
-    // them apart.
+    // Held so pressing play does not refetch a page the summariser has already been out
+    // and got.
     var articleText by remember(target.url) { mutableStateOf(target.text) }
 
-    // The listening half now runs in `HomeScreen`, not here — see
-    // `SpeechSession`. What used to be this panel's own `speaking` flag is
-    // "is *my* article the one playing", which the session's key answers
-    // without this panel having to own a `Speaker` of its own.
+    // The listening half now runs in `HomeScreen`, not here — see `SpeechSession`.
     val speechNowPlaying by SpeechSession.state.collectAsState()
     val isThisPlaying = speechNowPlaying?.let { it.key == target.url && it.playing } == true
 
@@ -143,10 +111,7 @@ fun SummaryPanel(
         }
         scope.launch {
             val text = articleText ?: loadArticle(client, target.url, target.title, target.feedContent)?.text
-            // Both refusals are stated. A play button that does nothing at
-            // all is indistinguishable from a broken one, and this is the
-            // half of "nothing happened" the speaker itself never sees — it
-            // is never asked in the first place.
+            // Both refusals are stated.
             if (text == null) {
                 ToastRequest.show("Couldn't reach this page to read it.")
                 return@launch
@@ -160,30 +125,15 @@ fun SummaryPanel(
         }
     }
 
-    // Two floating things at the bottom of the screen, one of them saying
-    // only that it has nothing to say. Where the summary failed outright, the
-    // read *is* the panel's whole content, and the transport already carries
-    // it — with its own title, progress and stop — so the card gets out of
-    // the way rather than stacking an explanation on top of a working player.
-    //
-    // Only on [Stage.Failed]. A finished summary is still worth reading while
-    // it plays, which is why pressing play does not close this panel in
-    // general, and a model waiting to be downloaded still has its own button
-    // to offer.
-    // Read off [engineState] as well as [stage], not just the stage: on a
-    // swipe that starts speaking immediately, the read is playing before the
-    // effect below has had a chance to turn "no engine" into a
-    // [Stage.Failed], and a close that depends on the two landing in the
-    // right order is a close that sometimes does not happen.
+    // Two floating things at the bottom of the screen, one of them saying only that it
+    // has nothing to say.
     val nothingToSay = engineState is SummariserState.Unavailable || stage is Stage.Failed
     LaunchedEffect(isThisPlaying, nothingToSay) {
         if (isThisPlaying && nothingToSay) onClose()
     }
 
-    // The one thing autoPlay does — see the parameter's own KDoc for who
-    // decides it and why. `isThisPlaying` is deliberately not in the guard:
-    // this must fire once per fresh target regardless of what some earlier
-    // article happened to leave `SpeechSession` doing.
+    // The one thing autoPlay does — see the parameter's own KDoc for who decides it and
+    // why.
     LaunchedEffect(target.url) { if (autoPlay) togglePlay() }
 
     LaunchedEffect(target.url, engineState) {
@@ -198,15 +148,15 @@ fun SummaryPanel(
             is SummariserState.Downloading -> stage = Stage.Downloading(engineState.fraction)
             is SummariserState.Unavailable -> stage = Stage.Failed(engineState.reason)
             is SummariserState.Ready -> {
-                // A state change that isn't about readiness must not start
-                // a second run for the same article.
+                // A state change that isn't about readiness must not start a second run
+                // for the same article.
                 if (stage is Stage.Generating || stage is Stage.Done) return@LaunchedEffect
 
                 stage = if (target.text == null) Stage.Reading else Stage.Generating("")
                 val text = articleText
                     ?: loadArticle(client, target.url, target.title, target.feedContent)?.text
-                // Kept whatever happens next, so the play button never repeats
-                // a fetch this one already paid for.
+                // Kept whatever happens next, so the play button never repeats a fetch
+                // this one already paid for.
                 text?.let { articleText = it }
 
                 if (text == null || text.length < MinSummarisableChars) {
@@ -215,11 +165,8 @@ fun SummaryPanel(
                 }
 
                 stage = Stage.Generating("")
-                // Not `runCatching`: it catches cancellation too, and this
-                // effect is cancelled routinely — the panel closes, or one of
-                // its keys changes mid-run. Treating that as a failure wrote
-                // `Stage.Failed` on the way out, which on a key change is a
-                // dead article's error landing on the live one.
+                // Not `runCatching`: it catches cancellation too, and this effect is
+                // cancelled routinely — the panel closes.
                 val answer = try {
                     var latest = ""
                     summariser.summarise(target.title, text).collect { chunk ->
@@ -241,8 +188,8 @@ fun SummaryPanel(
                 }
 
                 cache.put(summary)
-                // Asking what is in an article is interest, even if it is
-                // never opened — worth more than nothing, less than a read.
+                // Asking what is in an article is interest, even if it is never opened —
+                // worth more than nothing, less than a read.
                 signals.recordOpen(target.url)
                 stage = Stage.Done(summary)
             }
@@ -250,9 +197,8 @@ fun SummaryPanel(
     }
 
     val busy = stage is Stage.Generating || stage is Stage.Reading || stage is Stage.Downloading
-    // Reported upward so a host with somewhere better to put it can — the
-    // reader swaps its toolbar glyph for a spinner, which is the whole of
-    // what moves on screen while the model runs.
+    // Reported upward so a host with somewhere better to put it can — the reader swaps
+    // its toolbar glyph for a spinner.
     LaunchedEffect(busy) { onBusyChange(busy) }
     DisposableEffect(Unit) { onDispose { onBusyChange(false) } }
 
@@ -270,11 +216,8 @@ fun SummaryPanel(
                 else -> (engineState as? SummariserState.Ready)?.model.orEmpty()
             },
             busy = busy && !hostShowsBusy,
-            // Gated on the platform alone, the same question the reader's own
-            // read-aloud button asks — see `InAppBrowserScreen`. The finer
-            // question, whether a voice is actually installed, is one
-            // `SpeechSession` finds out when a read is actually attempted
-            // rather than one this panel checks in advance for itself.
+            // Gated on the platform alone, the same question the reader's own read-aloud
+            // button asks — see `InAppBrowserScreen`.
             canPlay = speechSupported(),
             playing = isThisPlaying,
             onTogglePlay = ::togglePlay,
@@ -295,11 +238,8 @@ fun SummaryPanel(
 }
 
 /**
- * The design system's card puts the spinner in the toolbar slot the summary
- * icon vacates, so nothing on the page moves but that one glyph. The reader
- * does exactly that and passes `hostShowsBusy`; the overlay a swiped row
- * opens has no toolbar to put it in, so there it stays here beside the
- * model's name.
+ * The design system's card puts the spinner in the toolbar slot the summary icon vacates,
+ * so nothing on the page moves but that one glyph.
  */
 @Composable
 private fun PanelHeader(
@@ -337,8 +277,8 @@ private fun PanelHeader(
             )
             Spacer(Modifier.width(10.dp))
         }
-        // Before the close, and bordered, because it is the one thing on this
-        // header anyone is meant to press. Close is furniture.
+        // Before the close, and bordered, because it is the one thing on this header
+        // anyone is meant to press. Close is furniture.
         if (canPlay) {
             Icon(
                 imageVector = if (playing) DuskReadIcons.Pause else DuskReadIcons.Play,
@@ -367,13 +307,8 @@ private fun PanelHeader(
 }
 
 /**
- * The summary, as one paragraph in one tone.
- *
- * No lead sentence set apart from a body, and no list. A summary of an
- * article is writing about writing: a bulleted one asks the reader to
- * reassemble the argument from fragments, which is most of the work they
- * opened the panel to avoid, and a two-tone split makes the panel change
- * shape depending on how the model happened to punctuate.
+ * The summary, as one paragraph in one tone. No lead sentence set apart from a body, and
+ * no list.
  */
 @Composable
 private fun SummaryBody(summary: ArticleSummary) {
@@ -405,15 +340,11 @@ private fun DownloadPrompt(onDownload: () -> Unit) {
     }
 }
 
-// Below this a page is a stub, a paywall or a cookie wall — and asking a model
-// to summarise two sentences produces a confident summary of nothing.
+// Below this a page is a stub, a paywall or a cookie wall — and asking a model to
+// summarise two sentences produces a confident summary of nothing.
 private const val MinSummarisableChars = 400
 
 /**
  * Below this, a page is chrome rather than an article.
- *
- * Lower than [MinSummarisableChars]: a paragraph is not worth summarising but
- * is perfectly worth hearing, and refusing to read a short post would refuse
- * the case listening is quickest for.
  */
 private const val MinSpeakableChars = 200

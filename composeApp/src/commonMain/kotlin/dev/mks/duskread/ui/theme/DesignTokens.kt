@@ -2,25 +2,10 @@ package dev.mks.duskread.ui.theme
 
 /**
  * The design tokens as plain numbers, for consumers that are not Compose.
- *
- * The SwiftUI iOS shell needs the same colours, radii and durations the
- * Compose UI draws with, and the worst way to give it them is a second copy
- * transcribed into Swift: two sets of literals that agree on the day they are
- * written and quietly stop agreeing on the first tweak afterwards. So the
- * literals live here, once, and [Theme] and [Tokens] build their `Color` and
- * `Dp` values from them rather than owning them.
- *
- * No Compose types anywhere in this file — `Long` ARGB, `Double` dp, `Int`
- * milliseconds — because it has to survive the trip through Obj-C into Swift.
- *
- * Typography is deliberately **not** here; see [TypeSpec].
  */
 object DesignTokens {
-    // ---- Colour -----------------------------------------------------------
-    // Two schemes, both dark: the toggle drops the hue, it does not raise the
-    // brightness. Only the roles the app actually overrides are listed; the
-    // rest fall through to the Material 3 dark baseline, and a Swift consumer
-    // that needs one of those should add it here rather than invent a value.
+    // ---- Colour ----------------------------------------------------------- Two
+    // schemes, both dark: the toggle drops the hue, it does not raise the brightness.
 
     /** "Paper Black" — a page lit by a single terracotta accent. */
     val paperBlack = Palette(
@@ -87,13 +72,8 @@ object DesignTokens {
     const val ChipGap = 6.0
     const val CardGap = 9.0
 
-    // ---- Motion, in milliseconds ------------------------------------------
-    //
-    // Four durations and no curves: every animation in the app is a `tween`
-    // on the default easing, and there is not a single spring anywhere. A
-    // SwiftUI port should mirror that with an equivalent timing curve rather
-    // than reach for `.spring()` — that would be a change to the motion
-    // design, not a translation of it.
+    // ---- Motion, in milliseconds ------------------------------------------ Four
+    // durations and no curves.
 
     const val MotionPushIn = 260
     const val MotionPopFade = 160
@@ -103,10 +83,6 @@ object DesignTokens {
 
 /**
  * One scheme's colours as packed ARGB.
- *
- * A typed carrier rather than a map so Swift gets named properties it cannot
- * misspell, and so adding a role is a compile error on both sides rather than
- * a null at runtime.
  */
 data class Palette(
     val primary: Long,
@@ -128,18 +104,6 @@ data class Palette(
 
 /**
  * One text style, flattened.
- *
- * Type is the one part of the system whose values are **not** literals in this
- * project: [AlgoTypography] re-fonts Material 3's scale and overrides only
- * where the reading needed it, so most sizes come from M3 rather than from
- * here. Restating those numbers in this file would be inventing a second
- * source for them and pinning a version of M3 by hand — so instead the specs
- * are read back off the live `Typography` by `duskReadTypeSpecs()`, and this
- * is just the shape they arrive in.
- *
- * [family] is `"jost"` or `"inconsolata"`; both are bundled, and on iOS
- * `inconsolata` must be too rather than falling back to a system monospace,
- * which resolves to Menlo and is the exact variance the bundled face removed.
  */
 data class TypeSpec(
     val family: String,

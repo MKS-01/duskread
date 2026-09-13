@@ -2,10 +2,6 @@ import ComposeApp
 import SwiftUI
 
 /// Four steps, one pasted token, one shared page.
-///
-/// The steps check themselves rather than reporting a generic error: a setup
-/// that says "something went wrong" leaves the reader guessing which of four
-/// things it was.
 struct NotionSetupScreen: View {
     let onClose: () -> Void
 
@@ -35,11 +31,7 @@ struct NotionSetupScreen: View {
                         .dusk(.bodyMedium)
                         .foregroundStyle(dusk.onSurfaceVariant)
                         .fixedSize(horizontal: false, vertical: true)
-                    // Safari proper, deliberately, while every article opens
-                    // in-app. Signing in inside a sheet this app presented
-                    // means copying a secret out of it and back in; handing
-                    // the task to the browser leaves it where a password
-                    // manager already works.
+                    // Safari proper, deliberately, while every article opens in-app.
                     HeaderAction(label: "Open Notion integrations") {
                         if let url = URL(string: "https://www.notion.so/my-integrations") {
                             UIApplication.shared.open(url)

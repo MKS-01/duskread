@@ -15,16 +15,8 @@ import androidx.compose.ui.unit.dp
 import dev.mks.duskread.ui.theme.Radius
 
 /**
- * The one filled call-to-action shape in the app: `Radius.Inline` corners,
- * the same as every bordered control, rather than a fully rounded pill.
- *
- * Material's default `Button` renders as a pill in the current M3 spec, and
- * the two platform folder pickers plus onboarding's Next/Get started each
- * used to draw their own — one landed on `Radius.Pill` explicitly, the other
- * two inherited Material's default. All three read as a different design
- * system from the rest of the app, which draws nothing else fully round
- * except an actual circular icon button. One component fixes all three at
- * once.
+ * The one filled call-to-action shape in the app: `Radius.Inline` corners, the same as
+ * every bordered control, rather than a fully rounded pill.
  */
 @Composable
 fun PrimaryButton(label: String, modifier: Modifier = Modifier, enabled: Boolean = true, onClick: () -> Unit) {

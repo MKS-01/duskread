@@ -58,12 +58,8 @@ import dev.mks.duskread.ui.theme.Mono
 import dev.mks.duskread.ui.theme.Radius
 
 /**
- * Past reads from readback (github.com/MKS-01/readback) — a personal
- * text-to-speech reader whose library this app only ever reads, never
- * writes. This is the signature screen of the Amplitude direction: two facts
- * per row instead of five, and the third fact — how long this actually is —
- * is drawn as a waveform rather than written out. Rows sit flush on the
- * background with a hairline underneath each one; nothing here is boxed.
+ * Past reads from readback (github.com/MKS-01/readback) — a personal text-to-speech
+ * reader whose library this app only ever reads, never writes.
  */
 @Composable
 fun ReaderTab(
@@ -80,10 +76,8 @@ fun ReaderTab(
     var sort by remember { mutableStateOf(ReadSort.NEWEST) }
     var items by remember { mutableStateOf<List<ReadItem>?>(null) }
 
-    // `source`, `query` and `sort` are the only things a read list depends
-    // on, and all three are already observed here — nothing about this list
-    // can go stale in a way only a manual pull can catch, so there is no
-    // refresh gesture to wire up.
+    // `source`, `query` and `sort` are the only things a read list depends on, and all
+    // three are already observed here.
     LaunchedEffect(source, query, sort) {
         items = if (source == ReaderSource.READY) repository.listReads(query, sort) else emptyList()
     }
@@ -92,9 +86,8 @@ fun ReaderTab(
         modifier = modifier.fillMaxSize(),
         contentPadding = contentPadding,
     ) {
-        // No now-playing bar in the list any more — the transport is a face of
-        // the floating nav bar in HomeScreen, where it survives both scrolling
-        // this list and leaving the tab entirely. See `FloatingBar`.
+        // No now-playing bar in the list any more — the transport is a face of the
+        // floating nav bar in HomeScreen.
 
         if (source == ReaderSource.NOT_CONFIGURED) {
             item("picker") {
@@ -111,11 +104,7 @@ fun ReaderTab(
             return@LazyColumn
         }
 
-        // The folder picker used to live at the end of the sort-chip row,
-        // where it read as a fourth destination on par with Newest/Oldest
-        // rather than the "change where the library comes from" setting it
-        // actually is. It gets the same top-right corner Home gives Settings
-        // instead — same idea, same weight, its own row.
+        // The folder picker used to live at the end of the sort-chip row.
         item("head") {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                 ReaderSourcePicker(repository, compact = true)
@@ -136,9 +125,8 @@ fun ReaderTab(
             }
         }
 
-        // A pointer at the transport, not a second copy of it — the controls
-        // themselves stay in the floating bar below, where they're always
-        // reachable regardless of scroll position.
+        // A pointer at the transport, not a second copy of it — the controls themselves
+        // stay in the floating bar below.
         playback.item?.let { nowPlaying ->
             item("now-playing") {
                 NowPlayingTip(title = nowPlaying.title, modifier = Modifier.padding(bottom = 16.dp))
@@ -181,12 +169,8 @@ fun ReaderTab(
 }
 
 /**
- * An acknowledgement that something is playing, not a second transport — the
- * controls stay in the floating bar, which is reachable from any scroll
- * position; this only exists so the list itself says which read that bar
- * belongs to right now. Wraps rather than truncating: a title long enough to
- * threaten the message is exactly the title a reader most needs to actually
- * read here.
+ * An acknowledgement that something is playing, not a second transport — the controls
+ * stay in the floating bar, which is reachable from any scroll position.
  */
 @Composable
 private fun NowPlayingTip(title: String, modifier: Modifier = Modifier) {
@@ -210,16 +194,8 @@ private fun NowPlayingTip(title: String, modifier: Modifier = Modifier) {
 }
 
 /**
- * One read: a monogram, a title, two facts (duration, word count) and a
- * waveform — real data, not a decoration, since its filled fraction is the
- * clip's actual playback position. The playing row is the only coloured
- * thing here: title and duration switch to the accent, and its waveform
- * fills in from the left as the clip runs.
- *
- * [onOpenSource] is its own tap target, separate from [onTap]: the row
- * itself is "play this read", the source line underneath is "go to where it
- * came from" — the same in-app reader flow saved links and feed posts already
- * open into, so a read is read-back-then-verify rather than a dead end.
+ * One read: a monogram, a title, two facts (duration, word count) and a waveform — real
+ * data, not a decoration.
  */
 @Composable
 private fun ReadRow(
@@ -237,8 +213,8 @@ private fun ReadRow(
             host = hostOf(item.sourceUrl),
             title = item.title,
             onClick = onTap,
-            // The playing row is the only coloured thing on screen — title,
-            // duration and the sourcechip's border all follow it.
+            // The playing row is the only coloured thing on screen — title, duration and
+            // the sourcechip's border all follow it.
             tone = if (playing) RowTone.Accent else RowTone.Normal,
             trailing = {
                 if (playing) {
@@ -271,14 +247,13 @@ private fun ReadRow(
                 },
                 accent = playing,
             )
-            // The word count stays muted even on the playing row: the accent
-            // has to mean "this one is playing", and a second coloured fact
-            // that has nothing to do with playback dilutes it.
+            // The word count stays muted even on the playing row: the accent has to mean
+            // "this one is playing".
             RowMeta("${item.wordCount}w")
         }
 
-        // Outside the row's own tap target, deliberately: the row is "play
-        // this read", this is "go to where it came from".
+        // Outside the row's own tap target, deliberately: the row is "play this read",
+        // this is "go to where it came from".
         Spacer(Modifier.height(9.dp))
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -291,17 +266,15 @@ private fun ReadRow(
                 imageVector = DuskReadIcons.External,
                 contentDescription = null,
                 modifier = Modifier.size(11.dp),
-                // The one glyph on an otherwise-muted row that's allowed a
-                // permanent hint of the accent — it marks "this leaves the
-                // app" regardless of playback state, so it stays legible even
-                // when nothing on the row is playing.
+                // The one glyph on an otherwise-muted row that's allowed a permanent hint
+                // of the accent.
                 tint = scheme.primary.copy(alpha = 0.75f),
             )
             Spacer(Modifier.width(5.dp))
             RowMeta(hostOf(item.sourceUrl))
         }
-        // 6, not the divider's usual 15: the source row above carries 4dp of
-        // its own padding, and the gap that matters is the optical one.
+        // 6, not the divider's usual 15: the source row above carries 4dp of its own
+        // padding, and the gap that matters is the optical one.
         ListRowDivider(last, topSpacing = 6.dp)
     }
 }

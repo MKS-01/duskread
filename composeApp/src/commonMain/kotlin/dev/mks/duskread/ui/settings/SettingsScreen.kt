@@ -85,16 +85,8 @@ import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
 /**
- * Everything that isn't a tab of its own, gathered behind a gear rather than
- * scattered across whichever screen happens to own a given piece of state:
- * the profile name onboarding asked for once, the Notion connection that
- * supplies the followed blogs, and a way to paste a list of links in. If more
- * settles here later, this is where it goes, not a second button bar bolted
- * onto some other tab.
- *
- * Flat, same as every other screen in the Amplitude direction: an eyebrow
- * with its inline rule opens each section, and nothing here sits in a boxed
- * card — this used to be the one screen still built that way.
+ * Everything that isn't a tab of its own, gathered behind a gear rather than scattered
+ * across whichever screen happens to own a given piece of state.
  */
 @Composable
 fun SettingsScreen(
@@ -115,17 +107,12 @@ fun SettingsScreen(
     val secrets = rememberSecretStore()
     var setupOpen by remember { mutableStateOf(false) }
 
-    // Bumped when the setup sheet changes the connection, so `NotionSettings`
-    // re-reads the keystore instead of showing what was true when it was first
-    // composed.
+    // Bumped when the setup sheet changes the connection, so `NotionSettings` re-reads
+    // the keystore instead of showing what was true when it was first composed.
     var connectionEpoch by remember { mutableStateOf(0) }
 
-    // Mounted here rather than inside `NotionSettings`, and the reason is a
-    // crash rather than tidiness: the section is rendered inside a
-    // `verticalScroll`, which measures its children with unbounded height, and
-    // the sheet scrolls itself. Nested that way Compose fatals with "Vertically
-    // scrollable component was measured with an infinity maximum height". It
-    // has to be a sibling of the scroll, never a descendant.
+    // Mounted here rather than inside `NotionSettings`, and the reason is a crash rather
+    // than tidiness: the section is rendered inside a `verticalScroll`.
     if (setupOpen) {
         NotionSetupSheet(
             prefs = notion,
@@ -173,28 +160,13 @@ fun SettingsScreen(
             Column(
                 Modifier
                     .fillMaxSize()
-                    // Before verticalScroll, not after: the inset has to
-                    // shrink the *viewport* for the focused field to be
-                    // scrolled into view. Applied inside the scroll it would
-                    // only pad the content and the keyboard would still cover
-                    // the field it was opened for.
-                    //
-                    // union rather than navigationBarsPadding().imePadding():
-                    // the two overlap — an open keyboard already covers the
-                    // navigation bar — so applying both in turn pads twice and
-                    // leaves a gap the height of the bar under the keyboard.
-                    // union takes the larger, which is what is actually in the
-                    // way.
+                    // Before verticalScroll, not after: the inset has to shrink the
+                    // *viewport* for the focused field to be scrolled into view.
                     .windowInsetsPadding(WindowInsets.navigationBars.union(WindowInsets.ime))
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 16.dp, vertical = 8.dp),
             ) {
-                // Hidden, not disabled, off Android. What is left in the
-                // section is the state of an engine this platform does not
-                // have, down to a download button for a model it cannot run,
-                // and `SummarySettings` binds that engine as its first act —
-                // on a target where it is a stub, the section is a control to
-                // learn to ignore and a needless allocation behind it.
+                // Hidden, not disabled, off Android.
                 if (summariesSupported()) {
                     EyebrowHeader(text = "SUMMARIES")
                     Spacer(Modifier.height(14.dp))
@@ -203,9 +175,8 @@ fun SettingsScreen(
                     Spacer(Modifier.height(28.dp))
                 }
 
-                // Same rule as SUMMARIES above: hidden where the platform has
-                // no engine, rather than shown as a choice between two voices
-                // that cannot speak.
+                // Same rule as SUMMARIES above: hidden where the platform has no engine,
+                // rather than shown as a choice between two voices that cannot speak.
                 if (speechSupported()) {
                     EyebrowHeader(text = "VOICE")
                     Spacer(Modifier.height(14.dp))
@@ -214,11 +185,7 @@ fun SettingsScreen(
                     Spacer(Modifier.height(28.dp))
                 }
 
-                // Only when the swipe genuinely has two things to choose
-                // between. With just one of summaries or speech working, the
-                // panel can only ever do that one thing regardless of this
-                // setting, and offering a choice with one dead option is
-                // worse than not offering it.
+                // Only when the swipe genuinely has two things to choose between.
                 if (summariesSupported() && speechSupported()) {
                     EyebrowHeader(text = "SWIPE")
                     Spacer(Modifier.height(14.dp))
@@ -243,12 +210,8 @@ fun SettingsScreen(
 
                 Spacer(Modifier.height(28.dp))
 
-                // Below the reading settings and the connection, because both
-                // are things a reader came here to change and these two are
-                // things they set once. Appearance is the more nearly dead of
-                // the two: the same toggle sits in the bar on every screen, and
-                // this row is the explanation of it rather than the way to
-                // reach it.
+                // Below the reading settings and the connection, because both are things
+                // a reader came here to change and these two are things they set once.
                 EyebrowHeader(text = "APPEARANCE")
                 Spacer(Modifier.height(14.dp))
                 ThemeRow(mono = mono, onToggleTheme = onToggleTheme)
@@ -278,9 +241,6 @@ fun SettingsScreen(
                 )
 
                 // Last, unheaded, and mono like every other fact in the app.
-                // A version number is not a setting — it earns a line because
-                // it is the first thing anyone is asked for when something is
-                // wrong, and nowhere else in the app reports it.
                 Spacer(Modifier.height(36.dp))
                 VersionLine(prefs)
             }
@@ -289,9 +249,8 @@ fun SettingsScreen(
 }
 
 /**
- * The same name onboarding asks for, editable afterwards — it only feeds the
- * dashboard greeting, so there is nowhere else in the app a reader would
- * think to look for a way to change it once they've skipped past the intro.
+ * The same name onboarding asks for, editable afterwards — it only feeds the dashboard
+ * greeting.
  */
 @Composable
 private fun NameField(prefs: UserPrefs) {
@@ -328,10 +287,7 @@ private fun NameField(prefs: UserPrefs) {
 }
 
 /**
- * The same toggle the tab bar's contrast button reaches, surfaced here too
- * so the current scheme is somewhere a reader would think to check it rather
- * than only discoverable by noticing the bar icon changed state. The detail
- * line doubles as the current-state readout the row itself is titled after.
+ * The same toggle the tab bar's contrast button reaches.
  */
 @Composable
 private fun ThemeRow(mono: Boolean, onToggleTheme: () -> Unit) {
@@ -361,17 +317,8 @@ private fun ThemeRow(mono: Boolean, onToggleTheme: () -> Unit) {
 }
 
 /**
- * Whether the model is there, and a way to throw away what it has written.
- *
- * There is no length control any more. It was two chips and a note, and it
- * asked the reader a question they could not answer in advance: how long a
- * summary a piece wants is a property of the piece, not a standing
- * preference, and whichever chip was set applied to a 300-word note and a
- * 4,000-word essay alike. `SummaryDepth` reads it off the article instead, so
- * what is left here is the state of the engine rather than its settings.
- *
- * This is the one screen that binds the engine deliberately: everywhere else
- * the summariser is built only when a summary is actually asked for.
+ * Whether the model is there, and a way to throw away what it has written. There is no
+ * length control any more.
  */
 @Composable
 private fun SummarySettings() {
@@ -407,12 +354,12 @@ private fun SummarySettings() {
             SummaryActionChip("Download the model") { scope.launch { summariser.prepare() } }
         }
 
-        // Only when there is something to clear: an action that does nothing
-        // is worse than no action, and the count is the only reason to show it.
+        // Only when there is something to clear: an action that does nothing is worse
+        // than no action, and the count is the only reason to show it.
         if (cache.summaries.isNotEmpty()) {
             Spacer(Modifier.height(8.dp))
-            // Offset back by the action's own inset so its text starts on the
-            // section's left edge rather than 12dp inside it.
+            // Offset back by the action's own inset so its text starts on the section's
+            // left edge rather than 12dp inside it.
             Box(Modifier.offset(x = (-12).dp)) {
                 TransferAction("Clear ${cache.summaries.size} saved summar${if (cache.summaries.size == 1) "y" else "ies"}") {
                     cache.clear()
@@ -438,15 +385,6 @@ private fun TransferAction(label: String, onClick: () -> Unit) {
 
 /**
  * The Notion connection, reduced to a state line and three actions.
- *
- * Everything that used to be here — a token field, two database-ID fields and
- * a "test connection" button — moved into [NotionSetupSheet], because none of
- * it was a setting. They were the steps of a one-time setup laid out as if
- * they were preferences, in an order the screen could not enforce and with no
- * way to say which one had gone wrong.
- *
- * What is left is what a settings screen is actually for: what the state is
- * now, and the small number of things to do about it.
  */
 @Composable
 private fun NotionSettings(
@@ -464,15 +402,14 @@ private fun NotionSettings(
     val secrets = rememberSecretStore()
     val scope = rememberCoroutineScope()
 
-    // Read into state rather than on every recomposition: reaching the
-    // keystore is cheap but not free, and the answer only changes here or in
-    // the setup sheet — which is what [epoch] reports.
+    // Read into state rather than on every recomposition: reaching the keystore is cheap
+    // but not free, and the answer only changes here or in the setup sheet.
     var connected by remember(epoch) { mutableStateOf(secrets.get(NotionTokenKey) != null) }
     var busy by remember { mutableStateOf(false) }
     var note by remember { mutableStateOf<String?>(null) }
 
-    // Same self-clearing note the export/import block uses — a result worth
-    // reading once, not a status that lives on the screen forever.
+    // Same self-clearing note the export/import block uses — a result worth reading once,
+    // not a status that lives on the screen forever.
     LaunchedEffect(note) {
         if (note != null) {
             delay(5_000)
@@ -492,13 +429,8 @@ private fun NotionSettings(
 
         Spacer(Modifier.height(14.dp))
 
-        // The state line, shaped like every other two-line settings row. The
-        // title is what is true now; the detail is when it was last true.
-        //
-        // Both ids, not just Sources: they are written together by `provision`
-        // and cannot actually diverge, but asking about one of them says that
-        // one *is* the connection, which is the misreading this whole screen
-        // used to invite. It reports both counts for the same reason.
+        // The state line, shaped like every other two-line settings row. The title is
+        // what is true now; the detail is when it was last true.
         Text(
             text = note ?: when {
                 !connected -> "Not connected"
@@ -532,8 +464,8 @@ private fun NotionSettings(
         ) {
             TransferAction(if (connected) "Set up again" else "Set up", onClick = onOpenSetup)
 
-            // Only once there is something to sync. Before that the button
-            // could only ever report the setup that has not happened.
+            // Only once there is something to sync. Before that the button could only
+            // ever report the setup that has not happened.
             AnimatedVisibility(connected) {
                 TransferAction(if (busy) "Syncing…" else "Sync now") {
                     if (busy) return@TransferAction
@@ -553,15 +485,15 @@ private fun NotionSettings(
                 }
             }
 
-            // Never in the accent: the one coloured thing on a screen should
-            // not be the destructive one.
+            // Never in the accent: the one coloured thing on a screen should not be the
+            // destructive one.
             AnimatedVisibility(connected) {
                 TransferAction("Disconnect") {
                     auth.disconnect()
                     notion.clear()
                     connected = false
-                    // Followed feeds stay. They are DuskRead's own data now,
-                    // and signing out of a source should not empty the app.
+                    // Followed feeds stay. They are DuskRead's own data now, and signing
+                    // out of a source should not empty the app.
                     note = "Disconnected — feeds kept"
                 }
             }
@@ -570,36 +502,8 @@ private fun NotionSettings(
 }
 
 /**
- * Erase everything, behind a confirmation that happens in place.
- *
- * **Not a dialog.** This screen has no boxed card anywhere in it and the app
- * has no dialog pattern at all — confirmations are `Toast` or an inline note —
- * so a Material `AlertDialog` here would be the first rounded surface in the
- * Amplitude direction, introduced by its most destructive control. The action
- * swaps for a question and two answers instead, which is the same shape as
- * `NotionSettings`' own note line one section up.
- *
- * Neither answer takes the accent, for the reason `Disconnect` already gives:
- * the one coloured thing on a screen should not be the destructive one. The
- * *question* carries the weight instead, in `onSurface` against the muted
- * actions beneath it.
- *
- * The order of the wipe matters, at both ends.
- *
- * [DataEpoch.bump] goes first, and the disconnect straight after it. A sync
- * is a minute of network calls with writes between them; the wipe is a dozen
- * synchronous lines. Land the tap in the middle of one and the sync goes on
- * writing into the store afterwards — which is how a Following list of a
- * dozen blogs used to reappear on Home moments after being erased, restored
- * from Notion by a coroutine that had already read the rows. The epoch is
- * what makes every remaining write in that sync decline; taking the token
- * away as well means the calls it has not made yet fail rather than
- * succeeding into a void.
- *
- * [UserPrefs.reset] goes last because it clears `introSeen`, and `App.kt`
- * reads that reactively — the moment it flips, the whole app is Onboarding
- * again and this screen no longer exists. Anything left to clear after it
- * would be running inside a composable on its way out.
+ * Erase everything, behind a confirmation that happens in place. **Not a dialog.** This
+ * screen has no boxed card anywhere in it and the app has no dialog pattern at all.
  */
 @Composable
 private fun ResetSettings(
@@ -645,11 +549,11 @@ private fun ResetSettings(
         ) {
             if (confirming) {
                 TransferAction("Erase") {
-                    // Both of these before a single thing is cleared, and in
-                    // this order — see the note on ordering above.
+                    // Both of these before a single thing is cleared, and in this order —
+                    // see the note on ordering above.
                     DataEpoch.bump()
-                    // The token and the ids it resolved, together — one without
-                    // the other is a connection that cannot be used or repaired.
+                    // The token and the ids it resolved, together — one without the other
+                    // is a connection that cannot be used or repaired.
                     auth.disconnect()
                     notion.clear()
 
@@ -658,10 +562,8 @@ private fun ResetSettings(
                     feedPosts.clear()
                     signals.clear()
                     summaries.clear()
-                    // Anything the widget captured since the last resume, too:
-                    // draining is the only way to empty it, and a link left
-                    // here would be filed into the library on the next resume
-                    // — after the erase, out of an app that had none.
+                    // Anything the widget captured since the last resume, too: draining
+                    // is the only way to empty it.
                     LinkInbox.drain(store)
 
                     onErased()
@@ -677,18 +579,6 @@ private fun ResetSettings(
 
 /**
  * Which voice reads an article aloud.
- *
- * Chips rather than a list of rows: a small set of mutually exclusive options
- * with a one-line consequence underneath is the shape this screen already
- * uses for the swipe default below, and a second shape for the same kind of
- * question would only make the screen less predictable. The selected chip
- * takes the accent, which is the "selected control" exception to the
- * one-accent rule rather than a new one.
- *
- * The readback chip only appears once its tab does, because choosing it
- * otherwise would point playback at a library with no way to reach or
- * configure it — see `UserPrefs.toggleReadback`, which is the other half of
- * keeping those two in step.
  */
 @Composable
 private fun VoiceSettings(prefs: UserPrefs) {
@@ -708,10 +598,8 @@ private fun VoiceSettings(prefs: UserPrefs) {
         )
         Spacer(Modifier.height(12.dp))
 
-        // A row that wraps rather than a plain `Row`: "Readback library" is
-        // long enough, next to "System voice", that the pair does not reliably
-        // fit one line on a narrower phone — a plain Row would run the second
-        // chip off the edge instead of giving it a line of its own.
+        // A row that wraps rather than a plain `Row`: "Readback library" is long enough,
+        // next to "System voice".
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(Space.ChipGap),
             verticalArrangement = Arrangement.spacedBy(Space.ChipGap),
@@ -733,9 +621,8 @@ private fun VoiceSettings(prefs: UserPrefs) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
-        // The readback library's readiness is a folder grant, which the
-        // Readback tab already asks about in its own words; only the speaking
-        // voice has an engine worth reporting on.
+        // The readback library's readiness is a folder grant, which the Readback tab
+        // already asks about in its own words.
         if (prefs.voice != VoiceChoice.ReadbackLibrary) {
             Spacer(Modifier.height(12.dp))
             Text(
@@ -754,10 +641,6 @@ private fun VoiceSettings(prefs: UserPrefs) {
 
 /**
  * Whether a left swipe opens speaking, or opens the summary and waits.
- *
- * The same two-chip shape as [VoiceSettings] just above it, for the same
- * reason: this is another "pick one of two, see a line about what it means"
- * question, and it already has a shape on this screen.
  */
 @Composable
 private fun SwipeSettings(prefs: UserPrefs) {
@@ -795,18 +678,8 @@ private fun SwipeSettings(prefs: UserPrefs) {
 }
 
 /**
- * The version, and the way in to the Readback tab.
- *
- * Three taps inside [UnlockWindowMs] switches `readbackEnabled`. It reads as a
- * plain mono fact and stays one — no ripple, no cursor, nothing that invites
- * the tap — because a visible switch here would be a control most people
- * cannot use: the tab browses a `library.db` that only exists on a device the
- * separate readback project's sync script has written to.
- *
- * The window matters more than the count. Without it the three taps could be
- * spread across three separate visits to Settings, and someone who prods the
- * version line out of curiosity over a week would eventually unlock a tab they
- * never asked for and cannot explain.
+ * The version, and the way in to the Readback tab. Three taps inside [UnlockWindowMs]
+ * switches `readbackEnabled`.
  */
 @OptIn(ExperimentalTime::class)
 @Composable
@@ -821,14 +694,14 @@ private fun VersionLine(prefs: UserPrefs) {
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier
             .clickable(
-                // No ripple and no pointer affordance: the whole point is that
-                // the line does not advertise itself.
+                // No ripple and no pointer affordance: the whole point is that the line
+                // does not advertise itself.
                 indication = null,
                 interactionSource = remember { MutableInteractionSource() },
             ) {
                 val now = Clock.System.now().toEpochMilliseconds()
-                // A late tap restarts the run rather than failing it, so the
-                // gesture is never in a state where it has to be waited out.
+                // A late tap restarts the run rather than failing it, so the gesture is
+                // never in a state where it has to be waited out.
                 taps = if (now - firstTapAt > UnlockWindowMs) 1 else taps + 1
                 if (taps == 1) firstTapAt = now
 

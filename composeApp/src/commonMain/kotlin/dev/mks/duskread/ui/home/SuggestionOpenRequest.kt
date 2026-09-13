@@ -4,18 +4,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
 /**
- * A NEXT UP pick tapped from the reading-suggestion widget, waiting to be
- * opened and recorded.
- *
- * The same handoff shape as [HomeTabRequest]/`FocusRequest`, and for a
- * sharper reason than usual: the widget ranks its own throwaway copy of the
- * candidate pool to decide what to suggest, which is fine for a read-only
- * pick, but *opening* one has to run through the app's own live
- * `LinkLibrary`/`ReadingSignals` — the instances `HomeScreen` already
- * hoists — rather than a second copy the widget constructs for itself. Two
- * writers over the same storage key is exactly the hazard this app's own
- * invariants warn about (`docs/architecture.md`), so the widget only ever
- * hands over a URL; the save, the read toggle and the signal all happen here.
+ * A NEXT UP pick tapped from the reading-suggestion widget, waiting to be opened and
+ * recorded.
  */
 object SuggestionOpenRequest {
     private val _pending = MutableStateFlow<PendingSuggestion?>(null)
