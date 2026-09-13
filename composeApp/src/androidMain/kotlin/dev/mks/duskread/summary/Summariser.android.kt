@@ -115,7 +115,7 @@ private object Summarisers {
  * codes the summarisation artifact declares are listed.
  */
 internal fun describe(failure: Throwable): String {
-    val code = (failure as? GenAiException)?.errorCode ?: return failure.message ?: "The model could not be reached."
+    val code = (failure as? GenAiException)?.errorCode ?: return failure.message ?: failure.named()
 
     return when (code) {
         GenAiException.ErrorCode.NOT_AVAILABLE -> NoModelHere
@@ -129,6 +129,18 @@ internal fun describe(failure: Throwable): String {
         else -> failure.message ?: "The model could not finish this one."
     }
 }
+
+/**
+ * The last resort, and the one case that used to name nothing.
+ *
+ * A throwable with no message arrived as a bare "The model could not be
+ * reached.", which is the flattening the doc above rules out — it tells the
+ * reader nothing to act on and a bug report nothing to go on, and the app
+ * keeps no log to look the real one up in. The class name is what survives:
+ * this is the same trade as passing `failure.message` through, which is not
+ * prose either.
+ */
+private fun Throwable.named(): String = "The model could not be reached (${this::class.simpleName ?: "unknown"})."
 
 /** Not disposed on leaving: the instance is shared and its binding lives as long as the process. */
 @Composable

@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.util.concurrent.Executor
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
@@ -53,7 +54,7 @@ internal class SummarizationEngine(private val context: Context, private val len
             .build(),
     ).also { client = it }
 
-    suspend fun status(): SummariserState = runCatching {
+    suspend fun status(): SummariserState = runCatchingCancellable {
         when (client().checkFeatureStatus().await()) {
             FeatureStatus.AVAILABLE -> SummariserState.Ready(modelName())
             FeatureStatus.DOWNLOADABLE -> SummariserState.Downloadable
@@ -62,7 +63,7 @@ internal class SummarizationEngine(private val context: Context, private val len
         }
     }.getOrElse { failure -> SummariserState.Unavailable(describe(failure)) }
 
-    private suspend fun modelName(): String = runCatching { client().baseModelName.await() }.getOrNull()?.takeIf { it.isNotBlank() }?.let { "Gemini Nano · $it" }
+    private suspend fun modelName(): String = runCatchingCancellable { client().baseModelName.await() }.getOrNull()?.takeIf { it.isNotBlank() }?.let { "Gemini Nano · $it" }
         ?: "Gemini Nano"
 
     /**
@@ -127,6 +128,25 @@ internal class SummarizationEngine(private val context: Context, private val len
         runCatching { client?.close() }
         client = null
     }
+}
+
+/**
+ * [runCatching], minus the one thing a suspending function must never catch.
+ *
+ * `runCatching` catches `CancellationException` along with everything else,
+ * so a coroutine that was merely *told to stop* comes back as a failed
+ * `Result`. That cost a bug worth naming: a cancellation carries no message,
+ * so it reached [describe], fell through to its unknown-failure fallback, and
+ * a panel closed while the feature check was still in flight left the shared
+ * summariser reading "The model could not be reached." — for the rest of the
+ * process, since [Summarisers] holds one instance per length.
+ */
+private inline fun <T> runCatchingCancellable(block: () -> T): Result<T> = try {
+    Result.success(block())
+} catch (cancellation: CancellationException) {
+    throw cancellation
+} catch (failure: Throwable) {
+    Result.failure(failure)
 }
 
 /**

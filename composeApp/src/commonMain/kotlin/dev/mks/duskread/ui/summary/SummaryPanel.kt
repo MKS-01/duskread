@@ -1,6 +1,5 @@
 package dev.mks.duskread.ui.summary
 
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -49,6 +48,7 @@ import dev.mks.duskread.ui.theme.Mono
 import dev.mks.duskread.ui.theme.Radius
 import dev.mks.duskread.ui.theme.Stroke
 import kotlinx.coroutines.launch
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
@@ -217,14 +217,21 @@ fun SummaryPanel(
                 }
 
                 stage = Stage.Generating("")
-                val answer = runCatching {
+                // Not `runCatching`: it catches cancellation too, and this
+                // effect is cancelled routinely — the panel closes, or one of
+                // its keys changes mid-run. Treating that as a failure wrote
+                // `Stage.Failed` on the way out, which on a key change is a
+                // dead article's error landing on the live one.
+                val answer = try {
                     var latest = ""
                     summariser.summarise(target.title, text).collect { chunk ->
                         latest = chunk
                         stage = Stage.Generating(chunk)
                     }
                     latest
-                }.getOrElse { failure ->
+                } catch (cancellation: CancellationException) {
+                    throw cancellation
+                } catch (failure: Throwable) {
                     stage = Stage.Failed(failure.message ?: "The model could not finish this one.")
                     return@LaunchedEffect
                 }
