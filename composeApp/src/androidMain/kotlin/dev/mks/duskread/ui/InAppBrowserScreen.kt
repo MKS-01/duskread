@@ -15,11 +15,9 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -540,7 +538,9 @@ private suspend fun settle(
     val thrown = abs(velocity) > flingAway && velocity.pageStep() == step
 
     if (queue.entryAt(at + step) == null || !(far || thrown)) {
-        shift.animateTo(0f, spring(Spring.DampingRatioNoBouncy, Spring.StiffnessMediumLow))
+        // A tween, not a spring: the app has four durations and no springs, and one here
+        // for the sake of a nicer rubber band would be a change to the motion design.
+        shift.animateTo(0f, tween(Motion.Chip))
         return
     }
 

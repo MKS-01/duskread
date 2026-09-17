@@ -149,6 +149,14 @@ App Group, accessibility) are Apple's; speech stayed in Kotlin/Native because
 Which side an adapter lands on is judged per case; what does not move is the
 contract.
 
+The reading queue is the smallest example of that. `ui/ReadingQueue.kt` is the
+list an article was opened from — the entries, the position in them, what the
+ends are called and what opening one records — and `rememberArticleOpener`
+takes it rather than a URL. Android's embedded reader turns between those
+entries on a horizontal drag; `SFSafariViewController` cannot, so the iOS
+adapter reads the current entry and drops the rest. One contract, one
+platform that uses all of it.
+
 **Motion does not become springs.** `Motion` is four `tween` durations on
 Compose's default easing, and there is not one spring in the codebase. Swift
 mirrors them as the same cubic at the same durations. Adopting SwiftUI's
