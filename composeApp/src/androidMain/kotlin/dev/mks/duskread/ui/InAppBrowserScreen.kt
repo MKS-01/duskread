@@ -233,9 +233,16 @@ fun InAppBrowserScreen(queue: ReadingQueue, mono: Boolean, onClose: () -> Unit, 
         }
     }
 
-    // The page turn, and only in the reader: on the live page a horizontal drag is the
-    // page's own, and the WebView is welcome to it.
-    val canTurn = queue.entries.size > 1 && mode == BrowserMode.Reader && panelIntent == null
+    /*
+     * The page turn. It works on the original page as well as in the reader — an article
+     * that will not extract is still an article in the list, and leaving it a dead end
+     * was worse than the horizontal drags it costs a live page.
+     *
+     * `depth` is the one gate left: once a link has been followed out of the article this
+     * is browsing, not reading, and turning would drop the reader somewhere else with no
+     * way back to where they were. Back walks out first.
+     */
+    val canTurn = queue.entries.size > 1 && panelIntent == null && depth == 0
 
     // Read through a ref, and deliberately not a `pointerInput` key: keying the gesture
     // on the position restarts the handler mid-drag, and the rest of one flick then
@@ -413,7 +420,11 @@ fun InAppBrowserScreen(queue: ReadingQueue, mono: Boolean, onClose: () -> Unit, 
                                         }
 
                                         // A link followed out of the reader leaves the
-                                        // extracted article behind.
+                                        // extracted article behind, and is the one thing
+                                        // back has to undo before it closes — and what
+                                        // stops a drag from turning the page while the
+                                        // reader is off browsing somewhere else.
+                                        depth++
                                         loaded = "live:$target"
                                         mode = BrowserMode.Original
                                         return false
