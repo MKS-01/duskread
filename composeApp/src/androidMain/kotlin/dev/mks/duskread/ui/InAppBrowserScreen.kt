@@ -94,7 +94,8 @@ private enum class PanelIntent { Summary, ReadAloud }
  * it arrived in.
  */
 @Composable
-fun InAppBrowserScreen(url: String, mono: Boolean, onClose: () -> Unit, modifier: Modifier = Modifier) {
+fun InAppBrowserScreen(queue: ReadingQueue, mono: Boolean, onClose: () -> Unit, modifier: Modifier = Modifier) {
+    val url = queue.current.url
     val context = LocalContext.current
     val client = remember { createHttpClient() }
     val feedPosts = rememberFeedPostCache().postsByFeed

@@ -14,11 +14,11 @@ import dev.mks.duskread.ui.theme.Motion
 
 @Composable
 actual fun PlatformOverlay(mono: Boolean) {
-    val requested by InAppBrowserRequest.url.collectAsState()
+    val requested by InAppBrowserRequest.queue.collectAsState()
 
     // Held past the request going null so the close animation fades out the page it was
     // actually showing, rather than a blank screen.
-    val shown = remember { mutableStateOf<String?>(null) }
+    val shown = remember { mutableStateOf<ReadingQueue?>(null) }
     requested?.let { shown.value = it }
 
     AnimatedVisibility(
@@ -26,6 +26,6 @@ actual fun PlatformOverlay(mono: Boolean) {
         enter = fadeIn(tween(Motion.PushIn)) + slideInVertically(tween(Motion.PushIn)) { it / 8 },
         exit = fadeOut(tween(Motion.PopFade)),
     ) {
-        shown.value?.let { url -> InAppBrowserScreen(url = url, mono = mono, onClose = InAppBrowserRequest::consume) }
+        shown.value?.let { queue -> InAppBrowserScreen(queue = queue, mono = mono, onClose = InAppBrowserRequest::consume) }
     }
 }

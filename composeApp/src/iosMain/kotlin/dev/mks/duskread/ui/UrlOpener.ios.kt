@@ -13,15 +13,16 @@ import platform.UIKit.UIViewController
 
 /**
  * The iOS counterpart to Custom Tabs: `SFSafariViewController`, presented over the app.
+ * It has no page turn of its own, so the queue around the article is discarded here.
  */
 @Composable
-actual fun rememberUrlOpener(): (String) -> Unit {
+actual fun rememberArticleOpener(): (ReadingQueue) -> Unit {
     val barTint = MaterialTheme.colorScheme.surface.toUIColor()
     val controlTint = MaterialTheme.colorScheme.primary.toUIColor()
 
     return remember(barTint, controlTint) {
-        { url ->
-            NSURL.URLWithString(url)?.let { nsUrl ->
+        { queue ->
+            NSURL.URLWithString(queue.current.url)?.let { nsUrl ->
                 val host = topViewController()
                 if (host != null && nsUrl.scheme?.lowercase() in webSchemes) {
                     val safari = SFSafariViewController(nsUrl).apply {
