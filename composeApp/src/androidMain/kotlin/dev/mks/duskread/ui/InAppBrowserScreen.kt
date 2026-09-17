@@ -11,6 +11,7 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.LinearEasing
@@ -126,8 +127,7 @@ fun InAppBrowserScreen(queue: ReadingQueue, mono: Boolean, onClose: () -> Unit, 
     val client = remember { createHttpClient() }
     val feedPosts = rememberFeedPostCache().postsByFeed
 
-    // Where in the queue the reader has got to. Every piece of per-article state below
-    // keys off the URL it resolves to, so turning a page resets all of it at once.
+    // Where in the queue the reader has got to.
     var at by remember(queue) { mutableStateOf(queue.index) }
     val entry = queue.entryAt(at) ?: queue.current
     val url = entry.url
@@ -138,30 +138,44 @@ fun InAppBrowserScreen(queue: ReadingQueue, mono: Boolean, onClose: () -> Unit, 
     val signals = rememberReadingSignals()
     LaunchedEffect(url) { recordOpened(entry, queue.record, links, signals) }
 
+    /*
+     * Everything the WebView's own client writes to is held for the life of the screen
+     * and reset by hand on a turn, never `remember(url)`. The client is built once, in
+     * the `AndroidView` factory, and closes over the state objects that existed then; a
+     * keyed `remember` hands the next article new ones and every callback goes on
+     * writing to the dead set — a loader that never lifts, a title that never changes.
+     */
     var webView by remember { mutableStateOf<WebView?>(null) }
-    var title by remember(url) { mutableStateOf(entry.host ?: hostOf(url)) }
-    var currentUrl by remember(url) { mutableStateOf(url) }
-    var progress by remember(url) { mutableStateOf(0f) }
+    var title by remember { mutableStateOf(entry.host ?: hostOf(url)) }
+    var currentUrl by remember { mutableStateOf(url) }
+    var progress by remember { mutableStateOf(0f) }
 
     // Set only when the *main frame* fails. A page whose analytics script cannot load has
     // not failed; a page that cannot load has.
-    var loadFailed by remember(url) { mutableStateOf(false) }
+    var loadFailed by remember { mutableStateOf(false) }
 
-    var article by remember(url) { mutableStateOf<Article?>(null) }
-    var extracting by remember(url) { mutableStateOf(true) }
-    var mode by remember(url) { mutableStateOf(BrowserMode.Reader) }
-    // Closed by default, and per article: following a link out of one piece into another
-    // should not carry the first one's panel with it.
-    var panelIntent by remember(url) { mutableStateOf<PanelIntent?>(null) }
-    var summaryBusy by remember(url) { mutableStateOf(false) }
+    // Whether the WebView is showing *this* article yet. Until it is, it is still showing
+    // the last one, and on a turn that is the previous page sitting under the new title.
+    var painted by remember { mutableStateOf(false) }
+
+    var mode by remember { mutableStateOf(BrowserMode.Reader) }
+
     // What the WebView currently holds. Without it, every recomposition that touches mode
     // or article would reload the page underneath the reader.
-    var loaded by remember(url) { mutableStateOf("") }
+    var loaded by remember { mutableStateOf("") }
 
     // How many links have been followed out of *this* article. The WebView's own history
     // spans every article turned through, so asking it would walk back through them
     // invisibly while the toolbar went on naming the one this screen thinks it shows.
-    var depth by remember(url) { mutableIntStateOf(0) }
+    var depth by remember { mutableIntStateOf(0) }
+
+    // The rest is the screen's own and can key off the article safely.
+    var article by remember(url) { mutableStateOf<Article?>(null) }
+    var extracting by remember(url) { mutableStateOf(true) }
+    // Closed by default, and per article: following a link out of one piece into another
+    // should not carry the first one's panel with it.
+    var panelIntent by remember(url) { mutableStateOf<PanelIntent?>(null) }
+    var summaryBusy by remember(url) { mutableStateOf(false) }
 
     PlatformBackHandler(enabled = true) {
         if (depth > 0) {
@@ -176,6 +190,16 @@ fun InAppBrowserScreen(queue: ReadingQueue, mono: Boolean, onClose: () -> Unit, 
     // carried the publisher's own markup for it, already clean.
     val cached = feedPosts.postFor(url)
     LaunchedEffect(url) {
+        // The hand reset the comment above owes: this is a different article now.
+        title = entry.host ?: hostOf(url)
+        currentUrl = url
+        progress = 0f
+        loadFailed = false
+        painted = false
+        mode = BrowserMode.Reader
+        loaded = ""
+        depth = 0
+
         article = loadArticle(client, url, cached?.title, cached?.content)
         if (article == null) mode = BrowserMode.Original
         article?.let { title = it.title }
@@ -403,14 +427,23 @@ fun InAppBrowserScreen(queue: ReadingQueue, mono: Boolean, onClose: () -> Unit, 
 
                                     override fun onPageFinished(view: WebView, url: String?) {
                                         progress = 1f
+                                        painted = true
                                     }
                                 }
                             }.also { webView = it }
                         },
                     )
 
-                    // The WebView holds nothing yet — extraction is still an HTTP fetch away.
-                    if (extracting) ArticleSkeleton(Modifier.fillMaxSize())
+                    // The WebView is not showing this article yet — either extraction is
+                    // still a fetch away, or the document has not painted. No entrance:
+                    // on a turn it has to be there on the first frame, or the page being
+                    // left shows through. It leaves on a fade, over the document it was
+                    // standing in for.
+                    ArticleLoader(
+                        visible = (extracting || !painted) && !loadFailed,
+                        entry = entry,
+                        modifier = Modifier.fillMaxSize(),
+                    )
                 }
 
                 // Over the article rather than beside it: the summary is a second look at
@@ -544,11 +577,12 @@ private suspend fun settle(
         return
     }
 
-    // Out the way it was going, then in from the other side — the same push the app uses
-    // for any other navigation.
-    shift.animateTo(-step * width.toFloat(), tween(Motion.PushIn))
+    // Out quickly — the drag has already carried it most of the way — then in over the
+    // longer duration, but only from a third of the width. A full screen of travel each
+    // way made one turn take half a second and read as two movements rather than one.
+    shift.animateTo(-step * width.toFloat(), tween(Motion.Fade))
     onArrive(at + step)
-    shift.snapTo(step * width.toFloat())
+    shift.snapTo(step * width * EntranceTravel)
     shift.animateTo(0f, tween(Motion.PushIn))
 }
 
@@ -557,6 +591,9 @@ private fun Float.pageStep(): Int = if (this < 0f) 1 else -1
 
 /** Past the end the drag still moves, but only enough to say there is nothing there. */
 private fun resisted(travel: Float, hasNeighbour: Boolean, slack: Float): Float = if (hasNeighbour) travel else (travel * EdgeResistance).coerceIn(-slack, slack)
+
+/** How far in from the edge the arriving article starts. */
+private const val EntranceTravel = 0.33f
 
 /** How far across the screen a drag has to get before releasing turns the page. */
 private const val TurnFraction = 0.25f
@@ -622,11 +659,30 @@ private fun SummaryOverArticle(
 }
 
 /**
- * Stands in for [dev.mks.duskread.links.articleDocument]'s own shape — source line,
- * title, lead image, body copy.
+ * The placeholder's coming and going. Its own function so the `AnimatedVisibility` here
+ * is the plain one rather than the `ColumnScope` overload the screen's layout puts in
+ * scope.
  */
 @Composable
-private fun ArticleSkeleton(modifier: Modifier = Modifier) {
+private fun ArticleLoader(visible: Boolean, entry: ReadingQueueEntry, modifier: Modifier = Modifier) {
+    AnimatedVisibility(
+        visible = visible,
+        // No entrance: on a turn it has to be there on the first frame, or the page being
+        // left shows through. It leaves on a fade, over the document it stood in for.
+        enter = EnterTransition.None,
+        exit = fadeOut(tween(Motion.Fade)),
+        modifier = modifier,
+    ) {
+        ArticleSkeleton(entry = entry, modifier = Modifier.fillMaxSize())
+    }
+}
+
+/**
+ * What the article is, while it is still being fetched: its real title and source, set
+ * where the document will set them, over placeholder copy.
+ */
+@Composable
+private fun ArticleSkeleton(entry: ReadingQueueEntry, modifier: Modifier = Modifier) {
     val transition = rememberInfiniteTransition(label = "extracting")
 
     // Linear and restarting, not eased and reversing: the easing lives in the triangle
@@ -641,30 +697,43 @@ private fun ArticleSkeleton(modifier: Modifier = Modifier) {
         label = "extractingPhase",
     )
 
+    // A queue of one carries no title worth setting — the URL stands in for it until the
+    // page answers — so that case keeps the bars it always had.
+    val title = entry.title.takeIf { it != entry.url }
+
     Column(
         modifier
+            // Opaque: the WebView behind paints the real document a beat before it says
+            // it has, and a see-through placeholder shows both at once.
+            .background(MaterialTheme.colorScheme.background)
             .padding(horizontal = Layout.ReadingGutter)
             .padding(top = 20.dp),
     ) {
-        Text(
-            // Uppercase and letter-spaced to match `.source`, whose slot this is standing
-            // in.
-            text = "FETCHING THE ARTICLE…",
-            style = MaterialTheme.typography.labelSmall,
-            letterSpacing = 0.08.em,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        if (title != null) {
+            // `h1` and `.source` in `articleDocument`, in that order and at that weight,
+            // so the header does not move when the document paints over it.
+            Text(
+                text = title,
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.onBackground,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Spacer(Modifier.height(6.dp))
+            Text(
+                text = (entry.host ?: hostOf(entry.url)).uppercase(),
+                style = MaterialTheme.typography.labelSmall,
+                letterSpacing = 0.04.em,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        } else {
+            SkeletonBar(0.92f, 22.dp, phase, index = 0)
+            Spacer(Modifier.height(10.dp))
+            SkeletonBar(0.65f, 22.dp, phase, index = 1)
+        }
 
-        // `.source`'s own margin-bottom, so the title starts where it will.
+        // `.source`'s own margin-bottom, so the body starts where it will.
         Spacer(Modifier.height(22.dp))
-
-        SkeletonBar(0.92f, 22.dp, phase, index = 0)
-        Spacer(Modifier.height(10.dp))
-        SkeletonBar(0.65f, 22.dp, phase, index = 1)
-
-        Spacer(Modifier.height(24.dp))
-        SkeletonBar(1f, 180.dp, phase, index = 2, shape = RoundedCornerShape(Radius.Inline))
-        Spacer(Modifier.height(24.dp))
 
         // As many lines as there is room for, rather than a fixed eight that ran out half
         // way down and left the rest of the screen blank.
@@ -672,7 +741,7 @@ private fun ArticleSkeleton(modifier: Modifier = Modifier) {
             val rows = (maxHeight / BodyLineSlot).toInt().coerceAtLeast(1)
             Column {
                 repeat(rows) { line ->
-                    SkeletonBar(BodyLineWidths[line % BodyLineWidths.size], BodyLineHeight, phase, index = 3 + line)
+                    SkeletonBar(BodyLineWidths[line % BodyLineWidths.size], BodyLineHeight, phase, index = line)
                     Spacer(Modifier.height(BodyLineGap))
                 }
             }
@@ -724,13 +793,15 @@ private val BodyLineSlot = BodyLineHeight + BodyLineGap
  * Slow for UI — the sub-300ms rule in `Motion` is for a control answering a touch, and
  * this is ambient.
  */
-private const val SkeletonPulseMs = 1_400
+private const val SkeletonPulseMs = 1_100
 
 /** How far behind the row above each row runs. Small: the page fills, it does not chase. */
 private const val SkeletonStagger = 0.05f
 
-private const val SkeletonDim = 0.30f
-private const val SkeletonBright = 0.85f
+// A narrow range: the placeholder marks where copy will be, and does not compete with
+// the real title set above it.
+private const val SkeletonDim = 0.35f
+private const val SkeletonBright = 0.62f
 
 @Composable
 private fun BrowserToolbar(
