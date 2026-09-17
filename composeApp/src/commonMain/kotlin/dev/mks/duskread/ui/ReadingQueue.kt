@@ -38,7 +38,24 @@ data class ReadingQueue(
 
     fun entryAt(at: Int): ReadingQueueEntry? = entries.getOrNull(at)
 
+    /** Where an article sits in this queue; the start, for one that somehow is not in it. */
+    fun positionOf(url: String): Int = entries.indexOfFirst { sameArticle(it.url, url) }.coerceAtLeast(0)
+
     fun at(at: Int): ReadingQueue = copy(index = at)
+
+    /** Said out loud when a drag runs out of queue: the list ends, and it says which list. */
+    fun endMessage(step: Int): String = when {
+        source.isBlank() -> if (step > 0) "That's the last one" else "That's the first one"
+        step > 0 -> "That's the last one in $source"
+        else -> "That's the first one in $source"
+    }
+
+    /** The same fact set as a label, for the strip the drag opens. */
+    fun endLabel(step: Int): String = when {
+        source.isBlank() -> if (step > 0) "THE LAST ONE" else "THE FIRST ONE"
+        step > 0 -> "END OF ${source.uppercase()}"
+        else -> "START OF ${source.uppercase()}"
+    }
 }
 
 /**
