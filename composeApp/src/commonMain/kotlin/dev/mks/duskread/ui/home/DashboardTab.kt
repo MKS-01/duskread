@@ -54,6 +54,9 @@ import dev.mks.duskread.reader.ReadSort
 import dev.mks.duskread.reader.ReaderSource
 import dev.mks.duskread.reader.readbackSupported
 import dev.mks.duskread.reader.rememberReadRepository
+import dev.mks.duskread.ui.OpenRecord
+import dev.mks.duskread.ui.ReadingQueue
+import dev.mks.duskread.ui.ReadingQueueEntry
 import dev.mks.duskread.ui.common.CompactEmptyState
 import dev.mks.duskread.ui.common.EyebrowHeader
 import dev.mks.duskread.ui.common.ListRow
@@ -61,7 +64,7 @@ import dev.mks.duskread.ui.common.RowMeta
 import dev.mks.duskread.ui.common.ToastRequest
 import dev.mks.duskread.ui.common.WaveformMeter
 import dev.mks.duskread.ui.reader.formatDuration
-import dev.mks.duskread.ui.rememberUrlOpener
+import dev.mks.duskread.ui.rememberArticleOpener
 import dev.mks.duskread.ui.theme.CodeStyle
 import dev.mks.duskread.ui.theme.DuskReadIcons
 import dev.mks.duskread.ui.theme.Mono
@@ -484,7 +487,7 @@ private fun NextUpSection(
     onOpenSaved: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val open = rememberUrlOpener()
+    val open = rememberArticleOpener()
 
     // Only the *length*, not the countdown: mapped and de-duplicated so a running timer
     // does not recompose this section once a second for a number it does not draw.
@@ -519,6 +522,16 @@ private fun NextUpSection(
 
     // At most one row per source.
     val picks = remember(ranked) { topPicks(ranked, count = 3) }
+
+    // Opening a pick is the moment it becomes the reader's own — the save is not a
+    // convenience — and that has to hold for the second and third as much as the first.
+    val queue = remember(picks) {
+        ReadingQueue(
+            entries = picks.map { ReadingQueueEntry(it.candidate.url, it.candidate.title, it.candidate.host, it.candidate.tag) },
+            source = "Next up",
+            record = OpenRecord.SaveAndMarkRead,
+        )
+    }
     val hero = picks.firstOrNull()
     val runnersUp = picks.drop(1)
 
@@ -563,39 +576,18 @@ private fun NextUpSection(
                 scored = hero,
                 hero = true,
                 last = runnersUp.isEmpty(),
-                onOpen = { openCandidate(hero, links, signals, open) },
+                onOpen = { open(queue.at(0)) },
             )
             runnersUp.forEachIndexed { index, scored ->
                 NextUpRow(
                     scored = scored,
                     hero = false,
                     last = index == runnersUp.lastIndex,
-                    onOpen = { openCandidate(scored, links, signals, open) },
+                    onOpen = { open(queue.at(index + 1)) },
                 )
             }
         }
     }
-}
-
-/**
- * Opening a candidate is also the moment its signal is recorded, and for a feed post it
- * is the moment it becomes the reader's own. That save is not a convenience.
- */
-private fun openCandidate(
-    scored: Scored,
-    links: LinkLibrary,
-    signals: ReadingSignals,
-    open: (String) -> Unit,
-) {
-    val candidate = scored.candidate
-    open(candidate.url)
-
-    val id = candidate.savedId ?: links.save(candidate.url, candidate.title, candidate.tag)?.id
-    id?.let { links.toggleRead(it) }
-    signals.recordRead(candidate.url)
-    // The other half of the topic term: without this, tags are read on every candidate
-    // and never credited to anything.
-    candidate.tag?.let { signals.recordTopicRead(it) }
 }
 
 /**

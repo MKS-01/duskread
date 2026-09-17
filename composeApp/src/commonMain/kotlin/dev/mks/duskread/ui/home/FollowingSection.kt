@@ -332,8 +332,12 @@ private fun DigestLine(feed: Feed, newCount: Int, hint: String?, open: Boolean, 
  */
 @Composable
 private fun TopicPreview(feed: Feed, posts: List<FeedPost>, linkLibrary: LinkLibrary, onOpenAll: () -> Unit) {
+    // Positioned within the *whole* blog, not the three shown: turning past the third
+    // preview row should carry on into the rest of the blog, not stop.
+    val queue = posts.readingQueue(feed)
+
     Column(Modifier.padding(top = 12.dp, bottom = 4.dp)) {
-        posts.take(PreviewPosts).forEach { post ->
+        posts.take(PreviewPosts).forEachIndexed { index, post ->
             TopicRow(
                 post = post,
                 host = feed.host,
@@ -341,6 +345,7 @@ private fun TopicPreview(feed: Feed, posts: List<FeedPost>, linkLibrary: LinkLib
                 // so every preview row keeps its hairline.
                 last = false,
                 linkLibrary = linkLibrary,
+                queue = queue.at(index),
                 topic = feed.topic,
             )
         }
