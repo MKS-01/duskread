@@ -73,6 +73,8 @@ import dev.mks.duskread.links.createHttpClient
 import dev.mks.duskread.links.loadArticle
 import dev.mks.duskread.links.postFor
 import dev.mks.duskread.links.rememberFeedPostCache
+import dev.mks.duskread.links.rememberLinkLibrary
+import dev.mks.duskread.links.rememberReadingSignals
 import dev.mks.duskread.speech.speechSupported
 import dev.mks.duskread.summary.SummaryTarget
 import dev.mks.duskread.summary.summariesSupported
@@ -95,19 +97,30 @@ private enum class PanelIntent { Summary, ReadAloud }
  */
 @Composable
 fun InAppBrowserScreen(queue: ReadingQueue, mono: Boolean, onClose: () -> Unit, modifier: Modifier = Modifier) {
-    val url = queue.current.url
     val context = LocalContext.current
     val client = remember { createHttpClient() }
     val feedPosts = rememberFeedPostCache().postsByFeed
 
+    // Where in the queue the reader has got to. Every piece of per-article state below
+    // keys off the URL it resolves to, so turning a page resets all of it at once.
+    var at by remember(queue) { mutableStateOf(queue.index) }
+    val entry = queue.entryAt(at) ?: queue.current
+    val url = entry.url
+
+    // Opening an article is also the moment it counts as read — and the same moment for
+    // the fifth page turned to as for the row that was tapped.
+    val links = rememberLinkLibrary()
+    val signals = rememberReadingSignals()
+    LaunchedEffect(url) { recordOpened(entry, queue.record, links, signals) }
+
     var webView by remember { mutableStateOf<WebView?>(null) }
-    var title by remember { mutableStateOf(hostOf(url)) }
-    var currentUrl by remember { mutableStateOf(url) }
-    var progress by remember { mutableStateOf(0f) }
+    var title by remember(url) { mutableStateOf(entry.host ?: hostOf(url)) }
+    var currentUrl by remember(url) { mutableStateOf(url) }
+    var progress by remember(url) { mutableStateOf(0f) }
 
     // Set only when the *main frame* fails. A page whose analytics script cannot load has
     // not failed; a page that cannot load has.
-    var loadFailed by remember { mutableStateOf(false) }
+    var loadFailed by remember(url) { mutableStateOf(false) }
 
     var article by remember(url) { mutableStateOf<Article?>(null) }
     var extracting by remember(url) { mutableStateOf(true) }
