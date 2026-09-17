@@ -160,8 +160,18 @@ fun InAppBrowserScreen(queue: ReadingQueue, mono: Boolean, onClose: () -> Unit, 
     // or article would reload the page underneath the reader.
     var loaded by remember(url) { mutableStateOf("") }
 
+    // How many links have been followed out of *this* article. The WebView's own history
+    // spans every article turned through, so asking it would walk back through them
+    // invisibly while the toolbar went on naming the one this screen thinks it shows.
+    var depth by remember(url) { mutableIntStateOf(0) }
+
     PlatformBackHandler(enabled = true) {
-        webView?.takeIf { it.canGoBack() }?.goBack() ?: onClose()
+        if (depth > 0) {
+            depth--
+            webView?.goBack()
+        } else {
+            onClose()
+        }
     }
 
     // A post opened from a followed feed often needs no request at all: the feed itself
