@@ -69,7 +69,7 @@ struct DashboardScreen: View {
 
     private var nextUp: some View {
         VStack(alignment: .leading, spacing: 14) {
-            EyebrowHeader(label: "Next up") {
+            EyebrowHeader(label: "Recommended") {
                 RowToggle(path: IconPaths.shared.Shuffle, tint: dusk.onSurfaceVariant) {
                     suggestions.shuffle()
                 }

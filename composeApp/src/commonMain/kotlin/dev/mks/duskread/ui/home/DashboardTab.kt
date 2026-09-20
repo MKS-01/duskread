@@ -153,7 +153,7 @@ fun DashboardTab(
 
             // Last, and still a choice rather than a list: what to read when the week has
             // already been looked at.
-            item("next-up") {
+            item("recommended") {
                 NextUpSection(
                     links = links,
                     signals = signals,
@@ -318,7 +318,7 @@ private fun NextUpSection(
     val queue = remember(picks) {
         ReadingQueue(
             entries = picks.map { ReadingQueueEntry(it.candidate.url, it.candidate.title, it.candidate.host, it.candidate.tag) },
-            source = "Next up",
+            source = "Recommended",
             record = OpenRecord.SaveAndMarkRead,
         )
     }
@@ -327,7 +327,7 @@ private fun NextUpSection(
 
     Column(modifier.fillMaxWidth().padding(bottom = SectionGap)) {
         EyebrowHeader(
-            text = "NEXT UP",
+            text = "RECOMMENDED",
             trailing = if (ranked.size > 1) {
                 {
                     Icon(

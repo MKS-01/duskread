@@ -4,7 +4,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
 /**
- * A NEXT UP pick tapped from the reading-suggestion widget, waiting to be opened and
+ * A RECOMMENDED pick tapped from the reading-suggestion widget, waiting to be opened and
  * recorded.
  */
 object SuggestionOpenRequest {

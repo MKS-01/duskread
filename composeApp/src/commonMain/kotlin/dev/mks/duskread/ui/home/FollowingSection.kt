@@ -100,7 +100,7 @@ fun FollowingDigest(
     var expanded by remember { mutableStateOf<String?>(null) }
     var searching by remember { mutableStateOf(false) }
     var query by remember { mutableStateOf("") }
-    // Most-new-first by default — the same bias NEXT UP ranks by, so the feed most worth
+    // Most-new-first by default — the same bias RECOMMENDED ranks by, so the feed most worth
     // a look leads the list rather than whichever was followed first.
     var sortNewest by remember { mutableStateOf(true) }
 

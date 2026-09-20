@@ -81,7 +81,7 @@ fun LazyListScope.latestSection(
     val queue = ReadingQueue(
         entries = items.map { ReadingQueueEntry(it.url, it.title, it.host, it.topic) },
         source = "Latest",
-        // Same as Next up: reading something offered is how it becomes the reader's own.
+        // Same as RECOMMENDED: reading something offered is how it becomes the reader's own.
         record = OpenRecord.SaveAndMarkRead,
     )
 

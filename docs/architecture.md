@@ -56,7 +56,7 @@ What it shows, in words:
 - **A link gets in** one of four ways — the share sheet, the home-screen
   widget, the paste field, or a bookmark from Following — all landing in
   `LinkLibrary`.
-- **`NEXT UP`** ranks everything unread by a weighted sum of bounded,
+- **`RECOMMENDED`** ranks everything unread by a weighted sum of bounded,
   explicable terms: freshness, source and topic affinity, staleness, fit
   against the focus timer, a shuffle, and two skip penalties. Weights live in
   one block at the top of `links/Recommender.kt`; **Settings ▸ Discovery**
