@@ -7,6 +7,7 @@ final class DuskReadHost: ObservableObject {
     let links: LinksStore
     let prefs: PrefsStore
     let feeds: FeedsStore
+    let latest: LatestStore
     let pomodoro: PomodoroStore
     let suggestions: SuggestionsStore
     let notion: NotionStore
@@ -20,6 +21,7 @@ final class DuskReadHost: ObservableObject {
         links = LinksStore(bridge.links)
         prefs = PrefsStore(bridge.prefs)
         feeds = FeedsStore(bridge.feeds)
+        latest = LatestStore(bridge.feeds, links: bridge.links)
         pomodoro = PomodoroStore(bridge.pomodoro)
         suggestions = SuggestionsStore(bridge.signals)
         notion = NotionStore(bridge.notion)

@@ -16,6 +16,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import dev.mks.duskread.data.rememberUserPrefs
+import dev.mks.duskread.links.Feed
 import dev.mks.duskread.links.FeedPost
 import dev.mks.duskread.links.LinkLibrary
 import dev.mks.duskread.links.savedAgo
@@ -23,10 +24,13 @@ import dev.mks.duskread.speech.speechSupported
 import dev.mks.duskread.summary.SummaryRequest
 import dev.mks.duskread.summary.SummaryTarget
 import dev.mks.duskread.summary.summariesSupported
+import dev.mks.duskread.ui.OpenRecord
+import dev.mks.duskread.ui.ReadingQueue
+import dev.mks.duskread.ui.ReadingQueueEntry
 import dev.mks.duskread.ui.common.ListRow
 import dev.mks.duskread.ui.common.RowMeta
 import dev.mks.duskread.ui.common.ToastRequest
-import dev.mks.duskread.ui.rememberUrlOpener
+import dev.mks.duskread.ui.rememberArticleOpener
 import dev.mks.duskread.ui.summary.SummariseBackground
 import dev.mks.duskread.ui.theme.DuskReadIcons
 
@@ -43,12 +47,16 @@ internal fun TopicRow(
     last: Boolean,
     linkLibrary: LinkLibrary,
     /**
+     * The blog's own posts, positioned at this one, so the reader can turn through them.
+     */
+    queue: ReadingQueue,
+    /**
      * The subject of the blog this came from, so bookmarking a post keeps it.
      */
     topic: String? = null,
     modifier: Modifier = Modifier,
 ) {
-    val open = rememberUrlOpener()
+    val open = rememberArticleOpener()
     val saved = linkLibrary.isSaved(post.url)
     val swipeDefault = rememberUserPrefs().swipeDefault
 
@@ -70,7 +78,7 @@ internal fun TopicRow(
         enableDismissFromEndToStart = summariesSupported() || speechSupported(),
         backgroundContent = { SummariseBackground(dismiss.progress, swipeDefault) },
     ) {
-        TopicRowBody(post = post, host = host, last = last, saved = saved, linkLibrary = linkLibrary, topic = topic, onOpen = { open(post.url) })
+        TopicRowBody(post = post, host = host, last = last, saved = saved, linkLibrary = linkLibrary, topic = topic, onOpen = { open(queue) })
     }
 }
 
@@ -117,3 +125,13 @@ private fun TopicRowBody(
         if (post.offline) RowMeta("offline")
     }
 }
+
+/**
+ * A blog's posts as something to turn through. Feed rows record nothing when opened —
+ * tapping one never has — so the queue carries no bookkeeping either.
+ */
+internal fun List<FeedPost>.readingQueue(feed: Feed): ReadingQueue = ReadingQueue(
+    entries = map { ReadingQueueEntry(it.url, it.title, feed.host, feed.topic) },
+    source = feed.label,
+    record = OpenRecord.None,
+)

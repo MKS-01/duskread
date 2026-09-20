@@ -35,7 +35,10 @@ final class LinksStore {
 
     func retry(_ link: SavedLink) { bridge.retryFetch(id: link.id) }
 
-    func savedAgo(_ link: SavedLink) -> String { bridge.savedAgoLabel(savedAt: link.savedAt) }
+    func savedAgo(_ link: SavedLink) -> String { savedAgo(link.savedAt) }
+
+    /// The same label for a timestamp with no link behind it — a feed post's own date.
+    func savedAgo(_ at: Int64) -> String { bridge.savedAgoLabel(savedAt: at) }
 
     func clear() { bridge.clear() }
 
@@ -126,6 +129,33 @@ final class FeedsStore {
     }
 }
 
+/// The week's posts, as Home's cards.
+///
+/// Recomputed on either half changing: a sync brings new posts, and opening one marks a
+/// link read, which is what recesses a card.
+@Observable
+final class LatestStore {
+    private(set) var items: [LatestItem] = []
+
+    @ObservationIgnored private let bridge: FeedsBridge
+    @ObservationIgnored private var subscriptions: [Cancellable] = []
+
+    init(_ bridge: FeedsBridge, links: LinksBridge) {
+        self.bridge = bridge
+        refresh()
+        subscriptions = [
+            bridge.observePosts { [weak self] _ in self?.refresh() },
+            links.observe { [weak self] _ in self?.refresh() },
+        ]
+    }
+
+    deinit { subscriptions.forEach { $0.cancel() } }
+
+    func refresh() {
+        items = bridge.latest(now: Int64(Date().timeIntervalSince1970 * 1000))
+    }
+}
+
 @Observable
 final class PomodoroStore {
     private(set) var state: PomodoroState
@@ -165,6 +195,9 @@ final class SuggestionsStore {
     @ObservationIgnored private let bridge: SignalsBridge
     @ObservationIgnored private var seed: Int32 = 0
 
+    /// Whatever Home is already showing as a card. Held, so a shuffle keeps honouring it.
+    @ObservationIgnored private var excluded: Set<String> = []
+
     init(_ bridge: SignalsBridge) {
         self.bridge = bridge
         refresh()
@@ -177,12 +210,14 @@ final class SuggestionsStore {
         refresh()
     }
 
-    func refresh() {
+    func refresh(excluding: Set<String>? = nil) {
+        if let excluding { excluded = excluding }
         picks = bridge.nextUp(
             count: 3,
             now: Int64(Date().timeIntervalSince1970 * 1000),
             seed: seed,
-            focusMinutes: nil
+            focusMinutes: nil,
+            exclude: excluded
         )
     }
 

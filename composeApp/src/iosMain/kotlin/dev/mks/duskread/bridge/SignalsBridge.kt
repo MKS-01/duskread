@@ -22,10 +22,13 @@ class SignalsBridge internal constructor(private val graph: AppGraph) {
     fun clear() = graph.signals.clear()
 
     /**
-     * The ranked shortlist Home shows.
+     * The ranked shortlist Home shows. [exclude] is whatever is already on the screen as
+     * a card, dropped before the ranking rather than after — filtering the picks
+     * afterwards leaves the section short of the [count] it means to offer.
      */
-    fun nextUp(count: Int, now: Long, seed: Int, focusMinutes: Int?): List<Scored> {
+    fun nextUp(count: Int, now: Long, seed: Int, focusMinutes: Int?, exclude: Set<String>): List<Scored> {
         val candidates: List<Candidate> = pool(graph.links, graph.feedPosts, graph.feeds.feeds)
+            .filterNot { it.url in exclude }
         return topPicks(rank(candidates, graph.signals, now, seed, focusMinutes), count)
     }
 }

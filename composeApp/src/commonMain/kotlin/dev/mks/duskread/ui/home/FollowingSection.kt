@@ -49,8 +49,10 @@ import dev.mks.duskread.links.LinkLibrary
 import dev.mks.duskread.links.discoverFeedUrl
 import dev.mks.duskread.links.looksLikeUrl
 import dev.mks.duskread.links.normaliseUrl
+import dev.mks.duskread.links.pruneSummaries
 import dev.mks.duskread.links.savedAgo
 import dev.mks.duskread.links.syncFeeds
+import dev.mks.duskread.summary.rememberSummaryCache
 import dev.mks.duskread.ui.common.AppTextField
 import dev.mks.duskread.ui.common.CompactEmptyState
 import dev.mks.duskread.ui.common.EmptyState
@@ -87,6 +89,7 @@ fun FollowingDigest(
     emptyStateModifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
+    val summaries = rememberSummaryCache()
     // Open by default with nothing followed yet, the same reason Saved's own paste field
     // is never hidden behind a toggle.
     var managing by remember { mutableStateOf(feedLibrary.feeds.isEmpty()) }
@@ -97,7 +100,7 @@ fun FollowingDigest(
     var expanded by remember { mutableStateOf<String?>(null) }
     var searching by remember { mutableStateOf(false) }
     var query by remember { mutableStateOf("") }
-    // Most-new-first by default — the same bias NEXT UP ranks by, so the feed most worth
+    // Most-new-first by default — the same bias RECOMMENDED ranks by, so the feed most worth
     // a look leads the list rather than whichever was followed first.
     var sortNewest by remember { mutableStateOf(true) }
 
@@ -126,7 +129,7 @@ fun FollowingDigest(
         if (syncing || feedLibrary.feeds.isEmpty()) return
         syncing = true
         scope.launch {
-            val synced = syncFeeds(client, feedLibrary.feeds, postCache)
+            val synced = syncFeeds(client, feedLibrary.feeds, postCache, linkLibrary, summaries)
             note = when {
                 synced == 0 -> "Couldn't reach any feed."
                 synced == feedLibrary.feeds.size -> "Synced $synced feed${if (synced == 1) "" else "s"}."
@@ -199,6 +202,8 @@ fun FollowingDigest(
                 onRemove = { id ->
                     feedLibrary.remove(id)
                     postCache.removeFeed(id)
+                    // The unfollowed blog's posts are gone; its summaries describe nothing.
+                    pruneSummaries(summaries, linkLibrary, postCache)
                 },
                 emptyStateModifier = emptyStateModifier,
             )
@@ -332,8 +337,12 @@ private fun DigestLine(feed: Feed, newCount: Int, hint: String?, open: Boolean, 
  */
 @Composable
 private fun TopicPreview(feed: Feed, posts: List<FeedPost>, linkLibrary: LinkLibrary, onOpenAll: () -> Unit) {
+    // Positioned within the *whole* blog, not the three shown: turning past the third
+    // preview row should carry on into the rest of the blog, not stop.
+    val queue = posts.readingQueue(feed)
+
     Column(Modifier.padding(top = 12.dp, bottom = 4.dp)) {
-        posts.take(PreviewPosts).forEach { post ->
+        posts.take(PreviewPosts).forEachIndexed { index, post ->
             TopicRow(
                 post = post,
                 host = feed.host,
@@ -341,6 +350,7 @@ private fun TopicPreview(feed: Feed, posts: List<FeedPost>, linkLibrary: LinkLib
                 // so every preview row keeps its hairline.
                 last = false,
                 linkLibrary = linkLibrary,
+                queue = queue.at(index),
                 topic = feed.topic,
             )
         }

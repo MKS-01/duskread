@@ -3,7 +3,10 @@ package dev.mks.duskread.bridge
 import dev.mks.duskread.data.AppGraph
 import dev.mks.duskread.links.Feed
 import dev.mks.duskread.links.FeedPost
+import dev.mks.duskread.links.LatestItem
 import dev.mks.duskread.links.discoverFeedUrl
+import dev.mks.duskread.links.latestPosts
+import dev.mks.duskread.links.pruneSummaries
 import dev.mks.duskread.links.syncFeeds
 
 /**
@@ -21,6 +24,7 @@ class FeedsBridge internal constructor(private val graph: AppGraph) {
     fun remove(id: String) {
         graph.feeds.remove(id)
         graph.feedPosts.removeFeed(id)
+        pruneSummaries(graph.summaries, graph.links, graph.feedPosts)
     }
 
     fun clear() {
@@ -36,6 +40,17 @@ class FeedsBridge internal constructor(private val graph: AppGraph) {
         return graph.feeds.add(resolved, title, topic)
     }
 
+    /**
+     * The week's posts, as Home's cards. The window and the caps are the shared
+     * function's, not Swift's — both homes show the same week.
+     */
+    fun latest(now: Long): List<LatestItem> = latestPosts(
+        feeds = graph.feeds.feeds,
+        cache = graph.feedPosts,
+        links = graph.links,
+        now = now,
+    )
+
     /** Returns how many new posts landed, so Swift can say so. */
-    suspend fun sync(): Int = syncFeeds(graph.http, graph.feeds.feeds, graph.feedPosts)
+    suspend fun sync(): Int = syncFeeds(graph.http, graph.feeds.feeds, graph.feedPosts, graph.links, graph.summaries)
 }

@@ -24,6 +24,7 @@ struct DuskReadRootView: View {
         }
         .environment(host.links)
         .environment(host.feeds)
+        .environment(host.latest)
         .environment(host.prefs)
         .environment(host.pomodoro)
         .environment(host.suggestions)
@@ -102,6 +103,7 @@ struct DuskReadRootView: View {
         }
         .environment(host.links)
         .environment(host.feeds)
+        .environment(host.latest)
         .environment(host.prefs)
         .environment(host.pomodoro)
         .environment(host.suggestions)

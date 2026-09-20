@@ -9,7 +9,7 @@ import androidx.compose.ui.platform.LocalContext
  * [InAppBrowserScreen] for why.
  */
 @Composable
-actual fun rememberUrlOpener(): (String) -> Unit = remember { { url -> InAppBrowserRequest.open(url) } }
+actual fun rememberArticleOpener(): (ReadingQueue) -> Unit = remember { { queue -> InAppBrowserRequest.open(queue) } }
 
 /**
  * Hands off to the phone's own browser, via the same `ACTION_VIEW` the embedded browser's

@@ -28,10 +28,10 @@
 
 ---
 
-Newsletters and blogs file themselves into one Notion database — ranked by
-what you actually read, not by when it arrived — then you set a twenty-five
-minute timer and read, on **Paper Black** or **Ink**, the same page with the
-colour drained out.
+Newsletters and blogs file themselves into one Notion database. Home opens on
+what they published this week and ranks everything else by what you actually
+read — then you set a twenty-five minute timer and read, on **Paper Black** or
+**Ink**, the same page with the colour drained out.
 
 ## What it does
 
@@ -47,15 +47,20 @@ colour drained out.
   next time you open it.
 - **Save it however it reaches you** — the Chrome share sheet, or the paste
   field on Saved behind **Add**.
+- **Home is the week.** New posts from the blogs you follow, each as a card
+  carrying a line on what it says — the piece's own opening, or an on-device
+  summary once there is one. Underneath, everything else ranked by what you
+  actually read.
 - **Reads offline.** Every screen renders from local storage; a feed with
   full-content RSS is cached whole at sync time, so most articles were
   already on the phone before you tapped them.
 - **Saved is a queue and a record.** Unread leads; what you've read stays
   under its own heading. Filter to either, or search a title, host or topic.
 - **On-device summaries and reading aloud.** Long articles get a one-tap
-  summary via Gemini Nano; the phone can also read one aloud with its own
-  text-to-speech. Both are absent on hardware that can't run them, and a read
-  that can't happen says why instead of staying silent.
+  summary via Gemini Nano, and Home fills a few of its cards in by itself
+  where the model is already on the phone; it can also read an article aloud
+  with its own text-to-speech. Both are absent on hardware that can't run
+  them, and a read that can't happen says why instead of staying silent.
 - **A focus timer** that behaves like an alarm, not a widget — a real system
   notification and vibration when the interval ends, phone face-down.
 

@@ -57,6 +57,9 @@ import dev.mks.duskread.speech.speechSupported
 import dev.mks.duskread.summary.SummaryRequest
 import dev.mks.duskread.summary.SummaryTarget
 import dev.mks.duskread.summary.summariesSupported
+import dev.mks.duskread.ui.OpenRecord
+import dev.mks.duskread.ui.ReadingQueue
+import dev.mks.duskread.ui.ReadingQueueEntry
 import dev.mks.duskread.ui.common.AppTextField
 import dev.mks.duskread.ui.common.CompactEmptyState
 import dev.mks.duskread.ui.common.EmptyState
@@ -69,7 +72,7 @@ import dev.mks.duskread.ui.common.Pill
 import dev.mks.duskread.ui.common.RowMeta
 import dev.mks.duskread.ui.common.RowTone
 import dev.mks.duskread.ui.common.ToastRequest
-import dev.mks.duskread.ui.rememberUrlOpener
+import dev.mks.duskread.ui.rememberArticleOpener
 import dev.mks.duskread.ui.summary.SummariseBackground
 import dev.mks.duskread.ui.theme.DuskReadIcons
 import dev.mks.duskread.ui.theme.Mono
@@ -86,7 +89,7 @@ fun LinksTab(
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
 ) {
-    val open = rememberUrlOpener()
+    val open = rememberArticleOpener()
     val client = LocalAppGraph.current.http
 
     val pending = library.links.filterNot { it.fetched }
@@ -119,6 +122,21 @@ fun LinksTab(
     // anything: UNREAD and READ are already the shape of this screen.
     val showUnread = filter != LinkFilter.READ && unread.isNotEmpty()
     val showRead = filter != LinkFilter.UNREAD && read.isNotEmpty()
+
+    // Most recently read first, which is the order the section below draws them in.
+    val sortedRead = read.sortedByDescending { it.readAt ?: it.savedAt }
+
+    // The queue is what is on screen, in the order it is on screen: filtered, searched,
+    // unread before read. Turning a page follows the list the reader can see, not the
+    // library behind it.
+    val queue = ReadingQueue(
+        entries = buildList {
+            if (showUnread) addAll(unread)
+            if (showRead) addAll(sortedRead)
+        }.map { ReadingQueueEntry(it.url, it.title, it.host, it.topic) },
+        source = "Saved",
+        record = OpenRecord.MarkRead,
+    )
 
     PullToRefreshBox(
         isRefreshing = refreshing,
@@ -215,11 +233,9 @@ fun LinksTab(
                         LinkRow(
                             link = link,
                             last = index == unread.lastIndex,
-                            onOpen = {
-                                open(link.url)
-                                library.toggleRead(link.id)
-                                signals.recordRead(link.url)
-                            },
+                            // The read mark and the signal are the reader's job now —
+                            // it has to leave the same record for a page turned to.
+                            onOpen = { open(queue.at(queue.positionOf(link.url))) },
                             onToggleRead = {
                                 library.toggleRead(link.id)
                                 signals.recordRead(link.url)
@@ -244,13 +260,12 @@ fun LinksTab(
                     )
                 }
 
-                val sorted = read.sortedByDescending { it.readAt ?: it.savedAt }
-                sorted.forEachIndexed { index, link ->
+                sortedRead.forEachIndexed { index, link ->
                     item(link.id) {
                         LinkRow(
                             link = link,
-                            last = index == sorted.lastIndex,
-                            onOpen = { open(link.url) },
+                            last = index == sortedRead.lastIndex,
+                            onOpen = { open(queue.at(queue.positionOf(link.url))) },
                             onToggleRead = { library.toggleRead(link.id) },
                             onRetry = { library.retryFetch(link.id) },
                             onRemove = {

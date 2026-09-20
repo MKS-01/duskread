@@ -6,6 +6,7 @@ import dev.mks.duskread.links.FeedPostCache
 import dev.mks.duskread.links.LinkLibrary
 import dev.mks.duskread.links.discoverFeedUrl
 import dev.mks.duskread.links.syncFeeds
+import dev.mks.duskread.summary.SummaryCache
 import io.ktor.client.HttpClient
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
@@ -77,6 +78,7 @@ suspend fun runFullSync(
     library: LinkLibrary,
     feeds: FeedLibrary,
     feedPosts: FeedPostCache,
+    summaries: SummaryCache,
     http: HttpClient,
     recordSync: (Long) -> Unit,
 ): SyncOutcome {
@@ -111,7 +113,7 @@ suspend fun runFullSync(
         is NotionResult.Ok -> applied.copy(pushed = push.value.created)
     }
 
-    val fetched = syncFeeds(http, feeds.feeds, feedPosts)
+    val fetched = syncFeeds(http, feeds.feeds, feedPosts, library, summaries)
 
     // Last gate, and the one that also keeps `notion.sync.last` off a store the erase has
     // just emptied.

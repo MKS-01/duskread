@@ -86,6 +86,8 @@ fun TopicsScreen(
 
             Spacer(Modifier.height(18.dp))
 
+            val queue = posts.readingQueue(feed)
+
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 28.dp),
@@ -96,6 +98,7 @@ fun TopicsScreen(
                         host = feed.host,
                         last = index == posts.lastIndex,
                         linkLibrary = linkLibrary,
+                        queue = queue.at(index),
                         topic = feed.topic,
                     )
                 }
