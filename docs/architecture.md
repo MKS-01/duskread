@@ -12,6 +12,7 @@ if you need the schema, the diagram, or the reasoning behind a number.
 
 - [The shape of it](#the-shape-of-it)
 - [The two UIs](#the-two-uis)
+- [What Home offers](#what-home-offers)
 - [Where data lives](#where-data-lives)
 - [Notion schema](#notion-schema)
 - [On-device storage](#on-device-storage)
@@ -60,7 +61,9 @@ What it shows, in words:
   explicable terms: freshness, source and topic affinity, staleness, fit
   against the focus timer, a shuffle, and two skip penalties. Weights live in
   one block at the top of `links/Recommender.kt`; **Settings ▸ Discovery**
-  shows the pool and the top five with each term broken out.
+  shows the pool and the top five with each term broken out. It sits under
+  the week rather than leading the screen — see
+  [What Home offers](#what-home-offers).
 
 <details>
 <summary>The two rules the design follows from</summary>
@@ -135,8 +138,9 @@ Three things had to change in `commonMain` before Swift could see any of it:
 
 **What iOS does not have.** `Summariser`, `Reader` and `AudioPlayer` have no
 iOS `actual` — they are `Unavailable*` stubs — so Settings' summary and swipe
-sections are gated on `summariesSupported()` and do not render, and there is
-no Readback tab. `Speaker` **is** implemented: `AVSpeechSynthesizer`, in
+sections are gated on `summariesSupported()` and do not render, Home's cards
+never upgrade past the author's own words (see
+[What Home offers](#what-home-offers)), and there is no Readback tab. `Speaker` **is** implemented: `AVSpeechSynthesizer`, in
 Kotlin/Native, so the shared `Flow<SpeechProgress>` contract is the same one
 Android satisfies. The floating bar's transport face is what that lights up.
 
@@ -161,6 +165,69 @@ platform that uses all of it.
 Compose's default easing, and there is not one spring in the codebase. Swift
 mirrors them as the same cubic at the same durations. Adopting SwiftUI's
 spring idiom would be a change to the motion design rather than a port of it.
+</details>
+
+---
+
+## What Home offers
+
+Two sections over the same posts, answering different questions. **`LATEST`**
+is what the followed blogs published in the last seven days, newest first, as
+cards. **`RECOMMENDED`** is the ranked shortlist over everything unread, and
+it drops whatever `LATEST` is already showing. The focus timer sits above
+both.
+
+<details>
+<summary>How the week is cut, and what a card is allowed to say</summary>
+
+`links/LatestPosts.kt` builds the week once, in `commonMain`, because both
+UIs draw these cards and two reckonings of "latest" would put a different
+week on each phone.
+
+```
+ every cached feed post
+     │
+     ├─ no publication date?        dropped — a feed that dates nothing
+     │                              cannot claim to be latest
+     ├─ older than seven days, or
+     │  dated more than a day
+     │  ahead?                      dropped
+     ├─ seen under another
+     │  address?                    dropped — canonical key
+     ├─ body yields no excerpt?     dropped — see below
+     ├─ fourth from this blog?      dropped — at most three each
+     └─ otherwise                   a card, to a limit of ten
+```
+
+**A post whose body yields no excerpt is not shown at all.** A card's text is
+the publisher's own opening, cut at the last sentence inside 600 characters,
+and a feed carrying nothing but a title and a link has none to give — so the
+post drops out rather than leaving an empty card behind. It is the one place
+where a followed blog can be absent from Home while still syncing normally,
+and it is deliberate: the alternative is a column of cards with nothing in
+them.
+
+Each card holds two lines of title and four of text whether it needs them or
+not, so a column of them is one height rather than a ragged edge. What does
+not fit is behind *more*, which is why the excerpt is cut to 600 characters
+and not to the four lines that show — a control that opens nothing is worse
+than no control.
+
+**The text is upgraded in place, not replaced.** Where the on-device
+summariser is *already* available, Home summarises the cards in order, one at
+a time, stopping after six, and crossfades each answer in as it lands. It
+never starts a model download itself; that stays a decision made in the
+summary panel. Every other card keeps its excerpt, which is not a failure
+state, and the meta line says which of the two it is holding — a summary is
+the model's words and an excerpt is the author's. On iOS none of this runs:
+there is no summariser on the platform, so the text is always the author's.
+
+`RECOMMENDED` takes its exclusion against the pool **before** ranking rather
+than against the picks after it. Filtered afterwards, the section comes up
+short of the three it means to offer.
+
+Neither section reaches the network. Both read what the last sync left in
+`feeds.posts`; pulling down on Home is what runs the next one.
 </details>
 
 ---
@@ -265,7 +332,7 @@ migrations.
 | `signals.topics` | reads per topic |
 | `signals.skipped` | per-URL skips, bounded |
 | `notion.database.sources`, `notion.database.reading`, `notion.page.parent`, `notion.page.home`, `notion.sync.last` | connection state |
-| `summaries` | generated summaries, newest first, bounded — a second look at an article costs no AICore quota |
+| `summaries` | generated summaries, newest first, bounded — a second look at an article costs no AICore quota; pruned by every sync to what the app still lists |
 | `user.name`, `intro.seen`, `theme.mono`, `readback.enabled`, `speech.voice`, `swipe.default` | preferences |
 
 The Notion **token is not here.** It lives in a separate `SecretStore` —
@@ -281,6 +348,13 @@ decisions that are genuinely Apple's (the suite name, an App Group for a
 future widget, Keychain accessibility) on that side of the line. Booleans go
 in as their string form, because Kotlin's default `getBoolean` is written in
 terms of `getString` and a native `Bool` would make the two disagree silently.
+
+`summaries` is the one key another key's contents can empty. A summary
+describes an article, so when a sync rewrites `feeds.posts` — or a blog is
+unfollowed — the summaries left behind describe posts the app no longer
+lists, and `syncFeeds` drops them on its way out. It takes the library and
+the cache as required parameters rather than optional ones, so no call site
+can opt back into the leak by saying nothing.
 
 `notion.database.name` is not in the table above — nothing writes it any
 more, from back when there was one database instead of two and its name was
