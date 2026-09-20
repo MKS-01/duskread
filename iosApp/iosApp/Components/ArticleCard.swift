@@ -141,7 +141,6 @@ struct ArticleCard: View {
 }
 
 private extension View {
-    /// Reports this view's laid-out height, once and on every change.
     func measured(_ onChange: @escaping (CGFloat) -> Void) -> some View {
         overlay(
             GeometryReader { geometry in
