@@ -56,7 +56,20 @@ internal fun String.metaContent(key: String): String? {
 internal fun String.tidy(): String? {
     var text = replace(Whitespace, " ").trim()
     for ((entity, char) in Entities) text = text.replace(entity, char, ignoreCase = true)
-    return text.takeIf { it.isNotBlank() }
+    return text.decodeNumericEntities().takeIf { it.isNotBlank() }
+}
+
+/**
+ * `&#8217;` and `&#x2019;`, which no table can enumerate — a publisher writing prose
+ * reaches for a curly quote or a dash far more often than for anything named.
+ */
+private fun String.decodeNumericEntities(): String = replace(NumericEntity) { match ->
+    val radix = if (match.groupValues[1].isEmpty()) 10 else 16
+    val code = match.groupValues[2].toIntOrNull(radix)
+    // Left as written rather than turned into a replacement glyph: an entity on screen
+    // says what went wrong, a black diamond does not. Astral planes are out of reach of
+    // a single Char, and nothing in prose needs one.
+    if (code == null || code !in 1..0xFFFF) match.value else code.toChar().toString()
 }
 
 private val TitlePattern = Regex("""<title[^>]*>(.*?)</title>""", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL))
@@ -76,7 +89,14 @@ private val Entities = listOf(
     "&mdash;" to "—",
     "&ndash;" to "–",
     "&hellip;" to "…",
+    // Prose, unlike a title, is full of these.
+    "&rsquo;" to "\u2019",
+    "&lsquo;" to "\u2018",
+    "&rdquo;" to "\u201D",
+    "&ldquo;" to "\u201C",
 )
+
+private val NumericEntity = Regex("""&#(x?)([0-9a-fA-F]+);""", RegexOption.IGNORE_CASE)
 
 internal const val UserAgent = "Mozilla/5.0 (compatible; DuskRead/1.0; +https://github.com/MKS-01)"
 

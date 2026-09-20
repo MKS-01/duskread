@@ -1,10 +1,8 @@
 package dev.mks.duskread.ui.home
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -14,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -22,18 +19,15 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.mks.duskread.links.FeedLibrary
@@ -41,6 +35,7 @@ import dev.mks.duskread.links.FeedPostCache
 import dev.mks.duskread.links.LinkLibrary
 import dev.mks.duskread.links.ReadingSignals
 import dev.mks.duskread.links.Scored
+import dev.mks.duskread.links.latestPosts
 import dev.mks.duskread.links.pool
 import dev.mks.duskread.links.rank
 import dev.mks.duskread.links.syncFeeds
@@ -48,12 +43,6 @@ import dev.mks.duskread.links.topPicks
 import dev.mks.duskread.pomodoro.PickableMinutes
 import dev.mks.duskread.pomodoro.clockLabel
 import dev.mks.duskread.pomodoro.rememberPomodoroController
-import dev.mks.duskread.reader.AudioPlayer
-import dev.mks.duskread.reader.ReadItem
-import dev.mks.duskread.reader.ReadSort
-import dev.mks.duskread.reader.ReaderSource
-import dev.mks.duskread.reader.readbackSupported
-import dev.mks.duskread.reader.rememberReadRepository
 import dev.mks.duskread.summary.rememberSummaryCache
 import dev.mks.duskread.ui.OpenRecord
 import dev.mks.duskread.ui.ReadingQueue
@@ -64,13 +53,11 @@ import dev.mks.duskread.ui.common.ListRow
 import dev.mks.duskread.ui.common.RowMeta
 import dev.mks.duskread.ui.common.ToastRequest
 import dev.mks.duskread.ui.common.WaveformMeter
-import dev.mks.duskread.ui.reader.formatDuration
 import dev.mks.duskread.ui.rememberArticleOpener
 import dev.mks.duskread.ui.theme.CodeStyle
 import dev.mks.duskread.ui.theme.DuskReadIcons
 import dev.mks.duskread.ui.theme.Mono
 import dev.mks.duskread.ui.theme.Radius
-import dev.mks.duskread.ui.theme.SectionLabel
 import dev.mks.duskread.ui.theme.Stroke
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -85,13 +72,9 @@ import kotlin.time.Clock
 fun DashboardTab(
     onOpenFocus: () -> Unit,
     onOpenSaved: () -> Unit,
-    /** Off unless the Readback tab is switched on; see `UserPrefs.readbackEnabled`. */
-    showReadback: Boolean,
-    onOpenReadback: () -> Unit,
     onOpenFollowing: () -> Unit,
     links: LinkLibrary,
     signals: ReadingSignals,
-    player: AudioPlayer,
     feeds: FeedLibrary,
     feedPosts: FeedPostCache,
     feedClient: HttpClient,
@@ -101,7 +84,16 @@ fun DashboardTab(
 ) {
     val scope = rememberCoroutineScope()
     val summaries = rememberSummaryCache()
+    val open = rememberArticleOpener()
     var refreshing by remember { mutableStateOf(false) }
+
+    // The day, not the instant: recomputing the week every recomposition would re-cut it
+    // on a clock tick nothing else on this screen can see.
+    val day = remember { Clock.System.now().toEpochMilliseconds() / DayMs }
+    val latest = remember(feedPosts.postsByFeed, feeds.feeds, links.links, day) {
+        latestPosts(feeds = feeds.feeds, cache = feedPosts, links = links, now = Clock.System.now().toEpochMilliseconds())
+    }
+    val bodies = rememberCardBodies(latest, feedPosts)
 
     PullToRefreshBox(
         isRefreshing = refreshing,
@@ -147,26 +139,40 @@ fun DashboardTab(
                 item("welcome") { WelcomeSection() }
             }
 
-            // Leads the screen — a specific thing to read, ahead of the general habit
-            // prompt below it.
-            item("next-up") {
-                NextUpSection(links = links, signals = signals, feeds = feeds, feedPosts = feedPosts, onOpenSaved = onOpenSaved)
-            }
-            // Dropped entirely rather than shown empty: its every branch ends in "open
-            // the Readback tab", and there is no such tab to open.
-            if (showReadback) {
-                item("readback") { ReadbackSection(player = player, onOpen = onOpenReadback) }
-            }
+            // First, and small: what the reader came to do, before what there is to read.
             item("focus") { FocusSection(onOpen = onOpenFocus) }
-            item("following") {
-                FollowingShortcut(feeds = feeds, feedPosts = feedPosts, links = links, onOpen = onOpenFollowing)
+
+            // The body of the screen now — the week itself rather than a count of it.
+            latestSection(
+                items = latest,
+                bodies = bodies,
+                hasFeeds = feeds.feeds.isNotEmpty(),
+                onOpen = open,
+                onFollow = onOpenFollowing,
+            )
+
+            // Last, and still a choice rather than a list: what to read when the week has
+            // already been looked at.
+            item("next-up") {
+                NextUpSection(
+                    links = links,
+                    signals = signals,
+                    feeds = feeds,
+                    feedPosts = feedPosts,
+                    // Nothing on this screen twice: the cards above already offered these.
+                    exclude = remember(latest) { latest.mapTo(mutableSetOf()) { it.url } },
+                    onOpenSaved = onOpenSaved,
+                )
             }
         }
     }
 }
 
+/** Long enough that the week is not re-cut on every recomposition; see its one use. */
+private const val DayMs = 86_400_000L
+
 /** Vertical gap between one flat section and the next. */
-private val SectionGap = 28.dp
+internal val SectionGap = 28.dp
 
 @Composable
 private fun FocusSection(onOpen: () -> Unit, modifier: Modifier = Modifier) {
@@ -224,229 +230,6 @@ private fun PillButton(text: String, onClick: () -> Unit) {
 }
 
 /**
- * The newest read, or the one actually playing — and playable from here.
- */
-@Composable
-private fun ReadbackSection(
-    player: AudioPlayer,
-    onOpen: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val repository = rememberReadRepository()
-    val source by repository.source.collectAsState()
-    val playback by player.state.collectAsState()
-    var newest by remember { mutableStateOf<ReadItem?>(null) }
-
-    LaunchedEffect(source) {
-        newest = if (source == ReaderSource.READY) {
-            repository.listReads(query = "", sort = ReadSort.NEWEST).firstOrNull()
-        } else {
-            null
-        }
-    }
-
-    val item = playback.item ?: newest
-    val playing = item != null && playback.item?.id == item.id
-
-    Column(modifier.fillMaxWidth().padding(bottom = SectionGap)) {
-        EyebrowHeader(
-            text = "TODAY'S READBACK",
-            icon = DuskReadIcons.Waveform,
-            // The way to the full library, kept off the row now that the row itself
-            // plays.
-            trailing = if (item != null) {
-                {
-                    Icon(
-                        imageVector = DuskReadIcons.Chevron,
-                        contentDescription = "Open Readback",
-                        modifier = Modifier
-                            .size(26.dp)
-                            .clickable(onClick = onOpen)
-                            .padding(7.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            } else {
-                null
-            },
-        )
-        Spacer(Modifier.height(12.dp))
-
-        when {
-            // Said plainly rather than as a prompt: on a platform with no folder to point
-            // at, "connect your library" is an instruction that cannot be followed.
-            !readbackSupported() -> {
-                CompactEmptyState(
-                    title = "Readback needs a device",
-                    message = "Reads are audio files synced onto a phone or a Mac. There's nowhere here to keep them.",
-                )
-            }
-
-            source != ReaderSource.READY -> {
-                CompactEmptyState(
-                    title = "Connect your readback library",
-                    message = "Point the Readback tab at a synced readback-audio-db folder to see your latest reads here.",
-                )
-            }
-
-            item == null -> CompactEmptyState(title = "Nothing read yet", message = null)
-
-            else -> Column(
-                Modifier.fillMaxWidth().clickable {
-                    if (playing) player.togglePlayPause() else player.play(item)
-                },
-            ) {
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
-                    Text(
-                        text = item.title,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontSize = 15.sp,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f),
-                        // The playing row is the only coloured thing on the screen, the
-                        // same rule the Readback tab follows.
-                        color = if (playing) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.onSurface
-                        },
-                    )
-                    Spacer(Modifier.width(10.dp))
-                    Icon(
-                        imageVector = if (playing && playback.playing) DuskReadIcons.Pause else DuskReadIcons.Play,
-                        contentDescription = if (playing && playback.playing) "Pause" else "Play",
-                        modifier = Modifier.size(15.dp).padding(top = 2.dp),
-                        tint = if (playing) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                Spacer(Modifier.height(6.dp))
-                Text(
-                    text = if (playing && playback.durationSec > 0f) {
-                        "${formatDuration(playback.positionSec.toDouble())} / ${formatDuration(playback.durationSec.toDouble())}"
-                    } else {
-                        formatDuration(item.durationSec)
-                    },
-                    fontFamily = Mono,
-                    fontSize = 10.5.sp,
-                    color = if (playing) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(Modifier.height(9.dp))
-                WaveformMeter(
-                    progress = if (playing && playback.durationSec > 0f) {
-                        (playback.positionSec / playback.durationSec).coerceIn(0f, 1f)
-                    } else {
-                        0f
-                    },
-                    modifier = Modifier.height(15.dp),
-                    seed = item.id.hashCode(),
-                )
-            }
-        }
-    }
-}
-
-/**
- * The door to the Following tab: a summary, not the digest that used to sit here.
- */
-@Composable
-private fun FollowingShortcut(
-    feeds: FeedLibrary,
-    feedPosts: FeedPostCache,
-    links: LinkLibrary,
-    onOpen: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    // Sorted rather than filtered to exactly the unread: a feed with nothing new yet is
-    // still worth naming if it's one of only two followed.
-    val byNewest = remember(feeds.feeds, feedPosts.postsByFeed, links.links) {
-        feeds.feeds.map { feed ->
-            feed to feedPosts.postsByFeed[feed.id].orEmpty().count { !links.isSaved(it.url) }
-        }.sortedByDescending { it.second }
-    }
-    val newCount = byNewest.sumOf { it.second }
-
-    Column(modifier.fillMaxWidth().padding(bottom = SectionGap)) {
-        EyebrowHeader(
-            text = "FOLLOWING",
-            trailing = if (feeds.feeds.isNotEmpty()) {
-                {
-                    Text(
-                        text = if (newCount > 0) "$newCount new" else "—",
-                        fontFamily = Mono,
-                        fontSize = 12.sp,
-                        fontWeight = if (newCount > 0) FontWeight.SemiBold else FontWeight.Normal,
-                        color = if (newCount > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            } else {
-                null
-            },
-        )
-        Spacer(Modifier.height(12.dp))
-
-        if (feeds.feeds.isEmpty()) {
-            CompactEmptyState(
-                title = "Follow a blog",
-                message = "Its new posts will show up here, and in full on the Following tab.",
-                onClick = onOpen,
-            )
-        } else {
-            Column(Modifier.fillMaxWidth().clickable(onClick = onOpen)) {
-                Text(
-                    text = "${feeds.feeds.size} feed${if (feeds.feeds.size == 1) "" else "s"} followed",
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                Spacer(Modifier.height(10.dp))
-
-                byNewest.take(FollowingPreviewRows).forEach { (feed, count) ->
-                    Row(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-                        Text(
-                            // Jost, not mono — a feed's name is a name, and the tokens
-                            // doc reserves Inconsolata for a reported value.
-                            text = feed.label,
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f),
-                        )
-                        Text(
-                            text = if (count > 0) "$count new" else "—",
-                            fontFamily = Mono,
-                            fontSize = 11.sp,
-                            color = if (count > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-
-                if (feeds.feeds.size > FollowingPreviewRows) {
-                    Spacer(Modifier.height(6.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = "${feeds.feeds.size - FollowingPreviewRows} more",
-                            style = SectionLabel,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                        Spacer(Modifier.width(6.dp))
-                        Icon(
-                            imageVector = DuskReadIcons.Chevron,
-                            contentDescription = "Open Following",
-                            modifier = Modifier.size(11.dp),
-                            tint = MaterialTheme.colorScheme.primary,
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-/** How many feeds [FollowingShortcut] names before handing over to [FollowingTab]. */
-private const val FollowingPreviewRows = 3
-
-/**
  * A first look at the app, not a first look at emptiness.
  */
 @Composable
@@ -486,6 +269,8 @@ private fun NextUpSection(
     signals: ReadingSignals,
     feeds: FeedLibrary,
     feedPosts: FeedPostCache,
+    /** Already on the screen above, as a card. */
+    exclude: Set<String>,
     onOpenSaved: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -512,9 +297,12 @@ private fun NextUpSection(
         signals.skippedPosts,
         shuffles,
         focusMinutes,
+        exclude,
     ) {
         rank(
-            candidates = pool(links, feedPosts, feeds.feeds),
+            // Filtered before ranking rather than after: dropping a pick afterwards
+            // would leave the section short of the three it means to offer.
+            candidates = pool(links, feedPosts, feeds.feeds).filterNot { it.url in exclude },
             signals = signals,
             now = Clock.System.now().toEpochMilliseconds(),
             seed = day + shuffles,

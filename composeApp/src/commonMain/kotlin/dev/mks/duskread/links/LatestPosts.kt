@@ -101,6 +101,12 @@ fun excerptOf(markup: String, maxChars: Int = ExcerptChars): String? {
     return window.substringBeforeLast(' ').trimEnd(',', ';', ':', '—', '–', '-') + "…"
 }
 
+/**
+ * The whole of a feed body as prose — what the summariser is given, where [excerptOf]
+ * is what the card shows until it answers.
+ */
+fun articleTextOf(markup: String): String = markup.textOf()
+
 /** Home shows the week, and only the week. */
 const val LatestWindowMs = 7L * 24 * 60 * 60 * 1000
 
@@ -113,8 +119,12 @@ const val MaxPerFeed = 3
 /** A publisher scheduling an hour ahead is dating in good faith; a year ahead is not. */
 private const val FutureSlackMs = 24L * 60 * 60 * 1000
 
-/** Roughly three lines on a phone, which is the card's own budget for it. */
-private const val ExcerptChars = 220
+/**
+ * Well past the four lines a closed card shows, on purpose: the card cuts the text to
+ * its own height and puts the rest behind "more", so an excerpt trimmed to exactly what
+ * fits would leave that control with nothing to open.
+ */
+private const val ExcerptChars = 600
 
 /** Below this there is nothing to read, only a byline or a "read more". */
 private const val MinExcerptChars = 80
