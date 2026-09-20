@@ -2,7 +2,7 @@
 # The app's own version. Read by androidApp for versionName and written into
 # commonMain as `AppVersion`, so what Settings shows and what the APK reports
 # come from the same line.
-app = "1.0.0"
+app = "1.1.0"
 agp = "9.0.1"
 android-compileSdk = "36"
 # 31 (Android 12). It was 26, which ML Kit GenAI's manifest forced; 31 is
