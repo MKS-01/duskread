@@ -47,13 +47,17 @@ pasted token, the app finds or creates its own databases
 API, library or tool is in scope and does not need justifying.
 
 `README.md` describes how the app is put together — do not restate it here.
-The landing page and visual-language reference (three acts — Concept,
-Walkthrough, How it works — plus the colour/type/icon/motion token table)
-used to live in this repo at `docs/design-system/` and deploy to GitHub
-Pages. As of September 2026 that page moved to the `mksbrew` monorepo and is
-served from there at https://duskread.mksbrew.dev — **this repo no longer
-carries the landing page source, its deploy workflow, or the tokens
-reference.** Edit the page in `mksbrew`, not here.
+The landing page used to live in this repo at `docs/design-system/` (a
+three-act visual-language reference: Concept, Walkthrough, How it works,
+plus a token table) and deploy to GitHub Pages. As of September 2026 that
+page moved to the `mksbrew` monorepo, served from there at
+https://duskread.mksbrew.dev — **this repo no longer carries the landing
+page source, its deploy workflow, or the tokens reference.** Edit the page
+in `mksbrew`, not here. Its structure has since changed there (rewritten
+as a product pitch page the same month) and can drift from what this repo
+describes; don't treat the description above as current — read the page,
+or `mksbrew`'s own `CLAUDE.md`, instead. See `duskread-feature-rollout`
+for keeping it in step with a shipped change.
 `docs/architecture.md` remains the single design document in this repo: how
 the pieces connect, the Notion schema, on-device storage, the sync trigger,
 canonical URLs, authentication and offline behaviour. It carries only what
@@ -228,8 +232,10 @@ section order, the facts to re-derive from `libs.versions.toml`),
 `duskread-setup` for standing the app up from a fresh clone (the two Notion
 databases and their exact property names, the PAT, readback's folder
 grant), `duskread-code-docs` for comments and KDoc (why not what, and when a
-decision outgrows a comment and belongs in `docs/architecture.md`), plus
-`duskread-verify` and `duskread-crash-audit`.
+decision outgrows a comment and belongs in `docs/architecture.md`),
+`duskread-feature-rollout` for propagating a shipped feature to
+`docs/architecture.md`, `README.md` and the `mksbrew` landing page without
+missing one, plus `duskread-verify` and `duskread-crash-audit`.
 
 ### Android
 
