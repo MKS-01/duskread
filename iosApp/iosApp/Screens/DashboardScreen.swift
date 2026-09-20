@@ -1,8 +1,8 @@
 import ComposeApp
 import SwiftUI
 
-/// Home: what to read next, the timer, and how far behind the blogs are. Three sections
-/// and no more.
+/// Home: the timer, the week the followed blogs published, and what to read out of
+/// everything else. Three sections and no more.
 struct DashboardScreen: View {
     let onOpenFocus: () -> Void
     let onOpenSaved: () -> Void
@@ -11,6 +11,7 @@ struct DashboardScreen: View {
     @Environment(LinksStore.self) private var links
     @Environment(BrowserRouter.self) private var browser
     @Environment(FeedsStore.self) private var feeds
+    @Environment(LatestStore.self) private var latest
     @Environment(PomodoroStore.self) private var pomodoro
     @Environment(SuggestionsStore.self) private var suggestions
     @Environment(PrefsStore.self) private var prefs
@@ -28,12 +29,20 @@ struct DashboardScreen: View {
 
                 if links.links.isEmpty && feeds.feeds.isEmpty {
                     welcome
-                } else {
-                    nextUp
                 }
 
+                // First, and small: what the reader came to do, before what there is to
+                // read.
                 focus
-                following
+
+                // The body of the screen — the week itself rather than a count of it.
+                latestSection
+
+                // Last, and still a choice rather than a list: what to read when the
+                // week has already been looked at.
+                if !(links.links.isEmpty && feeds.feeds.isEmpty) {
+                    recommended
+                }
             }
             .padding(.horizontal, Layout.listGutter)
             .padding(.top, 10)
@@ -41,8 +50,11 @@ struct DashboardScreen: View {
         }
         .tracksBarCollapse(collapse)
         .background(dusk.background)
-        .refreshable { await feeds.sync(); suggestions.refresh() }
-        .onAppear { suggestions.refresh() }
+        .refreshable { await feeds.sync(); latest.refresh(); suggestions.refresh(excluding: shownAsCards) }
+        .onAppear { latest.refresh(); suggestions.refresh(excluding: shownAsCards) }
+        // The week can change under the screen — a sync lands, or a card is opened and
+        // marked read — and the picks below it have to drop whatever it now shows.
+        .onChange(of: latest.items.map(\.url)) { _, _ in suggestions.refresh(excluding: shownAsCards) }
     }
 
     private var greeting: String? {
@@ -67,7 +79,7 @@ struct DashboardScreen: View {
         }
     }
 
-    private var nextUp: some View {
+    private var recommended: some View {
         VStack(alignment: .leading, spacing: 14) {
             EyebrowHeader(label: "Recommended") {
                 RowToggle(path: IconPaths.shared.Shuffle, tint: dusk.onSurfaceVariant) {
@@ -101,6 +113,62 @@ struct DashboardScreen: View {
         return items
     }
 
+    /// Nothing on this screen twice: the cards above already offered these.
+    private var shownAsCards: Set<String> { Set(latest.items.map(\.url)) }
+
+    private var latestSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            EyebrowHeader(label: "Latest") {
+                if !latest.items.isEmpty {
+                    Text("\(latest.items.count) this week")
+                        .dusk(.code)
+                        .foregroundStyle(dusk.onSurfaceVariant)
+                }
+            }
+
+            if latest.items.isEmpty {
+                if feeds.feeds.isEmpty {
+                    CompactEmptyState(
+                        title: "Follow a blog",
+                        message: "Whatever it publishes this week lands here, with a line about what it says.",
+                        onTap: onOpenFollowing
+                    )
+                } else {
+                    CompactEmptyState(
+                        title: "Nothing new this week",
+                        message: "The blogs you follow haven't published since last week. Pull down to check again."
+                    )
+                }
+            } else {
+                ForEach(latest.items, id: \.url) { item in
+                    ArticleCard(
+                        host: item.host,
+                        title: item.title,
+                        text: item.excerpt,
+                        timeAgo: links.savedAgo(item.publishedAt),
+                        meta: cardMeta(for: item),
+                        faded: item.read,
+                        onTap: { open(item) }
+                    )
+                }
+            }
+        }
+    }
+
+    private func cardMeta(for item: LatestItem) -> [RowMetaItem] {
+        var items = [RowMetaItem(text: "\(item.minutes) min")]
+        if let topic = item.topic, !topic.isEmpty { items.append(RowMetaItem(text: topic.lowercased())) }
+        return items
+    }
+
+    private func open(_ item: LatestItem) {
+        // The same record a card's tap leaves in Compose: reading something offered is
+        // how it becomes the reader's own.
+        suggestions.recordOpen(item.url)
+        _ = links.save(item.url)
+        browser.open(item.url)
+    }
+
     private var focus: some View {
         VStack(alignment: .leading, spacing: 14) {
             EyebrowHeader(label: "Focus") {
@@ -127,53 +195,6 @@ struct DashboardScreen: View {
                 }
             }
         }
-    }
-
-    private var following: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            EyebrowHeader(label: "Following") {
-                Text("\(newCount) new")
-                    .dusk(.code)
-                    .foregroundStyle(dusk.primary)
-            }
-
-            if feeds.feeds.isEmpty {
-                CompactEmptyState(title: "No blogs followed", message: "Add one in Following.", onTap: onOpenFollowing)
-            } else {
-                Text("\(feeds.feeds.count) feeds followed")
-                    .dusk(.titleSmall)
-                    .foregroundStyle(dusk.onSurface)
-                ForEach(feeds.feeds.prefix(3), id: \.id) { feed in
-                    HStack {
-                        Text(feed.label)
-                            .dusk(.bodyMedium)
-                            .foregroundStyle(dusk.onSurfaceVariant)
-                            .lineLimit(1)
-                        Spacer()
-                        Text("\(feeds.newCount(for: feed, saved: links.links)) new")
-                            .dusk(.code)
-                            .foregroundStyle(dusk.primary)
-                    }
-                }
-                if feeds.feeds.count > 3 {
-                    Button(action: onOpenFollowing) {
-                        HStack(spacing: 6) {
-                            Text("\(feeds.feeds.count - 3) more")
-                                .dusk(.sectionLabel)
-                                .foregroundStyle(dusk.primary)
-                            DuskIcon(path: IconPaths.shared.Chevron, size: 14, tint: dusk.primary)
-                        }
-                        .padding(.vertical, 8)
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-        }
-    }
-
-    private var newCount: Int {
-        feeds.feeds.reduce(0) { $0 + feeds.newCount(for: $1, saved: links.links) }
     }
 
     private func open(_ candidate: Candidate) {
