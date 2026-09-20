@@ -220,6 +220,10 @@ fun HomeScreen(
     val feedPosts = rememberFeedPostCache()
     val feedClient = LocalAppGraph.current.http
 
+    // Passed down rather than reached for per screen, for the same reason the libraries
+    // are: a sync prunes it, and Home's cards read it.
+    val summaries = LocalAppGraph.current.summaries
+
     // Hoisted here and passed into Settings rather than built there, for the same reason
     // FeedLibrary is: NotionPrefs writes `notion.sync.last`.
     val notionPrefs = rememberNotionPrefs()
@@ -258,6 +262,7 @@ fun HomeScreen(
                 library = links,
                 feeds = feeds,
                 feedPosts = feedPosts,
+                summaries = summaries,
                 http = feedClient,
                 recordSync = notionPrefs::recordSync,
             )

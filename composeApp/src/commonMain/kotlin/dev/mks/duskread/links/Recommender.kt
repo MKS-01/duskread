@@ -234,10 +234,16 @@ private fun jitter(url: String, seed: Int): Float {
  * Body words over [WordsPerMinute], falling back to a flat guess for a candidate whose
  * length nothing knows.
  */
-internal fun estimatedMinutes(candidate: Candidate): Float {
-    val words = candidate.words ?: candidate.body?.split(' ', '\n', '\t')?.count { it.isNotBlank() } ?: 0
-    if (words < 40) return DefaultMinutes
-    return max(1f, words.toFloat() / WordsPerMinute)
+internal fun estimatedMinutes(candidate: Candidate): Float = estimatedMinutes(candidate.words, candidate.body)
+
+/**
+ * The same reckoning for a post that is not a [Candidate] — Home's Latest cards report a
+ * length too, and two ways of counting it would disagree on the same article.
+ */
+internal fun estimatedMinutes(words: Int?, body: String?): Float {
+    val counted = words ?: body?.split(' ', '\n', '\t')?.count { it.isNotBlank() } ?: 0
+    if (counted < 40) return DefaultMinutes
+    return max(1f, counted.toFloat() / WordsPerMinute)
 }
 
 /**

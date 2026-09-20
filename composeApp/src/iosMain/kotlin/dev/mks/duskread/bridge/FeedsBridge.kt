@@ -4,6 +4,7 @@ import dev.mks.duskread.data.AppGraph
 import dev.mks.duskread.links.Feed
 import dev.mks.duskread.links.FeedPost
 import dev.mks.duskread.links.discoverFeedUrl
+import dev.mks.duskread.links.pruneSummaries
 import dev.mks.duskread.links.syncFeeds
 
 /**
@@ -21,6 +22,7 @@ class FeedsBridge internal constructor(private val graph: AppGraph) {
     fun remove(id: String) {
         graph.feeds.remove(id)
         graph.feedPosts.removeFeed(id)
+        pruneSummaries(graph.summaries, graph.links, graph.feedPosts)
     }
 
     fun clear() {
@@ -37,5 +39,5 @@ class FeedsBridge internal constructor(private val graph: AppGraph) {
     }
 
     /** Returns how many new posts landed, so Swift can say so. */
-    suspend fun sync(): Int = syncFeeds(graph.http, graph.feeds.feeds, graph.feedPosts)
+    suspend fun sync(): Int = syncFeeds(graph.http, graph.feeds.feeds, graph.feedPosts, graph.links, graph.summaries)
 }

@@ -1,6 +1,7 @@
 package dev.mks.duskread.links
 
 import dev.mks.duskread.data.DataEpoch
+import dev.mks.duskread.summary.SummaryCache
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.request.header
@@ -170,7 +171,16 @@ internal fun resolveAgainst(pageUrl: String, href: String): String = when {
  * Fetches every followed feed and, for each one that actually yields posts, replaces its
  * slot in [cache] — the source Home's topic rows read from.
  */
-suspend fun syncFeeds(client: HttpClient, feeds: List<Feed>, cache: FeedPostCache): Int {
+suspend fun syncFeeds(
+    client: HttpClient,
+    feeds: List<Feed>,
+    cache: FeedPostCache,
+    // Not optional, though nothing here reads them: a sync that rewrote the posts and
+    // left the summaries behind is exactly the bug [pruneSummaries] exists to prevent,
+    // and a default would let a call site opt back into it by saying nothing.
+    links: LinkLibrary,
+    summaries: SummaryCache,
+): Int {
     // What the fetch below is about. A dozen feeds take long enough that an erase can
     // happen while they are in the air; see [DataEpoch].
     val epoch = DataEpoch.mark()
@@ -189,7 +199,20 @@ suspend fun syncFeeds(client: HttpClient, feeds: List<Feed>, cache: FeedPostCach
     if (DataEpoch.stale(epoch)) return 0
 
     cache.replaceAll(fetched)
+    pruneSummaries(summaries, links, cache)
     return fetched.size
+}
+
+/**
+ * Drops every summary whose article the app no longer lists. A summary costs nothing to
+ * keep but describes a post that is gone, and the cache is a convenience, not a record.
+ */
+fun pruneSummaries(summaries: SummaryCache, links: LinkLibrary, cache: FeedPostCache) {
+    val known = mutableSetOf<String>()
+    links.links.mapTo(known) { canonicalUrl(it.url) }
+    cache.postsByFeed.values.flatten().mapTo(known) { canonicalUrl(it.url) }
+
+    summaries.retain { canonicalUrl(it) in known }
 }
 
 /**

@@ -17,6 +17,7 @@ import dev.mks.duskread.links.FeedLibrary
 import dev.mks.duskread.links.FeedPostCache
 import dev.mks.duskread.links.LinkLibrary
 import dev.mks.duskread.links.syncFeeds
+import dev.mks.duskread.summary.rememberSummaryCache
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.launch
 
@@ -34,6 +35,7 @@ fun FollowingTab(
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
+    val summaries = rememberSummaryCache()
     var refreshing by remember { mutableStateOf(false) }
 
     PullToRefreshBox(
@@ -42,7 +44,7 @@ fun FollowingTab(
             if (feeds.feeds.isEmpty()) return@PullToRefreshBox
             scope.launch {
                 refreshing = true
-                syncFeeds(client, feeds.feeds, feedPosts)
+                syncFeeds(client, feeds.feeds, feedPosts, links, summaries)
                 refreshing = false
             }
         },

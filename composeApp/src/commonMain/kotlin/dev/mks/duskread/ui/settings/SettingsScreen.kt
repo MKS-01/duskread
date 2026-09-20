@@ -401,6 +401,7 @@ private fun NotionSettings(
 ) {
     val secrets = rememberSecretStore()
     val scope = rememberCoroutineScope()
+    val summaries = rememberSummaryCache()
 
     // Read into state rather than on every recomposition: reaching the keystore is cheap
     // but not free, and the answer only changes here or in the setup sheet.
@@ -477,6 +478,7 @@ private fun NotionSettings(
                             library = library,
                             feeds = feeds,
                             feedPosts = feedPosts,
+                            summaries = summaries,
                             http = client,
                             recordSync = notion::recordSync,
                         ).line

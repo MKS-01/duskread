@@ -54,6 +54,7 @@ import dev.mks.duskread.reader.ReadSort
 import dev.mks.duskread.reader.ReaderSource
 import dev.mks.duskread.reader.readbackSupported
 import dev.mks.duskread.reader.rememberReadRepository
+import dev.mks.duskread.summary.rememberSummaryCache
 import dev.mks.duskread.ui.OpenRecord
 import dev.mks.duskread.ui.ReadingQueue
 import dev.mks.duskread.ui.ReadingQueueEntry
@@ -99,6 +100,7 @@ fun DashboardTab(
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
+    val summaries = rememberSummaryCache()
     var refreshing by remember { mutableStateOf(false) }
 
     PullToRefreshBox(
@@ -109,7 +111,7 @@ fun DashboardTab(
             if (feeds.feeds.isEmpty()) return@PullToRefreshBox
             scope.launch {
                 refreshing = true
-                val synced = syncFeeds(feedClient, feeds.feeds, feedPosts)
+                val synced = syncFeeds(feedClient, feeds.feeds, feedPosts, links, summaries)
                 ToastRequest.show(
                     when {
                         synced == 0 -> "Couldn't reach any feed."

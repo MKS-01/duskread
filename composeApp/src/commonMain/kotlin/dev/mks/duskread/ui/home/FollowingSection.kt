@@ -49,8 +49,10 @@ import dev.mks.duskread.links.LinkLibrary
 import dev.mks.duskread.links.discoverFeedUrl
 import dev.mks.duskread.links.looksLikeUrl
 import dev.mks.duskread.links.normaliseUrl
+import dev.mks.duskread.links.pruneSummaries
 import dev.mks.duskread.links.savedAgo
 import dev.mks.duskread.links.syncFeeds
+import dev.mks.duskread.summary.rememberSummaryCache
 import dev.mks.duskread.ui.common.AppTextField
 import dev.mks.duskread.ui.common.CompactEmptyState
 import dev.mks.duskread.ui.common.EmptyState
@@ -87,6 +89,7 @@ fun FollowingDigest(
     emptyStateModifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
+    val summaries = rememberSummaryCache()
     // Open by default with nothing followed yet, the same reason Saved's own paste field
     // is never hidden behind a toggle.
     var managing by remember { mutableStateOf(feedLibrary.feeds.isEmpty()) }
@@ -126,7 +129,7 @@ fun FollowingDigest(
         if (syncing || feedLibrary.feeds.isEmpty()) return
         syncing = true
         scope.launch {
-            val synced = syncFeeds(client, feedLibrary.feeds, postCache)
+            val synced = syncFeeds(client, feedLibrary.feeds, postCache, linkLibrary, summaries)
             note = when {
                 synced == 0 -> "Couldn't reach any feed."
                 synced == feedLibrary.feeds.size -> "Synced $synced feed${if (synced == 1) "" else "s"}."
@@ -199,6 +202,8 @@ fun FollowingDigest(
                 onRemove = { id ->
                     feedLibrary.remove(id)
                     postCache.removeFeed(id)
+                    // The unfollowed blog's posts are gone; its summaries describe nothing.
+                    pruneSummaries(summaries, linkLibrary, postCache)
                 },
                 emptyStateModifier = emptyStateModifier,
             )

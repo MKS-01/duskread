@@ -36,6 +36,19 @@ class SummaryCache(private val store: KeyValueStore) {
         persist()
     }
 
+    /**
+     * Keeps only the summaries whose article the app still lists. A predicate rather than
+     * a set of URLs so this stays free of the links layer, which owns what "the same
+     * article" means.
+     */
+    fun retain(keep: (String) -> Boolean) {
+        val kept = summaries.filterKeys(keep)
+        if (kept.size == summaries.size) return
+
+        summaries = kept
+        persist()
+    }
+
     fun clear() {
         summaries = emptyMap()
         persist()
