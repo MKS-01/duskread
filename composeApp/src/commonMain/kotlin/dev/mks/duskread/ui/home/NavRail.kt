@@ -151,6 +151,7 @@ fun TransportBar(
     /** A fraction, 0f–1f — not seconds. */
     onSeek: (Float) -> Unit,
     onStop: () -> Unit,
+    onNext: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val scheme = MaterialTheme.colorScheme
@@ -211,6 +212,9 @@ fun TransportBar(
                 modifier = Modifier.widthIn(min = 84.dp),
             )
             Spacer(Modifier.width(6.dp))
+            if (current?.skippable == true) {
+                RailButton(icon = DuskReadIcons.SkipNext, label = "Next post", onClick = onNext)
+            }
             RailButton(icon = DuskReadIcons.Close, label = "Stop", onClick = onStop)
         }
     }

@@ -38,7 +38,8 @@ class ListenQueue(
             return SpeechSession.Request(
                 key = entry.url,
                 title = entry.title,
-                text = "${entry.title}. From ${entry.source}.\n\n$body",
+                // The speaker says the title itself; the blog is what tells a run of posts apart.
+                text = "From ${entry.source}.\n\n$body",
                 position = index + 1,
                 total = entries.size,
             )

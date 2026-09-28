@@ -46,6 +46,9 @@ import dev.mks.duskread.links.topPicks
 import dev.mks.duskread.pomodoro.PickableMinutes
 import dev.mks.duskread.pomodoro.clockLabel
 import dev.mks.duskread.pomodoro.rememberPomodoroController
+import dev.mks.duskread.speech.SpeechSession
+import dev.mks.duskread.speech.speechSupported
+import dev.mks.duskread.speech.weekListenQueue
 import dev.mks.duskread.ui.OpenRecord
 import dev.mks.duskread.ui.ReadingQueue
 import dev.mks.duskread.ui.ReadingQueueEntry
@@ -105,6 +108,12 @@ fun DashboardTab(
     }
     val bodies = rememberCardBodies(latest, feedPosts)
 
+    val http = LocalAppGraph.current.http
+    val speech by SpeechSession.state.collectAsState()
+    // A listen-through on one of these cards, as opposed to a single read from elsewhere.
+    val listeningUrl = speech?.takeIf { it.inQueue }?.key?.takeIf { url -> latest.any { it.url == url } }
+    val canListen = speechSupported() && latest.any { !it.read }
+
     PullToRefreshBox(
         // Never held: the pull hands off to Latest's header, which fills as feeds answer,
         // rather than parking a spinner over the list for the whole sync.
@@ -144,6 +153,15 @@ fun DashboardTab(
                 bodies = bodies,
                 hasFeeds = feeds.feeds.isNotEmpty(),
                 sync = feedSync.state,
+                playingUrl = listeningUrl,
+                listening = listeningUrl != null,
+                onListen = when {
+                    listeningUrl != null -> SpeechSession::stop
+                    canListen -> fun() {
+                        weekListenQueue(latest, feeds, feedPosts, links, signals, http)?.let(SpeechSession::listen)
+                    }
+                    else -> null
+                },
                 now = now,
                 onOpen = open,
                 onFollow = onOpenFollowing,

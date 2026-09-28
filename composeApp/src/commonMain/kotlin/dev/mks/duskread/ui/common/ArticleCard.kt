@@ -1,6 +1,7 @@
 package dev.mks.duskread.ui.common
 
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.border
@@ -57,9 +58,13 @@ fun ArticleCard(
     timeAgo: String? = null,
     /** A check by the date, not a fade: a read card is finished, not switched off. */
     read: Boolean = false,
+    /** Being read aloud right now — the one thing on Home allowed the accent. */
+    playing: Boolean = false,
     meta: @Composable RowScope.() -> Unit,
 ) {
     val scheme = MaterialTheme.colorScheme
+    val edge by animateColorAsState(if (playing) scheme.primary else scheme.outlineVariant, tween(Motion.Chip))
+    val titleColor by animateColorAsState(if (playing) scheme.primary else scheme.onSurface, tween(Motion.Chip))
 
     // Reset by the body it describes: a summary arriving where an excerpt was is a
     // different piece of text, and it has not been opened.
@@ -73,7 +78,7 @@ fun ArticleCard(
         modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(Radius.Card))
-            .border(Stroke.Hairline, scheme.outlineVariant, RoundedCornerShape(Radius.Card))
+            .border(Stroke.Hairline, edge, RoundedCornerShape(Radius.Card))
             .clickable(onClick = onClick)
             // The card grows under the reader's own finger, so the growth is shown.
             .animateContentSize(tween(Motion.Chip))
@@ -106,7 +111,7 @@ fun ArticleCard(
             minLines = TitleLines,
             maxLines = TitleLines,
             overflow = TextOverflow.Ellipsis,
-            color = scheme.onSurface,
+            color = titleColor,
         )
 
         Spacer(Modifier.height(9.dp))
