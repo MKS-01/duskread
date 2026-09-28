@@ -34,3 +34,23 @@ targets:
         inputFiles: []
         outputFiles: []
         basedOnDependencyAnalysis: false
+    postBuildScripts:
+      # The version lives in gradle/libs.versions.toml, beside Android's. Written
+      # into the processed Info.plist before signing, not the source one, so
+      # the checked-in plist never drifts from the catalog.
+      - name: Stamp Version From Catalog
+        script: |
+          catalog="$SRCROOT/../gradle/libs.versions.toml"
+          version=$(sed -n 's/^app = "\(.*\)"/\1/p' "$catalog")
+          build=$(sed -n 's/^appBuild = "\(.*\)"/\1/p' "$catalog")
+          if [ -z "$version" ] || [ -z "$build" ]; then
+            echo "error: no app / appBuild in $catalog"
+            exit 1
+          fi
+          plist="$TARGET_BUILD_DIR/$INFOPLIST_PATH"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $version" "$plist"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $build" "$plist"
+        inputFiles:
+          - $(SRCROOT)/../gradle/libs.versions.toml
+        outputFiles: []
+        basedOnDependencyAnalysis: false

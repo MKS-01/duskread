@@ -30,7 +30,7 @@ android {
         applicationId = "dev.mks.duskread"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 3
+        versionCode = libs.versions.appBuild.get().toInt()
         versionName = libs.versions.app.get()
     }
 
