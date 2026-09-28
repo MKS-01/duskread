@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.sp
 import dev.mks.duskread.pomodoro.PickableMinutes
 import dev.mks.duskread.pomodoro.PomodoroState
 import dev.mks.duskread.pomodoro.clockLabel
+import dev.mks.duskread.pomodoro.elapsedFraction
 import dev.mks.duskread.pomodoro.rememberPomodoroController
 import dev.mks.duskread.ui.PlatformBackHandler
 import dev.mks.duskread.ui.common.AppTextField
@@ -192,14 +193,6 @@ private fun CustomLengthEntry(onStart: (Int) -> Unit, onCancel: () -> Unit) {
         }
     }
 }
-
-/** How much of the chosen session has elapsed, for the meter — 0 while idle. */
-private val PomodoroState.elapsedFraction: Float
-    get() = if (idle) {
-        0f
-    } else {
-        (1f - remainingSeconds.toFloat() / totalSeconds.toFloat()).coerceIn(0f, 1f)
-    }
 
 /**
  * A bordered pill, never filled — the same `.pill`/`.pill.sel` shape as the sort chips on

@@ -59,7 +59,8 @@ read — then you set a twenty-five minute timer and read, on **Paper Black** or
 - **On-device summaries and reading aloud.** Long articles get a one-tap
   summary via Gemini Nano, and Home fills a few of its cards in by itself
   where the model is already on the phone; it can also read an article aloud
-  with its own text-to-speech. Both are absent on hardware that can't run
+  with its own text-to-speech, or the whole unread week one post after
+  another, with the phone locked. Both are absent on hardware that can't run
   them, and a read that can't happen says why instead of staying silent.
 - **A focus timer** that behaves like an alarm, not a widget — a real system
   notification and vibration when the interval ends, phone face-down.

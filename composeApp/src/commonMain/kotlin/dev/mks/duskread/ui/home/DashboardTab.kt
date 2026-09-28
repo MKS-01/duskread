@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -26,6 +27,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
@@ -45,6 +47,7 @@ import dev.mks.duskread.links.rank
 import dev.mks.duskread.links.topPicks
 import dev.mks.duskread.pomodoro.PickableMinutes
 import dev.mks.duskread.pomodoro.clockLabel
+import dev.mks.duskread.pomodoro.elapsedFraction
 import dev.mks.duskread.pomodoro.rememberPomodoroController
 import dev.mks.duskread.speech.SpeechSession
 import dev.mks.duskread.speech.speechSupported
@@ -62,6 +65,7 @@ import dev.mks.duskread.ui.theme.CodeStyle
 import dev.mks.duskread.ui.theme.DuskReadIcons
 import dev.mks.duskread.ui.theme.Mono
 import dev.mks.duskread.ui.theme.Radius
+import dev.mks.duskread.ui.theme.Space
 import dev.mks.duskread.ui.theme.Stroke
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -199,27 +203,41 @@ private fun FocusSection(onOpen: () -> Unit, modifier: Modifier = Modifier) {
         )
         Spacer(Modifier.height(12.dp))
 
-        if (state.idle) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                PickableMinutes.forEach { minutes ->
-                    PillButton(text = "$minutes min") { controller.start(minutes) }
+        // One strip, clock left and controls right, so the section costs a single line
+        // of height and the week below it starts higher.
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .then(if (state.idle) Modifier else Modifier.clickable(onClick = onOpen)),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                // Idle, the middle length stands in as what a start would count down from.
+                text = if (state.idle) "${PickableMinutes[PickableMinutes.size / 2]}:00" else state.clockLabel,
+                style = CodeStyle,
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Medium,
+                color = when {
+                    state.idle -> MaterialTheme.colorScheme.onSurfaceVariant
+                    state.running -> MaterialTheme.colorScheme.primary
+                    else -> MaterialTheme.colorScheme.onSurface
+                },
+            )
+            Spacer(Modifier.weight(1f))
+            if (state.idle) {
+                Row(horizontalArrangement = Arrangement.spacedBy(Space.ChipGap)) {
+                    PickableMinutes.forEach { minutes ->
+                        PillButton(text = "$minutes min") { controller.start(minutes) }
+                    }
                 }
-            }
-        } else {
-            Column(Modifier.fillMaxWidth().clickable(onClick = onOpen)) {
-                Text(
-                    text = state.clockLabel,
-                    style = CodeStyle,
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurface,
+            } else {
+                WaveformMeter(
+                    progress = state.elapsedFraction,
+                    modifier = Modifier.height(18.dp),
+                    barCount = 22,
                 )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    text = if (state.running) "Running — tap to open" else "Paused — tap to open",
-                    fontSize = 12.5.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Spacer(Modifier.width(14.dp))
+                PillButton(text = "Open", active = true, onClick = onOpen)
             }
         }
     }
@@ -227,18 +245,23 @@ private fun FocusSection(onOpen: () -> Unit, modifier: Modifier = Modifier) {
 
 /** A small bordered pill, the same `.pill` shape as the sort chips on Readback — never filled. */
 @Composable
-private fun PillButton(text: String, onClick: () -> Unit) {
+private fun PillButton(text: String, active: Boolean = false, onClick: () -> Unit) {
+    val tone = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
     Text(
         text = text.uppercase(),
         fontFamily = Mono,
         fontSize = 11.sp,
         letterSpacing = 0.4.sp,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        color = tone,
         modifier = Modifier
-            .clip(RoundedCornerShape(Radius.Inline))
-            .border(Stroke.Hairline, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(Radius.Inline))
+            .clip(RoundedCornerShape(Radius.Chip))
+            .border(
+                Stroke.Hairline,
+                if (active) tone else MaterialTheme.colorScheme.outlineVariant,
+                RoundedCornerShape(Radius.Chip),
+            )
             .clickable(onClick = onClick)
-            .padding(horizontal = 13.dp, vertical = 8.dp),
+            .padding(horizontal = 11.dp, vertical = 8.dp),
     )
 }
 
