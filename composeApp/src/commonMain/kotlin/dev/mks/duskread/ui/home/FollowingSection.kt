@@ -1,16 +1,19 @@
 package dev.mks.duskread.ui.home
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -18,6 +21,7 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
@@ -33,7 +37,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
@@ -62,8 +65,10 @@ import dev.mks.duskread.ui.common.HairlineDivider
 import dev.mks.duskread.ui.common.HeaderAction
 import dev.mks.duskread.ui.theme.DuskReadIcons
 import dev.mks.duskread.ui.theme.Mono
-import dev.mks.duskread.ui.theme.Motion
+import dev.mks.duskread.ui.theme.Radius
 import dev.mks.duskread.ui.theme.SectionLabel
+import dev.mks.duskread.ui.theme.Space
+import dev.mks.duskread.ui.theme.Stroke
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.launch
 
@@ -75,7 +80,6 @@ class FollowingState(managing: Boolean) {
     var managing by mutableStateOf(managing)
     var feedUrl by mutableStateOf("")
     var discovering by mutableStateOf(false)
-    var expanded by mutableStateOf<String?>(null)
     var searching by mutableStateOf(false)
     var query by mutableStateOf("")
 }
@@ -192,8 +196,9 @@ fun FollowingHead(
 }
 
 /**
- * The followed blogs, as lazy items: NEW (something unsaved, most recent first), then
- * CAUGHT UP (the rest, A–Z), so a long list builds only the rows on screen.
+ * The followed blogs as lazy items — a two-column grid under NEW, CAUGHT UP and NO POSTS
+ * YET, or a list of matching posts while searching — so a long list builds only what is
+ * on screen.
  */
 fun LazyListScope.followingRows(
     state: FollowingState,
@@ -226,24 +231,32 @@ private fun LazyListScope.group(
             modifier = Modifier.animateItem().padding(top = 18.dp, bottom = 4.dp),
         )
     }
-    itemsIndexed(rows, key = { _, row -> row.feed.id }) { index, row ->
-        // A search opens every match: the reader is looking for a post, not a blog.
-        val open = state.expanded == row.feed.id || state.query.isNotBlank()
-        Column(Modifier.animateItem().fillMaxWidth()) {
-            DigestLine(
-                row = row,
-                now = now,
-                open = open,
-                onToggle = { state.expanded = if (state.expanded == row.feed.id) null else row.feed.id },
-            )
-            AnimatedVisibility(open) {
-                TopicPreview(
-                    feed = row.feed,
-                    posts = row.posts,
-                    linkLibrary = linkLibrary,
-                    onOpenAll = { onOpenTopics(row.feed) },
-                )
+    // Browsing is a grid of blogs; a search is a list of posts, which a tile cannot show.
+    if (state.query.isBlank()) {
+        items(rows.chunked(2), key = { pair -> pair.joinToString("+") { it.feed.id } }) { pair ->
+            Row(
+                Modifier.animateItem().fillMaxWidth().height(IntrinsicSize.Min).padding(bottom = TileGap),
+                horizontalArrangement = Arrangement.spacedBy(TileGap),
+            ) {
+                pair.forEach { row ->
+                    BlogTile(row, now, Modifier.weight(1f).fillMaxHeight()) { onOpenTopics(row.feed) }
+                }
+                // An odd one out keeps half the width, not the whole row.
+                if (pair.size == 1) Spacer(Modifier.weight(1f))
             }
+        }
+        return
+    }
+    itemsIndexed(rows, key = { _, row -> row.feed.id }) { index, row ->
+        // Every match shows its posts: the reader is looking for a post, not a blog.
+        Column(Modifier.animateItem().fillMaxWidth()) {
+            DigestLine(row = row, now = now, onClick = { onOpenTopics(row.feed) })
+            TopicPreview(
+                feed = row.feed,
+                posts = row.posts,
+                linkLibrary = linkLibrary,
+                onOpenAll = { onOpenTopics(row.feed) },
+            )
             // A hairline, not a gap — the same divider every other list in the app puts
             // between its rows.
             if (index != rows.lastIndex) HairlineDivider()
@@ -252,22 +265,22 @@ private fun LazyListScope.group(
 }
 
 /**
- * One blog on one line — its name, then "3 new · 4h" in grey. The accent stays for what
- * is playing; a long list of counts in it read as a column of alarms.
+ * One blog in the grid: its name, its newest unsaved title where it has one — the reason
+ * to open it — and "3 new" or how long since it last posted, pinned to the foot so a row
+ * of tiles lines up. Tapping opens every post it has.
  */
 @Composable
-private fun DigestLine(row: DigestRow, now: Long, open: Boolean, onToggle: () -> Unit) {
-    // A right chevron is "expand" everywhere else in the app (Chevron, on a row that
-    // opens something).
-    val rotation by animateFloatAsState(if (open) 90f else 0f, tween(Motion.Chip), label = "chevron")
+private fun BlogTile(row: DigestRow, now: Long, modifier: Modifier = Modifier, onClick: () -> Unit) {
     val scheme = MaterialTheme.colorScheme
+    val fresh = row.newCount > 0
+    val shape = RoundedCornerShape(Radius.Card)
 
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onToggle)
-            .padding(vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
+    Column(
+        modifier
+            .clip(shape)
+            .border(Stroke.Hairline, scheme.outlineVariant, shape)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 13.dp),
     ) {
         Text(
             // The publisher's name when the Notion sync supplied one, the host when it
@@ -275,34 +288,82 @@ private fun DigestLine(row: DigestRow, now: Long, open: Boolean, onToggle: () ->
             text = row.feed.label,
             style = MaterialTheme.typography.bodyLarge,
             fontSize = 14.sp,
+            lineHeight = 18.sp,
+            fontWeight = FontWeight.Medium,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            color = if (fresh) scheme.onSurface else scheme.onSurface.copy(alpha = 0.78f),
+        )
+        row.newestUnsaved?.title?.takeIf { fresh }?.let {
+            Spacer(Modifier.height(6.dp))
+            Text(
+                text = it,
+                style = MaterialTheme.typography.bodyMedium,
+                fontSize = 12.5.sp,
+                lineHeight = 17.sp,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis,
+                color = scheme.onSurfaceVariant,
+            )
+        }
+        Spacer(Modifier.weight(1f).heightIn(min = 12.dp))
+        Text(
+            text = when {
+                fresh -> "${row.newCount} new · ${row.lastPostAt?.let { shortAgo(it, now) } ?: "—"}"
+                else -> row.lastPostAt?.let { shortAgo(it, now) } ?: "no posts yet"
+            },
+            fontFamily = Mono,
+            fontSize = 11.sp,
+            fontWeight = if (fresh) FontWeight.SemiBold else FontWeight.Normal,
+            color = if (fresh) scheme.onSurface else scheme.onSurfaceVariant,
+        )
+    }
+}
+
+/** Between tiles, both ways — [Space.CardGap], which cards on Home already use. */
+private val TileGap = Space.CardGap
+
+/**
+ * One blog as a search result: its name, then "3 new" or how long since it last posted.
+ * All grey — the accent stays for what is playing.
+ */
+@Composable
+private fun DigestLine(row: DigestRow, now: Long, onClick: () -> Unit) {
+    val scheme = MaterialTheme.colorScheme
+    val fresh = row.newCount > 0
+
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 13.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            // The publisher's name when the Notion sync supplied one, the host when it
+            // did not — see Feed.label.
+            text = row.feed.label,
+            style = MaterialTheme.typography.bodyLarge,
+            fontSize = 14.5.sp,
             fontWeight = FontWeight.Medium,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             color = scheme.onSurface,
             modifier = Modifier.weight(1f),
         )
-        Spacer(Modifier.width(10.dp))
-        if (row.newCount > 0) {
-            Text(
-                text = "${row.newCount} new",
-                fontFamily = Mono,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = scheme.onSurface,
-            )
-            Text(text = " · ", fontFamily = Mono, fontSize = 11.sp, color = scheme.onSurfaceVariant)
-        }
+        Spacer(Modifier.width(12.dp))
         Text(
-            text = row.lastPostAt?.let { shortAgo(it, now) } ?: "—",
+            text = if (fresh) "${row.newCount} new" else row.lastPostAt?.let { shortAgo(it, now) } ?: "—",
             fontFamily = Mono,
             fontSize = 11.sp,
-            color = scheme.onSurfaceVariant,
+            fontWeight = if (fresh) FontWeight.SemiBold else FontWeight.Normal,
+            color = if (fresh) scheme.onSurface else scheme.onSurfaceVariant,
         )
-        Spacer(Modifier.width(8.dp))
+        Spacer(Modifier.width(6.dp))
         Icon(
             imageVector = DuskReadIcons.Chevron,
-            contentDescription = if (open) "Collapse" else "Expand",
-            modifier = Modifier.size(11.dp).rotate(rotation),
+            contentDescription = "All posts",
+            modifier = Modifier.size(11.dp),
             tint = scheme.onSurfaceVariant,
         )
     }

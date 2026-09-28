@@ -1,9 +1,9 @@
 import ComposeApp
 import SwiftUI
 
-/// Every blog followed, one line each, under NEW (posted this week, unsaved), CAUGHT UP
-/// and NO POSTS YET — the split the shared side cuts, so both phones order a long list
-/// alike. Expanding a row shows its three latest without leaving the list.
+/// Every blog followed, as a two-column grid of tiles under NEW (posted this week,
+/// unsaved), CAUGHT UP and NO POSTS YET — the split the shared side cuts, so both phones
+/// order a long list alike. A search turns it into a list of the posts that match.
 struct FollowingScreen: View {
     let onOpenTopics: (Feed) -> Void
 
@@ -13,7 +13,6 @@ struct FollowingScreen: View {
     @Environment(BarCollapse.self) private var collapse
     @Environment(\.dusk) private var dusk
 
-    @State private var expanded: Set<String> = []
     @State private var managing = false
     @State private var searching = false
     @State private var query = ""
@@ -120,70 +119,109 @@ struct FollowingScreen: View {
             EyebrowHeader(label: "\(label) · \(rows.count)", tint: dusk.onSurfaceVariant)
                 .padding(.top, 18)
                 .padding(.bottom, 4)
-            ForEach(Array(rows.enumerated()), id: \.element.feed.id) { index, row in
-                feedRow(row, last: index == rows.count - 1)
+            // Browsing is a grid of blogs; a search is a list of posts, which a tile cannot
+            // show.
+            if query.isEmpty {
+                let pairs = stride(from: 0, to: rows.count, by: 2).map { Array(rows[$0..<min($0 + 2, rows.count)]) }
+                ForEach(pairs, id: \.first!.feed.id) { pair in
+                    HStack(alignment: .top, spacing: Space.cardGap) {
+                        ForEach(pair, id: \.feed.id) { row in blogTile(row) }
+                        // An odd one out keeps half the width, not the whole row.
+                        if pair.count == 1 { Color.clear.frame(maxWidth: .infinity) }
+                    }
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.bottom, Space.cardGap)
+                }
+            } else {
+                ForEach(Array(rows.enumerated()), id: \.element.feed.id) { index, row in
+                    feedRow(row, last: index == rows.count - 1)
+                }
             }
         }
     }
 
-    /// One blog on one line — its name, then "3 new · 4h" in grey. The accent stays for
-    /// what is playing.
+    /// One blog in the grid: its name, its newest unsaved title where it has one — the
+    /// reason to open it — and "3 new" or its last post's age pinned to the foot, so a
+    /// row of tiles lines up. Tapping opens every post it has.
+    private func blogTile(_ row: DigestRow) -> some View {
+        let fresh = row.newCount > 0
+        let age = row.lastPostAt.map { feeds.shortAgo($0.int64Value) }
+
+        return VStack(alignment: .leading, spacing: 6) {
+            Text(row.feed.label)
+                .dusk(.titleSmall)
+                .foregroundStyle(fresh ? dusk.onSurface : dusk.onSurface.opacity(0.78))
+                .lineLimit(2)
+            if fresh, let title = row.newestUnsaved?.title {
+                Text(title)
+                    .dusk(.bodyMedium)
+                    .foregroundStyle(dusk.onSurfaceVariant)
+                    .lineLimit(3)
+            }
+            Spacer(minLength: 12)
+            Text(fresh ? "\(row.newCount) new · \(age ?? "—")" : (age ?? "no posts yet"))
+                .dusk(.code)
+                .fontWeight(fresh ? .semibold : .regular)
+                .foregroundStyle(fresh ? dusk.onSurface : dusk.onSurfaceVariant)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 13)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .overlay(
+            RoundedRectangle(cornerRadius: Radius.card)
+                .stroke(dusk.outlineVariant, lineWidth: Stroke.hairline)
+        )
+        .contentShape(RoundedRectangle(cornerRadius: Radius.card))
+        .onTapGesture { onOpenTopics(row.feed) }
+    }
+
+    /// One blog as a search result: its name, then "3 new" or how long since it last
+    /// posted, with the matching posts underneath. All grey — the accent stays for what is
+    /// playing.
     private func feedRow(_ row: DigestRow, last: Bool) -> some View {
         let feed = row.feed
-        // A search opens every match: the reader is looking for a post, not a blog.
-        let isOpen = expanded.contains(feed.id) || !query.isEmpty
         let posts = Array(row.posts.prefix(3))
+        let fresh = row.newCount > 0
 
         return VStack(alignment: .leading, spacing: 0) {
-            HStack(alignment: .center, spacing: 10) {
+            HStack(alignment: .center, spacing: 12) {
                 Text(feed.label)
                     .dusk(.titleSmall)
                     .foregroundStyle(dusk.onSurface)
                     .lineLimit(1)
                 Spacer(minLength: 8)
-                HStack(spacing: 0) {
-                    if row.newCount > 0 {
-                        Text("\(row.newCount) new").dusk(.code).fontWeight(.semibold).foregroundStyle(dusk.onSurface)
-                        Text(" · ").dusk(.code).foregroundStyle(dusk.onSurfaceVariant)
-                    }
-                    Text(row.lastPostAt.map { feeds.shortAgo($0.int64Value) } ?? "—")
-                        .dusk(.code)
-                        .foregroundStyle(dusk.onSurfaceVariant)
-                }
+                Text(fresh ? "\(row.newCount) new" : (row.lastPostAt.map { feeds.shortAgo($0.int64Value) } ?? "—"))
+                    .dusk(.code)
+                    .fontWeight(fresh ? .semibold : .regular)
+                    .foregroundStyle(fresh ? dusk.onSurface : dusk.onSurfaceVariant)
                 DuskIcon(path: IconPaths.shared.Chevron, size: 16, tint: dusk.onSurfaceVariant)
-                    .rotationEffect(.degrees(isOpen ? 90 : 0))
             }
-            .padding(.vertical, 12)
+            .padding(.vertical, 13)
             .contentShape(Rectangle())
-            .onTapGesture {
-                withAnimation(Motion.ease(Motion.chip)) {
-                    if expanded.contains(feed.id) { expanded.remove(feed.id) } else { expanded.insert(feed.id) }
-                }
-            }
+            .onTapGesture { onOpenTopics(feed) }
 
-            if isOpen {
-                VStack(alignment: .leading, spacing: 0) {
-                    if posts.isEmpty {
-                        Text("Nothing synced from this blog yet.")
-                            .dusk(.bodyMedium)
-                            .foregroundStyle(dusk.onSurfaceVariant)
-                    } else {
-                        ForEach(posts, id: \.url) { post in
-                            postRow(post, host: feed.host)
-                        }
-                        HStack(spacing: 6) {
-                            Text("All \(row.posts.count) posts")
-                                .dusk(.sectionLabel)
-                                .foregroundStyle(dusk.onSurface)
-                            DuskIcon(path: IconPaths.shared.Chevron, size: 14, tint: dusk.onSurface)
-                        }
-                        .contentShape(Rectangle())
-                        .onTapGesture { onOpenTopics(feed) }
-                        .padding(.top, 4)
+            // Every match shows its posts: the reader is looking for a post, not a blog.
+            VStack(alignment: .leading, spacing: 0) {
+                if posts.isEmpty {
+                    Text("Nothing synced from this blog yet.")
+                        .dusk(.bodyMedium)
+                        .foregroundStyle(dusk.onSurfaceVariant)
+                } else {
+                    ForEach(posts, id: \.url) { post in
+                        postRow(post, host: feed.host)
                     }
+                    HStack(spacing: 6) {
+                        Text("All \(row.posts.count) posts")
+                            .dusk(.sectionLabel)
+                            .foregroundStyle(dusk.onSurface)
+                        DuskIcon(path: IconPaths.shared.Chevron, size: 14, tint: dusk.onSurface)
+                    }
+                    .contentShape(Rectangle())
+                    .onTapGesture { onOpenTopics(feed) }
+                    .padding(.top, 4)
                 }
-                .padding(.bottom, 12)
             }
+            .padding(.bottom, 12)
 
             ListRowDivider(last: last)
         }
