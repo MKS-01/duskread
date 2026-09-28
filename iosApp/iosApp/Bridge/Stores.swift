@@ -118,14 +118,19 @@ final class FeedsStore {
 
     func posts(for feed: Feed) -> [FeedPost] { postsByFeed[feed.id] ?? [] }
 
-    /// Posts not already saved — the count a row reports as "new".
-    func newCount(for feed: Feed, saved: [SavedLink]) -> Int {
-        let savedUrls = Set(saved.map(\.url))
-        return posts(for: feed).filter { !savedUrls.contains($0.url) }.count
-    }
-
+    /// Syncs straight after, so a blog just followed shows its posts rather than waiting.
     func follow(_ rawUrl: String) async {
         _ = try? await bridge.follow(rawUrl: rawUrl, title: nil, topic: nil)
+        await startSync()
+    }
+
+    /// Following's three groups; recomputed whenever the view reads it, which is cheap.
+    func groups(query: String) -> FollowingGroups {
+        bridge.groups(query: query, now: Int64(Date().timeIntervalSince1970 * 1000))
+    }
+
+    func shortAgo(_ at: Int64) -> String {
+        bridge.shortAgo(at: at, now: Int64(Date().timeIntervalSince1970 * 1000))
     }
 
     func remove(_ feed: Feed) { bridge.remove(id: feed.id) }

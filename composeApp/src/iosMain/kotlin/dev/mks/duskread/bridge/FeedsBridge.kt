@@ -5,8 +5,10 @@ import dev.mks.duskread.links.Feed
 import dev.mks.duskread.links.FeedPost
 import dev.mks.duskread.links.FeedSyncResult
 import dev.mks.duskread.links.FeedSyncState
+import dev.mks.duskread.links.FollowingGroups
 import dev.mks.duskread.links.LatestItem
 import dev.mks.duskread.links.discoverFeedUrl
+import dev.mks.duskread.links.followingGroups
 import dev.mks.duskread.links.latestPosts
 import dev.mks.duskread.links.pruneSummaries
 
@@ -51,6 +53,11 @@ class FeedsBridge internal constructor(private val graph: AppGraph) {
         links = graph.links,
         now = now,
     )
+
+    /** Following's NEW / CAUGHT UP / NO POSTS YET split, cut by the shared side. */
+    fun groups(query: String, now: Long): FollowingGroups = followingGroups(graph.feeds.feeds, graph.feedPosts, graph.links, query, now)
+
+    fun shortAgo(at: Long, now: Long): String = dev.mks.duskread.links.shortAgo(at, now)
 
     /** The Latest header's count, worded by the shared side so both homes agree. */
     fun latestCountLabel(items: List<LatestItem>): String = dev.mks.duskread.links.latestCountLabel(items)

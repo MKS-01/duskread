@@ -5,7 +5,6 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,10 +14,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -26,7 +24,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,16 +40,19 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.mks.duskread.data.LocalAppGraph
+import dev.mks.duskread.links.DigestRow
 import dev.mks.duskread.links.Feed
 import dev.mks.duskread.links.FeedLibrary
 import dev.mks.duskread.links.FeedPost
 import dev.mks.duskread.links.FeedPostCache
+import dev.mks.duskread.links.FollowingGroups
 import dev.mks.duskread.links.LinkLibrary
+import dev.mks.duskread.links.SearchAlwaysShownAt
 import dev.mks.duskread.links.discoverFeedUrl
 import dev.mks.duskread.links.looksLikeUrl
 import dev.mks.duskread.links.normaliseUrl
 import dev.mks.duskread.links.pruneSummaries
-import dev.mks.duskread.links.savedAgo
+import dev.mks.duskread.links.shortAgo
 import dev.mks.duskread.summary.rememberSummaryCache
 import dev.mks.duskread.ui.common.AppTextField
 import dev.mks.duskread.ui.common.CompactEmptyState
@@ -59,8 +60,6 @@ import dev.mks.duskread.ui.common.EmptyState
 import dev.mks.duskread.ui.common.EyebrowHeader
 import dev.mks.duskread.ui.common.HairlineDivider
 import dev.mks.duskread.ui.common.HeaderAction
-import dev.mks.duskread.ui.common.Pill
-import dev.mks.duskread.ui.rememberUrlOpener
 import dev.mks.duskread.ui.theme.DuskReadIcons
 import dev.mks.duskread.ui.theme.Mono
 import dev.mks.duskread.ui.theme.Motion
@@ -68,17 +67,34 @@ import dev.mks.duskread.ui.theme.SectionLabel
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.launch
 
+/** What the Following list is doing, hoisted so its rows can be lazy items of the tab's list. */
+@Stable
+class FollowingState(managing: Boolean) {
+    // Open by default with nothing followed yet, the same reason Saved's own paste field
+    // is never hidden behind a toggle.
+    var managing by mutableStateOf(managing)
+    var feedUrl by mutableStateOf("")
+    var discovering by mutableStateOf(false)
+    var expanded by mutableStateOf<String?>(null)
+    var searching by mutableStateOf(false)
+    var query by mutableStateOf("")
+}
+
+@Composable
+fun rememberFollowingState(feeds: FeedLibrary): FollowingState = remember { FollowingState(managing = feeds.feeds.isEmpty()) }
+
 /**
- * The blogs followed for [FeedSyncer] to pull from: a digest, not a carousel — one line
- * per feed, "host — N new".
+ * The header, search, manage panel and empty states above the list — one lazy item,
+ * since none of it grows with the number of blogs followed.
  */
 @Composable
-fun FollowingDigest(
+fun FollowingHead(
+    state: FollowingState,
+    groups: FollowingGroups,
     feedLibrary: FeedLibrary,
     postCache: FeedPostCache,
     linkLibrary: LinkLibrary,
     client: HttpClient,
-    onOpenTopics: (Feed) -> Unit,
     modifier: Modifier = Modifier,
     /**
      * Sizes the true empty state — no feeds followed at all — against the viewport below
@@ -88,96 +104,69 @@ fun FollowingDigest(
 ) {
     val scope = rememberCoroutineScope()
     val summaries = rememberSummaryCache()
-    // Open by default with nothing followed yet, the same reason Saved's own paste field
-    // is never hidden behind a toggle.
-    var managing by remember { mutableStateOf(feedLibrary.feeds.isEmpty()) }
-    var feedUrl by remember { mutableStateOf("") }
-    var discovering by remember { mutableStateOf(false) }
     val feedSync = LocalAppGraph.current.feedSync
     val sync = feedSync.state
-    var expanded by remember { mutableStateOf<String?>(null) }
-    var searching by remember { mutableStateOf(false) }
-    var query by remember { mutableStateOf("") }
-    // Most-new-first by default — the same bias RECOMMENDED ranks by, so the feed most worth
-    // a look leads the list rather than whichever was followed first.
-    var sortNewest by remember { mutableStateOf(true) }
+    val followed = feedLibrary.feeds.size
+    // A long list is exactly when search is wanted, so it stops hiding behind an icon —
+    // but not over Manage, where the one field that matters is the address.
+    val searchShown = !state.managing && (state.searching || followed >= SearchAlwaysShownAt)
 
     // Following a blog by its homepage rather than its exact feed address is the common
     // case.
     fun follow() {
-        val typed = feedUrl
-        if (discovering || !looksLikeUrl(typed)) return
-        discovering = true
+        val typed = state.feedUrl
+        if (state.discovering || !looksLikeUrl(typed)) return
+        state.discovering = true
         scope.launch {
             val resolved = discoverFeedUrl(client, normaliseUrl(typed))
             feedLibrary.add(resolved)
-            feedUrl = ""
-            discovering = false
-        }
-    }
-
-    // Blank leaves every feed and every post exactly as they were; a query narrows both —
-    // a feed whose name matches keeps its usual posts.
-    val topics = feedLibrary.feeds.filter { feed ->
-        val posts = postCache.postsByFeed[feed.id].orEmpty()
-        if (posts.isEmpty()) return@filter false
-        if (query.isBlank()) return@filter true
-        feed.matches(query) || posts.any { it.matches(query) }
-    }.let { filtered ->
-        if (sortNewest) {
-            filtered.sortedByDescending { feed ->
-                postCache.postsByFeed[feed.id].orEmpty().count { !linkLibrary.isSaved(it.url) }
-            }
-        } else {
-            filtered.sortedBy { it.label.lowercase() }
+            state.feedUrl = ""
+            state.discovering = false
+            // A blog just followed should show its posts, not wait for the next sync.
+            feedSync.sync(manual = false)
         }
     }
 
     Column(modifier.fillMaxWidth()) {
         EyebrowHeader(
-            text = "FOLLOWING",
+            text = if (followed > 0) "FOLLOWING · $followed" else "FOLLOWING",
             progress = sync.progress,
             trailing = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    HeaderAction(icon = DuskReadIcons.Search, label = "Search") {
-                        searching = !searching
-                        if (!searching) query = ""
+                    if (followed < SearchAlwaysShownAt && !state.managing) {
+                        HeaderAction(icon = DuskReadIcons.Search, label = "Search") {
+                            state.searching = !state.searching
+                            if (!state.searching) state.query = ""
+                        }
                     }
-                    if (feedLibrary.feeds.isNotEmpty()) {
+                    if (followed > 0) {
                         HeaderAction(if (sync.running) sync.label else "Sync now") {
                             scope.launch { feedSync.sync() }
                         }
                     }
-                    HeaderAction(if (managing) "Done" else "Manage") { managing = !managing }
+                    HeaderAction(if (state.managing) "Done" else "Manage") { state.managing = !state.managing }
                 }
             },
         )
         Spacer(Modifier.height(12.dp))
 
-        if (feedLibrary.feeds.isNotEmpty()) {
-            Row(horizontalArrangement = Arrangement.spacedBy(7.dp), modifier = Modifier.padding(bottom = 12.dp)) {
-                Pill("Newest", sortNewest) { sortNewest = true }
-                Pill("A–Z", !sortNewest) { sortNewest = false }
-            }
-        }
-
-        AnimatedVisibility(searching) {
+        AnimatedVisibility(searchShown) {
             AppTextField(
-                value = query,
-                onValueChange = { query = it },
-                placeholder = "Search by blog, host or topic",
+                value = state.query,
+                onValueChange = { state.query = it },
+                placeholder = if (followed >= SearchAlwaysShownAt) "Search $followed blogs, or their posts" else "Search by blog, host or topic",
                 fontSize = 14.5.sp,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                 modifier = Modifier.padding(bottom = 12.dp),
             )
         }
 
-        AnimatedVisibility(managing) {
+        AnimatedVisibility(state.managing) {
             FeedManagePanel(
                 feeds = feedLibrary.feeds,
-                url = feedUrl,
-                onUrlChange = { feedUrl = it },
-                discovering = discovering,
+                url = state.feedUrl,
+                onUrlChange = { state.feedUrl = it },
+                discovering = state.discovering,
                 onAdd = ::follow,
                 onRemove = { id ->
                     feedLibrary.remove(id)
@@ -189,116 +178,133 @@ fun FollowingDigest(
             )
         }
 
-        if (topics.isEmpty() && !managing) {
+        if (groups.isEmpty && !state.managing) {
             CompactEmptyState(
-                title = when {
-                    query.isNotBlank() -> "Nothing matches “$query”"
-                    feedLibrary.feeds.isEmpty() -> "Follow a blog"
-                    else -> "Nothing synced yet"
-                },
-                message = when {
-                    query.isNotBlank() -> "Try a different blog, host or topic."
-                    feedLibrary.feeds.isEmpty() -> "Follow a blog's RSS or Atom feed to see its posts here."
-                    else -> "Tap Sync now to pull in its latest posts."
+                title = if (state.query.isNotBlank()) "Nothing matches “${state.query}”" else "Follow a blog",
+                message = if (state.query.isNotBlank()) {
+                    "Try a different blog, host or topic."
+                } else {
+                    "Follow a blog's RSS or Atom feed to see its posts here."
                 },
             )
-        }
-
-        topics.forEachIndexed { index, feed ->
-            val all = postCache.postsByFeed[feed.id].orEmpty()
-            // A feed matched by its own name keeps its usual posts; one that only
-            // surfaced because a post inside it matched shows just that post.
-            val posts = if (query.isBlank() || feed.matches(query)) all else all.filter { it.matches(query) }
-            val isOpen = expanded == feed.id || query.isNotBlank()
-            DigestLine(
-                feed = feed,
-                newCount = posts.count { !linkLibrary.isSaved(it.url) },
-                // The newest post's own title, not shown once the row is open and that
-                // same post is sitting right underneath it.
-                hint = if (isOpen) null else posts.firstOrNull()?.title,
-                open = isOpen,
-                onToggle = { expanded = if (expanded == feed.id) null else feed.id },
-            )
-            AnimatedVisibility(expanded == feed.id || query.isNotBlank()) {
-                TopicPreview(
-                    feed = feed,
-                    posts = posts,
-                    linkLibrary = linkLibrary,
-                    onOpenAll = { onOpenTopics(feed) },
-                )
-            }
-            // A hairline, not a gap — the same divider every other list in the app puts
-            // between its rows.
-            if (index != topics.lastIndex) HairlineDivider()
         }
     }
 }
 
-/** A blog's own fields, searched by [FollowingDigest]'s query field. */
-private fun Feed.matches(query: String): Boolean = label.contains(query, ignoreCase = true) ||
-    host.contains(query, ignoreCase = true) ||
-    topic?.contains(query, ignoreCase = true) == true
+/**
+ * The followed blogs, as lazy items: NEW (something unsaved, most recent first), then
+ * CAUGHT UP (the rest, A–Z), so a long list builds only the rows on screen.
+ */
+fun LazyListScope.followingRows(
+    state: FollowingState,
+    groups: FollowingGroups,
+    linkLibrary: LinkLibrary,
+    now: Long,
+    onOpenTopics: (Feed) -> Unit,
+) {
+    if (state.managing) return
+    group("new", "NEW", groups.fresh, state, linkLibrary, now, onOpenTopics)
+    group("caught-up", "CAUGHT UP", groups.caughtUp, state, linkLibrary, now, onOpenTopics)
+    group("unsynced", "NO POSTS YET", groups.unsynced, state, linkLibrary, now, onOpenTopics)
+}
 
-/** One post's title, searched the same way as its feed. */
-private fun FeedPost.matches(query: String): Boolean = title.contains(query, ignoreCase = true)
+private fun LazyListScope.group(
+    key: String,
+    label: String,
+    rows: List<DigestRow>,
+    state: FollowingState,
+    linkLibrary: LinkLibrary,
+    now: Long,
+    onOpenTopics: (Feed) -> Unit,
+) {
+    if (rows.isEmpty()) return
+    item("following-$key") {
+        // Muted: these sit under FOLLOWING, which keeps the section's own tint.
+        EyebrowHeader(
+            text = "$label · ${rows.size}",
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.animateItem().padding(top = 18.dp, bottom = 4.dp),
+        )
+    }
+    itemsIndexed(rows, key = { _, row -> row.feed.id }) { index, row ->
+        // A search opens every match: the reader is looking for a post, not a blog.
+        val open = state.expanded == row.feed.id || state.query.isNotBlank()
+        Column(Modifier.animateItem().fillMaxWidth()) {
+            DigestLine(
+                row = row,
+                now = now,
+                open = open,
+                onToggle = { state.expanded = if (state.expanded == row.feed.id) null else row.feed.id },
+            )
+            AnimatedVisibility(open) {
+                TopicPreview(
+                    feed = row.feed,
+                    posts = row.posts,
+                    linkLibrary = linkLibrary,
+                    onOpenAll = { onOpenTopics(row.feed) },
+                )
+            }
+            // A hairline, not a gap — the same divider every other list in the app puts
+            // between its rows.
+            if (index != rows.lastIndex) HairlineDivider()
+        }
+    }
+}
 
 /**
- * One line of the digest — "host — N new", the count in the accent when there's something
- * unsaved and a plain dash otherwise — plus a second, quieter one.
+ * One blog on one line — its name, then "3 new · 4h" in grey. The accent stays for what
+ * is playing; a long list of counts in it read as a column of alarms.
  */
 @Composable
-private fun DigestLine(feed: Feed, newCount: Int, hint: String?, open: Boolean, onToggle: () -> Unit) {
+private fun DigestLine(row: DigestRow, now: Long, open: Boolean, onToggle: () -> Unit) {
     // A right chevron is "expand" everywhere else in the app (Chevron, on a row that
     // opens something).
     val rotation by animateFloatAsState(if (open) 90f else 0f, tween(Motion.Chip), label = "chevron")
+    val scheme = MaterialTheme.colorScheme
 
-    Column(
+    Row(
         Modifier
             .fillMaxWidth()
             .clickable(onClick = onToggle)
-            .padding(vertical = 9.dp),
+            .padding(vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            // The publisher's name when the Notion sync supplied one, the host when it
+            // did not — see Feed.label.
+            text = row.feed.label,
+            style = MaterialTheme.typography.bodyLarge,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Medium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            color = scheme.onSurface,
+            modifier = Modifier.weight(1f),
+        )
+        Spacer(Modifier.width(10.dp))
+        if (row.newCount > 0) {
             Text(
-                // The publisher's name when the Notion sync supplied one, the host when
-                // it did not — see Feed.label.
-                text = feed.label,
-                style = MaterialTheme.typography.bodyLarge,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.weight(1f),
-            )
-            Spacer(Modifier.width(8.dp))
-            Text(
-                text = if (newCount > 0) "$newCount new" else "—",
+                text = "${row.newCount} new",
                 fontFamily = Mono,
                 fontSize = 11.sp,
-                fontWeight = if (newCount > 0) FontWeight.SemiBold else FontWeight.Normal,
-                color = if (newCount > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.SemiBold,
+                color = scheme.onSurface,
             )
-            Spacer(Modifier.width(6.dp))
-            Icon(
-                imageVector = DuskReadIcons.Chevron,
-                contentDescription = if (open) "Collapse" else "Expand",
-                modifier = Modifier.size(11.dp).rotate(rotation),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Text(text = " · ", fontFamily = Mono, fontSize = 11.sp, color = scheme.onSurfaceVariant)
         }
-
-        hint?.let {
-            Spacer(Modifier.height(4.dp))
-            Text(
-                // Same family as the title above it, one notch down in size and colour —
-                // a hint, not a second heading.
-                text = it,
-                style = MaterialTheme.typography.bodyLarge,
-                fontSize = 12.5.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+        Text(
+            text = row.lastPostAt?.let { shortAgo(it, now) } ?: "—",
+            fontFamily = Mono,
+            fontSize = 11.sp,
+            color = scheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.width(8.dp))
+        Icon(
+            imageVector = DuskReadIcons.Chevron,
+            contentDescription = if (open) "Collapse" else "Expand",
+            modifier = Modifier.size(11.dp).rotate(rotation),
+            tint = scheme.onSurfaceVariant,
+        )
     }
 }
 
@@ -312,7 +318,15 @@ private fun TopicPreview(feed: Feed, posts: List<FeedPost>, linkLibrary: LinkLib
     // preview row should carry on into the rest of the blog, not stop.
     val queue = posts.readingQueue(feed)
 
-    Column(Modifier.padding(top = 12.dp, bottom = 4.dp)) {
+    Column(Modifier.padding(top = 4.dp, bottom = 12.dp)) {
+        if (posts.isEmpty()) {
+            Text(
+                text = "Nothing synced from this blog yet.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            return@Column
+        }
         posts.take(PreviewPosts).forEachIndexed { index, post ->
             TopicRow(
                 post = post,
@@ -345,14 +359,14 @@ private fun AllPostsRow(count: Int, onClick: () -> Unit) {
         Text(
             text = "ALL $count POSTS",
             style = SectionLabel,
-            color = MaterialTheme.colorScheme.primary,
+            color = MaterialTheme.colorScheme.onSurface,
         )
         Spacer(Modifier.width(6.dp))
         Icon(
             imageVector = DuskReadIcons.Chevron,
             contentDescription = null,
             modifier = Modifier.size(11.dp),
-            tint = MaterialTheme.colorScheme.primary,
+            tint = MaterialTheme.colorScheme.onSurface,
         )
     }
 }

@@ -403,8 +403,8 @@ overrides the clock. Failures on an automatic sync are silent; the button
 reports for itself. Most of a full sync is feed fetches.
 
 Every feed fetch goes through one `FeedSyncer` on `AppGraph`: Notion's
-sync, pull-to-refresh on Home and Following, Following's "Sync now", and
-Home coming into view when the last feed sync is over 30 minutes old
+sync, pull-to-refresh on Home and Following, Following's "Sync now",
+following a new blog, and Home coming into view when the last feed sync is over 30 minutes old
 (`syncIfStale`). A caller arriving mid-sync joins the one running rather
 than starting another, and the sync lives in the graph's scope, so leaving
 the screen that started it does not cancel it. Feeds are fetched six at a
