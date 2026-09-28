@@ -373,6 +373,12 @@ overrides the clock. Failures on an automatic sync are silent; the button
 reports for itself. A full sync is ~75 seconds, almost all of it feed
 fetches.
 
+Feeds alone also sync without Notion: Home fetches them whenever it comes
+into view and the last feed sync is over 30 minutes old
+(`syncFeedsIfStale`), silently and one at a time. While Home is open it
+re-reads the clock once a minute, so each card's age and the week's edge
+move on.
+
 <details>
 <summary>The trigger</summary>
 

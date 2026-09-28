@@ -127,6 +127,11 @@ final class FeedsStore {
         defer { syncing = false }
         _ = try? await bridge.sync()
     }
+
+    /// Home coming into view: fetches only when the last sync is old enough to matter.
+    func syncIfStale() async {
+        _ = try? await bridge.syncIfStale(now: Int64(Date().timeIntervalSince1970 * 1000))
+    }
 }
 
 /// The week's posts, as Home's cards.
@@ -140,6 +145,8 @@ final class LatestStore {
     @ObservationIgnored private let bridge: FeedsBridge
     @ObservationIgnored private var subscriptions: [Cancellable] = []
 
+    @ObservationIgnored private var ticker: Timer?
+
     init(_ bridge: FeedsBridge, links: LinksBridge) {
         self.bridge = bridge
         refresh()
@@ -147,9 +154,21 @@ final class LatestStore {
             bridge.observePosts { [weak self] _ in self?.refresh() },
             links.observe { [weak self] _ in self?.refresh() },
         ]
+        // The same tick as Compose's, so the week's edge and each card's age move while
+        // Home stays open.
+        let interval = TimeInterval(LatestPostsKt.LatestTickMs) / 1000
+        ticker = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
+            self?.refresh()
+        }
     }
 
-    deinit { subscriptions.forEach { $0.cancel() } }
+    deinit {
+        ticker?.invalidate()
+        subscriptions.forEach { $0.cancel() }
+    }
+
+    /// "4 unread · 10 this week".
+    var countLabel: String { bridge.latestCountLabel(items: items) }
 
     func refresh() {
         items = bridge.latest(now: Int64(Date().timeIntervalSince1970 * 1000))

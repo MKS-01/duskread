@@ -8,6 +8,7 @@ import dev.mks.duskread.links.discoverFeedUrl
 import dev.mks.duskread.links.latestPosts
 import dev.mks.duskread.links.pruneSummaries
 import dev.mks.duskread.links.syncFeeds
+import dev.mks.duskread.links.syncFeedsIfStale
 
 /**
  * Followed blogs and their cached posts.
@@ -50,6 +51,12 @@ class FeedsBridge internal constructor(private val graph: AppGraph) {
         links = graph.links,
         now = now,
     )
+
+    /** The Latest header's count, worded by the shared side so both homes agree. */
+    fun latestCountLabel(items: List<LatestItem>): String = dev.mks.duskread.links.latestCountLabel(items)
+
+    /** Null when nothing ran; see [syncFeedsIfStale]. */
+    suspend fun syncIfStale(now: Long): Int? = syncFeedsIfStale(graph.http, graph.feeds.feeds, graph.feedPosts, graph.links, graph.summaries, now)
 
     /** Returns how many new posts landed, so Swift can say so. */
     suspend fun sync(): Int = syncFeeds(graph.http, graph.feeds.feeds, graph.feedPosts, graph.links, graph.summaries)

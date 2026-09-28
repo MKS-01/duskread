@@ -9,6 +9,7 @@ import dev.mks.duskread.data.LocalAppGraph
 import dev.mks.duskread.data.Observed
 import dev.mks.duskread.data.rememberKeyValueStore
 import kotlinx.coroutines.flow.StateFlow
+import kotlin.time.Clock
 
 /**
  * One post as it appeared in a feed the last time that feed synced.
@@ -48,6 +49,10 @@ class FeedPostCache(private val store: KeyValueStore) {
     /** [postsByFeed] for observers outside a composition; see [Observed]. */
     val postsByFeedUpdates: StateFlow<Map<String, List<FeedPost>>> get() = observedPostsByFeed.updates
 
+    /** When some feed last answered, so Home can tell a stale week from a fresh one. */
+    var syncedAt: Long? = store.getString(SyncedAtKey)?.toLongOrNull()
+        private set
+
     fun replace(feedId: String, posts: List<FeedPost>) {
         postsByFeed = postsByFeed + (feedId to posts)
         persist()
@@ -60,6 +65,8 @@ class FeedPostCache(private val store: KeyValueStore) {
         if (byFeed.isEmpty()) return
         postsByFeed = postsByFeed + byFeed
         persist()
+        syncedAt = Clock.System.now().toEpochMilliseconds()
+        store.putString(SyncedAtKey, syncedAt.toString())
     }
 
     /**
@@ -68,6 +75,8 @@ class FeedPostCache(private val store: KeyValueStore) {
     fun clear() {
         postsByFeed = emptyMap()
         store.putString(Key, null)
+        syncedAt = null
+        store.putString(SyncedAtKey, null)
     }
 
     /** Drops a feed's cached posts once it's unfollowed — nothing should surface for a blog no longer synced. */
@@ -115,6 +124,7 @@ class FeedPostCache(private val store: KeyValueStore) {
 
     private companion object {
         const val Key = "feeds.posts"
+        const val SyncedAtKey = "feeds.syncedAt"
         const val FieldSeparator = ''
         const val RecordSeparator = ''
     }

@@ -13,8 +13,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -24,11 +26,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dev.mks.duskread.ui.theme.DuskReadIcons
 import dev.mks.duskread.ui.theme.Mono
 import dev.mks.duskread.ui.theme.Motion
 import dev.mks.duskread.ui.theme.Radius
@@ -53,8 +55,8 @@ fun ArticleCard(
     modifier: Modifier = Modifier,
     /** "2d ago", set apart from [meta] because it is the one fact the card is sorted by. */
     timeAgo: String? = null,
-    /** Recession, not a strikethrough — the same thing [RowTone.Faded] means on a row. */
-    faded: Boolean = false,
+    /** A check by the date, not a fade: a read card is finished, not switched off. */
+    read: Boolean = false,
     meta: @Composable RowScope.() -> Unit,
 ) {
     val scheme = MaterialTheme.colorScheme
@@ -70,7 +72,6 @@ fun ArticleCard(
     Column(
         modifier
             .fillMaxWidth()
-            .alpha(if (faded) 0.5f else 1f)
             .clip(RoundedCornerShape(Radius.Card))
             .border(Stroke.Hairline, scheme.outlineVariant, RoundedCornerShape(Radius.Card))
             .clickable(onClick = onClick)
@@ -83,6 +84,16 @@ fun ArticleCard(
             Spacer(Modifier.width(10.dp))
             RowMeta(host, modifier = Modifier.weight(1f))
             timeAgo?.let { RowMeta(it) }
+            // Muted, never the accent: that is for what is playing, and a read post is not.
+            if (read) {
+                Spacer(Modifier.width(6.dp))
+                Icon(
+                    imageVector = DuskReadIcons.Check,
+                    contentDescription = "Read",
+                    modifier = Modifier.size(14.dp),
+                    tint = scheme.onSurfaceVariant,
+                )
+            }
         }
 
         Spacer(Modifier.height(14.dp))

@@ -7,6 +7,7 @@ import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpHeaders
+import kotlinx.coroutines.sync.Mutex
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 
@@ -202,6 +203,36 @@ suspend fun syncFeeds(
     pruneSummaries(summaries, links, cache)
     return fetched.size
 }
+
+/**
+ * [syncFeeds] when the last one is older than [AutoSyncAfterMs], for Home coming into
+ * view. Null when nothing ran — fresh, no feeds, or a sync already in the air.
+ */
+suspend fun syncFeedsIfStale(
+    client: HttpClient,
+    feeds: List<Feed>,
+    cache: FeedPostCache,
+    links: LinkLibrary,
+    summaries: SummaryCache,
+    now: Long,
+): Int? {
+    if (feeds.isEmpty()) return null
+    val last = cache.syncedAt
+    if (last != null && now - last in 0..AutoSyncAfterMs) return null
+    // tryLock, not lock: a second caller arriving mid-sync wants that sync's result, not
+    // another dozen fetches queued behind it.
+    if (!AutoSyncLock.tryLock()) return null
+    return try {
+        syncFeeds(client, feeds, cache, links, summaries)
+    } finally {
+        AutoSyncLock.unlock()
+    }
+}
+
+/** Often enough that Home feels live, rare enough that it is not a fetch per glance. */
+const val AutoSyncAfterMs = 30L * 60 * 1000
+
+private val AutoSyncLock = Mutex()
 
 /**
  * Drops every summary whose article the app no longer lists. A summary costs nothing to

@@ -17,6 +17,7 @@ struct DashboardScreen: View {
     @Environment(PrefsStore.self) private var prefs
     @Environment(BarCollapse.self) private var collapse
     @Environment(\.dusk) private var dusk
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         ScrollView {
@@ -52,6 +53,15 @@ struct DashboardScreen: View {
         .background(dusk.background)
         .refreshable { await feeds.sync(); latest.refresh(); suggestions.refresh(excluding: shownAsCards) }
         .onAppear { latest.refresh(); suggestions.refresh(excluding: shownAsCards) }
+        // Unlike pull-to-refresh, silent and only when stale: Home keeps itself current
+        // without Notion's sync being the only thing that ever fetches.
+        .task { await feeds.syncIfStale() }
+        .onChange(of: scenePhase) { _, phase in
+            guard phase == .active else { return }
+            latest.refresh()
+            Task { await feeds.syncIfStale() }
+        }
+        .animation(Motion.ease(Motion.chip), value: latest.items.map(\.url))
         // The week can change under the screen — a sync lands, or a card is opened and
         // marked read — and the picks below it have to drop whatever it now shows.
         .onChange(of: latest.items.map(\.url)) { _, _ in suggestions.refresh(excluding: shownAsCards) }
@@ -120,7 +130,7 @@ struct DashboardScreen: View {
         VStack(alignment: .leading, spacing: 14) {
             EyebrowHeader(label: "Latest") {
                 if !latest.items.isEmpty {
-                    Text("\(latest.items.count) this week")
+                    Text(latest.countLabel)
                         .dusk(.code)
                         .foregroundStyle(dusk.onSurfaceVariant)
                 }
@@ -147,7 +157,7 @@ struct DashboardScreen: View {
                         text: item.excerpt,
                         timeAgo: links.savedAgo(item.publishedAt),
                         meta: cardMeta(for: item),
-                        faded: item.read,
+                        read: item.read,
                         onTap: { open(item) }
                     )
                 }
