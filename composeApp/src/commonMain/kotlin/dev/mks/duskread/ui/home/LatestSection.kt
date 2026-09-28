@@ -13,6 +13,7 @@ import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dev.mks.duskread.links.FeedSyncState
 import dev.mks.duskread.links.LatestItem
 import dev.mks.duskread.links.latestCountLabel
 import dev.mks.duskread.links.savedAgo
@@ -36,6 +37,7 @@ fun LazyListScope.latestSection(
     items: List<LatestItem>,
     bodies: Map<String, CardBody>,
     hasFeeds: Boolean,
+    sync: FeedSyncState,
     /** Read off Home's ticking clock, so "3d ago" moves while the screen is open. */
     now: Long,
     onOpen: (ReadingQueue) -> Unit,
@@ -45,10 +47,11 @@ fun LazyListScope.latestSection(
         Column(Modifier.fillMaxWidth().padding(bottom = 12.dp)) {
             EyebrowHeader(
                 text = "LATEST",
-                trailing = if (items.isNotEmpty()) {
+                progress = sync.progress,
+                trailing = if (items.isNotEmpty() || sync.running) {
                     {
                         Text(
-                            text = latestCountLabel(items),
+                            text = if (sync.running) sync.label else latestCountLabel(items),
                             fontFamily = Mono,
                             fontSize = 11.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -64,7 +67,13 @@ fun LazyListScope.latestSection(
     if (items.isEmpty()) {
         item("latest-empty") {
             Column(Modifier.fillMaxWidth().padding(bottom = SectionGap)) {
-                if (hasFeeds) {
+                if (hasFeeds && sync.running) {
+                    // Not "nothing new" yet: that would be a verdict before the feeds answer.
+                    CompactEmptyState(
+                        title = "Checking your blogs",
+                        message = "What they published this week lands here as each one answers.",
+                    )
+                } else if (hasFeeds) {
                     CompactEmptyState(
                         title = "Nothing new this week",
                         message = "The blogs you follow haven't published since last week. Pull down to check again.",

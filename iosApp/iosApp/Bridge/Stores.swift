@@ -89,18 +89,27 @@ final class PrefsStore {
 final class FeedsStore {
     private(set) var feeds: [Feed] = []
     private(set) var postsByFeed: [String: [FeedPost]] = [:]
-    private(set) var syncing = false
+    /// The one sync, wherever it was started — Home's header and Following's both read it.
+    private(set) var sync: FeedSyncState
+
+    var syncing: Bool { sync.running }
+
+    /// Where the header rule has filled to, or nil when nothing is syncing.
+    var syncProgress: Double? { sync.progress.map { Double($0.floatValue) } }
 
     @ObservationIgnored private let bridge: FeedsBridge
     @ObservationIgnored private var subscriptions: [Cancellable] = []
 
-    init(_ bridge: FeedsBridge) {
+    init(_ bridge: FeedsBridge, toast: ToastCenter) {
         self.bridge = bridge
         feeds = bridge.currentFeeds()
         postsByFeed = bridge.currentPosts() as? [String: [FeedPost]] ?? [:]
+        sync = bridge.syncState()
         subscriptions = [
             bridge.observeFeeds { [weak self] in self?.feeds = $0 },
             bridge.observePosts { [weak self] in self?.postsByFeed = $0 as? [String: [FeedPost]] ?? [:] },
+            bridge.observeSync { [weak self] in self?.sync = $0 },
+            bridge.observeSyncResults { [weak toast] in toast?.show($0.line) },
         ]
     }
 
@@ -122,9 +131,8 @@ final class FeedsStore {
 
     func clear() { bridge.clear() }
 
-    func sync() async {
-        syncing = true
-        defer { syncing = false }
+    /// Joins a sync already running; the header and the toast report it, not the caller.
+    func startSync() async {
         _ = try? await bridge.sync()
     }
 

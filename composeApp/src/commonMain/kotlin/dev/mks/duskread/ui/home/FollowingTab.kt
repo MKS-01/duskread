@@ -6,18 +6,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import dev.mks.duskread.data.LocalAppGraph
 import dev.mks.duskread.links.Feed
 import dev.mks.duskread.links.FeedLibrary
 import dev.mks.duskread.links.FeedPostCache
 import dev.mks.duskread.links.LinkLibrary
-import dev.mks.duskread.links.syncFeeds
-import dev.mks.duskread.summary.rememberSummaryCache
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.launch
 
@@ -35,19 +30,12 @@ fun FollowingTab(
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
-    val summaries = rememberSummaryCache()
-    var refreshing by remember { mutableStateOf(false) }
+    val feedSync = LocalAppGraph.current.feedSync
 
     PullToRefreshBox(
-        isRefreshing = refreshing,
-        onRefresh = {
-            if (feeds.feeds.isEmpty()) return@PullToRefreshBox
-            scope.launch {
-                refreshing = true
-                syncFeeds(client, feeds.feeds, feedPosts, links, summaries)
-                refreshing = false
-            }
-        },
+        // Handed off to FOLLOWING's header, the same as Home's pull.
+        isRefreshing = false,
+        onRefresh = { scope.launch { feedSync.sync() } },
         modifier = modifier.fillMaxSize(),
     ) {
         LazyColumn(Modifier.fillMaxSize(), contentPadding = contentPadding) {

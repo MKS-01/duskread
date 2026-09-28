@@ -352,9 +352,8 @@ terms of `getString` and a native `Bool` would make the two disagree silently.
 `summaries` is the one key another key's contents can empty. A summary
 describes an article, so when a sync rewrites `feeds.posts` — or a blog is
 unfollowed — the summaries left behind describe posts the app no longer
-lists, and `syncFeeds` drops them on its way out. It takes the library and
-the cache as required parameters rather than optional ones, so no call site
-can opt back into the leak by saying nothing.
+lists, and `FeedSyncer` drops them on its way out. It is built with the
+library and the cache, so there is no way to run a feed sync that skips it.
 
 `notion.database.name` is not in the table above — nothing writes it any
 more, from back when there was one database instead of two and its name was
@@ -370,14 +369,26 @@ disconnect.
 `runFullSync` runs on the Settings button and on launch if the last sync was
 over four hours ago — but anything saved, read, retitled or deleted since
 overrides the clock. Failures on an automatic sync are silent; the button
-reports for itself. A full sync is ~75 seconds, almost all of it feed
-fetches.
+reports for itself. Most of a full sync is feed fetches.
 
-Feeds alone also sync without Notion: Home fetches them whenever it comes
-into view and the last feed sync is over 30 minutes old
-(`syncFeedsIfStale`), silently and one at a time. While Home is open it
-re-reads the clock once a minute, so each card's age and the week's edge
-move on.
+Every feed fetch goes through one `FeedSyncer` on `AppGraph`: Notion's
+sync, pull-to-refresh on Home and Following, Following's "Sync now", and
+Home coming into view when the last feed sync is over 30 minutes old
+(`syncIfStale`). A caller arriving mid-sync joins the one running rather
+than starting another, and the sync lives in the graph's scope, so leaving
+the screen that started it does not cancel it. Feeds are fetched six at a
+time. A round that reached no feed still holds off the next automatic one
+for 30 minutes, in memory only, so a phone offline is not refetching on
+every resume.
+
+Its state (`running`, `done/total`) is observed by both UIs: the section
+header's hairline rule fills, muted, as feeds answer, and the trailing text
+reads "Syncing 4/12". Pull-to-refresh hands off to that rule instead of
+holding its spinner. Each finished sync emits a result that Home turns into
+a toast — always for one somebody asked for, and for an automatic one only
+when it brought new posts; failures of an automatic sync stay silent. While
+Home is open it re-reads the clock once a minute, so each card's age and
+the week's edge move on.
 
 <details>
 <summary>The trigger</summary>
@@ -477,7 +488,7 @@ at sync time by **the same `articleFromFeed` the reader calls**, given the
 same truncated body — anything cheaper would eventually disagree, and a
 badge that lies is worse than no badge.
 
-The cache re-encodes itself whole on every write, so `syncFeeds` gathers
+The cache re-encodes itself whole on every write, so `FeedSyncer` gathers
 every feed's posts and commits once via `replaceAll` rather than per feed,
 which made a sync serialise the whole catalogue once per feed — a cost that
 grew with the square of the feed count.

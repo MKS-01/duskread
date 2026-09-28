@@ -51,7 +51,9 @@ struct DashboardScreen: View {
         }
         .tracksBarCollapse(collapse)
         .background(dusk.background)
-        .refreshable { await feeds.sync(); latest.refresh(); suggestions.refresh(excluding: shownAsCards) }
+        // Not awaited: the pull hands off to Latest's header, which fills as feeds answer,
+        // rather than holding the spinner over the list for the whole sync.
+        .refreshable { Task { await feeds.startSync() } }
         .onAppear { latest.refresh(); suggestions.refresh(excluding: shownAsCards) }
         // Unlike pull-to-refresh, silent and only when stale: Home keeps itself current
         // without Notion's sync being the only thing that ever fetches.
@@ -128,8 +130,12 @@ struct DashboardScreen: View {
 
     private var latestSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            EyebrowHeader(label: "Latest") {
-                if !latest.items.isEmpty {
+            EyebrowHeader(label: "Latest", progress: feeds.syncProgress) {
+                if feeds.syncing {
+                    Text(feeds.sync.label)
+                        .dusk(.code)
+                        .foregroundStyle(dusk.onSurfaceVariant)
+                } else if !latest.items.isEmpty {
                     Text(latest.countLabel)
                         .dusk(.code)
                         .foregroundStyle(dusk.onSurfaceVariant)
@@ -142,6 +148,12 @@ struct DashboardScreen: View {
                         title: "Follow a blog",
                         message: "Whatever it publishes this week lands here, with a line about what it says.",
                         onTap: onOpenFollowing
+                    )
+                } else if feeds.syncing {
+                    // Not "nothing new" yet: that would be a verdict before the feeds answer.
+                    CompactEmptyState(
+                        title: "Checking your blogs",
+                        message: "What they published this week lands here as each one answers."
                     )
                 } else {
                     CompactEmptyState(

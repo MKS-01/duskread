@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.mks.duskread.AppVersion
 import dev.mks.duskread.data.DataEpoch
+import dev.mks.duskread.data.LocalAppGraph
 import dev.mks.duskread.data.NotionTokenKey
 import dev.mks.duskread.data.UserPrefs
 import dev.mks.duskread.data.rememberKeyValueStore
@@ -401,7 +402,7 @@ private fun NotionSettings(
 ) {
     val secrets = rememberSecretStore()
     val scope = rememberCoroutineScope()
-    val summaries = rememberSummaryCache()
+    val feedSync = LocalAppGraph.current.feedSync
 
     // Read into state rather than on every recomposition: reaching the keystore is cheap
     // but not free, and the answer only changes here or in the setup sheet.
@@ -477,8 +478,7 @@ private fun NotionSettings(
                             prefs = notion,
                             library = library,
                             feeds = feeds,
-                            feedPosts = feedPosts,
-                            summaries = summaries,
+                            feedSync = feedSync,
                             http = client,
                             recordSync = notion::recordSync,
                         ).line

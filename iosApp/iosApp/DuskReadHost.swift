@@ -12,6 +12,7 @@ final class DuskReadHost: ObservableObject {
     let suggestions: SuggestionsStore
     let notion: NotionStore
     let speech: SpeechStore
+    let toast = ToastCenter()
 
     init() {
         bridge = DuskReadBridge(
@@ -20,7 +21,7 @@ final class DuskReadHost: ObservableObject {
         )
         links = LinksStore(bridge.links)
         prefs = PrefsStore(bridge.prefs)
-        feeds = FeedsStore(bridge.feeds)
+        feeds = FeedsStore(bridge.feeds, toast: toast)
         latest = LatestStore(bridge.feeds, links: bridge.links)
         pomodoro = PomodoroStore(bridge.pomodoro)
         suggestions = SuggestionsStore(bridge.signals)

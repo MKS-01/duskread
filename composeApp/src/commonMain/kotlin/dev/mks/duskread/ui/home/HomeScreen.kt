@@ -220,9 +220,13 @@ fun HomeScreen(
     val feedPosts = rememberFeedPostCache()
     val feedClient = LocalAppGraph.current.http
 
-    // Passed down rather than reached for per screen, for the same reason the libraries
-    // are: a sync prunes it, and Home's cards read it.
-    val summaries = LocalAppGraph.current.summaries
+    val feedSync = LocalAppGraph.current.feedSync
+
+    // Every sync reports here, whichever screen or trigger started it, so a result is
+    // never lost to the tab that asked having been left.
+    LaunchedEffect(feedSync) {
+        feedSync.results.collect { if (it.worthSaying) ToastRequest.show(it.line) }
+    }
 
     // Hoisted here and passed into Settings rather than built there, for the same reason
     // FeedLibrary is: NotionPrefs writes `notion.sync.last`.
@@ -261,8 +265,7 @@ fun HomeScreen(
                 prefs = notionPrefs,
                 library = links,
                 feeds = feeds,
-                feedPosts = feedPosts,
-                summaries = summaries,
+                feedSync = feedSync,
                 http = feedClient,
                 recordSync = notionPrefs::recordSync,
             )
@@ -332,7 +335,6 @@ fun HomeScreen(
                     signals = signals,
                     feeds = feeds,
                     feedPosts = feedPosts,
-                    feedClient = feedClient,
                     onOpenFocus = onOpenFocus,
                     onOpenSaved = { onTabChange(HomeTab.SAVED) },
                     onOpenFollowing = { onTabChange(HomeTab.FOLLOWING) },
