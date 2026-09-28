@@ -71,16 +71,9 @@ class DuskReadWidget : AppWidgetProvider() {
             ids.forEach { manager.updateAppWidget(it, views) }
         }
 
-        /**
-         * The whole render, as one function.
-         *
-         * Colours are applied here rather than baked into the layout because
-         * the widget follows the app's Ink / Paper Black toggle, and a
-         * RemoteViews tree cannot carry a theme. The layout holds Ink's
-         * values so the picker's preview is right before any of this runs.
-         */
+        /** The whole render, as one function. */
         private fun build(context: Context): RemoteViews {
-            val palette = if (WidgetState.mono(context)) Palette.Ink else Palette.PaperBlack
+            val palette = Palette
             val views = RemoteViews(context.packageName, R.layout.widget_dusk)
 
             val endsAt = WidgetState.focusEndsAt(context)
@@ -261,34 +254,14 @@ class DuskReadWidget : AppWidgetProvider() {
     }
 
     /**
-     * The two schemes, reduced to the five roles a widget actually shows.
-     *
-     * Hard-coded rather than read from `MaterialTheme.colorScheme`, which is
-     * the rule everywhere else in this app and is broken here on purpose:
-     * a colour scheme is Compose state and a RemoteViews tree is built
-     * outside composition, with no theme to read. These values mirror
-     * `ui/theme/Theme.kt` and have to be changed with it.
+     * Ink's grey whichever scheme the app is in: on an unknown wallpaper the terracotta
+     * accent fought the home screen. Mirrors `ui/theme/Theme.kt`, since a RemoteViews tree
+     * has no theme to read.
      */
-    private enum class Palette(
-        val card: Int,
-        val onSurface: Int,
-        val onSurfaceVariant: Int,
-        val outline: Int,
-        val primary: Int,
-    ) {
-        Ink(
-            card = R.drawable.widget_card_ink,
-            onSurface = 0xFFDCDCDC.toInt(),
-            onSurfaceVariant = 0xFF9C9C9C.toInt(),
-            outline = 0xFF464646.toInt(),
-            primary = 0xFFDCDCDC.toInt(),
-        ),
-        PaperBlack(
-            card = R.drawable.widget_card_paper,
-            onSurface = 0xFFE8E6E2.toInt(),
-            onSurfaceVariant = 0xFFA3A19D.toInt(),
-            outline = 0xFF3E3E3D.toInt(),
-            primary = 0xFFC6684A.toInt(),
-        ),
+    private object Palette {
+        val card = R.drawable.widget_card_ink
+        const val onSurface = 0xFFDCDCDC.toInt()
+        const val onSurfaceVariant = 0xFF9C9C9C.toInt()
+        const val primary = 0xFFDCDCDC.toInt()
     }
 }

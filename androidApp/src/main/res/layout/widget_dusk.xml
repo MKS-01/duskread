@@ -46,9 +46,8 @@
     re-deriving its own text after a re-layout is a bug waiting for a quiet
     afternoon.
 
-    Every colour is set at render time, not here, because the widget follows
-    the app's Ink / Paper Black toggle. The values below are Ink's, so the
-    picker's preview is right before any code runs.
+    Grey only: Ink's values, whichever scheme the app is in. build() sets the
+    same colours again at render time, so the picker's preview matches.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"

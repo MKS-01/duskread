@@ -13,8 +13,8 @@
     inventing a second one.
 
     Only views RemoteViews can inflate appear here: FrameLayout, LinearLayout,
-    TextView, ImageView. Colours are set at render time, not here — see
-    DuskReadWidget.Palette and DuskReadSuggestionWidget's own build().
+    TextView, ImageView. Grey only, Ink's, whichever scheme the app is in;
+    build() sets the same values again at render time.
 -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
@@ -73,7 +73,7 @@
                 android:letterSpacing="0.09"
                 android:maxLines="1"
                 android:text="@string/widget_suggestion_eyebrow"
-                android:textColor="#FFC6684A"
+                android:textColor="#FFDCDCDC"
                 android:textSize="10sp" />
         </LinearLayout>
 

@@ -73,7 +73,7 @@ class DuskReadSuggestionWidget : AppWidgetProvider() {
         }
 
         private fun build(context: Context): RemoteViews {
-            val palette = if (WidgetState.mono(context)) Palette.Ink else Palette.PaperBlack
+            val palette = Palette
             val views = RemoteViews(context.packageName, R.layout.widget_suggestion)
 
             views.setInt(R.id.suggestion_card, "setBackgroundResource", palette.card)
@@ -145,24 +145,11 @@ class DuskReadSuggestionWidget : AppWidgetProvider() {
         )
     }
 
-    /** The same five roles [DuskReadWidget.Palette] reads, mirrored here rather than shared — see that enum for why. */
-    private enum class Palette(
-        val card: Int,
-        val onSurface: Int,
-        val onSurfaceVariant: Int,
-        val primary: Int,
-    ) {
-        Ink(
-            card = R.drawable.widget_card_ink,
-            onSurface = 0xFFDCDCDC.toInt(),
-            onSurfaceVariant = 0xFF9C9C9C.toInt(),
-            primary = 0xFFDCDCDC.toInt(),
-        ),
-        PaperBlack(
-            card = R.drawable.widget_card_paper,
-            onSurface = 0xFFE8E6E2.toInt(),
-            onSurfaceVariant = 0xFFA3A19D.toInt(),
-            primary = 0xFFC6684A.toInt(),
-        ),
+    /** [DuskReadWidget]'s grey, mirrored rather than shared — see that palette for why. */
+    private object Palette {
+        val card = R.drawable.widget_card_ink
+        const val onSurface = 0xFFDCDCDC.toInt()
+        const val onSurfaceVariant = 0xFF9C9C9C.toInt()
+        const val primary = 0xFFDCDCDC.toInt()
     }
 }
