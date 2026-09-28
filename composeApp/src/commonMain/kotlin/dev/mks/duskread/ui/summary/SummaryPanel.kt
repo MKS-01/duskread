@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.sp
 import dev.mks.duskread.data.LocalAppGraph
 import dev.mks.duskread.links.loadArticle
 import dev.mks.duskread.links.rememberReadingSignals
+import dev.mks.duskread.speech.MinSpeakableChars
 import dev.mks.duskread.speech.SpeechSession
 import dev.mks.duskread.speech.speechSupported
 import dev.mks.duskread.summary.ArticleSummary
@@ -343,8 +344,3 @@ private fun DownloadPrompt(onDownload: () -> Unit) {
 // Below this a page is a stub, a paywall or a cookie wall — and asking a model to
 // summarise two sentences produces a confident summary of nothing.
 private const val MinSummarisableChars = 400
-
-/**
- * Below this, a page is chrome rather than an article.
- */
-private const val MinSpeakableChars = 200

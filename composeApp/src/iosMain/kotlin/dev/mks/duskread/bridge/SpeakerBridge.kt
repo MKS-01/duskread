@@ -8,6 +8,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 /**
@@ -47,6 +48,9 @@ class SpeakerBridge internal constructor(private val graph: AppGraph) {
             runCatching {
                 speaker.speak(title, article.text).collect { onProgress(it.fraction) }
             }
+            // `runCatching` swallows the cancellation a stop sends, so without this a
+            // stopped read would report itself finished.
+            if (!isActive) return@launch
             onFinished(null)
         }
     }
