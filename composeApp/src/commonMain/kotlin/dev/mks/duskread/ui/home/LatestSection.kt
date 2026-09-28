@@ -1,5 +1,6 @@
 package dev.mks.duskread.ui.home
 
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,7 +13,9 @@ import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dev.mks.duskread.links.FeedSyncState
 import dev.mks.duskread.links.LatestItem
+import dev.mks.duskread.links.latestCountLabel
 import dev.mks.duskread.links.savedAgo
 import dev.mks.duskread.ui.OpenRecord
 import dev.mks.duskread.ui.ReadingQueue
@@ -22,6 +25,7 @@ import dev.mks.duskread.ui.common.CompactEmptyState
 import dev.mks.duskread.ui.common.EyebrowHeader
 import dev.mks.duskread.ui.common.RowMeta
 import dev.mks.duskread.ui.theme.Mono
+import dev.mks.duskread.ui.theme.Motion
 
 /**
  * What the followed blogs put out this week, one card each.
@@ -33,6 +37,9 @@ fun LazyListScope.latestSection(
     items: List<LatestItem>,
     bodies: Map<String, CardBody>,
     hasFeeds: Boolean,
+    sync: FeedSyncState,
+    /** Read off Home's ticking clock, so "3d ago" moves while the screen is open. */
+    now: Long,
     onOpen: (ReadingQueue) -> Unit,
     onFollow: () -> Unit,
 ) {
@@ -40,10 +47,11 @@ fun LazyListScope.latestSection(
         Column(Modifier.fillMaxWidth().padding(bottom = 12.dp)) {
             EyebrowHeader(
                 text = "LATEST",
-                trailing = if (items.isNotEmpty()) {
+                progress = sync.progress,
+                trailing = if (items.isNotEmpty() || sync.running) {
                     {
                         Text(
-                            text = "${items.size} this week",
+                            text = if (sync.running) sync.label else latestCountLabel(items),
                             fontFamily = Mono,
                             fontSize = 11.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -59,7 +67,13 @@ fun LazyListScope.latestSection(
     if (items.isEmpty()) {
         item("latest-empty") {
             Column(Modifier.fillMaxWidth().padding(bottom = SectionGap)) {
-                if (hasFeeds) {
+                if (hasFeeds && sync.running) {
+                    // Not "nothing new" yet: that would be a verdict before the feeds answer.
+                    CompactEmptyState(
+                        title = "Checking your blogs",
+                        message = "What they published this week lands here as each one answers.",
+                    )
+                } else if (hasFeeds) {
                     CompactEmptyState(
                         title = "Nothing new this week",
                         message = "The blogs you follow haven't published since last week. Pull down to check again.",
@@ -88,13 +102,24 @@ fun LazyListScope.latestSection(
     itemsIndexed(items, key = { _, item -> item.url }) { index, item ->
         val body = bodies[item.url]
 
-        Column(Modifier.fillMaxWidth().padding(bottom = if (index == items.lastIndex) SectionGap else CardGap)) {
+        // Placement animated, so a post landing from a sync or ageing out of the week
+        // moves the others rather than making them jump.
+        Column(
+            Modifier
+                .animateItem(
+                    fadeInSpec = tween(Motion.Fade),
+                    placementSpec = tween(Motion.Chip),
+                    fadeOutSpec = tween(Motion.Fade),
+                )
+                .fillMaxWidth()
+                .padding(bottom = if (index == items.lastIndex) SectionGap else CardGap),
+        ) {
             ArticleCard(
                 host = item.host,
                 title = item.title,
                 body = body?.text ?: item.excerpt,
-                timeAgo = savedAgo(item.publishedAt),
-                faded = item.read,
+                timeAgo = savedAgo(item.publishedAt, now),
+                read = item.read,
                 onClick = { onOpen(queue.at(index)) },
             ) {
                 RowMeta("${item.minutes} min")

@@ -269,8 +269,8 @@ fun rememberLinkLibrary(): LinkLibrary = LocalAppGraph.current.links
  * "3h ago".
  */
 @OptIn(ExperimentalTime::class)
-fun savedAgo(savedAt: Long): String {
-    val minutes = (Clock.System.now().toEpochMilliseconds() - savedAt) / 60_000
+fun savedAgo(savedAt: Long, now: Long = Clock.System.now().toEpochMilliseconds()): String {
+    val minutes = (now - savedAt) / 60_000
     return when {
         minutes < 1 -> "just now"
         minutes < 60 -> "${minutes}m ago"

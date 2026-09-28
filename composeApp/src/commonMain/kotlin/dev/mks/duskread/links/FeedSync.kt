@@ -1,6 +1,5 @@
 package dev.mks.duskread.links
 
-import dev.mks.duskread.data.DataEpoch
 import dev.mks.duskread.summary.SummaryCache
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
@@ -168,42 +167,6 @@ internal fun resolveAgainst(pageUrl: String, href: String): String = when {
 }
 
 /**
- * Fetches every followed feed and, for each one that actually yields posts, replaces its
- * slot in [cache] — the source Home's topic rows read from.
- */
-suspend fun syncFeeds(
-    client: HttpClient,
-    feeds: List<Feed>,
-    cache: FeedPostCache,
-    // Not optional, though nothing here reads them: a sync that rewrote the posts and
-    // left the summaries behind is exactly the bug [pruneSummaries] exists to prevent,
-    // and a default would let a call site opt back into it by saying nothing.
-    links: LinkLibrary,
-    summaries: SummaryCache,
-): Int {
-    // What the fetch below is about. A dozen feeds take long enough that an erase can
-    // happen while they are in the air; see [DataEpoch].
-    val epoch = DataEpoch.mark()
-
-    // Gathered, then written once.
-    val fetched = mutableMapOf<String, List<FeedPost>>()
-
-    for (feed in feeds) {
-        val entries = runCatching { fetchFeed(client, feed.url) }.getOrNull()
-        if (entries.isNullOrEmpty()) continue
-        fetched[feed.id] = entries.take(EntriesPerFeed).map { it.asPost(feed.id) }
-    }
-
-    // Erased while this was fetching: these posts belong to a Following list that no
-    // longer exists, and writing them would put it back.
-    if (DataEpoch.stale(epoch)) return 0
-
-    cache.replaceAll(fetched)
-    pruneSummaries(summaries, links, cache)
-    return fetched.size
-}
-
-/**
  * Drops every summary whose article the app no longer lists. A summary costs nothing to
  * keep but describes a post that is gone, and the cache is a convenience, not a record.
  */
@@ -218,7 +181,7 @@ fun pruneSummaries(summaries: SummaryCache, links: LinkLibrary, cache: FeedPostC
 /**
  * Full post bodies are cached only for the newest few entries, and truncated even then.
  */
-private fun FeedEntry.asPost(feedId: String): FeedPost {
+internal fun FeedEntry.asPost(feedId: String): FeedPost {
     // Every entry keeps its body now, not just the newest few.
     val cached = content?.take(MaxCachedContentChars)
 
@@ -313,7 +276,7 @@ private val CommonFeedPaths = listOf("/feed", "/feed/", "/rss.xml", "/rss", "/at
 
 // A feed with a thousand-item archive should not flood the list on first sync — the point
 // of following a blog is what's new, not its backlog.
-private const val EntriesPerFeed = 15
+internal const val EntriesPerFeed = 15
 
 // See [asPost]: the most one post's markup may take up.
 private const val MaxCachedContentChars = 24_000

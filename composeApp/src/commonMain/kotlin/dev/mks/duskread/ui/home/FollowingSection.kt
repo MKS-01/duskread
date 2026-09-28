@@ -41,6 +41,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dev.mks.duskread.data.LocalAppGraph
 import dev.mks.duskread.links.Feed
 import dev.mks.duskread.links.FeedLibrary
 import dev.mks.duskread.links.FeedPost
@@ -51,7 +52,6 @@ import dev.mks.duskread.links.looksLikeUrl
 import dev.mks.duskread.links.normaliseUrl
 import dev.mks.duskread.links.pruneSummaries
 import dev.mks.duskread.links.savedAgo
-import dev.mks.duskread.links.syncFeeds
 import dev.mks.duskread.summary.rememberSummaryCache
 import dev.mks.duskread.ui.common.AppTextField
 import dev.mks.duskread.ui.common.CompactEmptyState
@@ -60,18 +60,16 @@ import dev.mks.duskread.ui.common.EyebrowHeader
 import dev.mks.duskread.ui.common.HairlineDivider
 import dev.mks.duskread.ui.common.HeaderAction
 import dev.mks.duskread.ui.common.Pill
-import dev.mks.duskread.ui.common.ToastRequest
 import dev.mks.duskread.ui.rememberUrlOpener
 import dev.mks.duskread.ui.theme.DuskReadIcons
 import dev.mks.duskread.ui.theme.Mono
 import dev.mks.duskread.ui.theme.Motion
 import dev.mks.duskread.ui.theme.SectionLabel
 import io.ktor.client.HttpClient
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
- * The blogs followed for [syncFeeds] to pull from: a digest, not a carousel — one line
+ * The blogs followed for [FeedSyncer] to pull from: a digest, not a carousel — one line
  * per feed, "host — N new".
  */
 @Composable
@@ -95,8 +93,8 @@ fun FollowingDigest(
     var managing by remember { mutableStateOf(feedLibrary.feeds.isEmpty()) }
     var feedUrl by remember { mutableStateOf("") }
     var discovering by remember { mutableStateOf(false) }
-    var syncing by remember { mutableStateOf(false) }
-    var note by remember { mutableStateOf<String?>(null) }
+    val feedSync = LocalAppGraph.current.feedSync
+    val sync = feedSync.state
     var expanded by remember { mutableStateOf<String?>(null) }
     var searching by remember { mutableStateOf(false) }
     var query by remember { mutableStateOf("") }
@@ -115,27 +113,6 @@ fun FollowingDigest(
             feedLibrary.add(resolved)
             feedUrl = ""
             discovering = false
-        }
-    }
-
-    LaunchedEffect(note) {
-        if (note != null) {
-            delay(5_000)
-            note = null
-        }
-    }
-
-    fun sync() {
-        if (syncing || feedLibrary.feeds.isEmpty()) return
-        syncing = true
-        scope.launch {
-            val synced = syncFeeds(client, feedLibrary.feeds, postCache, linkLibrary, summaries)
-            note = when {
-                synced == 0 -> "Couldn't reach any feed."
-                synced == feedLibrary.feeds.size -> "Synced $synced feed${if (synced == 1) "" else "s"}."
-                else -> "Synced $synced of ${feedLibrary.feeds.size} feeds."
-            }
-            syncing = false
         }
     }
 
@@ -159,6 +136,7 @@ fun FollowingDigest(
     Column(modifier.fillMaxWidth()) {
         EyebrowHeader(
             text = "FOLLOWING",
+            progress = sync.progress,
             trailing = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     HeaderAction(icon = DuskReadIcons.Search, label = "Search") {
@@ -166,7 +144,9 @@ fun FollowingDigest(
                         if (!searching) query = ""
                     }
                     if (feedLibrary.feeds.isNotEmpty()) {
-                        HeaderAction(if (syncing) "Syncing…" else "Sync now", onClick = ::sync)
+                        HeaderAction(if (sync.running) sync.label else "Sync now") {
+                            scope.launch { feedSync.sync() }
+                        }
                     }
                     HeaderAction(if (managing) "Done" else "Manage") { managing = !managing }
                 }
@@ -206,15 +186,6 @@ fun FollowingDigest(
                     pruneSummaries(summaries, linkLibrary, postCache)
                 },
                 emptyStateModifier = emptyStateModifier,
-            )
-        }
-
-        note?.let {
-            Text(
-                text = it,
-                fontSize = 11.5.sp,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(bottom = 8.dp),
             )
         }
 

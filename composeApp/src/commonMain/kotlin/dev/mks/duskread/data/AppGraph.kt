@@ -8,6 +8,7 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.remember
 import dev.mks.duskread.links.FeedLibrary
 import dev.mks.duskread.links.FeedPostCache
+import dev.mks.duskread.links.FeedSyncer
 import dev.mks.duskread.links.LinkLibrary
 import dev.mks.duskread.links.ReadingSignals
 import dev.mks.duskread.links.createHttpClient
@@ -36,11 +37,15 @@ class AppGraph(
 
     internal val http: HttpClient = createHttpClient()
     internal val notionApi = NotionClient(http, notionAuth)
+    val feedSync = FeedSyncer(http, feeds, feedPosts, links, summaries)
 
     /** The store itself, for the few callers that still key their own state off it. */
     val keyValueStore: KeyValueStore get() = store
 
-    fun close() = http.close()
+    fun close() {
+        feedSync.close()
+        http.close()
+    }
 }
 
 /**

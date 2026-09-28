@@ -16,8 +16,8 @@ struct ArticleCard: View {
     let text: String
     var timeAgo: String?
     var meta: [RowMetaItem] = []
-    /// Recession, not a strikethrough — the same thing `RowTone.faded` means on a row.
-    var faded: Bool = false
+    /// A check by the date, not a fade: a read card is finished, not switched off.
+    var read: Bool = false
     var onTap: () -> Void = {}
 
     @Environment(\.dusk) private var dusk
@@ -38,6 +38,13 @@ struct ArticleCard: View {
                     Text(timeAgo)
                         .dusk(.code)
                         .foregroundStyle(dusk.onSurfaceVariant)
+                }
+                // Muted, never the accent: that is for what is playing, and a read post
+                // is not.
+                if read {
+                    DuskIcon(path: IconPaths.shared.Check, size: 14, tint: dusk.onSurfaceVariant)
+                        .padding(.leading, -4)
+                        .accessibilityLabel("Read")
                 }
             }
 
@@ -95,7 +102,6 @@ struct ArticleCard: View {
             RoundedRectangle(cornerRadius: Radius.card)
                 .stroke(dusk.outlineVariant, lineWidth: Stroke.hairline)
         )
-        .opacity(faded ? 0.5 : 1)
         .contentShape(Rectangle())
         // The card's own tap opens the article; "more" is a button inside it and takes
         // its own tap first.

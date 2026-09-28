@@ -48,8 +48,7 @@ class NotionBridge internal constructor(private val graph: AppGraph) {
             prefs = graph.notionPrefs,
             library = graph.links,
             feeds = graph.feeds,
-            feedPosts = graph.feedPosts,
-            summaries = graph.summaries,
+            feedSync = graph.feedSync,
             http = graph.http,
             recordSync = { at -> graph.notionPrefs.recordSync(at) },
         )

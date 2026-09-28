@@ -2,7 +2,7 @@ package dev.mks.duskread.bridge
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 
 /**
@@ -14,9 +14,9 @@ interface Cancellable {
 }
 
 /**
- * Bridges a [StateFlow] to a callback.
+ * Bridges a [Flow] to a callback.
  */
-internal fun <T> StateFlow<T>.watch(onEach: (T) -> Unit): Cancellable {
+internal fun <T> Flow<T>.watch(onEach: (T) -> Unit): Cancellable {
     val job = CoroutineScope(Dispatchers.Main).launch { collect { onEach(it) } }
     return object : Cancellable {
         override fun cancel() = job.cancel()

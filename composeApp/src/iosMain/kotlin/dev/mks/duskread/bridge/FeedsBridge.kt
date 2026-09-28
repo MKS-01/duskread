@@ -3,11 +3,12 @@ package dev.mks.duskread.bridge
 import dev.mks.duskread.data.AppGraph
 import dev.mks.duskread.links.Feed
 import dev.mks.duskread.links.FeedPost
+import dev.mks.duskread.links.FeedSyncResult
+import dev.mks.duskread.links.FeedSyncState
 import dev.mks.duskread.links.LatestItem
 import dev.mks.duskread.links.discoverFeedUrl
 import dev.mks.duskread.links.latestPosts
 import dev.mks.duskread.links.pruneSummaries
-import dev.mks.duskread.links.syncFeeds
 
 /**
  * Followed blogs and their cached posts.
@@ -51,6 +52,23 @@ class FeedsBridge internal constructor(private val graph: AppGraph) {
         now = now,
     )
 
-    /** Returns how many new posts landed, so Swift can say so. */
-    suspend fun sync(): Int = syncFeeds(graph.http, graph.feeds.feeds, graph.feedPosts, graph.links, graph.summaries)
+    /** The Latest header's count, worded by the shared side so both homes agree. */
+    fun latestCountLabel(items: List<LatestItem>): String = dev.mks.duskread.links.latestCountLabel(items)
+
+    fun syncState(): FeedSyncState = graph.feedSync.state
+
+    fun observeSync(onEach: (FeedSyncState) -> Unit): Cancellable = graph.feedSync.stateUpdates.watch(onEach)
+
+    /** Every finished sync worth a toast, whichever side started it. */
+    fun observeSyncResults(onEach: (FeedSyncResult) -> Unit): Cancellable = graph.feedSync.results.watch { if (it.worthSaying) onEach(it) }
+
+    /** Joins a sync already running rather than starting a second. */
+    suspend fun sync() {
+        graph.feedSync.sync()
+    }
+
+    /** Home coming into view; does nothing while the last sync is recent. */
+    suspend fun syncIfStale(now: Long) {
+        graph.feedSync.syncIfStale(now)
+    }
 }

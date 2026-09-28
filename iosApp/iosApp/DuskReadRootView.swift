@@ -66,6 +66,8 @@ struct DuskReadRootView: View {
                 .padding(.horizontal, Layout.listGutter)
                 .contentShape(Capsule())
                 .onTapGesture { if collapse.collapsed { collapse.expand() } }
+
+                ToastOverlay(center: host.toast)
             }
         }
         .fullScreenCover(item: $destination) { destination in

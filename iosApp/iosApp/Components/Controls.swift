@@ -6,6 +6,8 @@ import SwiftUI
 struct EyebrowHeader<Trailing: View>: View {
     let label: String
     var tint: Color?
+    /// Fills the rule itself, muted, while something behind the section is loading.
+    var progress: Double?
     @ViewBuilder var trailing: () -> Trailing
 
     @Environment(\.dusk) private var dusk
@@ -19,6 +21,7 @@ struct EyebrowHeader<Trailing: View>: View {
                 .fill(dusk.outlineVariant)
                 .frame(height: Stroke.hairline)
                 .frame(maxWidth: .infinity)
+                .overlay(alignment: .leading) { RuleFill(progress: progress, color: dusk.onSurfaceVariant) }
                 // The rule yields first; the label and the actions keep their width.
                 .layoutPriority(-1)
             trailing()
@@ -26,9 +29,41 @@ struct EyebrowHeader<Trailing: View>: View {
     }
 }
 
+/// The header rule's fill: finishes the line before fading, so an end reads as done.
+private struct RuleFill: View {
+    let progress: Double?
+    let color: Color
+
+    @State private var fill: Double = 0
+    @State private var shown = false
+
+    var body: some View {
+        GeometryReader { proxy in
+            Rectangle()
+                .fill(color)
+                .frame(width: proxy.size.width * fill)
+                .opacity(shown ? 1 : 0)
+        }
+        .onAppear { if let progress { fill = progress; shown = true } }
+        .onChange(of: progress) { old, new in
+            if let new {
+                if old == nil {
+                    fill = 0
+                    withAnimation(Motion.ease(Motion.fade)) { shown = true }
+                }
+                withAnimation(Motion.ease(Motion.chip)) { fill = new }
+            } else {
+                withAnimation(Motion.ease(Motion.chip)) { fill = 1 } completion: {
+                    withAnimation(Motion.ease(Motion.fade)) { shown = false }
+                }
+            }
+        }
+    }
+}
+
 extension EyebrowHeader where Trailing == EmptyView {
-    init(label: String, tint: Color? = nil) {
-        self.init(label: label, tint: tint) { EmptyView() }
+    init(label: String, tint: Color? = nil, progress: Double? = nil) {
+        self.init(label: label, tint: tint, progress: progress) { EmptyView() }
     }
 }
 

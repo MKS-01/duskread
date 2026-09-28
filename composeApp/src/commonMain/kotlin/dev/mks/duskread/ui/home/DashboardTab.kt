@@ -21,6 +21,7 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -30,20 +31,21 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.LifecycleResumeEffect
+import dev.mks.duskread.data.LocalAppGraph
 import dev.mks.duskread.links.FeedLibrary
 import dev.mks.duskread.links.FeedPostCache
+import dev.mks.duskread.links.LatestTickMs
 import dev.mks.duskread.links.LinkLibrary
 import dev.mks.duskread.links.ReadingSignals
 import dev.mks.duskread.links.Scored
 import dev.mks.duskread.links.latestPosts
 import dev.mks.duskread.links.pool
 import dev.mks.duskread.links.rank
-import dev.mks.duskread.links.syncFeeds
 import dev.mks.duskread.links.topPicks
 import dev.mks.duskread.pomodoro.PickableMinutes
 import dev.mks.duskread.pomodoro.clockLabel
 import dev.mks.duskread.pomodoro.rememberPomodoroController
-import dev.mks.duskread.summary.rememberSummaryCache
 import dev.mks.duskread.ui.OpenRecord
 import dev.mks.duskread.ui.ReadingQueue
 import dev.mks.duskread.ui.ReadingQueueEntry
@@ -51,7 +53,6 @@ import dev.mks.duskread.ui.common.CompactEmptyState
 import dev.mks.duskread.ui.common.EyebrowHeader
 import dev.mks.duskread.ui.common.ListRow
 import dev.mks.duskread.ui.common.RowMeta
-import dev.mks.duskread.ui.common.ToastRequest
 import dev.mks.duskread.ui.common.WaveformMeter
 import dev.mks.duskread.ui.rememberArticleOpener
 import dev.mks.duskread.ui.theme.CodeStyle
@@ -59,7 +60,7 @@ import dev.mks.duskread.ui.theme.DuskReadIcons
 import dev.mks.duskread.ui.theme.Mono
 import dev.mks.duskread.ui.theme.Radius
 import dev.mks.duskread.ui.theme.Stroke
-import io.ktor.client.HttpClient
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -77,43 +78,38 @@ fun DashboardTab(
     signals: ReadingSignals,
     feeds: FeedLibrary,
     feedPosts: FeedPostCache,
-    feedClient: HttpClient,
     greeting: String?,
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
-    val summaries = rememberSummaryCache()
+    val feedSync = LocalAppGraph.current.feedSync
     val open = rememberArticleOpener()
-    var refreshing by remember { mutableStateOf(false) }
 
-    // The day, not the instant: recomputing the week every recomposition would re-cut it
-    // on a clock tick nothing else on this screen can see.
-    val day = remember { Clock.System.now().toEpochMilliseconds() / DayMs }
-    val latest = remember(feedPosts.postsByFeed, feeds.feeds, links.links, day) {
-        latestPosts(feeds = feeds.feeds, cache = feedPosts, links = links, now = Clock.System.now().toEpochMilliseconds())
+    // A minute's resolution, re-read on every return to the app: the week's edge and each
+    // card's age move while Home stays open, without recomputing on every frame.
+    var now by remember { mutableLongStateOf(Clock.System.now().toEpochMilliseconds()) }
+    LifecycleResumeEffect(feeds.feeds) {
+        // Launched apart from the ticker: pausing mid-fetch must not throw the fetch away.
+        scope.launch { feedSync.syncIfStale(Clock.System.now().toEpochMilliseconds()) }
+        val ticker = scope.launch {
+            while (true) {
+                now = Clock.System.now().toEpochMilliseconds()
+                delay(LatestTickMs)
+            }
+        }
+        onPauseOrDispose { ticker.cancel() }
+    }
+    val latest = remember(feedPosts.postsByFeed, feeds.feeds, links.links, now / LatestTickMs) {
+        latestPosts(feeds = feeds.feeds, cache = feedPosts, links = links, now = now)
     }
     val bodies = rememberCardBodies(latest, feedPosts)
 
     PullToRefreshBox(
-        isRefreshing = refreshing,
-        onRefresh = {
-            // The one thing on this screen that can go stale without the reader doing
-            // anything.
-            if (feeds.feeds.isEmpty()) return@PullToRefreshBox
-            scope.launch {
-                refreshing = true
-                val synced = syncFeeds(feedClient, feeds.feeds, feedPosts, links, summaries)
-                ToastRequest.show(
-                    when {
-                        synced == 0 -> "Couldn't reach any feed."
-                        synced == feeds.feeds.size -> "Synced $synced feed${if (synced == 1) "" else "s"}."
-                        else -> "Synced $synced of ${feeds.feeds.size} feeds."
-                    },
-                )
-                refreshing = false
-            }
-        },
+        // Never held: the pull hands off to Latest's header, which fills as feeds answer,
+        // rather than parking a spinner over the list for the whole sync.
+        isRefreshing = false,
+        onRefresh = { scope.launch { feedSync.sync() } },
         modifier = modifier.fillMaxSize(),
     ) {
         LazyColumn(
@@ -147,6 +143,8 @@ fun DashboardTab(
                 items = latest,
                 bodies = bodies,
                 hasFeeds = feeds.feeds.isNotEmpty(),
+                sync = feedSync.state,
+                now = now,
                 onOpen = open,
                 onFollow = onOpenFollowing,
             )
@@ -167,9 +165,6 @@ fun DashboardTab(
         }
     }
 }
-
-/** Long enough that the week is not re-cut on every recomposition; see its one use. */
-private const val DayMs = 86_400_000L
 
 /** Vertical gap between one flat section and the next. */
 internal val SectionGap = 28.dp

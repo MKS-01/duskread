@@ -43,12 +43,12 @@ struct FollowingScreen: View {
         }
         .tracksBarCollapse(collapse)
         .background(dusk.background)
-        .refreshable { await feeds.sync() }
+        .refreshable { Task { await feeds.startSync() } }
     }
 
     private var controls: some View {
         VStack(alignment: .leading, spacing: 14) {
-            EyebrowHeader(label: "Following") {
+            EyebrowHeader(label: "Following", progress: feeds.syncProgress) {
                 HStack(spacing: 16) {
                     HeaderAction(label: searching ? "Done" : "Search") {
                         withAnimation(Motion.ease(Motion.chip)) {
@@ -56,8 +56,8 @@ struct FollowingScreen: View {
                             if !searching { query = "" }
                         }
                     }
-                    HeaderAction(label: feeds.syncing ? "Syncing…" : "Sync now") {
-                        Task { await feeds.sync() }
+                    HeaderAction(label: feeds.syncing ? feeds.sync.label : "Sync now") {
+                        Task { await feeds.startSync() }
                     }
                     HeaderAction(label: managing ? "Done" : "Manage") {
                         withAnimation(Motion.ease(Motion.chip)) {

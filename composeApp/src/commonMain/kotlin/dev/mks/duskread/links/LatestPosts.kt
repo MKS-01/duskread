@@ -23,7 +23,7 @@ data class LatestItem(
     val minutes: Int,
     /** The blog's subject, where its feed carries one. */
     val topic: String? = null,
-    /** Shown recessed rather than dropped: a list called Latest that hides things is a puzzle. */
+    /** Marked, not dropped: a list called Latest that hides things is a puzzle. */
     val read: Boolean = false,
 )
 
@@ -83,6 +83,20 @@ fun latestPosts(
 
     return items
 }
+
+/** "4 unread · 10 this week", shared so both homes count the same way. */
+fun latestCountLabel(items: List<LatestItem>): String {
+    val unread = items.count { !it.read }
+    val week = "${items.size} this week"
+    return when (unread) {
+        items.size -> week
+        0 -> "all read · $week"
+        else -> "$unread unread · $week"
+    }
+}
+
+/** How often Home re-reads the clock, so ages and the week's edge move while it is open. */
+const val LatestTickMs = 60_000L
 
 /**
  * The opening of a post as prose: tags out, entities decoded, cut at the last sentence
