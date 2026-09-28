@@ -18,6 +18,8 @@ struct ArticleCard: View {
     var meta: [RowMetaItem] = []
     /// A check by the date, not a fade: a read card is finished, not switched off.
     var read: Bool = false
+    /// Being read aloud right now — the one thing on Home allowed the accent.
+    var playing: Bool = false
     var onTap: () -> Void = {}
 
     @Environment(\.dusk) private var dusk
@@ -52,7 +54,7 @@ struct ArticleCard: View {
 
             Text(title)
                 .dusk(.titleMedium)
-                .foregroundStyle(dusk.onSurface)
+                .foregroundStyle(playing ? dusk.primary : dusk.onSurface)
                 // Both, and equal: the second line is held open for a one-line title.
                 .lineLimit(Self.titleLines, reservesSpace: true)
                 .multilineTextAlignment(.leading)
@@ -100,8 +102,9 @@ struct ArticleCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .overlay(
             RoundedRectangle(cornerRadius: Radius.card)
-                .stroke(dusk.outlineVariant, lineWidth: Stroke.hairline)
+                .stroke(playing ? dusk.primary : dusk.outlineVariant, lineWidth: Stroke.hairline)
         )
+        .animation(Motion.ease(Motion.chip), value: playing)
         .contentShape(Rectangle())
         // The card's own tap opens the article; "more" is a button inside it and takes
         // its own tap first.

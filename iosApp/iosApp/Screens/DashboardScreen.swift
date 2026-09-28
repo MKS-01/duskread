@@ -15,6 +15,7 @@ struct DashboardScreen: View {
     @Environment(PomodoroStore.self) private var pomodoro
     @Environment(SuggestionsStore.self) private var suggestions
     @Environment(PrefsStore.self) private var prefs
+    @Environment(SpeechStore.self) private var speech
     @Environment(BarCollapse.self) private var collapse
     @Environment(\.dusk) private var dusk
     @Environment(\.scenePhase) private var scenePhase
@@ -125,6 +126,12 @@ struct DashboardScreen: View {
         return items
     }
 
+    /// The card a listen-through is on, as opposed to a single read started elsewhere.
+    private var listeningUrl: String? {
+        guard speech.inQueue, let key = speech.key else { return nil }
+        return latest.items.contains(where: { $0.url == key }) ? key : nil
+    }
+
     /// Nothing on this screen twice: the cards above already offered these.
     private var shownAsCards: Set<String> { Set(latest.items.map(\.url)) }
 
@@ -139,6 +146,21 @@ struct DashboardScreen: View {
                     Text(latest.countLabel)
                         .dusk(.code)
                         .foregroundStyle(dusk.onSurfaceVariant)
+                }
+                if listeningUrl != nil || latest.items.contains(where: { !$0.read }) {
+                    Button {
+                        if listeningUrl != nil { speech.stop() } else { speech.listenToTheWeek() }
+                    } label: {
+                        DuskIcon(
+                            path: listeningUrl != nil ? IconPaths.shared.Close : IconPaths.shared.Play,
+                            size: 18,
+                            tint: dusk.onSurfaceVariant
+                        )
+                        .frame(width: 30, height: 30)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(listeningUrl != nil ? "Stop listening" : "Listen to the week")
                 }
             }
 
@@ -170,6 +192,7 @@ struct DashboardScreen: View {
                         timeAgo: links.savedAgo(item.publishedAt),
                         meta: cardMeta(for: item),
                         read: item.read,
+                        playing: item.url == listeningUrl,
                         onTap: { open(item) }
                     )
                 }

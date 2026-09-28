@@ -71,7 +71,10 @@ internal class SystemSpeaker : Speaker {
             session.setActive(true, null)
         }
 
-        val total = text.length
+        // The title first, as Android's speaker reads it, so a queue's posts are named
+        // on both phones.
+        val spokenText = "$title. \n\n$text"
+        val total = spokenText.length
 
         val delegate = object : NSObject(), AVSpeechSynthesizerDelegateProtocol {
             override fun speechSynthesizer(
@@ -107,7 +110,7 @@ internal class SystemSpeaker : Speaker {
 
         synthesizer.delegate = delegate
 
-        val utterance = AVSpeechUtterance.speechUtteranceWithString(text).apply {
+        val utterance = AVSpeechUtterance.speechUtteranceWithString(spokenText).apply {
             val language = NSLocale.currentLocale.languageCode
             voice = AVSpeechSynthesisVoice.voiceWithLanguage(language)
                 ?: AVSpeechSynthesisVoice.voiceWithLanguage("en-US")
