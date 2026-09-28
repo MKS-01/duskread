@@ -10,8 +10,8 @@ data class DigestRow(
     /** Posts from this week not yet saved — what "3 new" counts. */
     val newCount: Int,
     val lastPostAt: Long?,
-    /** The newest post not yet saved, as the one line a NEW row previews. */
-    val newestUnsaved: FeedPost?,
+    /** Unsaved posts from this week, newest first — what a NEW tile previews. */
+    val unsaved: List<FeedPost>,
 )
 
 /**
@@ -47,7 +47,9 @@ fun followingGroups(feeds: List<Feed>, cache: FeedPostCache, links: LinkLibrary,
                 now - at in 0..LatestWindowMs && canonicalUrl(post.url) !in saved
             },
             lastPostAt = posts.mapNotNull { it.publishedAt }.maxOrNull(),
-            newestUnsaved = posts.filter { canonicalUrl(it.url) !in saved }.maxByOrNull { it.publishedAt ?: 0L },
+            unsaved = posts
+                .filter { post -> post.publishedAt?.let { now - it in 0..LatestWindowMs } == true && canonicalUrl(post.url) !in saved }
+                .sortedByDescending { it.publishedAt },
         )
     }
     val (withPosts, unsynced) = rows.partition { it.posts.isNotEmpty() }

@@ -7,8 +7,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -196,8 +198,8 @@ fun FollowingHead(
 }
 
 /**
- * The followed blogs as lazy items — a two-column grid under NEW, CAUGHT UP and NO POSTS
- * YET, or a list of matching posts while searching — so a long list builds only what is
+ * The followed blogs as lazy items — tiles under NEW, CAUGHT UP and NO POSTS YET, or a
+ * list of matching posts while searching — so a long list builds only what is
  * on screen.
  */
 fun LazyListScope.followingRows(
@@ -231,20 +233,9 @@ private fun LazyListScope.group(
             modifier = Modifier.animateItem().padding(top = 18.dp, bottom = 4.dp),
         )
     }
-    // Browsing is a grid of blogs; a search is a list of posts, which a tile cannot show.
+    // Browsing is tiles; a search is a list of posts, which a tile cannot show.
     if (state.query.isBlank()) {
-        items(rows.chunked(2), key = { pair -> pair.joinToString("+") { it.feed.id } }) { pair ->
-            Row(
-                Modifier.animateItem().fillMaxWidth().height(IntrinsicSize.Min).padding(bottom = TileGap),
-                horizontalArrangement = Arrangement.spacedBy(TileGap),
-            ) {
-                pair.forEach { row ->
-                    BlogTile(row, now, Modifier.weight(1f).fillMaxHeight()) { onOpenTopics(row.feed) }
-                }
-                // An odd one out keeps half the width, not the whole row.
-                if (pair.size == 1) Spacer(Modifier.weight(1f))
-            }
-        }
+        if (key == "new") bento(rows, now, onOpenTopics) else compactGrid(rows, now, onOpenTopics)
         return
     }
     itemsIndexed(rows, key = { _, row -> row.feed.id }) { index, row ->
@@ -265,59 +256,168 @@ private fun LazyListScope.group(
 }
 
 /**
- * One blog in the grid: its name, its newest unsaved title where it has one — the reason
- * to open it — and "3 new" or how long since it last posted, pinned to the foot so a row
- * of tiles lines up. Tapping opens every post it has.
+ * NEW, laid out unevenly on purpose: the most recent blog across the full width with its
+ * two newest titles, then threes — one tall tile beside two small — flipping sides each
+ * time, so a long run of tiles does not settle into a spreadsheet.
  */
-@Composable
-private fun BlogTile(row: DigestRow, now: Long, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    val scheme = MaterialTheme.colorScheme
-    val fresh = row.newCount > 0
-    val shape = RoundedCornerShape(Radius.Card)
+private fun LazyListScope.bento(rows: List<DigestRow>, now: Long, onOpen: (Feed) -> Unit) {
+    val lead = rows.first()
+    item("new-lead-${lead.feed.id}") {
+        FeaturedTile(lead, now, Modifier.animateItem().padding(bottom = TileGap)) { onOpen(lead.feed) }
+    }
+    val rest = rows.drop(1).chunked(3)
+    rest.forEachIndexed { index, chunk ->
+        item("new-${chunk.joinToString("+") { it.feed.id }}") {
+            TileRow(Modifier.animateItem()) {
+                when (chunk.size) {
+                    3 -> {
+                        val tall: @Composable () -> Unit = {
+                            TallTile(chunk[0], now, Modifier.weight(1f).fillMaxHeight()) { onOpen(chunk[0].feed) }
+                        }
+                        val pair: @Composable () -> Unit = {
+                            Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(TileGap)) {
+                                SmallTile(chunk[1], now, Modifier.weight(1f).fillMaxWidth()) { onOpen(chunk[1].feed) }
+                                SmallTile(chunk[2], now, Modifier.weight(1f).fillMaxWidth()) { onOpen(chunk[2].feed) }
+                            }
+                        }
+                        if (index % 2 == 0) {
+                            tall()
+                            pair()
+                        } else {
+                            pair()
+                            tall()
+                        }
+                    }
+                    2 -> chunk.forEach { row ->
+                        TallTile(row, now, Modifier.weight(1f).fillMaxHeight()) { onOpen(row.feed) }
+                    }
+                    else -> SmallTile(chunk[0], now, Modifier.weight(1f)) { onOpen(chunk[0].feed) }
+                }
+            }
+        }
+    }
+}
 
+/** CAUGHT UP and NO POSTS YET: small tiles two across, since there is nothing to preview. */
+private fun LazyListScope.compactGrid(rows: List<DigestRow>, now: Long, onOpen: (Feed) -> Unit) {
+    items(rows.chunked(2), key = { pair -> pair.joinToString("+") { it.feed.id } }) { pair ->
+        TileRow(Modifier.animateItem()) {
+            pair.forEach { row -> SmallTile(row, now, Modifier.weight(1f).fillMaxHeight()) { onOpen(row.feed) } }
+            // An odd one out keeps half the width, not the whole row.
+            if (pair.size == 1) Spacer(Modifier.weight(1f))
+        }
+    }
+}
+
+@Composable
+private fun TileRow(modifier: Modifier = Modifier, content: @Composable RowScope.() -> Unit) {
+    Row(
+        modifier.fillMaxWidth().height(IntrinsicSize.Min).padding(bottom = TileGap),
+        horizontalArrangement = Arrangement.spacedBy(TileGap),
+        content = content,
+    )
+}
+
+/** The bordered shape every tile shares — [ArticleCard]'s radius and hairline. */
+@Composable
+private fun Tile(modifier: Modifier, onClick: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
+    val shape = RoundedCornerShape(Radius.Card)
     Column(
         modifier
             .clip(shape)
-            .border(Stroke.Hairline, scheme.outlineVariant, shape)
+            .border(Stroke.Hairline, MaterialTheme.colorScheme.outlineVariant, shape)
             .clickable(onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 13.dp),
-    ) {
-        Text(
-            // The publisher's name when the Notion sync supplied one, the host when it
-            // did not — see Feed.label.
-            text = row.feed.label,
-            style = MaterialTheme.typography.bodyLarge,
-            fontSize = 14.sp,
-            lineHeight = 18.sp,
-            fontWeight = FontWeight.Medium,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            color = if (fresh) scheme.onSurface else scheme.onSurface.copy(alpha = 0.78f),
-        )
-        row.newestUnsaved?.title?.takeIf { fresh }?.let {
-            Spacer(Modifier.height(6.dp))
+        content = content,
+    )
+}
+
+@Composable
+private fun FeaturedTile(row: DigestRow, now: Long, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    Tile(modifier.fillMaxWidth(), onClick) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            TileName(row, Modifier.weight(1f), lines = 1)
+            Spacer(Modifier.width(10.dp))
+            TileMeta(row, now)
+        }
+        row.unsaved.take(2).forEach { post ->
+            Spacer(Modifier.height(10.dp))
             Text(
-                text = it,
+                text = post.title,
+                style = MaterialTheme.typography.titleMedium,
+                fontSize = 16.sp,
+                lineHeight = 21.sp,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+        }
+    }
+}
+
+@Composable
+private fun TallTile(row: DigestRow, now: Long, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    Tile(modifier, onClick) {
+        TileName(row, lines = 2)
+        // Two, so a short first title does not leave the tall side half empty beside its
+        // stacked pair.
+        row.unsaved.take(2).forEach {
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = it.title,
                 style = MaterialTheme.typography.bodyMedium,
-                fontSize = 12.5.sp,
-                lineHeight = 17.sp,
+                fontSize = 13.sp,
+                lineHeight = 18.sp,
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis,
-                color = scheme.onSurfaceVariant,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         Spacer(Modifier.weight(1f).heightIn(min = 12.dp))
-        Text(
-            text = when {
-                fresh -> "${row.newCount} new · ${row.lastPostAt?.let { shortAgo(it, now) } ?: "—"}"
-                else -> row.lastPostAt?.let { shortAgo(it, now) } ?: "no posts yet"
-            },
-            fontFamily = Mono,
-            fontSize = 11.sp,
-            fontWeight = if (fresh) FontWeight.SemiBold else FontWeight.Normal,
-            color = if (fresh) scheme.onSurface else scheme.onSurfaceVariant,
-        )
+        TileMeta(row, now)
     }
+}
+
+@Composable
+private fun SmallTile(row: DigestRow, now: Long, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    Tile(modifier, onClick) {
+        TileName(row, lines = 2)
+        Spacer(Modifier.weight(1f).heightIn(min = 10.dp))
+        TileMeta(row, now)
+    }
+}
+
+@Composable
+private fun TileName(row: DigestRow, modifier: Modifier = Modifier, lines: Int) {
+    val scheme = MaterialTheme.colorScheme
+    Text(
+        // The feed's own name once a sync has read it, the host until then — see
+        // Feed.label.
+        text = row.feed.label,
+        style = MaterialTheme.typography.bodyLarge,
+        fontSize = 14.sp,
+        lineHeight = 18.sp,
+        fontWeight = FontWeight.Medium,
+        maxLines = lines,
+        overflow = TextOverflow.Ellipsis,
+        color = if (row.newCount > 0) scheme.onSurface else scheme.onSurface.copy(alpha = 0.78f),
+        modifier = modifier,
+    )
+}
+
+/** "3 new · 4h" or the last post's age, in grey — the accent stays for what is playing. */
+@Composable
+private fun TileMeta(row: DigestRow, now: Long) {
+    val scheme = MaterialTheme.colorScheme
+    val fresh = row.newCount > 0
+    val age = row.lastPostAt?.let { shortAgo(it, now) }
+    Text(
+        text = if (fresh) "${row.newCount} new · ${age ?: "—"}" else age ?: "no posts yet",
+        fontFamily = Mono,
+        fontSize = 11.sp,
+        fontWeight = if (fresh) FontWeight.SemiBold else FontWeight.Normal,
+        color = if (fresh) scheme.onSurface else scheme.onSurfaceVariant,
+    )
 }
 
 /** Between tiles, both ways — [Space.CardGap], which cards on Home already use. */

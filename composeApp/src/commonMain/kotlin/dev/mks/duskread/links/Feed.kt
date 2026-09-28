@@ -23,7 +23,10 @@ data class Feed(
     val host: String
         get() = hostOf(url)
 
-    /** What to put on screen: the real name if there is one, the host if not. */
+    /**
+     * What to put on screen: the real name if there is one, the host if not, less the
+     * `www.` / `feeds.` that say nothing about the blog.
+     */
     val label: String
-        get() = title?.takeIf { it.isNotBlank() } ?: host
+        get() = title?.takeIf { it.isNotBlank() } ?: host.removePrefix("www.").removePrefix("feeds.")
 }

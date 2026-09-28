@@ -62,6 +62,19 @@ class FeedLibrary(private val store: KeyValueStore) {
         return feed
     }
 
+    /**
+     * Names blogs from their own feeds, but only those nothing has named yet — a name from
+     * Notion or the reader wins over whatever the publisher calls itself.
+     */
+    fun nameUnnamed(titles: Map<String, String>) {
+        val named = feeds.map { feed ->
+            if (feed.title.isNullOrBlank()) titles[feed.id]?.let { feed.copy(title = it) } ?: feed else feed
+        }
+        if (named == feeds) return
+        feeds = named
+        persist()
+    }
+
     fun remove(id: String) {
         feeds = feeds.filterNot { it.id == id }
         persist()

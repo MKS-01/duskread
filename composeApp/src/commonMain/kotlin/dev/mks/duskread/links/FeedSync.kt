@@ -25,14 +25,34 @@ data class FeedEntry(
 /**
  * Reads [url] as RSS or Atom and pulls out its entries.
  */
-suspend fun fetchFeed(client: HttpClient, url: String): List<FeedEntry> {
+suspend fun fetchFeed(client: HttpClient, url: String): List<FeedEntry> = fetchFeedDocument(client, url).entries
+
+/** A feed's entries and the name it gives itself, from one fetch. */
+data class FeedDocument(val title: String?, val entries: List<FeedEntry>)
+
+suspend fun fetchFeedDocument(client: HttpClient, url: String): FeedDocument {
     val xml = client.get(url) {
         header(HttpHeaders.UserAgent, UserAgent)
         header(HttpHeaders.Accept, "application/rss+xml, application/atom+xml, application/xml, text/xml, */*")
     }.bodyAsText().take(MaxBytesScanned)
 
-    return parseFeed(xml)
+    return FeedDocument(parseFeedTitle(xml), parseFeed(xml))
 }
+
+/**
+ * The channel's or feed's own `<title>` — the first one before any item or entry, since
+ * every item carries a title of its own.
+ */
+fun parseFeedTitle(xml: String): String? {
+    val head = xml.substringBefore("<item").substringBefore("<entry")
+    val title = FeedTitlePattern.find(head)?.groupValues?.get(1)?.tidy()?.takeIf { it.isNotBlank() } ?: return null
+    // "Ars Technica - All content", "Kotlin : A concise multiplatform language": the name
+    // is what comes before the tagline.
+    val name = FeedTitleSeparators.fold(title) { acc, sep -> acc.substringBefore(sep) }.trim()
+    return name.takeIf { it.length >= 2 } ?: title
+}
+
+private val FeedTitleSeparators = listOf(" - ", " | ", " : ", " — ", " – ")
 
 /**
  * RSS wraps posts in `<item>`, Atom in `<entry>` — never both in one document.

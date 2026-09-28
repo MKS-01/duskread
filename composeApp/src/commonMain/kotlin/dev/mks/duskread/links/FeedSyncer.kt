@@ -121,11 +121,15 @@ class FeedSyncer(
         state = FeedSyncState(running = true, total = list.size)
         try {
             val gate = Semaphore(ParallelFetches)
+            // What each feed calls itself, so a blog followed by address gets a real name.
+            val titles = mutableMapOf<String, String>()
             val fetched = coroutineScope {
                 list.map { feed ->
                     async {
-                        val entries = gate.withPermit { runCatching { fetchFeed(client, feed.url) }.getOrNull() }
+                        val document = gate.withPermit { runCatching { fetchFeedDocument(client, feed.url) }.getOrNull() }
                         state = state.copy(done = state.done + 1)
+                        document?.title?.let { titles[feed.id] = it }
+                        val entries = document?.entries
                         if (entries.isNullOrEmpty()) null else feed.id to entries.take(EntriesPerFeed).map { it.asPost(feed.id) }
                     }
                 }.awaitAll().filterNotNull().toMap()
@@ -137,6 +141,7 @@ class FeedSyncer(
                 FeedSyncResult(0, list.size, 0, manualJoined, erased = true)
             } else {
                 cache.replaceAll(fetched)
+                feeds.nameUnnamed(titles)
                 pruneSummaries(summaries, links, cache)
                 val fresh = fetched.values.sumOf { posts -> posts.count { it.url !in known } }
                 FeedSyncResult(fetched.size, list.size, fresh, manualJoined)
