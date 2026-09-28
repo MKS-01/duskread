@@ -24,6 +24,8 @@ object IconPaths {
 
     val Pause = IconPath("M9 5L9 19M15 5L15 19")
 
+    val SkipNext = IconPath("M6.5 5.5L15 12L6.5 18.5ZM18 5.5L18 18.5")
+
     val Shuffle = IconPath("M5 7L19 17M19 17L15.5 17M19 17L19 13.5M5 17L19 7M19 7L15.5 7M19 7L19 10.5")
 
     val Waveform = IconPath("M4 10L4 14M8 6.5L8 17.5M12 3.5L12 20.5M16 6.5L16 17.5M20 10L20 14")

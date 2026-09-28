@@ -227,7 +227,38 @@ than against the picks after it. Filtered afterwards, the section comes up
 short of the three it means to offer.
 
 Neither section reaches the network. Both read what the last sync left in
-`feeds.posts`; pulling down on Home is what runs the next one.
+`feeds.posts`; the next one runs when Home comes into view with a stale
+cache, or when the reader pulls down — see [When a sync happens](#when-a-sync-happens).
+</details>
+
+<details>
+<summary>Listening to the week</summary>
+
+The play control in `LATEST`'s header reads the unread cards aloud one after
+another, in the cards' order. `speech/ListenToTheWeek.kt` builds the run and
+`speech/ListenQueue.kt` owns it, in `commonMain`, so both phones skip, name
+and mark the same posts:
+
+- Each post's text is the feed's own copy where it carried the whole thing,
+  otherwise the fetched page; the next post's text is fetched while the
+  current one plays. A post with under 200 characters of text is skipped.
+- Before each post the speaker says its title, then "From <blog>."
+- A post **heard to its end** gets the same record as opening its card —
+  saved and marked read. A skip, a stop or an engine error leaves it unread,
+  which is why every driver has to tell a finish from a cancel.
+
+The drivers differ in where the next post starts. On Android the queue is
+advanced **inside `SpeechPlaybackService`**, not from the UI: with the
+screen off, starting a foreground service from the app is refused, so the
+service stays in the foreground between posts and moves on itself.
+`SpeechSession.Request.advanced` marks such a request so `DriveSpeechSession`
+does not start it a second time; the in-app next button reaches the service
+the same way the notification's Next does, as an intent. On iOS
+`SpeakerBridge` runs the loop directly, and the app declares background
+audio and registers the lock screen's play/pause and next-track commands.
+
+While a run is on a card, that card takes the accent — it is the one thing
+on Home doing something.
 </details>
 
 ---

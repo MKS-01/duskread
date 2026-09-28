@@ -120,9 +120,10 @@ fun HomeScreen(
             title = speech.title,
             playing = speech.playing,
             fraction = speech.fraction,
-            compactLabel = "${(speech.fraction * 100).toInt()}%",
-            wideLabel = "${(speech.fraction * 100).toInt()}%",
+            compactLabel = speech.label,
+            wideLabel = speech.label,
             seekable = false,
+            skippable = speech.inQueue,
         )
     } ?: playback.item?.let { item ->
         val duration = playback.durationSec.takeIf { it > 0f } ?: 1f
@@ -392,6 +393,7 @@ fun HomeScreen(
                         onTogglePlay = onTogglePlayTransport,
                         onSeek = onSeekTransport,
                         onStop = onStopTransport,
+                        onNext = SpeechSession::skip,
                         modifier = Modifier.navigationBarsPadding(),
                     )
                 }
@@ -475,6 +477,7 @@ fun HomeScreen(
                 onTogglePlay = onTogglePlayTransport,
                 onSeek = onSeekTransport,
                 onStop = onStopTransport,
+                onNext = SpeechSession::skip,
                 mono = mono,
                 onToggleTheme = onToggleTheme,
                 onOpenSettings = { showSettings = true },

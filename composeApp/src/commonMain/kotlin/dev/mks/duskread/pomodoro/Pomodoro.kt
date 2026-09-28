@@ -38,6 +38,14 @@ val PomodoroState.clockLabel: String
         return "$minutes:${seconds.toString().padStart(2, '0')}"
     }
 
+/** How much of the chosen session has elapsed, for the meter — 0 while idle. */
+val PomodoroState.elapsedFraction: Float
+    get() = if (idle) {
+        0f
+    } else {
+        (1f - remainingSeconds.toFloat() / totalSeconds.toFloat()).coerceIn(0f, 1f)
+    }
+
 interface PomodoroController {
     val state: StateFlow<PomodoroState>
 

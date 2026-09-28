@@ -19,6 +19,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 /**
@@ -34,6 +35,7 @@ class SpeechPlaybackService : Service() {
 
     private lateinit var session: MediaSessionCompat
     private var title: String = ""
+    private var inQueue = false
 
     override fun onCreate() {
         super.onCreate()
@@ -42,6 +44,8 @@ class SpeechPlaybackService : Service() {
             setCallback(
                 object : MediaSessionCompat.Callback() {
                     override fun onStop() = stopAndRelease()
+
+                    override fun onSkipToNext() = skip()
                 },
             )
             isActive = true
@@ -54,32 +58,47 @@ class SpeechPlaybackService : Service() {
         MediaButtonReceiver.handleIntent(session, intent)
         when (intent?.action) {
             ActionStop -> stopAndRelease()
+            ActionNext -> skip()
             ActionPlay -> {
                 val key = intent.getStringExtra(ExtraKey)
                 val requestedTitle = intent.getStringExtra(ExtraTitle)
                 val text = intent.getStringExtra(ExtraText)
-                if (key != null && requestedTitle != null && text != null) start(key, requestedTitle, text)
+                if (key != null && requestedTitle != null && text != null) {
+                    start(
+                        SpeechSession.Request(
+                            key = key,
+                            title = requestedTitle,
+                            text = text,
+                            position = intent.getIntExtra(ExtraPosition, 0),
+                            total = intent.getIntExtra(ExtraTotal, 0),
+                        ),
+                    )
+                }
             }
         }
         return START_NOT_STICKY
     }
 
-    private fun start(key: String, requestedTitle: String, text: String) {
+    private fun start(request: SpeechSession.Request) {
         job?.cancel()
         speaker?.stop()
-        title = requestedTitle
+        title = request.title
+        inQueue = request.total > 1
 
-        // Same claim-first-swap-later shape `ReaderPlaybackService` uses.
+        // Same claim-first-swap-later shape `ReaderPlaybackService` uses; called again for
+        // each post in a queue, which only swaps the notification.
         startForeground(NotificationId, buildNotification())
-        publish(SpeechNowPlaying(key, requestedTitle, fraction = 0f, playing = true))
+        publish(nowPlaying(request, 0f))
 
         val engine = speaker ?: return
         job = scope.launch {
             val outcome = runCatching {
-                engine.speak(requestedTitle, text).collect { progress ->
-                    publish(SpeechNowPlaying(key, requestedTitle, progress.fraction, playing = true))
+                engine.speak(request.title, request.text).collect { progress ->
+                    publish(nowPlaying(request, progress.fraction))
                 }
             }
+            // Superseded by a newer start, a skip or a stop: none of those is an ending.
+            if (!isActive) return@launch
 
             // A read that cannot happen has to say so.
             outcome.exceptionOrNull()?.let { failure ->
@@ -87,17 +106,32 @@ class SpeechPlaybackService : Service() {
                     ToastRequest.show(failure.message ?: "Couldn't read this aloud.")
                 }
             }
-            // Reached on natural completion, on failure, and when [job] is cancelled by a
-            // newer `start()` superseding this one.
-            if (SpeechSession.state.value?.key == key) stopAndRelease()
+            // Moved on here, inside the service, because the screen may well be off.
+            val next = SpeechSession.advance(request.key, heard = outcome.isSuccess)
+            when {
+                next != null -> start(next)
+                SpeechSession.state.value?.key == request.key -> stopAndRelease()
+            }
         }
     }
+
+    private fun skip() {
+        val key = SpeechSession.state.value?.key ?: return
+        job?.cancel()
+        speaker?.stop()
+        job = scope.launch {
+            val next = SpeechSession.advance(key, heard = false)
+            if (next != null) start(next) else stopAndRelease()
+        }
+    }
+
+    private fun nowPlaying(request: SpeechSession.Request, fraction: Float) = SpeechNowPlaying(request.key, request.title, fraction, playing = true, position = request.position, total = request.total)
 
     private fun publish(state: SpeechNowPlaying) {
         SpeechSession.publish(state)
         session.setPlaybackState(
             PlaybackStateCompat.Builder()
-                .setActions(PlaybackStateCompat.ACTION_STOP)
+                .setActions(PlaybackStateCompat.ACTION_STOP or if (inQueue) PlaybackStateCompat.ACTION_SKIP_TO_NEXT else 0L)
                 .setState(PlaybackStateCompat.STATE_PLAYING, PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN, 1f)
                 .build(),
         )
@@ -128,7 +162,7 @@ class SpeechPlaybackService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 
-        return NotificationCompat.Builder(this, ChannelId)
+        val builder = NotificationCompat.Builder(this, ChannelId)
             .setContentTitle(title)
             .setContentText("Reading aloud")
             .setSmallIcon(android.R.drawable.ic_btn_speak_now)
@@ -137,7 +171,18 @@ class SpeechPlaybackService : Service() {
             .setContentIntent(contentIntent())
             .setDeleteIntent(stopIntent)
             .addAction(NotificationCompat.Action(android.R.drawable.ic_media_pause, "Stop", stopIntent))
-            .setStyle(MediaStyle().setMediaSession(session.sessionToken).setShowActionsInCompactView(0))
+        if (!inQueue) {
+            return builder.setStyle(MediaStyle().setMediaSession(session.sessionToken).setShowActionsInCompactView(0)).build()
+        }
+        val nextIntent = PendingIntent.getService(
+            this,
+            1,
+            Intent(this, SpeechPlaybackService::class.java).setAction(ActionNext),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        return builder
+            .addAction(NotificationCompat.Action(android.R.drawable.ic_media_next, "Next", nextIntent))
+            .setStyle(MediaStyle().setMediaSession(session.sessionToken).setShowActionsInCompactView(0, 1))
             .build()
     }
 
@@ -177,9 +222,12 @@ class SpeechPlaybackService : Service() {
     companion object {
         const val ActionPlay = "dev.mks.duskread.speech.PLAY"
         const val ActionStop = "dev.mks.duskread.speech.STOP"
+        const val ActionNext = "dev.mks.duskread.speech.NEXT"
         const val ExtraKey = "key"
         const val ExtraTitle = "title"
         const val ExtraText = "text"
+        const val ExtraPosition = "position"
+        const val ExtraTotal = "total"
         private const val ChannelId = "speech_playback"
         private const val NotificationId = 1003
     }

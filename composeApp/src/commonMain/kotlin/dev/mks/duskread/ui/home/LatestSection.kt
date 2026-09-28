@@ -2,14 +2,17 @@ package dev.mks.duskread.ui.home
 
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -23,7 +26,9 @@ import dev.mks.duskread.ui.ReadingQueueEntry
 import dev.mks.duskread.ui.common.ArticleCard
 import dev.mks.duskread.ui.common.CompactEmptyState
 import dev.mks.duskread.ui.common.EyebrowHeader
+import dev.mks.duskread.ui.common.HeaderAction
 import dev.mks.duskread.ui.common.RowMeta
+import dev.mks.duskread.ui.theme.DuskReadIcons
 import dev.mks.duskread.ui.theme.Mono
 import dev.mks.duskread.ui.theme.Motion
 
@@ -38,6 +43,11 @@ fun LazyListScope.latestSection(
     bodies: Map<String, CardBody>,
     hasFeeds: Boolean,
     sync: FeedSyncState,
+    /** The card being read aloud, if a listen-through is on one. */
+    playingUrl: String?,
+    /** Starts the week reading aloud, or stops it; null where there is nothing to hear. */
+    onListen: (() -> Unit)?,
+    listening: Boolean,
     /** Read off Home's ticking clock, so "3d ago" moves while the screen is open. */
     now: Long,
     onOpen: (ReadingQueue) -> Unit,
@@ -50,12 +60,22 @@ fun LazyListScope.latestSection(
                 progress = sync.progress,
                 trailing = if (items.isNotEmpty() || sync.running) {
                     {
-                        Text(
-                            text = if (sync.running) sync.label else latestCountLabel(items),
-                            fontFamily = Mono,
-                            fontSize = 11.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = if (sync.running) sync.label else latestCountLabel(items),
+                                fontFamily = Mono,
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            onListen?.let {
+                                Spacer(Modifier.width(6.dp))
+                                HeaderAction(
+                                    icon = if (listening) DuskReadIcons.Close else DuskReadIcons.Play,
+                                    label = if (listening) "Stop listening" else "Listen to the week",
+                                    onClick = it,
+                                )
+                            }
+                        }
                     }
                 } else {
                     null
@@ -120,6 +140,7 @@ fun LazyListScope.latestSection(
                 body = body?.text ?: item.excerpt,
                 timeAgo = savedAgo(item.publishedAt, now),
                 read = item.read,
+                playing = item.url == playingUrl,
                 onClick = { onOpen(queue.at(index)) },
             ) {
                 RowMeta("${item.minutes} min")

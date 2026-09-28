@@ -1,5 +1,6 @@
 import ComposeApp
 import Foundation
+import MediaPlayer
 import Observation
 import SwiftUI
 
@@ -309,11 +310,25 @@ final class SpeechStore {
     private(set) var fraction: Double = 0
     private(set) var playing = false
     private(set) var note: String?
+    /// The article's URL, so Home can light the card being read.
+    private(set) var key: String?
+    /// Place in a listen-through; 0 for a single article.
+    private(set) var position = 0
+    private(set) var total = 0
+
+    var inQueue: Bool { total > 1 }
+
+    /// "2/4 · 43%" in a listen-through.
+    var label: String {
+        let percent = "\(Int(fraction * 100))%"
+        return inQueue ? "\(position)/\(total) · \(percent)" : percent
+    }
 
     @ObservationIgnored private let bridge: SpeakerBridge
 
     init(_ bridge: SpeakerBridge) {
         self.bridge = bridge
+        registerRemoteCommands()
     }
 
     var available: Bool { bridge.isReady() }
@@ -324,6 +339,9 @@ final class SpeechStore {
 
     func speak(title: String, url: String) {
         self.title = title
+        key = url
+        position = 0
+        total = 0
         fraction = 0
         playing = true
         note = nil
@@ -334,12 +352,81 @@ final class SpeechStore {
                 self?.fraction = Double(truncating: value)
             },
             onFinished: { [weak self] failure in
-                self?.playing = false
-                self?.title = nil
-                self?.fraction = 0
+                self?.clear()
                 self?.note = failure
             }
         )
+    }
+
+    /// Latest's unread posts, one after another.
+    func listenToTheWeek() {
+        note = nil
+        let started = bridge.listenToTheWeek(
+            now: Int64(Date().timeIntervalSince1970 * 1000),
+            onProgress: { [weak self] now in
+                guard let self else { return }
+                let moved = self.key != now.key
+                self.title = now.title
+                self.key = now.key
+                self.fraction = Double(now.fraction)
+                self.position = Int(now.position)
+                self.total = Int(now.total)
+                self.playing = true
+                if moved { self.publishNowPlaying() }
+            },
+            onFinished: { [weak self] in self?.clear() }
+        )
+        if !started { note = "Nothing unread this week" }
+    }
+
+    func skip() {
+        bridge.skip()
+        playing = true
+    }
+
+    private func clear() {
+        playing = false
+        title = nil
+        key = nil
+        position = 0
+        total = 0
+        fraction = 0
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
+    }
+
+    /// The lock screen's and headphones' controls, so a listen-through in a pocket can be
+    /// skipped or stopped without unlocking.
+    private func registerRemoteCommands() {
+        let center = MPRemoteCommandCenter.shared()
+        center.togglePlayPauseCommand.addTarget { [weak self] _ in
+            self?.togglePlayPause()
+            return .success
+        }
+        center.pauseCommand.addTarget { [weak self] _ in
+            guard let self, self.playing else { return .noActionableNowPlayingItem }
+            self.togglePlayPause()
+            return .success
+        }
+        center.playCommand.addTarget { [weak self] _ in
+            guard let self, !self.playing, self.title != nil else { return .noActionableNowPlayingItem }
+            self.togglePlayPause()
+            return .success
+        }
+        center.nextTrackCommand.addTarget { [weak self] _ in
+            guard let self, self.inQueue else { return .noActionableNowPlayingItem }
+            self.skip()
+            return .success
+        }
+    }
+
+    /// Only when the title changes: the lock screen needs the name, not every word.
+    private func publishNowPlaying() {
+        guard let title else { return }
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = [
+            MPMediaItemPropertyTitle: title,
+            MPMediaItemPropertyArtist: inQueue ? "Latest · \(position) of \(total)" : "DuskRead",
+        ]
+        MPRemoteCommandCenter.shared().nextTrackCommand.isEnabled = inQueue
     }
 
     func togglePlayPause() {
@@ -355,8 +442,6 @@ final class SpeechStore {
 
     func stop() {
         bridge.stop()
-        playing = false
-        title = nil
-        fraction = 0
+        clear()
     }
 }

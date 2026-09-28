@@ -100,6 +100,8 @@ data class NowPlaying(
     val wideLabel: String,
     /** False for a live read: there is nowhere to drag to, only somewhere it has already been. */
     val seekable: Boolean,
+    /** A listen-through with somewhere to go: the transport grows a next button. */
+    val skippable: Boolean = false,
 )
 
 /**
@@ -153,6 +155,7 @@ fun FloatingBar(
     onTogglePlay: () -> Unit,
     onSeek: (Float) -> Unit,
     onStop: () -> Unit,
+    onNext: () -> Unit,
     mono: Boolean,
     onToggleTheme: () -> Unit,
     onOpenSettings: () -> Unit,
@@ -257,6 +260,7 @@ fun FloatingBar(
                         onTogglePlay = onTogglePlay,
                         onSeek = onSeek,
                         onStop = onStop,
+                        onNext = onNext,
                         onShowTabs = { peekingTabs = true },
                         tabsAvailable = tabsAvailable,
                     )
@@ -350,6 +354,7 @@ private fun PlayerFace(
     /** A fraction, 0f–1f — not seconds. The caller knows what that means for whichever source is actually playing. */
     onSeek: (Float) -> Unit,
     onStop: () -> Unit,
+    onNext: () -> Unit,
     onShowTabs: () -> Unit,
     /** False where the tabs are behind a full-screen surface — see [FloatingBar]'s own parameter. */
     tabsAvailable: Boolean,
@@ -391,6 +396,9 @@ private fun PlayerFace(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.width(6.dp))
+        if (nowPlaying.skippable) {
+            BarButton(DuskReadIcons.SkipNext, "Next post", diameter = 34.dp, iconSize = 13.dp, onClick = onNext)
+        }
         BarButton(DuskReadIcons.Close, "Stop", diameter = 34.dp, iconSize = 13.dp, onClick = onStop)
         // The way back to navigation.
         if (tabsAvailable) {

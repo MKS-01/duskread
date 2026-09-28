@@ -75,6 +75,9 @@ object DuskReadIcons {
     /** Pause, for a focus session in progress — two bars, the same construction as [Waveform]. */
     val Pause: ImageVector by lazy { icon("Pause", IconPaths.Pause) }
 
+    /** On to the next post in a listen-through — [Play]'s triangle stopped against a bar. */
+    val SkipNext: ImageVector by lazy { icon("SkipNext", IconPaths.SkipNext) }
+
     /** Re-roll a random pick — two crossing paths, each ending in an arrow. */
     val Shuffle: ImageVector by lazy { icon("Shuffle", IconPaths.Shuffle) }
 

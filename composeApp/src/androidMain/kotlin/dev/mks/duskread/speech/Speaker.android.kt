@@ -128,11 +128,13 @@ internal class SystemSpeaker(context: Context) : Speaker {
 
                 @Deprecated("Required by the abstract class; the two-arg form below is what actually fires.")
                 override fun onError(utteranceId: String?) {
-                    close()
+                    close(IllegalStateException(EngineError))
                 }
 
+                // With a reason, not a plain close: a queue would take that for a post
+                // heard to its end and mark it read.
                 override fun onError(utteranceId: String?, errorCode: Int) {
-                    close()
+                    close(IllegalStateException(EngineError))
                 }
             },
         )
@@ -203,6 +205,7 @@ internal class SystemSpeaker(context: Context) : Speaker {
 
     private companion object {
         const val NoEngine = "This phone has no text-to-speech engine."
+        const val EngineError = "The voice engine stopped partway through."
 
         /**
          * Well under the platform's own cap.

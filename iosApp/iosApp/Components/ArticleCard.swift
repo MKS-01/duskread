@@ -1,8 +1,9 @@
 import ComposeApp
 import SwiftUI
 
-/// The bordered card Home's Latest section is built from: the same sourcechip, title and
-/// mono meta line as a row, with room between them for what the piece says.
+/// The bordered card Home's Latest section is built from: the same title and mono meta
+/// line as a row, with room between them for what the piece says. No sourcechip: the
+/// host line already names the blog, and a week from one blog repeated its letter.
 ///
 /// Every card is the same height closed, whatever the length of its title or text — a
 /// column of cards that each stop somewhere different reads as a mistake rather than as
@@ -18,6 +19,8 @@ struct ArticleCard: View {
     var meta: [RowMetaItem] = []
     /// A check by the date, not a fade: a read card is finished, not switched off.
     var read: Bool = false
+    /// Being read aloud right now — the one thing on Home allowed the accent.
+    var playing: Bool = false
     var onTap: () -> Void = {}
 
     @Environment(\.dusk) private var dusk
@@ -28,7 +31,6 @@ struct ArticleCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 10) {
-                MonogramBadge(host: host)
                 Text(host)
                     .dusk(.code)
                     .foregroundStyle(dusk.onSurfaceVariant)
@@ -52,7 +54,7 @@ struct ArticleCard: View {
 
             Text(title)
                 .dusk(.titleMedium)
-                .foregroundStyle(dusk.onSurface)
+                .foregroundStyle(playing ? dusk.primary : dusk.onSurface)
                 // Both, and equal: the second line is held open for a one-line title.
                 .lineLimit(Self.titleLines, reservesSpace: true)
                 .multilineTextAlignment(.leading)
@@ -100,8 +102,9 @@ struct ArticleCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .overlay(
             RoundedRectangle(cornerRadius: Radius.card)
-                .stroke(dusk.outlineVariant, lineWidth: Stroke.hairline)
+                .stroke(playing ? dusk.primary : dusk.outlineVariant, lineWidth: Stroke.hairline)
         )
+        .animation(Motion.ease(Motion.chip), value: playing)
         .contentShape(Rectangle())
         // The card's own tap opens the article; "more" is a button inside it and takes
         // its own tap first.

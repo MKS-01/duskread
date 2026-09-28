@@ -1,6 +1,7 @@
 package dev.mks.duskread.ui.common
 
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.border
@@ -37,8 +38,10 @@ import dev.mks.duskread.ui.theme.Radius
 import dev.mks.duskread.ui.theme.Stroke
 
 /**
- * The bordered card Home's Latest section is built from: the same sourcechip, title and
- * mono meta line as [ListRow], given room to also say what the piece is about.
+ * The bordered card Home's Latest section is built from: the same title and mono meta
+ * line as [ListRow], given room to also say what the piece is about. No sourcechip: the
+ * host line already names the blog, and a week from one blog repeated its letter down
+ * the column.
  *
  * Every card is the same height closed, whatever the length of its title or body — a
  * column of cards that each stop somewhere different reads as a mistake rather than as
@@ -57,9 +60,13 @@ fun ArticleCard(
     timeAgo: String? = null,
     /** A check by the date, not a fade: a read card is finished, not switched off. */
     read: Boolean = false,
+    /** Being read aloud right now — the one thing on Home allowed the accent. */
+    playing: Boolean = false,
     meta: @Composable RowScope.() -> Unit,
 ) {
     val scheme = MaterialTheme.colorScheme
+    val edge by animateColorAsState(if (playing) scheme.primary else scheme.outlineVariant, tween(Motion.Chip))
+    val titleColor by animateColorAsState(if (playing) scheme.primary else scheme.onSurface, tween(Motion.Chip))
 
     // Reset by the body it describes: a summary arriving where an excerpt was is a
     // different piece of text, and it has not been opened.
@@ -73,15 +80,13 @@ fun ArticleCard(
         modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(Radius.Card))
-            .border(Stroke.Hairline, scheme.outlineVariant, RoundedCornerShape(Radius.Card))
+            .border(Stroke.Hairline, edge, RoundedCornerShape(Radius.Card))
             .clickable(onClick = onClick)
             // The card grows under the reader's own finger, so the growth is shown.
             .animateContentSize(tween(Motion.Chip))
             .padding(CardPadding),
     ) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            MonogramBadge(host = host, size = ChipSize)
-            Spacer(Modifier.width(10.dp))
             RowMeta(host, modifier = Modifier.weight(1f))
             timeAgo?.let { RowMeta(it) }
             // Muted, never the accent: that is for what is playing, and a read post is not.
@@ -106,7 +111,7 @@ fun ArticleCard(
             minLines = TitleLines,
             maxLines = TitleLines,
             overflow = TextOverflow.Ellipsis,
-            color = scheme.onSurface,
+            color = titleColor,
         )
 
         Spacer(Modifier.height(9.dp))

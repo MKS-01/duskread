@@ -99,6 +99,12 @@ struct FloatingBar: View {
             .contentShape(Rectangle())
             .onTapGesture { peekingTabs = true }
 
+            if speech.inQueue {
+                Text("\(speech.position)/\(speech.total)")
+                    .dusk(.code)
+                    .foregroundStyle(dusk.onSurfaceVariant)
+                barButton(IconPaths.shared.SkipNext, active: false) { speech.skip() }
+            }
             barButton(IconPaths.shared.Close, active: false) { speech.stop() }
         }
         .padding(.leading, 2)
