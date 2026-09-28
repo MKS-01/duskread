@@ -216,30 +216,45 @@ struct DashboardScreen: View {
 
     private var focus: some View {
         VStack(alignment: .leading, spacing: 14) {
-            EyebrowHeader(label: "Focus") {
-                if !pomodoro.state.idle {
-                    Text(pomodoro.clockLabel)
-                        .dusk(.code)
-                        .foregroundStyle(dusk.primary)
-                }
-            }
+            EyebrowHeader(label: "Focus")
 
-            if pomodoro.state.idle {
-                HStack(spacing: Space.chipGap) {
-                    ForEach(pomodoro.pickableMinutes, id: \.self) { minutes in
-                        Pill(label: "\(minutes) min", active: false) {
-                            pomodoro.start(minutes)
-                            onOpenFocus()
+            // One strip, clock left and controls right, so the section costs a single
+            // line of height and the week below it starts higher.
+            HStack(spacing: 14) {
+                Text(focusClock)
+                    .font(.custom("Inconsolata-Medium", size: 26))
+                    .monospacedDigit()
+                    .foregroundStyle(focusClockTint)
+                Spacer(minLength: 0)
+                if pomodoro.state.idle {
+                    HStack(spacing: Space.chipGap) {
+                        ForEach(pomodoro.pickableMinutes, id: \.self) { minutes in
+                            Pill(label: "\(minutes) min", active: false) {
+                                pomodoro.start(minutes)
+                                onOpenFocus()
+                            }
                         }
                     }
-                }
-            } else {
-                HStack(spacing: 14) {
-                    WaveformMeter(progress: pomodoro.elapsedFraction, barCount: 18)
+                } else {
+                    WaveformMeter(progress: pomodoro.elapsedFraction, barCount: 22, height: 18)
                     Pill(label: "Open", active: true, onTap: onOpenFocus)
                 }
             }
+            .contentShape(Rectangle())
+            .onTapGesture { if !pomodoro.state.idle { onOpenFocus() } }
         }
+    }
+
+    /// Idle, the middle length stands in as what a start would count down from.
+    private var focusClock: String {
+        guard pomodoro.state.idle else { return pomodoro.clockLabel }
+        let lengths = pomodoro.pickableMinutes
+        return lengths.isEmpty ? "0:00" : "\(lengths[lengths.count / 2]):00"
+    }
+
+    private var focusClockTint: Color {
+        if pomodoro.state.idle { return dusk.onSurfaceVariant }
+        return pomodoro.state.running ? dusk.primary : dusk.onSurface
     }
 
     private func open(_ candidate: Candidate) {

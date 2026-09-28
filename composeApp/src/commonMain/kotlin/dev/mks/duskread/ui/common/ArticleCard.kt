@@ -38,8 +38,10 @@ import dev.mks.duskread.ui.theme.Radius
 import dev.mks.duskread.ui.theme.Stroke
 
 /**
- * The bordered card Home's Latest section is built from: the same sourcechip, title and
- * mono meta line as [ListRow], given room to also say what the piece is about.
+ * The bordered card Home's Latest section is built from: the same title and mono meta
+ * line as [ListRow], given room to also say what the piece is about. No sourcechip: the
+ * host line already names the blog, and a week from one blog repeated its letter down
+ * the column.
  *
  * Every card is the same height closed, whatever the length of its title or body — a
  * column of cards that each stop somewhere different reads as a mistake rather than as
@@ -85,8 +87,6 @@ fun ArticleCard(
             .padding(CardPadding),
     ) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            MonogramBadge(host = host, size = ChipSize)
-            Spacer(Modifier.width(10.dp))
             RowMeta(host, modifier = Modifier.weight(1f))
             timeAgo?.let { RowMeta(it) }
             // Muted, never the accent: that is for what is playing, and a read post is not.

@@ -1,8 +1,9 @@
 import ComposeApp
 import SwiftUI
 
-/// The bordered card Home's Latest section is built from: the same sourcechip, title and
-/// mono meta line as a row, with room between them for what the piece says.
+/// The bordered card Home's Latest section is built from: the same title and mono meta
+/// line as a row, with room between them for what the piece says. No sourcechip: the
+/// host line already names the blog, and a week from one blog repeated its letter.
 ///
 /// Every card is the same height closed, whatever the length of its title or text — a
 /// column of cards that each stop somewhere different reads as a mistake rather than as
@@ -30,7 +31,6 @@ struct ArticleCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 10) {
-                MonogramBadge(host: host)
                 Text(host)
                     .dusk(.code)
                     .foregroundStyle(dusk.onSurfaceVariant)
