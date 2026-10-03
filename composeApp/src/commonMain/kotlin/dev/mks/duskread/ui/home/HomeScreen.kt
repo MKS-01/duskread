@@ -17,11 +17,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -484,9 +486,13 @@ fun HomeScreen(
                 // The tabs are behind whatever is covering the bar.
                 tabsAvailable = !coveredByASurface,
                 collapse = collapse,
+                // BarInset from the physical edge, the nav bar counting towards it — the rule
+                // iOS already follows; stacking the two floated the bar up the screen.
                 modifier = Modifier
-                    .navigationBarsPadding()
-                    .padding(bottom = Layout.BarInset, start = 16.dp, end = 16.dp),
+                    .padding(
+                        bottom = maxOf(Layout.BarInset, WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()),
+                        start = 16.dp, end = 16.dp,
+                    ),
             )
         }
     }

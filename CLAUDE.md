@@ -198,8 +198,9 @@ implies a system that is not there.
 
 A token expressed as a distance from *system* furniture does not port by its
 number: Android's gesture inset is a few dp where iPhone's home-indicator safe
-area is about 34pt, so `BarInset` is applied on iOS as "at least this much
-from the bottom edge, safe area counting towards it". Pure values — radii,
+area is about 34pt, so `BarInset` is measured from the physical bottom edge
+on both — on Android a larger nav-bar inset wins, on iOS the bar sits inside
+the safe area, clear of the home indicator. Pure values — radii,
 stroke, gaps, durations — port as they are.
 
 ## The skills in `.claude/skills/`

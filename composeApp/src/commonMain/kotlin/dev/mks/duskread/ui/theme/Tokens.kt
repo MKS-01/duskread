@@ -39,7 +39,7 @@ object Layout {
     val BarHeight = DesignTokens.BarHeight.dp
 
     /**
-     * What the floating bar keeps between itself and the safe area.
+     * The floating bar's gap from the physical bottom edge; a larger system inset wins.
      */
     val BarInset = DesignTokens.BarInset.dp
 

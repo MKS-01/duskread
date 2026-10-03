@@ -40,17 +40,17 @@ struct DuskReadRootView: View {
 
     private func shell(_ theme: DuskTheme) -> some View {
         GeometryReader { proxy in
-            // `BarInset` is the gap the bar keeps from the system's own furniture, and it
-            // is sized for Android — where, under gesture navigation.
+            // `BarInset` is measured from the physical edge: 24pt clears the home indicator,
+            // where sitting on top of the 34pt safe area floated the bar up the screen.
             let systemInset = proxy.safeAreaInsets.bottom
-            let gap = max(0, Layout.barInset - systemInset)
+            let gap = Layout.barInset - systemInset
 
             ZStack(alignment: .bottom) {
                 tabContent
                     .safeAreaInset(edge: .bottom) {
                         // Constant clearance: the pill shrinks *within* the space it
                         // reserved rather than handing any of it back.
-                        Color.clear.frame(height: Layout.barHeight + gap)
+                        Color.clear.frame(height: max(0, Layout.barHeight + gap))
                     }
 
                 FloatingBar(
