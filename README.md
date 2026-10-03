@@ -7,7 +7,7 @@
 <p align="center">
   <strong>A reading list that keeps itself, ranked by what you actually read.</strong><br>
   An AI agent checks your inbox and files what's worth keeping into Notion;<br>
-  blogs you follow add their own posts the same way.
+  blogs you follow are read straight from their own feeds.
 </p>
 
 <p align="center">
@@ -19,18 +19,18 @@
 </p>
 
 <p align="center">
-  <a href="https://duskread.mksbrew.dev">See every screen</a> &nbsp;·&nbsp;
+  <a href="https://duskread.mksbrew.dev">See it</a> &nbsp;·&nbsp;
   <a href="docs/architecture.md">How it fits together</a> &nbsp;·&nbsp;
   <a href="#getting-started">Run it</a>
 </p>
 
-<p align="center"><sub>Monochrome by default. One accent, spent on purpose. Under 4 MB, after R8.</sub></p>
+<p align="center"><sub>Monochrome by default. One accent, spent on purpose. About 4 MB, after R8.</sub></p>
 
 ---
 
-Newsletters and blogs file themselves into one Notion database. Home opens on
-what they published this week and ranks everything else by what you actually
-read — then you set a twenty-five minute timer and read, on **Paper Black** or
+Newsletters, blogs and the links you save land in one reading list on the
+phone. Home opens on what they published this week and ranks everything else
+by what you actually read — then you set a twenty-five minute timer and read, on **Paper Black** or
 **Ink**, the same page with the colour drained out.
 
 ## What it does
@@ -39,14 +39,15 @@ read — then you set a twenty-five minute timer and read, on **Paper Black** or
   <img src="docs/media/notion-flow.png" alt="Three sources — Gmail, RSS feeds, and links you paste or share. Claude files the mail into Notion's Sources and Reading List, which syncs both ways with DuskRead; feeds and shared links reach the app directly, never touching Notion. The app caches everything, reads offline, and reads articles aloud on the phone">
 </p>
 
-- **Curated through Notion.** Claude files inbox newsletters straight into
-  the reading list; blogs with a working feed are fetched by the app and
-  never touch Notion. Either way, only rows ticked `Saved` reach the phone —
-  see [docs/architecture.md](docs/architecture.md) for the schema and sync
-  rules. Following a blog writes it back to Notion too, so it's there to edit
-  next time you open it.
-- **Save it however it reaches you** — the Chrome share sheet, or the paste
-  field on Saved behind **Add**.
+- **Notion curates, if you want it to.** Claude files inbox newsletters into
+  the reading list, and only rows ticked `Saved` reach the phone. Blogs with a
+  working feed are fetched straight from the source and never wait on Notion.
+  Saved links and followed blogs sync both ways in the background, and only
+  when something on either side changed — see
+  [docs/architecture.md](docs/architecture.md) for the schema and sync rules.
+  The app is complete without it.
+- **Save it however it reaches you** — any app's share sheet, the home-screen
+  widget, or the paste field on Saved behind **Add**.
 - **Home is the week.** New posts from the blogs you follow, each as a card
   carrying a line on what it says — the piece's own opening, or an on-device
   summary once there is one. Underneath, everything else ranked by what you
@@ -108,7 +109,9 @@ One `commonMain` source set holds the libraries, the ranking, the sync and the
 Compose UI itself, shared between Android and iOS; storage, audio, the
 summariser, the focus timer and the HTTP client are `expect`/`actual` pairs
 behind it, on [Kotlin](https://kotlinlang.org/) 2.3 and
-[Ktor](https://ktor.io/) 3.1.
+[Ktor](https://ktor.io/) 3.1. Feed posts and saved links live in on-device
+SQLite through [SQLDelight](https://sqldelight.github.io/sqldelight/) 2.4, a
+row each, so a save writes one row rather than the whole list.
 Android draws that Compose UI directly with
 [Compose Multiplatform](https://www.jetbrains.com/compose-multiplatform/) 1.11
 and [Haze](https://github.com/chrisbanes/haze) for the floating-bar blur; iOS
@@ -120,8 +123,8 @@ token layer rather than a second copy of them. Summaries run on-device via
 is Android's own `TextToSpeech`, and `AVSpeechSynthesizer` on iOS through the
 same shared `Flow<SpeechProgress>` contract; the optional Readback tab queries
 [readback](https://github.com/MKS-01/readback)'s `library.db` read-only,
-Android-only for now. No navigation library, no ViewModel, no DI, no
-database — a ceiling chosen on purpose.
+Android-only for now. No navigation library, no ViewModel, no DI — a ceiling
+chosen on purpose.
 
 <p align="center">
   <img src="docs/media/kmp-architecture.png" alt="commonMain holds the business logic (data, links, notion, pomodoro, reader, speech, summary), the Compose UI itself, and the design tokens. Android draws that Compose UI directly through platform actuals. iOS goes through iosMain/bridge/, which wraps AppGraph in an observable, Obj-C-safe layer, and iosApp draws its own SwiftUI from the same tokens">
@@ -135,10 +138,10 @@ database — a ceiling chosen on purpose.
 No tests yet — a build that succeeds is the start of checking a change, not
 the end of it.
 
-**[The design system](https://duskread.mksbrew.dev)** — Paper Black
-and Ink, and every token behind them.
+**[duskread.mksbrew.dev](https://duskread.mksbrew.dev)** — the app's own page:
+what it's for, and the screens in Paper Black.
 **[docs/architecture.md](docs/architecture.md)** — how the pieces connect,
-the Notion schema, and the end-to-end flows.
+the Notion schema, on-device storage and when a sync happens.
 
 ## Licence
 
