@@ -26,6 +26,9 @@ targets:
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         TARGETED_DEVICE_FAMILY: "1,2"
         ENABLE_PREVIEWS: YES
+        # The Kotlin framework is static, so SQLDelight's native driver cannot carry
+        # its own link to SQLite; the app links the system library for it.
+        OTHER_LDFLAGS: "$(inherited) -lsqlite3"
     preBuildScripts:
       - name: Compile Kotlin Framework
         script: |

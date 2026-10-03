@@ -6,6 +6,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.ProvidableCompositionLocal
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.remember
+import dev.mks.duskread.db.DuskReadDatabase
 import dev.mks.duskread.links.FeedLibrary
 import dev.mks.duskread.links.FeedPostCache
 import dev.mks.duskread.links.FeedSyncer
@@ -26,11 +27,12 @@ import io.ktor.client.HttpClient
 class AppGraph(
     private val store: KeyValueStore,
     secrets: SecretStore,
+    database: DuskReadDatabase,
 ) {
     val prefs = UserPrefs(store)
     val links = LinkLibrary(store)
     val feeds = FeedLibrary(store)
-    val feedPosts = FeedPostCache(store)
+    val feedPosts = FeedPostCache(store, database)
     val signals = ReadingSignals(store)
     val summaries = SummaryCache(store)
     val notionPrefs = NotionPrefs(store)
@@ -65,7 +67,8 @@ val LocalAppGraph: ProvidableCompositionLocal<AppGraph> =
 fun ProvideAppGraph(content: @Composable () -> Unit) {
     val store = rememberKeyValueStore()
     val secrets = rememberSecretStore()
-    val graph = remember(store, secrets) { AppGraph(store, secrets) }
+    val database = rememberDatabase()
+    val graph = remember(store, secrets, database) { AppGraph(store, secrets, database) }
     DisposableEffect(graph) { onDispose { graph.close() } }
     CompositionLocalProvider(LocalAppGraph provides graph, content = content)
 }

@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.composeMultiplatform) apply false
     alias(libs.plugins.kotlinMultiplatform) apply false
     alias(libs.plugins.ktlint) apply false
+    alias(libs.plugins.sqldelight) apply false
 }
 
 // ktlint is applied to every module from here so new modules get it for free.

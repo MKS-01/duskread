@@ -1,0 +1,26 @@
+-- One row per cached post. `position` keeps each feed's own order, which the
+-- in-memory map preserved and the screens rely on.
+CREATE TABLE feedPost (
+    feedId TEXT NOT NULL,
+    url TEXT NOT NULL,
+    title TEXT NOT NULL,
+    imageUrl TEXT,
+    content TEXT,
+    publishedAt INTEGER,
+    words INTEGER,
+    offline INTEGER NOT NULL DEFAULT 0,
+    position INTEGER NOT NULL,
+    PRIMARY KEY (feedId, url)
+);
+
+selectAll:
+SELECT * FROM feedPost ORDER BY feedId, position;
+
+insert:
+INSERT OR REPLACE INTO feedPost VALUES ?;
+
+deleteFeed:
+DELETE FROM feedPost WHERE feedId = ?;
+
+deleteAll:
+DELETE FROM feedPost;

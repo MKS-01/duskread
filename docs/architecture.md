@@ -227,7 +227,7 @@ than against the picks after it. Filtered afterwards, the section comes up
 short of the three it means to offer.
 
 Neither section reaches the network. Both read what the last sync left in
-`feeds.posts`; the next one runs when Home comes into view with a stale
+the `feedPost` table; the next one runs when Home comes into view with a stale
 cache, or when the reader pulls down — see [When a sync happens](#when-a-sync-happens).
 </details>
 
@@ -339,7 +339,10 @@ Type and direction (↕ / ↑ / —) for every property are in the diagram above
 
 ## On-device storage
 
-No database. `KeyValueStore` is a four-method interface over
+One SQLite table, the rest key-value. The feed post cache runs to megabytes,
+so it lives in `duskread.db` (SQLDelight, `commonMain/sqldelight/`) as one row
+per post, and a sync rewrites only the feeds that answered. Everything else
+is small and stays in `KeyValueStore`, a four-method interface over
 `SharedPreferences` / a `.properties` file / `NSUserDefaults` / `localStorage`.
 Every decoder is positional and tolerant — new fields are appended and read
 with `getOrNull`, so a record written by an older build still loads, with no
@@ -358,7 +361,7 @@ migrations.
 | `links.removed` | deleted addresses, so a pull cannot resurrect them (bounded, oldest evicted) |
 | `links.inbox` | URLs captured by the widget, drained on next app open |
 | `feeds.followed` | id, url, addedAt, title, topic |
-| `feeds.posts` | cached posts — feedId, url, title, imageUrl, content, publishedAt, words, offline |
+| `feeds.posts` | read once by a build that predates the `feedPost` table, imported into it, then cleared |
 | `signals.hosts` | reads / opens / skips per host |
 | `signals.topics` | reads per topic |
 | `signals.skipped` | per-URL skips, bounded |
@@ -381,7 +384,7 @@ in as their string form, because Kotlin's default `getBoolean` is written in
 terms of `getString` and a native `Bool` would make the two disagree silently.
 
 `summaries` is the one key another key's contents can empty. A summary
-describes an article, so when a sync rewrites `feeds.posts` — or a blog is
+describes an article, so when a sync rewrites a feed's rows — or a blog is
 unfollowed — the summaries left behind describe posts the app no longer
 lists, and `FeedSyncer` drops them on its way out. It is built with the
 library and the cache, so there is no way to run a feed sync that skips it.

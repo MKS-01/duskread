@@ -3,12 +3,13 @@ package dev.mks.duskread.bridge
 import dev.mks.duskread.data.AppGraph
 import dev.mks.duskread.data.KeyValueStore
 import dev.mks.duskread.data.SecretStore
+import dev.mks.duskread.data.duskReadDatabase
 
 /**
  * Everything the SwiftUI shell is allowed to touch, behind one root.
  */
 class DuskReadBridge(store: KeyValueStore, secrets: SecretStore) {
-    private val graph = AppGraph(store, secrets)
+    private val graph = AppGraph(store, secrets, duskReadDatabase())
 
     val links = LinksBridge(graph)
     val feeds = FeedsBridge(graph)

@@ -33,6 +33,7 @@ androidx-core = "1.15.0"
 androidx-documentfile = "1.0.1"
 androidx-media = "1.7.0"
 ktlint = "1.8.0"
+sqldelight = "2.4.0"
 ktlintGradle = "14.2.0"
 
 [libraries]
@@ -54,6 +55,9 @@ mlkit-genai-summarization = { module = "com.google.mlkit:genai-summarization", v
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
 ktor-client-darwin = { module = "io.ktor:ktor-client-darwin", version.ref = "ktor" }
+# SQLite on the device, for the one store too big for key-value: the feed post cache.
+sqldelight-android-driver = { module = "app.cash.sqldelight:android-driver", version.ref = "sqldelight" }
+sqldelight-native-driver = { module = "app.cash.sqldelight:native-driver", version.ref = "sqldelight" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
@@ -63,3 +67,4 @@ composeMultiplatform = { id = "org.jetbrains.compose", version.ref = "composeMul
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlintGradle" }
+sqldelight = { id = "app.cash.sqldelight", version.ref = "sqldelight" }

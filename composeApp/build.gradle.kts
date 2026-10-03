@@ -6,6 +6,15 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.kotlinSerialization)
+    alias(libs.plugins.sqldelight)
+}
+
+// The feed post cache, as rows: a sync writes only the feeds that answered, rather than
+// re-encoding megabytes into one preferences string.
+sqldelight {
+    databases {
+        create("DuskReadDatabase") { packageName.set("dev.mks.duskread.db") }
+    }
 }
 
 /**
@@ -111,10 +120,12 @@ kotlin {
             // only — every other target reports summaries as unavailable, so
             // there is nothing to add to their source sets.
             implementation(libs.mlkit.genai.summarization)
+            implementation(libs.sqldelight.android.driver)
         }
 
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
+            implementation(libs.sqldelight.native.driver)
         }
 
         commonTest.dependencies {

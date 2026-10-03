@@ -8,10 +8,12 @@ import dev.mks.duskread.data.KeyValueStore
 import dev.mks.duskread.data.LocalAppGraph
 import dev.mks.duskread.data.Observed
 import dev.mks.duskread.data.rememberKeyValueStore
+import dev.mks.duskread.db.DuskReadDatabase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
 import kotlin.time.Clock
+import dev.mks.duskread.db.FeedPost as FeedPostRow
 
 /**
  * One post as it appeared in a feed the last time that feed synced.
@@ -38,9 +40,13 @@ data class FeedPost(
 fun Map<String, List<FeedPost>>.postFor(url: String): FeedPost? = values.asSequence().flatten().firstOrNull { it.url == url }
 
 /**
- * What the last successful sync of each feed found, keyed by feed.
+ * What the last successful sync of each feed found, keyed by feed. Rows live in SQLite
+ * so a sync writes only the feeds that answered; the map is the in-memory read side.
  */
-class FeedPostCache(private val store: KeyValueStore) {
+class FeedPostCache(
+    private val store: KeyValueStore,
+    private val db: DuskReadDatabase,
+) {
     // Snapshot state and a StateFlow in one, so Compose and the iOS bridge read the same
     // value.
     private val observedPostsByFeed = Observed(load())
@@ -55,21 +61,14 @@ class FeedPostCache(private val store: KeyValueStore) {
     var syncedAt: Long? = store.getString(SyncedAtKey)?.toLongOrNull()
         private set
 
-    fun replace(feedId: String, posts: List<FeedPost>) {
-        postsByFeed = postsByFeed + (feedId to posts)
-        persist()
-    }
-
     /**
-     * Every feed that answered, in one write. Encoded on Default: the cache runs to
-     * megabytes, and building that string on Main is the hitch at the end of a sync.
+     * Every feed that answered, in one transaction on Default — only those feeds' rows are
+     * touched, where the old store re-encoded the whole cache.
      */
     suspend fun replaceAll(byFeed: Map<String, List<FeedPost>>) {
         if (byFeed.isEmpty()) return
-        val merged = postsByFeed + byFeed
-        val encoded = withContext(Dispatchers.Default) { encode(merged.values.flatten()) }
-        postsByFeed = merged
-        store.putString(Key, encoded.takeIf { it.isNotEmpty() })
+        withContext(Dispatchers.Default) { write(byFeed) }
+        postsByFeed = postsByFeed + byFeed
         syncedAt = Clock.System.now().toEpochMilliseconds()
         store.putString(SyncedAtKey, syncedAt.toString())
     }
@@ -79,7 +78,7 @@ class FeedPostCache(private val store: KeyValueStore) {
      */
     fun clear() {
         postsByFeed = emptyMap()
-        store.putString(Key, null)
+        db.feedPostQueries.deleteAll()
         syncedAt = null
         store.putString(SyncedAtKey, null)
     }
@@ -87,29 +86,32 @@ class FeedPostCache(private val store: KeyValueStore) {
     /** Drops a feed's cached posts once it's unfollowed — nothing should surface for a blog no longer synced. */
     fun removeFeed(feedId: String) {
         postsByFeed = postsByFeed - feedId
-        persist()
+        db.feedPostQueries.deleteFeed(feedId)
     }
 
-    private fun persist() = store.putString(Key, encode(postsByFeed.values.flatten()).takeIf { it.isNotEmpty() })
+    private fun write(byFeed: Map<String, List<FeedPost>>) = db.feedPostQueries.transaction {
+        byFeed.forEach { (feedId, posts) ->
+            db.feedPostQueries.deleteFeed(feedId)
+            posts.forEachIndexed { index, post -> db.feedPostQueries.insert(post.asRow(index)) }
+        }
+    }
 
-    private fun load(): Map<String, List<FeedPost>> = store.getString(Key)?.split(RecordSeparator)?.mapNotNull(::decode)?.groupBy { it.feedId }.orEmpty()
+    private fun load(): Map<String, List<FeedPost>> {
+        importLegacy()
+        return db.feedPostQueries.selectAll().executeAsList().map { it.asPost() }.groupBy { it.feedId }
+    }
 
-    private fun encode(posts: List<FeedPost>): String = posts.joinToString(RecordSeparator.toString()) { post ->
-        listOf(
-            post.feedId,
-            post.url,
-            post.title.clean(),
-            post.imageUrl.orEmpty(),
-            post.content.orEmpty().clean(),
-            post.publishedAt?.toString().orEmpty(),
-            post.words?.toString().orEmpty(),
-            if (post.offline) "1" else "0",
-        ).joinToString(FieldSeparator.toString())
+    /**
+     * Moves a cache written by an older build out of the key-value store, once. The string
+     * is dropped only after the rows are in, so a crash mid-import just repeats it.
+     */
+    private fun importLegacy() {
+        val legacy = store.getString(Key) ?: return
+        write(legacy.split(RecordSeparator).mapNotNull(::decode).groupBy { it.feedId })
+        store.putString(Key, null)
     }
 
     private fun decode(record: String): FeedPost? {
-        // Still three, not seven: records written before posts carried an image, a body,
-        // a date or a word count decode as they always did rather than being dropped.
         val fields = record.split(FieldSeparator)
         if (fields.size < 3) return null
 
@@ -125,15 +127,37 @@ class FeedPostCache(private val store: KeyValueStore) {
         )
     }
 
-    private fun String.clean() = filterNot { it == FieldSeparator || it == RecordSeparator }.trim()
-
     private companion object {
+        /** Where an older build kept the cache; read once by [importLegacy]. */
         const val Key = "feeds.posts"
         const val SyncedAtKey = "feeds.syncedAt"
-        const val FieldSeparator = ''
-        const val RecordSeparator = ''
+        const val FieldSeparator = '\u001F'
+        const val RecordSeparator = '\u001E'
     }
 }
+
+private fun FeedPost.asRow(position: Int) = FeedPostRow(
+    feedId = feedId,
+    url = url,
+    title = title,
+    imageUrl = imageUrl,
+    content = content,
+    publishedAt = publishedAt,
+    words = words?.toLong(),
+    offline = if (offline) 1L else 0L,
+    position = position.toLong(),
+)
+
+private fun FeedPostRow.asPost() = FeedPost(
+    feedId = feedId,
+    url = url,
+    title = title,
+    imageUrl = imageUrl,
+    content = content,
+    publishedAt = publishedAt,
+    words = words?.toInt(),
+    offline = offline == 1L,
+)
 
 @Composable
 fun rememberFeedPostCache(): FeedPostCache = LocalAppGraph.current.feedPosts

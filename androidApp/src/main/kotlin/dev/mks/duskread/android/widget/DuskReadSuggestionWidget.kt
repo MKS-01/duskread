@@ -9,6 +9,7 @@ import android.content.Intent
 import android.widget.RemoteViews
 import dev.mks.duskread.android.MainActivity
 import dev.mks.duskread.android.R
+import dev.mks.duskread.data.duskReadDatabase
 import dev.mks.duskread.data.keyValueStore
 import dev.mks.duskread.links.FeedLibrary
 import dev.mks.duskread.links.FeedPostCache
@@ -85,7 +86,7 @@ class DuskReadSuggestionWidget : AppWidgetProvider() {
             val store = keyValueStore(context)
             val links = LinkLibrary(store)
             val feeds = FeedLibrary(store)
-            val feedPosts = FeedPostCache(store)
+            val feedPosts = FeedPostCache(store, duskReadDatabase(context))
             val signals = ReadingSignals(store)
 
             // A fresh seed on every redraw, not the day-stable one NEXT UP
