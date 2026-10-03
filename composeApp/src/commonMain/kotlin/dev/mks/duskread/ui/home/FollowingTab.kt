@@ -15,6 +15,7 @@ import dev.mks.duskread.links.FeedLibrary
 import dev.mks.duskread.links.FeedPostCache
 import dev.mks.duskread.links.LinkLibrary
 import dev.mks.duskread.links.followingGroups
+import dev.mks.duskread.ui.common.rememberOffMain
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.launch
 import kotlin.time.Clock
@@ -36,7 +37,7 @@ fun FollowingTab(
     val feedSync = LocalAppGraph.current.feedSync
     val state = rememberFollowingState(feeds)
     val now = remember(feedPosts.postsByFeed) { Clock.System.now().toEpochMilliseconds() }
-    val groups = remember(feeds.feeds, feedPosts.postsByFeed, links.links, state.query, now) {
+    val groups = rememberOffMain(feeds.feeds, feedPosts.postsByFeed, links.links, state.query, now) {
         followingGroups(feeds.feeds, feedPosts, links, state.query, now)
     }
 

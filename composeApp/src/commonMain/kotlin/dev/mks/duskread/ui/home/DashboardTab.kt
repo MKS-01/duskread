@@ -60,6 +60,7 @@ import dev.mks.duskread.ui.common.EyebrowHeader
 import dev.mks.duskread.ui.common.ListRow
 import dev.mks.duskread.ui.common.RowMeta
 import dev.mks.duskread.ui.common.WaveformMeter
+import dev.mks.duskread.ui.common.rememberOffMain
 import dev.mks.duskread.ui.rememberArticleOpener
 import dev.mks.duskread.ui.theme.CodeStyle
 import dev.mks.duskread.ui.theme.DuskReadIcons
@@ -107,7 +108,7 @@ fun DashboardTab(
         }
         onPauseOrDispose { ticker.cancel() }
     }
-    val latest = remember(feedPosts.postsByFeed, feeds.feeds, links.links, now / LatestTickMs) {
+    val latest = rememberOffMain(feedPosts.postsByFeed, feeds.feeds, links.links, now / LatestTickMs) {
         latestPosts(feeds = feeds.feeds, cache = feedPosts, links = links, now = now)
     }
     val bodies = rememberCardBodies(latest, feedPosts)
@@ -324,7 +325,7 @@ private fun NextUpSection(
     var shuffles by remember { mutableStateOf(0) }
     val day = remember { (Clock.System.now().toEpochMilliseconds() / 86_400_000L).toInt() }
 
-    val ranked = remember(
+    val ranked = rememberOffMain(
         links.links,
         feedPosts.postsByFeed,
         feeds.feeds,
