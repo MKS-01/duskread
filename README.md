@@ -30,13 +30,13 @@
 
 Newsletters, blogs and the links you save land in one reading list on the
 phone. Home opens on what they published this week and ranks everything else
-by what you actually read — then you set a twenty-five minute timer and read, on **Paper Black** or
-**Ink**, the same page with the colour drained out.
+by what you actually read — then you set a twenty-five minute timer and read,
+on **Paper Black** or **Ink**, the same page with the colour drained out.
 
 ## What it does
 
 <p align="center">
-  <img src="docs/media/notion-flow.png" alt="Three sources — Gmail, RSS feeds, and links you paste or share. Claude files the mail into Notion's Sources and Reading List, which syncs both ways with DuskRead; feeds and shared links reach the app directly, never touching Notion. The app caches everything, reads offline, and reads articles aloud on the phone">
+  <img src="docs/media/notion-flow.png" alt="Three sources — Gmail, RSS feeds, and links you share, paste or capture with the widget. Claude files the mail into Notion's Sources and Reading List, which syncs both ways with DuskRead; feeds and shared links reach the app directly, never touching Notion. The app caches everything, reads offline, and reads articles aloud on the phone">
 </p>
 
 - **Notion curates, if you want it to.** Claude files inbox newsletters into
