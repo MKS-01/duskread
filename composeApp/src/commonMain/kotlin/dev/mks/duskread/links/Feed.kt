@@ -28,5 +28,6 @@ data class Feed(
      * `www.` / `feeds.` that say nothing about the blog.
      */
     val label: String
-        get() = title?.takeIf { it.isNotBlank() } ?: host.removePrefix("www.").removePrefix("feeds.")
+        // Unwrapped here too: names saved before the parser learned to strip CDATA.
+        get() = title?.withoutCdata()?.takeIf { it.isNotBlank() } ?: host.removePrefix("www.").removePrefix("feeds.")
 }

@@ -48,12 +48,15 @@ suspend fun fetchFeedDocument(client: HttpClient, url: String): FeedDocument {
  */
 fun parseFeedTitle(xml: String): String? {
     val head = xml.substringBefore("<item").substringBefore("<entry")
-    val title = FeedTitlePattern.find(head)?.groupValues?.get(1)?.tidy()?.takeIf { it.isNotBlank() } ?: return null
+    val title = FeedTitlePattern.find(head)?.groupValues?.get(1)?.withoutCdata()?.tidy()?.takeIf { it.isNotBlank() } ?: return null
     // "Ars Technica - All content", "Kotlin : A concise multiplatform language": the name
     // is what comes before the tagline.
     val name = FeedTitleSeparators.fold(title) { acc, sep -> acc.substringBefore(sep) }.trim()
     return name.takeIf { it.length >= 2 } ?: title
 }
+
+/** A CDATA wrapper the title pattern missed — it only expects one flush against the tag. */
+internal fun String.withoutCdata(): String = trim().removePrefix("<![CDATA[").removeSuffix("]]>")
 
 private val FeedTitleSeparators = listOf(" - ", " | ", " : ", " — ", " – ")
 

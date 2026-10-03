@@ -119,10 +119,11 @@ struct FollowingScreen: View {
             EyebrowHeader(label: "\(label) · \(rows.count)", tint: dusk.onSurfaceVariant)
                 .padding(.top, 18)
                 .padding(.bottom, 4)
-            // Browsing is a grid of blogs; a search is a list of posts, which a tile cannot
-            // show.
+            // Browsing is one row per blog; a search lists the matching posts under each.
             if query.isEmpty {
-                if label == "New" { bento(rows) } else { compactGrid(rows) }
+                ForEach(Array(rows.enumerated()), id: \.element.feed.id) { index, row in
+                    blogRow(row, last: index == rows.count - 1)
+                }
             } else {
                 ForEach(Array(rows.enumerated()), id: \.element.feed.id) { index, row in
                     feedRow(row, last: index == rows.count - 1)
@@ -131,124 +132,27 @@ struct FollowingScreen: View {
         }
     }
 
-    /// NEW, laid out unevenly on purpose: the most recent blog across the full width with
-    /// its two newest titles, then threes — one tall tile beside two small — flipping sides
-    /// each time, so a long run of tiles does not settle into a spreadsheet.
-    @ViewBuilder
-    private func bento(_ rows: [DigestRow]) -> some View {
-        if let lead = rows.first {
-            featuredTile(lead).padding(.bottom, Space.cardGap)
-        }
-        let rest = Array(rows.dropFirst())
-        let chunks = stride(from: 0, to: rest.count, by: 3).map { Array(rest[$0..<min($0 + 3, rest.count)]) }
-        ForEach(Array(chunks.enumerated()), id: \.element.first!.feed.id) { index, chunk in
-            HStack(alignment: .top, spacing: Space.cardGap) {
-                switch chunk.count {
-                case 3:
-                    let tall = tallTile(chunk[0])
-                    let pair = VStack(spacing: Space.cardGap) {
-                        smallTile(chunk[1])
-                        smallTile(chunk[2])
-                    }
-                    if index % 2 == 0 { tall; pair } else { pair; tall }
-                case 2:
-                    tallTile(chunk[0])
-                    tallTile(chunk[1])
-                default:
-                    smallTile(chunk[0])
-                }
-            }
-            .fixedSize(horizontal: false, vertical: true)
-            .padding(.bottom, Space.cardGap)
-        }
-    }
-
-    /// CAUGHT UP and NO POSTS YET: small tiles two across, since there is nothing to preview.
-    private func compactGrid(_ rows: [DigestRow]) -> some View {
-        let pairs = stride(from: 0, to: rows.count, by: 2).map { Array(rows[$0..<min($0 + 2, rows.count)]) }
-        return ForEach(pairs, id: \.first!.feed.id) { pair in
-            HStack(alignment: .top, spacing: Space.cardGap) {
-                ForEach(pair, id: \.feed.id) { row in smallTile(row) }
-                // An odd one out keeps half the width, not the whole row.
-                if pair.count == 1 { Color.clear.frame(maxWidth: .infinity) }
-            }
-            .fixedSize(horizontal: false, vertical: true)
-            .padding(.bottom, Space.cardGap)
-        }
-    }
-
-    private func featuredTile(_ row: DigestRow) -> some View {
-        tile(row) {
-            HStack(alignment: .firstTextBaseline, spacing: 10) {
-                tileName(row, lines: 1)
-                Spacer(minLength: 0)
-                tileMeta(row)
-            }
-            ForEach(Array(row.unsaved.prefix(2)), id: \.url) { post in
-                Text(post.title)
-                    .dusk(.titleMedium)
-                    .foregroundStyle(dusk.onSurface)
-                    .lineLimit(2)
-                    .padding(.top, 4)
-            }
-        }
-    }
-
-    private func tallTile(_ row: DigestRow) -> some View {
-        tile(row) {
-            tileName(row, lines: 2)
-            // Two, so a short first title does not leave the tall side half empty beside
-            // its stacked pair.
-            ForEach(Array(row.unsaved.prefix(2)), id: \.url) { post in
-                Text(post.title)
-                    .dusk(.bodyMedium)
-                    .foregroundStyle(dusk.onSurfaceVariant)
-                    .lineLimit(3)
-                    .padding(.top, 2)
-            }
-            Spacer(minLength: 12)
-            tileMeta(row)
-        }
-    }
-
-    private func smallTile(_ row: DigestRow) -> some View {
-        tile(row) {
-            tileName(row, lines: 2)
-            Spacer(minLength: 10)
-            tileMeta(row)
-        }
-    }
-
-    /// The bordered shape every tile shares — the article card's radius and hairline.
-    private func tile<Content: View>(_ row: DigestRow, @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 6, content: content)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 13)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .overlay(
-                RoundedRectangle(cornerRadius: Radius.card)
-                    .stroke(dusk.outlineVariant, lineWidth: Stroke.hairline)
-            )
-            .contentShape(RoundedRectangle(cornerRadius: Radius.card))
-            .onTapGesture { onOpenTopics(row.feed) }
-    }
-
-    private func tileName(_ row: DigestRow, lines: Int) -> some View {
-        // The feed's own name once a sync has read it, the host until then.
-        Text(row.feed.label)
-            .dusk(.titleSmall)
-            .foregroundStyle(row.newCount > 0 ? dusk.onSurface : dusk.onSurface.opacity(0.78))
-            .lineLimit(lines)
-    }
-
-    /// "3 new · 4h" or the last post's age, in grey — the accent stays for what is playing.
-    private func tileMeta(_ row: DigestRow) -> some View {
-        let fresh = row.newCount > 0
+    /// One followed blog: name, "3 new · 4h" in mono, and the newest unsaved title beneath.
+    /// Even height on purpose — a long list scans as rows, not a mosaic. Grey throughout;
+    /// the accent stays for what is playing.
+    private func blogRow(_ row: DigestRow, last: Bool) -> some View {
         let age = row.lastPostAt.map { feeds.shortAgo($0.int64Value) }
-        return Text(fresh ? "\(row.newCount) new · \(age ?? "—")" : (age ?? "no posts yet"))
-            .dusk(.code)
-            .fontWeight(fresh ? .semibold : .regular)
-            .foregroundStyle(fresh ? dusk.onSurface : dusk.onSurfaceVariant)
+        var meta: [RowMetaItem] = []
+        if row.newCount > 0 { meta.append(RowMetaItem(text: "\(row.newCount) new")) }
+        meta.append(RowMetaItem(text: age ?? "no posts yet"))
+        // The name, not the host: `feeds.arstechnica.com` would badge Ars Technica "F".
+        return ListRow(
+            host: row.feed.label,
+            title: row.feed.label,
+            meta: meta,
+            last: last,
+            titleLineLimit: 1,
+            note: row.unsaved.first?.title,
+            onTap: { onOpenTopics(row.feed) }
+        ) {
+            DuskIcon(path: IconPaths.shared.Chevron, size: 14, tint: dusk.onSurfaceVariant)
+                .padding(.top, 4)
+        }
     }
 
     /// One blog as a search result: its name, then "3 new" or how long since it last
