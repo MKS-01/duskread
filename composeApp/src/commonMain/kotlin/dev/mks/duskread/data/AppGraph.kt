@@ -30,7 +30,7 @@ class AppGraph(
     database: DuskReadDatabase,
 ) {
     val prefs = UserPrefs(store)
-    val links = LinkLibrary(store)
+    val links = LinkLibrary(store, database)
     val feeds = FeedLibrary(store)
     val feedPosts = FeedPostCache(store, database)
     val signals = ReadingSignals(store)

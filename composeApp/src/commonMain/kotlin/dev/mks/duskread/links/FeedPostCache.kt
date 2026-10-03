@@ -102,12 +102,14 @@ class FeedPostCache(
     }
 
     /**
-     * Moves a cache written by an older build out of the key-value store, once. The string
-     * is dropped only after the rows are in, so a crash mid-import just repeats it.
+     * Moves a cache written by an older build into an empty table. Never over rows: a
+     * removal lost to an early kill can bring the stale string back.
      */
     private fun importLegacy() {
         val legacy = store.getString(Key) ?: return
-        write(legacy.split(RecordSeparator).mapNotNull(::decode).groupBy { it.feedId })
+        if (db.feedPostQueries.count().executeAsOne() == 0L) {
+            write(legacy.split(RecordSeparator).mapNotNull(::decode).groupBy { it.feedId })
+        }
         store.putString(Key, null)
     }
 

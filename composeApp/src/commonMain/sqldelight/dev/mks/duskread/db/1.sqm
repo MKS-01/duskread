@@ -1,0 +1,19 @@
+-- Version 1 held only feedPost; version 2 adds the saved links and their tombstones.
+CREATE TABLE savedLink (
+    id TEXT NOT NULL PRIMARY KEY,
+    url TEXT NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT,
+    savedAt INTEGER NOT NULL,
+    readAt INTEGER,
+    fetched INTEGER NOT NULL DEFAULT 0,
+    fetchFailed INTEGER NOT NULL DEFAULT 0,
+    changedAt INTEGER NOT NULL,
+    topic TEXT,
+    seq INTEGER NOT NULL
+);
+
+CREATE TABLE removedLink (
+    url TEXT NOT NULL PRIMARY KEY,
+    removedAt INTEGER NOT NULL
+);

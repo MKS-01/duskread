@@ -24,3 +24,6 @@ DELETE FROM feedPost WHERE feedId = ?;
 
 deleteAll:
 DELETE FROM feedPost;
+
+count:
+SELECT count(*) FROM feedPost;

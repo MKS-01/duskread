@@ -1,0 +1,48 @@
+-- One row per saved link. `seq` only ever rises, so newest-first is a sort rather
+-- than a position every save would have to renumber.
+CREATE TABLE savedLink (
+    id TEXT NOT NULL PRIMARY KEY,
+    url TEXT NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT,
+    savedAt INTEGER NOT NULL,
+    readAt INTEGER,
+    fetched INTEGER NOT NULL DEFAULT 0,
+    fetchFailed INTEGER NOT NULL DEFAULT 0,
+    changedAt INTEGER NOT NULL,
+    topic TEXT,
+    seq INTEGER NOT NULL
+);
+
+selectAll:
+SELECT * FROM savedLink ORDER BY seq DESC;
+
+upsert:
+INSERT OR REPLACE INTO savedLink VALUES ?;
+
+deleteById:
+DELETE FROM savedLink WHERE id = ?;
+
+deleteAll:
+DELETE FROM savedLink;
+
+-- Addresses deleted on the phone, so a Notion pull cannot hand them back.
+CREATE TABLE removedLink (
+    url TEXT NOT NULL PRIMARY KEY,
+    removedAt INTEGER NOT NULL
+);
+
+selectRemoved:
+SELECT * FROM removedLink;
+
+upsertRemoved:
+INSERT OR REPLACE INTO removedLink VALUES (?, ?);
+
+trimRemoved:
+DELETE FROM removedLink WHERE url NOT IN (SELECT url FROM removedLink ORDER BY removedAt DESC LIMIT ?);
+
+deleteAllRemoved:
+DELETE FROM removedLink;
+
+count:
+SELECT count(*) FROM savedLink;

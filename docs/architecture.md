@@ -339,10 +339,12 @@ Type and direction (↕ / ↑ / —) for every property are in the diagram above
 
 ## On-device storage
 
-One SQLite table, the rest key-value. The feed post cache runs to megabytes,
-so it lives in `duskread.db` (SQLDelight, `commonMain/sqldelight/`) as one row
-per post, and a sync rewrites only the feeds that answered. Everything else
-is small and stays in `KeyValueStore`, a four-method interface over
+Lists in SQLite, the rest key-value. `duskread.db` (SQLDelight,
+`commonMain/sqldelight/`, migrations as `.sqm` beside the `.sq` files) holds
+`feedPost`, `savedLink` and `removedLink`: a sync rewrites only the feeds that
+answered, and a save or a tick writes one row. Each legacy string is imported
+once, into an empty table only — on iOS a removal lost to an early kill can
+bring the old string back. Everything else is small and stays in `KeyValueStore`, a four-method interface over
 `SharedPreferences` / a `.properties` file / `NSUserDefaults` / `localStorage`.
 Every decoder is positional and tolerant — new fields are appended and read
 with `getOrNull`, so a record written by an older build still loads, with no
@@ -357,8 +359,7 @@ migrations.
 
 | Key | Holds |
 | --- | --- |
-| `links.saved` | saved links — id, url, title, description, savedAt, readAt, fetched, fetchFailed, changedAt, topic |
-| `links.removed` | deleted addresses, so a pull cannot resurrect them (bounded, oldest evicted) |
+| `links.saved`, `links.removed` | read once by a build that predates the `savedLink` and `removedLink` tables, imported into them, then cleared |
 | `links.inbox` | URLs captured by the widget, drained on next app open |
 | `feeds.followed` | id, url, addedAt, title, topic |
 | `feeds.posts` | read once by a build that predates the `feedPost` table, imported into it, then cleared |

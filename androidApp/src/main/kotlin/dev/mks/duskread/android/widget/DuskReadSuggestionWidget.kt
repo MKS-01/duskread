@@ -84,7 +84,7 @@ class DuskReadSuggestionWidget : AppWidgetProvider() {
             views.setTextColor(R.id.suggestion_meta, palette.onSurfaceVariant)
 
             val store = keyValueStore(context)
-            val links = LinkLibrary(store)
+            val links = LinkLibrary(store, duskReadDatabase(context))
             val feeds = FeedLibrary(store)
             val feedPosts = FeedPostCache(store, duskReadDatabase(context))
             val signals = ReadingSignals(store)

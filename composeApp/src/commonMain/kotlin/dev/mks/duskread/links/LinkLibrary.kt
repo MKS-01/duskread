@@ -8,15 +8,26 @@ import dev.mks.duskread.data.KeyValueStore
 import dev.mks.duskread.data.LocalAppGraph
 import dev.mks.duskread.data.Observed
 import dev.mks.duskread.data.rememberKeyValueStore
+import dev.mks.duskread.db.DuskReadDatabase
 import kotlinx.coroutines.flow.StateFlow
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
+import dev.mks.duskread.db.SavedLink as SavedLinkRow
 
 /**
- * The saved links, newest first, persisted through [KeyValueStore].
+ * The saved links, newest first, one SQLite row each — a save or a tick writes one row,
+ * not the whole list.
  */
 @OptIn(ExperimentalTime::class)
-class LinkLibrary(private val store: KeyValueStore) {
+class LinkLibrary(
+    private val store: KeyValueStore,
+    private val db: DuskReadDatabase,
+) {
+    // Each row's sort key and what was last written, so [persist] can write only the
+    // difference. Declared first: [load] fills them.
+    private val seqById = HashMap<String, Long>()
+    private var written: Map<String, SavedLink> = emptyMap()
+
     // Snapshot state and a StateFlow in one, so Compose and the iOS bridge read the same
     // value.
     private val observedLinks = Observed(load())
@@ -151,8 +162,12 @@ class LinkLibrary(private val store: KeyValueStore) {
     fun clear() {
         links = emptyList()
         removedUrls = emptyMap()
-        store.putString(Key, null)
-        store.putString(RemovedKey, null)
+        db.savedLinkQueries.transaction {
+            db.savedLinkQueries.deleteAll()
+            db.savedLinkQueries.deleteAllRemoved()
+        }
+        seqById.clear()
+        written = emptyMap()
     }
 
     /**
@@ -214,37 +229,72 @@ class LinkLibrary(private val store: KeyValueStore) {
         } else {
             current.entries.sortedByDescending { it.value }.take(MaxRemembered).associate { it.key to it.value }
         }
-        store.putString(RemovedKey, encodeRemoved(removedUrls).takeIf { it.isNotEmpty() })
+        db.savedLinkQueries.transaction {
+            db.savedLinkQueries.upsertRemoved(url, now)
+            db.savedLinkQueries.trimRemoved(MaxRemembered.toLong())
+        }
     }
 
-    private fun loadRemoved(): Map<String, Long> = store.getString(RemovedKey)?.split(RecordSeparator)?.mapNotNull { record ->
-        val fields = record.split(FieldSeparator)
-        val url = fields.getOrNull(0)?.ifBlank { null } ?: return@mapNotNull null
-        val at = fields.getOrNull(1)?.toLongOrNull() ?: return@mapNotNull null
-        url to at
-    }?.toMap().orEmpty()
+    private fun loadRemoved(): Map<String, Long> = db.savedLinkQueries.selectRemoved().executeAsList().associate { it.url to it.removedAt }
 
-    private fun encodeRemoved(urls: Map<String, Long>): String = urls.entries.joinToString(RecordSeparator.toString()) { (url, at) ->
-        listOf(url.clean(), at.toString()).joinToString(FieldSeparator.toString())
+    /**
+     * Writes only the rows that differ from the last write. A new link takes the next
+     * [seqById] value, handed out oldest-first so a batch keeps its on-screen order.
+     */
+    private fun persist() {
+        val current = links
+        val ids = current.mapTo(HashSet()) { it.id }
+        val gone = written.keys.filterNot { it in ids }
+        val changed = current.filter { written[it.id] != it }
+        if (gone.isEmpty() && changed.isEmpty()) return
+
+        var next = (seqById.values.maxOrNull() ?: 0L) + 1
+        changed.asReversed().forEach { link -> if (link.id !in seqById) seqById[link.id] = next++ }
+        db.savedLinkQueries.transaction {
+            gone.forEach { id ->
+                db.savedLinkQueries.deleteById(id)
+                seqById.remove(id)
+            }
+            changed.forEach { link -> db.savedLinkQueries.upsert(link.asRow(seqById.getValue(link.id))) }
+        }
+        written = current.associateBy { it.id }
     }
 
-    private fun persist() = store.putString(Key, encode(links).takeIf { it.isNotEmpty() })
+    private fun load(): List<SavedLink> {
+        importLegacy()
+        val rows = db.savedLinkQueries.selectAll().executeAsList()
+        rows.forEach { seqById[it.id] = it.seq }
+        return rows.map { it.asLink() }.also { loaded -> written = loaded.associateBy { it.id } }
+    }
 
-    private fun load(): List<SavedLink> = store.getString(Key)?.split(RecordSeparator)?.mapNotNull(::decode).orEmpty()
-
-    private fun encode(links: List<SavedLink>): String = links.joinToString(RecordSeparator.toString()) { link ->
-        listOf(
-            link.id,
-            link.url,
-            link.title,
-            link.description.orEmpty(),
-            link.savedAt.toString(),
-            link.readAt?.toString().orEmpty(),
-            if (link.fetched) "1" else "0",
-            if (link.fetchFailed) "1" else "0",
-            link.changedAt.toString(),
-            link.topic.orEmpty(),
-        ).joinToString(FieldSeparator.toString())
+    /**
+     * Moves an older build's two strings into empty tables. Never over rows: a removal
+     * lost to an early kill can bring a stale string back.
+     */
+    private fun importLegacy() {
+        val empty = db.savedLinkQueries.count().executeAsOne() == 0L
+        store.getString(Key)?.let { legacy ->
+            if (empty) {
+                val links = legacy.split(RecordSeparator).mapNotNull(::decode).distinctBy { it.id }
+                db.savedLinkQueries.transaction {
+                    links.forEachIndexed { index, link -> db.savedLinkQueries.upsert(link.asRow((links.size - index).toLong())) }
+                }
+            }
+            store.putString(Key, null)
+        }
+        store.getString(RemovedKey)?.let { legacy ->
+            if (empty) {
+                db.savedLinkQueries.transaction {
+                    legacy.split(RecordSeparator).forEach { record ->
+                        val fields = record.split(FieldSeparator)
+                        val url = fields.getOrNull(0)?.ifBlank { null } ?: return@forEach
+                        val at = fields.getOrNull(1)?.toLongOrNull() ?: return@forEach
+                        db.savedLinkQueries.upsertRemoved(url, at)
+                    }
+                }
+            }
+            store.putString(RemovedKey, null)
+        }
     }
 
     // Anything malformed is dropped rather than throwing: a corrupt row should cost one
@@ -275,6 +325,7 @@ class LinkLibrary(private val store: KeyValueStore) {
     private fun String.clean() = filterNot { it == FieldSeparator || it == RecordSeparator }.trim()
 
     private companion object {
+        /** Where an older build kept both lists; read once by [importLegacy]. */
         const val Key = "links.saved"
         const val RemovedKey = "links.removed"
 
@@ -284,6 +335,33 @@ class LinkLibrary(private val store: KeyValueStore) {
         const val RecordSeparator = ''
     }
 }
+
+private fun SavedLink.asRow(seq: Long) = SavedLinkRow(
+    id = id,
+    url = url,
+    title = title,
+    description = description,
+    savedAt = savedAt,
+    readAt = readAt,
+    fetched = if (fetched) 1L else 0L,
+    fetchFailed = if (fetchFailed) 1L else 0L,
+    changedAt = changedAt,
+    topic = topic,
+    seq = seq,
+)
+
+private fun SavedLinkRow.asLink() = SavedLink(
+    id = id,
+    url = url,
+    title = title,
+    description = description,
+    savedAt = savedAt,
+    readAt = readAt,
+    fetched = fetched == 1L,
+    fetchFailed = fetchFailed == 1L,
+    changedAt = changedAt,
+    topic = topic,
+)
 
 @Composable
 fun rememberLinkLibrary(): LinkLibrary = LocalAppGraph.current.links
