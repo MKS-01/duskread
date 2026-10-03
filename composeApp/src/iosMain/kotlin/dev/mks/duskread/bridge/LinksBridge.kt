@@ -27,8 +27,6 @@ class LinksBridge internal constructor(private val graph: AppGraph) {
 
     fun retryFetch(id: String) = library.retryFetch(id)
 
-    fun refreshAll() = library.refreshAll()
-
     fun clear() = library.clear()
 
     /**

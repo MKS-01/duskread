@@ -31,8 +31,8 @@ private class AndroidStore(
 }
 
 /**
- * Keys whose values run to megabytes. SharedPreferences rewrites its whole file on every
- * write, so keeping these apart stops a tap on "read" from rewriting the feed cache.
+ * Where an older build kept the multi-megabyte feed cache, apart from small prefs; read
+ * once now, for the import into SQLite (`FeedPostCache.importLegacy`).
  */
 private val BulkKeys = setOf("feeds.posts")
 

@@ -203,7 +203,7 @@ struct FollowingScreen: View {
                         .foregroundStyle(dusk.onSurfaceVariant)
                 } else {
                     ForEach(posts, id: \.url) { post in
-                        postRow(post, host: feed.host)
+                        postRow(post)
                     }
                     HStack(spacing: 6) {
                         Text("All \(row.posts.count) posts")
@@ -222,7 +222,7 @@ struct FollowingScreen: View {
         }
     }
 
-    private func postRow(_ post: FeedPost, host: String) -> some View {
+    private func postRow(_ post: FeedPost) -> some View {
         ListRow(
             title: post.title,
             meta: post.offline ? [RowMetaItem(text: "offline")] : [],
