@@ -119,10 +119,16 @@ struct FollowingScreen: View {
             EyebrowHeader(label: "\(label) · \(rows.count)", tint: dusk.onSurfaceVariant)
                 .padding(.top, 18)
                 .padding(.bottom, 4)
-            // Browsing is one row per blog; a search lists the matching posts under each.
+            // Browsing is an even grid of blogs; a search lists the matching posts under each.
             if query.isEmpty {
-                ForEach(Array(rows.enumerated()), id: \.element.feed.id) { index, row in
-                    blogRow(row, last: index == rows.count - 1)
+                let pairs = stride(from: 0, to: rows.count, by: 2).map { Array(rows[$0..<min($0 + 2, rows.count)]) }
+                ForEach(pairs, id: \.first!.feed.id) { pair in
+                    HStack(spacing: Space.cardGap) {
+                        ForEach(pair, id: \.feed.id) { row in blogTile(row) }
+                        // An odd one out keeps half the width, not the whole row.
+                        if pair.count == 1 { Color.clear.frame(maxWidth: .infinity) }
+                    }
+                    .padding(.bottom, Space.cardGap)
                 }
             } else {
                 ForEach(Array(rows.enumerated()), id: \.element.feed.id) { index, row in
@@ -132,27 +138,38 @@ struct FollowingScreen: View {
         }
     }
 
-    /// One followed blog: name, "3 new · 4h" in mono, and the newest unsaved title beneath.
-    /// Even height on purpose — a long list scans as rows, not a mosaic. Grey throughout;
-    /// the accent stays for what is playing.
-    private func blogRow(_ row: DigestRow, last: Bool) -> some View {
+    /// One followed blog as a fixed-height tile: badge, short name, and "3 new · 4h". No
+    /// post titles — the tile says which blog moved; opening it shows what.
+    private func blogTile(_ row: DigestRow) -> some View {
+        let fresh = row.newCount > 0
         let age = row.lastPostAt.map { feeds.shortAgo($0.int64Value) }
-        var meta: [RowMetaItem] = []
-        if row.newCount > 0 { meta.append(RowMetaItem(text: "\(row.newCount) new")) }
-        meta.append(RowMetaItem(text: age ?? "no posts yet"))
-        // The name, not the host: `feeds.arstechnica.com` would badge Ars Technica "F".
-        return ListRow(
-            host: row.feed.label,
-            title: row.feed.label,
-            meta: meta,
-            last: last,
-            titleLineLimit: 1,
-            note: row.unsaved.first?.title,
-            onTap: { onOpenTopics(row.feed) }
-        ) {
-            DuskIcon(path: IconPaths.shared.Chevron, size: 14, tint: dusk.onSurfaceVariant)
-                .padding(.top, 4)
+        return VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 10) {
+                // The short name, not the host: `feeds.arstechnica.com` would badge Ars "F".
+                MonogramBadge(host: row.feed.shortLabel)
+                Text(row.feed.shortLabel)
+                    .dusk(.titleSmall)
+                    .foregroundStyle(fresh ? dusk.onSurface : dusk.onSurface.opacity(0.78))
+                    .lineLimit(1)
+            }
+            Spacer(minLength: 0)
+            // Grey, not the accent: the accent stays for what is playing.
+            HStack(spacing: 10) {
+                if fresh { Text("\(row.newCount) new").dusk(.code) }
+                Text(age ?? "no posts yet").dusk(.code)
+            }
+            .foregroundStyle(dusk.onSurfaceVariant)
         }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 13)
+        // Fixed, so every tile is the same size whatever its blog is called.
+        .frame(maxWidth: .infinity, minHeight: 84, maxHeight: 84, alignment: .topLeading)
+        .overlay(
+            RoundedRectangle(cornerRadius: Radius.card)
+                .stroke(dusk.outlineVariant, lineWidth: Stroke.hairline)
+        )
+        .contentShape(RoundedRectangle(cornerRadius: Radius.card))
+        .onTapGesture { onOpenTopics(row.feed) }
     }
 
     /// One blog as a search result: its name, then "3 new" or how long since it last

@@ -67,6 +67,7 @@ import dev.mks.duskread.ui.common.EyebrowHeader
 import dev.mks.duskread.ui.common.HairlineDivider
 import dev.mks.duskread.ui.common.HeaderAction
 import dev.mks.duskread.ui.common.ListRow
+import dev.mks.duskread.ui.common.MonogramBadge
 import dev.mks.duskread.ui.common.RowMeta
 import dev.mks.duskread.ui.theme.DuskReadIcons
 import dev.mks.duskread.ui.theme.Mono
@@ -236,10 +237,17 @@ private fun LazyListScope.group(
             modifier = Modifier.animateItem().padding(top = 18.dp, bottom = 4.dp),
         )
     }
-    // Browsing is one row per blog; a search lists the matching posts under each.
+    // Browsing is an even grid of blogs; a search lists the matching posts under each.
     if (state.query.isBlank()) {
-        itemsIndexed(rows, key = { _, row -> row.feed.id }) { index, row ->
-            BlogRow(row, now, last = index == rows.lastIndex, modifier = Modifier.animateItem()) { onOpenTopics(row.feed) }
+        items(rows.chunked(2), key = { pair -> pair.joinToString("+") { it.feed.id } }) { pair ->
+            Row(
+                Modifier.animateItem().fillMaxWidth().padding(bottom = Space.CardGap),
+                horizontalArrangement = Arrangement.spacedBy(Space.CardGap),
+            ) {
+                pair.forEach { row -> BlogTile(row, now, Modifier.weight(1f)) { onOpenTopics(row.feed) } }
+                // An odd one out keeps half the width, not the whole row.
+                if (pair.size == 1) Spacer(Modifier.weight(1f))
+            }
         }
         return
     }
@@ -261,52 +269,48 @@ private fun LazyListScope.group(
 }
 
 /**
- * One followed blog: name, "3 new · 4h" in mono, and the newest unsaved title beneath.
- * Even height on purpose — a long list scans as rows, not a mosaic.
+ * One followed blog as a fixed-height tile: badge, short name, and "3 new · 4h". No post
+ * titles — the tile says which blog moved; opening it shows what.
  */
 @Composable
-private fun BlogRow(row: DigestRow, now: Long, last: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
+private fun BlogTile(row: DigestRow, now: Long, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    val scheme = MaterialTheme.colorScheme
+    val shape = RoundedCornerShape(Radius.Card)
+    val fresh = row.newCount > 0
     val age = row.lastPostAt?.let { shortAgo(it, now) }
-    val preview = row.unsaved.firstOrNull()?.title
-    ListRow(
-        // The name, not the host: `feeds.arstechnica.com` would badge Ars Technica "F".
-        host = row.feed.label,
-        // The feed's own name once a sync has read it, the host until then — see
-        // Feed.label.
-        title = row.feed.label,
-        last = last,
-        onClick = onClick,
-        modifier = modifier,
-        titleMaxLines = 1,
-        trailing = {
-            Icon(
-                imageVector = DuskReadIcons.Chevron,
-                contentDescription = "All posts",
-                modifier = Modifier.padding(top = 4.dp).size(11.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        },
-        content = preview?.let { title ->
-            {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontSize = 13.sp,
-                    lineHeight = 18.sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    // Under the name, not the chip.
-                    modifier = Modifier.padding(start = ChipSize + 10.dp, top = 6.dp),
-                )
-            }
-        },
+    Column(
+        modifier
+            .height(TileHeight)
+            .clip(shape)
+            .border(Stroke.Hairline, scheme.outlineVariant, shape)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 13.dp),
     ) {
-        // Grey, not the accent: the accent stays for what is playing.
-        if (row.newCount > 0) RowMeta("${row.newCount} new")
-        RowMeta(age ?: "no posts yet")
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            // The short name, not the host: `feeds.arstechnica.com` would badge Ars "F".
+            MonogramBadge(host = row.feed.shortLabel, size = ChipSize)
+            Spacer(Modifier.width(10.dp))
+            Text(
+                text = row.feed.shortLabel,
+                style = MaterialTheme.typography.bodyLarge,
+                fontSize = 14.5.sp,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                color = if (fresh) scheme.onSurface else scheme.onSurface.copy(alpha = 0.78f),
+            )
+        }
+        Spacer(Modifier.weight(1f))
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            // Grey, not the accent: the accent stays for what is playing.
+            if (fresh) RowMeta("${row.newCount} new")
+            RowMeta(age ?: "no posts yet")
+        }
     }
 }
+
+// Fixed, so every tile in the grid is the same size whatever its blog is called.
+private val TileHeight = 84.dp
 
 /**
  * One blog as a search result: its name, then "3 new" or how long since it last posted.

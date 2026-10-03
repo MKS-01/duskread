@@ -30,4 +30,25 @@ data class Feed(
     val label: String
         // Unwrapped here too: names saved before the parser learned to strip CDATA.
         get() = title?.withoutCdata()?.takeIf { it.isNotBlank() } ?: host.removePrefix("www.").removePrefix("feeds.")
+
+    /**
+     * The name a grid tile has room for: "Android" for "Android Developers Blog",
+     * "Spotify" for "Spotify Engineering". Falls back to [label] rather than to nothing.
+     */
+    val shortLabel: String
+        get() {
+            var name = label.substringBefore(" — ").substringBefore(" – ").substringBefore(" | ")
+                .substringBefore(" - ").substringBefore(": ").trim()
+            name = name.removePrefix("Articles on ").removePrefix("The blog of ").trim()
+            while (true) {
+                val trimmed = ShortLabelSuffixes.fold(name) { acc, word -> acc.removeSuffix(" $word") }
+                    .removeSuffix("’s").removeSuffix("'s").trim()
+                if (trimmed == name || trimmed.isEmpty()) break
+                name = trimmed
+            }
+            return name.ifEmpty { label }
+        }
 }
+
+// Words that describe the kind of site rather than which one it is.
+private val ShortLabelSuffixes = listOf("Blog", "blog", "Weblog", "Engineering", "Developers", "Developer", "News", "Feed")

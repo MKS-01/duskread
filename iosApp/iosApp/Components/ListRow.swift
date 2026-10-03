@@ -9,8 +9,6 @@ struct ListRow<Trailing: View>: View {
     var tone: RowTone = .normal
     var last: Bool = false
     var titleLineLimit: Int = 2
-    /// One muted line under the meta — Following's newest unsaved title.
-    var note: String? = nil
     var onTap: () -> Void = {}
     @ViewBuilder var trailing: () -> Trailing
 
@@ -40,12 +38,6 @@ struct ListRow<Trailing: View>: View {
                                     }
                                 }
                             }
-                            if let note {
-                                Text(note)
-                                    .dusk(.bodyMedium)
-                                    .foregroundStyle(dusk.onSurfaceVariant)
-                                    .lineLimit(1)
-                            }
                         }
                         Spacer(minLength: 8)
                     }
@@ -66,9 +58,9 @@ struct ListRow<Trailing: View>: View {
 
 extension ListRow where Trailing == EmptyView {
     init(host: String, title: String, meta: [RowMetaItem] = [], tone: RowTone = .normal,
-         last: Bool = false, titleLineLimit: Int = 2, note: String? = nil, onTap: @escaping () -> Void = {}) {
+         last: Bool = false, titleLineLimit: Int = 2, onTap: @escaping () -> Void = {}) {
         self.init(host: host, title: title, meta: meta, tone: tone, last: last,
-                  titleLineLimit: titleLineLimit, note: note, onTap: onTap) { EmptyView() }
+                  titleLineLimit: titleLineLimit, onTap: onTap) { EmptyView() }
     }
 }
 
