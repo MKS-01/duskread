@@ -86,10 +86,10 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.webkit.WebSettingsCompat
 import androidx.webkit.WebViewFeature
+import dev.mks.duskread.data.LocalAppGraph
 import dev.mks.duskread.links.Article
 import dev.mks.duskread.links.ReaderPalette
 import dev.mks.duskread.links.articleDocument
-import dev.mks.duskread.links.createHttpClient
 import dev.mks.duskread.links.loadArticle
 import dev.mks.duskread.links.postFor
 import dev.mks.duskread.links.rememberFeedPostCache
@@ -124,7 +124,9 @@ private enum class PanelIntent { Summary, ReadAloud }
 @Composable
 fun InAppBrowserScreen(queue: ReadingQueue, mono: Boolean, onClose: () -> Unit, modifier: Modifier = Modifier) {
     val context = LocalContext.current
-    val client = remember { createHttpClient() }
+    // The graph's client: one built per open was a fresh connection pool and TLS
+    // handshake every time, and never closed.
+    val client = LocalAppGraph.current.http
     val feedPosts = rememberFeedPostCache().postsByFeed
 
     // Where in the queue the reader has got to.
@@ -188,7 +190,7 @@ fun InAppBrowserScreen(queue: ReadingQueue, mono: Boolean, onClose: () -> Unit, 
 
     // A post opened from a followed feed often needs no request at all: the feed itself
     // carried the publisher's own markup for it, already clean.
-    val cached = feedPosts.postFor(url)
+    val cached = remember(url, feedPosts) { feedPosts.postFor(url) }
     LaunchedEffect(url) {
         // The hand reset the comment above owes: this is a different article now.
         title = entry.host ?: hostOf(url)

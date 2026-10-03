@@ -5,6 +5,8 @@ import android.content.Intent
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
+import android.os.Looper
+import android.webkit.WebSettings
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
@@ -54,6 +56,13 @@ class MainActivity : ComponentActivity() {
 
         handleIntent(intent)
         setContent { App() }
+
+        // Loading Chromium into the process is ~0.5s on the main thread, paid by whichever
+        // WebView comes first. Paid here once the launch has settled, not on the first tap.
+        Looper.myQueue().addIdleHandler {
+            runCatching { WebSettings.getDefaultUserAgent(this) }
+            false
+        }
     }
 
     /**

@@ -5,6 +5,8 @@ import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpHeaders
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * A page reduced to the part worth reading: headline, lead image, body — with the
@@ -26,7 +28,7 @@ suspend fun loadArticle(
     url: String,
     feedTitle: String? = null,
     feedContent: String? = null,
-): Article? = articleFromFeed(url, feedTitle, feedContent) ?: fetchArticle(client, url)
+): Article? = withContext(Dispatchers.Default) { articleFromFeed(url, feedTitle, feedContent) } ?: fetchArticle(client, url)
 
 /** The feed's own copy of the post, if the feed carried the whole thing. */
 fun articleFromFeed(url: String, title: String?, contentHtml: String?): Article? {
@@ -55,7 +57,8 @@ suspend fun fetchArticle(client: HttpClient, url: String): Article? {
         }.bodyAsText().take(MaxArticleBytes)
     }.getOrNull() ?: return null
 
-    return extractArticle(html, url)
+    // Scoring a page of markup is a few frames' work; off Main, or the reader stutters in.
+    return withContext(Dispatchers.Default) { extractArticle(html, url) }
 }
 
 /**
