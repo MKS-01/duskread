@@ -362,7 +362,7 @@ migrations.
 | `signals.hosts` | reads / opens / skips per host |
 | `signals.topics` | reads per topic |
 | `signals.skipped` | per-URL skips, bounded |
-| `notion.database.sources`, `notion.database.reading`, `notion.page.parent`, `notion.page.home`, `notion.sync.last` | connection state |
+| `notion.database.sources`, `notion.database.reading`, `notion.page.parent`, `notion.page.home`, `notion.sync.last`, `notion.sync.feeds` | connection state, and the followed list as of the last sync |
 | `summaries` | generated summaries, newest first, bounded — a second look at an article costs no AICore quota; pruned by every sync to what the app still lists |
 | `user.name`, `intro.seen`, `theme.mono`, `readback.enabled`, `speech.voice`, `swipe.default` | preferences |
 
@@ -397,18 +397,29 @@ disconnect.
 
 ## When a sync happens
 
-`runFullSync` runs on the Settings button and on launch if the last sync was
-over four hours ago — but anything saved, read, retitled or deleted since
-overrides the clock. Failures on an automatic sync are silent; the button
-reports for itself. Most of a full sync is feed fetches.
+The Notion sync runs through one `NotionSyncer` on `AppGraph`, on the
+Settings button and on launch if the last sync was over four hours ago — but
+anything saved, read, retitled or deleted since overrides the clock. It lives
+in the graph's scope, so neither launch nor a screen waits on it, and a second
+caller joins the first. Failures on an automatic sync are silent; the button
+reports for itself. Each half runs end to end only when it moved: `Sources`
+when the followed list differs from the one stored at the last sync
+(`notion.sync.feeds`, its length and ids) or a one-row query finds a row
+edited since; `Reading List` when a link changed locally or the same probe
+finds an edit. A quiet sync is two small queries. The Settings button skips
+the checks. It does not fetch feeds: a source already followed costs
+no network, and only a blog new to the phone is resolved and nudges a
+background feed sync.
 
-Every feed fetch goes through one `FeedSyncer` on `AppGraph`: Notion's
-sync, pull-to-refresh on Home and Following, Following's "Sync now",
-following a new blog, and Home coming into view when the last feed sync is over 30 minutes old
+Every feed fetch goes through one `FeedSyncer` on `AppGraph`, straight from
+each blog and never through Notion: pull-to-refresh on Home and Following,
+Following's "Sync now", following a new blog, a Notion sync that brought a
+new one, and Home coming into view when the last feed sync is over 30 minutes old
 (`syncIfStale`). A caller arriving mid-sync joins the one running rather
 than starting another, and the sync lives in the graph's scope, so leaving
 the screen that started it does not cancel it. Feeds are fetched six at a
-time. A round that reached no feed still holds off the next automatic one
+time; parsing, building posts and encoding the cache run off the main thread.
+A round that reached no feed still holds off the next automatic one
 for 30 minutes, in memory only, so a phone offline is not refetching on
 every resume.
 

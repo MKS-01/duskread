@@ -6,7 +6,6 @@ import dev.mks.duskread.notion.NotionPage
 import dev.mks.duskread.notion.NotionResult
 import dev.mks.duskread.notion.Provisioning
 import dev.mks.duskread.notion.provision
-import dev.mks.duskread.notion.runFullSync
 
 /**
  * Notion setup and sync, with every type Obj-C cannot carry left behind.
@@ -43,16 +42,8 @@ class NotionBridge internal constructor(private val graph: AppGraph) {
 
     /** Returns a one-line summary of what moved, or the failure message. */
     suspend fun sync(): NotionOutcome {
-        val outcome = runFullSync(
-            api = graph.notionApi,
-            prefs = graph.notionPrefs,
-            library = graph.links,
-            feeds = graph.feeds,
-            feedSync = graph.feedSync,
-            http = graph.http,
-            recordSync = { at -> graph.notionPrefs.recordSync(at) },
-        )
-        return NotionOutcome(status = NotionStatus.READY, message = outcome.toString())
+        val outcome = graph.notionSync.sync(force = true)
+        return NotionOutcome(status = NotionStatus.READY, message = outcome.line)
     }
 }
 

@@ -17,8 +17,10 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.withContext
 import kotlin.time.Clock
 
 /**
@@ -69,8 +71,8 @@ class FeedSyncer(
     private val links: LinkLibrary,
     private val summaries: SummaryCache,
 ) {
-    // Main, not Default: the state below is snapshot state, and the fetches suspend
-    // rather than block, so they still overlap.
+    // Main, so state writes stay on one thread; every parse, body scan and encode below
+    // hops to Default, which is what kept a sync from stuttering the list.
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     private val observedState = Observed(FeedSyncState())
@@ -110,6 +112,11 @@ class FeedSyncer(
         return sync(manual = false)
     }
 
+    /** [sync] without waiting on it, for callers that only mean to start one. */
+    fun syncInBackground() {
+        scope.launch { sync(manual = false) }
+    }
+
     fun close() = scope.cancel()
 
     private suspend fun run(): FeedSyncResult {
@@ -117,7 +124,8 @@ class FeedSyncer(
         // What the fetch below is about. An erase can land while a dozen feeds are in
         // the air; see [DataEpoch].
         val epoch = DataEpoch.mark()
-        val known = cache.postsByFeed.values.flatten().mapTo(HashSet()) { it.url }
+        val cached = cache.postsByFeed
+        val known = withContext(Dispatchers.Default) { cached.values.flatten().mapTo(HashSet()) { it.url } }
         state = FeedSyncState(running = true, total = list.size)
         try {
             val gate = Semaphore(ParallelFetches)
@@ -130,7 +138,11 @@ class FeedSyncer(
                         state = state.copy(done = state.done + 1)
                         document?.title?.let { titles[feed.id] = it }
                         val entries = document?.entries
-                        if (entries.isNullOrEmpty()) null else feed.id to entries.take(EntriesPerFeed).map { it.asPost(feed.id) }
+                        if (entries.isNullOrEmpty()) {
+                            null
+                        } else {
+                            feed.id to withContext(Dispatchers.Default) { entries.take(EntriesPerFeed).map { it.asPost(feed.id) } }
+                        }
                     }
                 }.awaitAll().filterNotNull().toMap()
             }

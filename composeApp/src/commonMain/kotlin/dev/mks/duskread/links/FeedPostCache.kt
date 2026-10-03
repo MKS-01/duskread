@@ -8,7 +8,9 @@ import dev.mks.duskread.data.KeyValueStore
 import dev.mks.duskread.data.LocalAppGraph
 import dev.mks.duskread.data.Observed
 import dev.mks.duskread.data.rememberKeyValueStore
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.withContext
 import kotlin.time.Clock
 
 /**
@@ -59,12 +61,15 @@ class FeedPostCache(private val store: KeyValueStore) {
     }
 
     /**
-     * Every feed that answered, in one write.
+     * Every feed that answered, in one write. Encoded on Default: the cache runs to
+     * megabytes, and building that string on Main is the hitch at the end of a sync.
      */
-    fun replaceAll(byFeed: Map<String, List<FeedPost>>) {
+    suspend fun replaceAll(byFeed: Map<String, List<FeedPost>>) {
         if (byFeed.isEmpty()) return
-        postsByFeed = postsByFeed + byFeed
-        persist()
+        val merged = postsByFeed + byFeed
+        val encoded = withContext(Dispatchers.Default) { encode(merged.values.flatten()) }
+        postsByFeed = merged
+        store.putString(Key, encoded.takeIf { it.isNotEmpty() })
         syncedAt = Clock.System.now().toEpochMilliseconds()
         store.putString(SyncedAtKey, syncedAt.toString())
     }

@@ -93,16 +93,14 @@ suspend fun syncReadingList(
         dismissed++
     }
 
-    var pulled = 0
     // A dismissed row is refused here as well as by the local tombstone list.
-    rows.filter { it.saved && !it.dismissed }.forEach { row ->
-        val url = normaliseUrl(row.url)
-        val created = links.upsertFromNotion(
+    val pulled = links.upsertAllFromNotion(
+        rows.filter { it.saved && !it.dismissed }.map { row ->
             SavedLink(
                 // A row Claude filed has no id yet; minting one here means the push below
                 // claims it.
                 id = row.duskreadId ?: ("n-" + row.pageId.filterNot { it == '-' }.take(12)),
-                url = url,
+                url = normaliseUrl(row.url),
                 title = row.title,
                 description = row.excerpt,
                 // Notion's own dates where it has them.
@@ -110,10 +108,9 @@ suspend fun syncReadingList(
                 readAt = row.readAt ?: row.lastEditedAt.takeIf { row.read },
                 changedAt = row.lastEditedAt,
                 topic = row.topic,
-            ),
-        )
-        if (created) pulled++
-    }
+            )
+        },
+    )
 
     var pushed = 0
     var updated = 0

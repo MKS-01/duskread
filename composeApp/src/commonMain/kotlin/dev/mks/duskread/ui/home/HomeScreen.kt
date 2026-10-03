@@ -55,7 +55,6 @@ import dev.mks.duskread.links.rememberFeedPostCache
 import dev.mks.duskread.links.rememberLinkLibrary
 import dev.mks.duskread.links.rememberReadingSignals
 import dev.mks.duskread.notion.rememberNotionPrefs
-import dev.mks.duskread.notion.runFullSync
 import dev.mks.duskread.reader.rememberAudioPlayer
 import dev.mks.duskread.reader.rememberReadRepository
 import dev.mks.duskread.speech.DriveSpeechSession
@@ -71,7 +70,6 @@ import dev.mks.duskread.ui.settings.SettingsScreen
 import dev.mks.duskread.ui.theme.Layout
 import dev.mks.duskread.ui.theme.Motion
 import dev.mks.duskread.ui.theme.Space
-import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
 /**
@@ -237,43 +235,10 @@ fun HomeScreen(
     val notionAuth = LocalAppGraph.current.notionAuth
     val notionApi = LocalAppGraph.current.notionApi
 
-    /*
-     * The sync that happens without being asked.
-     *
-     * Once per launch, and only if the last one is older than
-     * `AutoSyncAfterMs` — so opening the app four times in an evening costs
-     * one sync, not four. It runs in the background with no spinner and no
-     * toast: a reader who opens the app to read should not be shown the
-     * machinery, and the result appears as feeds and posts simply being
-     * current.
-     *
-     * Failures are silent on purpose. There is nothing useful to say about a
-     * sync nobody asked for, and a network error banner on launch would be
-     * the first thing a reader sees on a train. Settings' own button is where
-     * a sync reports for itself.
-     */
-    LaunchedEffect(Unit) {
-        val now = Clock.System.now().toEpochMilliseconds()
-
-        // Anything saved, read or retitled since the last sync has not reached Notion
-        // yet.
-        val since = notionPrefs.lastSyncAt ?: 0L
-        val unpushed = links.links.any { it.changedAt > since } || links.removedUrls.values.any { it > since }
-        if (!notionPrefs.dueForSync(now, unpushed)) return@LaunchedEffect
-        if (notionAuth.bearer() == null) return@LaunchedEffect
-
-        runCatching {
-            runFullSync(
-                api = notionApi,
-                prefs = notionPrefs,
-                library = links,
-                feeds = feeds,
-                feedSync = feedSync,
-                http = feedClient,
-                recordSync = notionPrefs::recordSync,
-            )
-        }
-    }
+    // The sync nobody asked for: due after four hours or on unpushed work, silent, and
+    // run in the graph's scope so neither launch nor Home waits on Notion.
+    val notionSync = LocalAppGraph.current.notionSync
+    LaunchedEffect(notionSync) { notionSync.syncIfDue() }
 
     // Wide windows get the rail-and-transport plan instead of the floating bar; see
     // `ui/layout/WindowClass.kt` and the design system's "Wide" section.

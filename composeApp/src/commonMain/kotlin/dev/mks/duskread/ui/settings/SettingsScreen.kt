@@ -60,7 +60,6 @@ import dev.mks.duskread.notion.NotionClient
 import dev.mks.duskread.notion.NotionPrefs
 import dev.mks.duskread.notion.NotionResult
 import dev.mks.duskread.notion.PastedTokenAuth
-import dev.mks.duskread.notion.runFullSync
 import dev.mks.duskread.speech.SpeakerState
 import dev.mks.duskread.speech.VoiceChoice
 import dev.mks.duskread.speech.rememberSpeaker
@@ -402,7 +401,7 @@ private fun NotionSettings(
 ) {
     val secrets = rememberSecretStore()
     val scope = rememberCoroutineScope()
-    val feedSync = LocalAppGraph.current.feedSync
+    val notionSync = LocalAppGraph.current.notionSync
 
     // Read into state rather than on every recomposition: reaching the keystore is cheap
     // but not free, and the answer only changes here or in the setup sheet.
@@ -473,15 +472,8 @@ private fun NotionSettings(
                     if (busy) return@TransferAction
                     busy = true
                     scope.launch {
-                        note = runFullSync(
-                            api = api,
-                            prefs = notion,
-                            library = library,
-                            feeds = feeds,
-                            feedSync = feedSync,
-                            http = client,
-                            recordSync = notion::recordSync,
-                        ).line
+                        // The graph's sync, so closing Settings mid-way does not cancel it.
+                        note = notionSync.sync(force = true).line
                         busy = false
                     }
                 }

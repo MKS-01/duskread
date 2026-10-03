@@ -5,6 +5,8 @@ import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpHeaders
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /** What a page can tell us about itself. Both fields are optional — plenty of pages say neither. */
 data class LinkMetadata(val title: String?, val description: String?)
@@ -27,10 +29,13 @@ suspend fun fetchLinkMetadata(client: HttpClient, url: String): LinkMetadata {
         header(HttpHeaders.Accept, "text/html,application/xhtml+xml")
     }.bodyAsText().take(MaxBytesScanned)
 
-    return LinkMetadata(
-        title = html.metaContent("og:title") ?: html.titleTag(),
-        description = html.metaContent("og:description") ?: html.metaContent("description"),
-    )
+    // Off Main for the same reason as a feed parse: pull-to-refresh runs this per link.
+    return withContext(Dispatchers.Default) {
+        LinkMetadata(
+            title = html.metaContent("og:title") ?: html.titleTag(),
+            description = html.metaContent("og:description") ?: html.metaContent("description"),
+        )
+    }
 }
 
 /** `<title>…</title>`, whitespace collapsed — HTML wraps titles across lines freely. */

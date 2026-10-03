@@ -92,6 +92,11 @@ class NotionPrefs(private val store: KeyValueStore) {
         store.putString(LastSyncKey, at.toString())
     }
 
+    /** The followed blogs as of the last sources sync, so an unchanged list skips that half. */
+    val syncedFeeds: String? get() = store.getString(SyncedFeedsKey)
+
+    fun recordSyncedFeeds(fingerprint: String) = store.putString(SyncedFeedsKey, fingerprint)
+
     /**
      * Whether an automatic sync is due. Deliberately says nothing about whether the
      * databases are known.
@@ -108,6 +113,7 @@ class NotionPrefs(private val store: KeyValueStore) {
         parentPageId = null
         homePageId = null
         lastSyncAt = null
+        store.putString(SyncedFeedsKey, null)
         // [LegacyNameKey] has no field behind it any more, and is cleared anyway: an
         // install that ran the old code still has the string sitting in its store.
         listOf(SourcesKey, ReadingKey, ParentKey, HomeKey, LastSyncKey, LegacyNameKey)
@@ -120,6 +126,7 @@ class NotionPrefs(private val store: KeyValueStore) {
         const val ParentKey = "notion.page.parent"
         const val HomeKey = "notion.page.home"
         const val LastSyncKey = "notion.sync.last"
+        const val SyncedFeedsKey = "notion.sync.feeds"
 
         /**
          * The cached name of *the* database, from when there was one of them and its id

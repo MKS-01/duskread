@@ -86,13 +86,16 @@ class LinkLibrary(private val store: KeyValueStore) {
             if (link.id != id) {
                 link
             } else {
-                link.copy(
+                val described = link.copy(
                     title = title?.clean()?.takeIf { it.isNotBlank() } ?: link.title,
                     description = description?.clean()?.takeIf { it.isNotBlank() } ?: link.description,
                     fetched = true,
                     fetchFailed = false,
-                    changedAt = Clock.System.now().toEpochMilliseconds(),
                 )
+                // Stamped only on a real change: a pull-to-refresh that re-reads the same
+                // titles must not mark every link as owed to Notion.
+                val changed = described.title != link.title || described.description != link.description
+                if (changed) described.copy(changedAt = Clock.System.now().toEpochMilliseconds()) else described
             }
         }
         persist()
@@ -153,22 +156,42 @@ class LinkLibrary(private val store: KeyValueStore) {
     }
 
     /**
-     * What the reading-list sync writes back down.
+     * What the reading-list sync writes back down, all rows in one write. Returns how
+     * many were new; one persist per row was a full re-encode per row.
      */
-    fun upsertFromNotion(incoming: SavedLink): Boolean {
-        if (canonicalUrl(incoming.url) in removedKeys) return false
+    fun upsertAllFromNotion(incoming: List<SavedLink>): Int {
+        val refused = removedKeys
+        // Newest-first like the list itself: each new row goes on top, as one save would.
+        val merged = ArrayDeque(links)
+        val byId = HashMap<String, SavedLink>()
+        val byKey = HashMap<String, SavedLink>()
+        merged.forEach { link ->
+            byId[link.id] = link
+            byKey[canonicalUrl(link.url)] = link
+        }
+        var added = 0
 
-        val existing = links.firstOrNull {
-            it.id == incoming.id || sameArticle(it.url, incoming.url)
+        incoming.forEach { link ->
+            val key = canonicalUrl(link.url)
+            if (key in refused) return@forEach
+
+            val existing = byId[link.id] ?: byKey[key]
+            val next = existing?.merge(link) ?: link
+            if (existing == null) {
+                merged.addFirst(next)
+                added++
+            } else {
+                merged[merged.indexOf(existing)] = next
+            }
+            byId[next.id] = next
+            byKey[canonicalUrl(next.url)] = next
         }
 
-        links = if (existing == null) {
-            listOf(incoming) + links
-        } else {
-            links.map { if (it.id == existing.id) existing.merge(incoming) else it }
+        if (merged != links) {
+            links = merged.toList()
+            persist()
         }
-        persist()
-        return existing == null
+        return added
     }
 
     /**

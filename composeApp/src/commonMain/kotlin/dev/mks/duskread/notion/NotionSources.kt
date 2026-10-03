@@ -87,6 +87,8 @@ suspend fun pushSources(
     databaseId: String,
     feeds: List<Feed>,
     rows: List<NotionSource>,
+    /** Rows matched to a feed only by discovering its address; see `AppliedSources`. */
+    resolved: Map<String, NotionSource> = emptyMap(),
 ): NotionResult<SourcePushSummary> {
     val byId = rows.filter { it.duskreadId != null }.associateBy { it.duskreadId }
     val byUrl = rows.associateBy { canonicalUrl(it.feedUrl) }
@@ -95,7 +97,7 @@ suspend fun pushSources(
     var claimed = 0
 
     feeds.forEach { feed ->
-        val row = byId[feed.id] ?: byUrl[canonicalUrl(feed.url)]
+        val row = byId[feed.id] ?: resolved[feed.id] ?: byUrl[canonicalUrl(feed.url)]
 
         if (row == null) {
             val result = api.createPage(databaseId, sourceProperties(feed))

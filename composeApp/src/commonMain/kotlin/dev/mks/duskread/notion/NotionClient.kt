@@ -99,6 +99,29 @@ class NotionClient(
     }
 
     /**
+     * Whether any row was edited at or after [sinceIso] — one row asked for, so a quiet
+     * table answers in one small request instead of a full [queryAll].
+     */
+    suspend fun editedSince(databaseId: String, sinceIso: String): NotionResult<Boolean> = request { token ->
+        client.post("$ApiBase/databases/${databaseId.trim()}/query") {
+            notionHeaders(token)
+            contentType(ContentType.Application.Json)
+            setBody(
+                buildJsonObject {
+                    put("page_size", JsonPrimitive(1))
+                    put(
+                        "filter",
+                        buildJsonObject {
+                            put("timestamp", JsonPrimitive("last_edited_time"))
+                            put("last_edited_time", buildJsonObject { put("on_or_after", JsonPrimitive(sinceIso)) })
+                        },
+                    )
+                }.toString(),
+            )
+        }
+    }.then { page -> NotionResult.Ok(page["results"]?.jsonArray.orEmpty().isNotEmpty()) }
+
+    /**
      * The database's own schema. Wanted for one thing: the names of the `Status` options.
      */
     suspend fun schema(databaseId: String): NotionResult<JsonObject> = request { token ->

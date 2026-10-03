@@ -6,6 +6,8 @@ import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpHeaders
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 
@@ -36,7 +38,8 @@ suspend fun fetchFeedDocument(client: HttpClient, url: String): FeedDocument {
         header(HttpHeaders.Accept, "application/rss+xml, application/atom+xml, application/xml, text/xml, */*")
     }.bodyAsText().take(MaxBytesScanned)
 
-    return FeedDocument(parseFeedTitle(xml), parseFeed(xml))
+    // Half a megabyte of DOT_MATCHES_ALL regex is a dropped frame or ten on Main.
+    return withContext(Dispatchers.Default) { FeedDocument(parseFeedTitle(xml), parseFeed(xml)) }
 }
 
 /**

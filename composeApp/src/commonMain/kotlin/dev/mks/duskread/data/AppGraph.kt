@@ -14,6 +14,7 @@ import dev.mks.duskread.links.ReadingSignals
 import dev.mks.duskread.links.createHttpClient
 import dev.mks.duskread.notion.NotionClient
 import dev.mks.duskread.notion.NotionPrefs
+import dev.mks.duskread.notion.NotionSyncer
 import dev.mks.duskread.notion.PastedTokenAuth
 import dev.mks.duskread.summary.SummaryCache
 import io.ktor.client.HttpClient
@@ -38,11 +39,13 @@ class AppGraph(
     internal val http: HttpClient = createHttpClient()
     internal val notionApi = NotionClient(http, notionAuth)
     val feedSync = FeedSyncer(http, feeds, feedPosts, links, summaries)
+    val notionSync = NotionSyncer(notionApi, notionAuth, notionPrefs, links, feeds, feedSync, http)
 
     /** The store itself, for the few callers that still key their own state off it. */
     val keyValueStore: KeyValueStore get() = store
 
     fun close() {
+        notionSync.close()
         feedSync.close()
         http.close()
     }
