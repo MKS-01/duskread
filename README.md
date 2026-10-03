@@ -54,6 +54,9 @@ read — then you set a twenty-five minute timer and read, on **Paper Black** or
 - **Reads offline.** Every screen renders from local storage; a feed with
   full-content RSS is cached whole at sync time, so most articles were
   already on the phone before you tapped them.
+- **Following is the blogs at a glance.** An even grid of short names —
+  "Android", not "Android Developers Blog" — with how many posts are new;
+  tap one for its posts, or search across every blog and post.
 - **Saved is a queue and a record.** Unread leads; what you've read stays
   under its own heading. Filter to either, or search a title, host or topic.
 - **On-device summaries and reading aloud.** Long articles get a one-tap

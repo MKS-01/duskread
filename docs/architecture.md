@@ -516,7 +516,9 @@ honouring `Retry-After`.
 
 Every screen renders from local storage. `loadArticle` tries the feed cache
 before the wire, and only falls back to a request when the feed didn't
-carry a real body (under 900 characters — a teaser is not an article).
+carry a real body (under 900 characters — a teaser is not an article). The
+last twelve articles loaded are remembered for the session, so reading,
+summarising and listening to one fetch it once.
 
 <details>
 <summary>What that covers, and the offline badge</summary>
@@ -534,10 +536,9 @@ at sync time by **the same `articleFromFeed` the reader calls**, given the
 same truncated body — anything cheaper would eventually disagree, and a
 badge that lies is worse than no badge.
 
-The cache re-encodes itself whole on every write, so `FeedSyncer` gathers
-every feed's posts and commits once via `replaceAll` rather than per feed,
-which made a sync serialise the whole catalogue once per feed — a cost that
-grew with the square of the feed count.
+`FeedSyncer` gathers every feed's posts and commits them once via
+`replaceAll`: one SQLite transaction, off the main thread, touching only the
+rows of feeds that answered.
 
 **When there is nothing cached and no signal**, the reader shows the app's
 own empty state rather than letting the WebView render a `net::` error page.
