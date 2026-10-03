@@ -138,20 +138,18 @@ struct FollowingScreen: View {
         }
     }
 
-    /// One followed blog as a fixed-height tile: badge, short name, and "3 new · 4h". No
+    /// One followed blog as a fixed-height tile: short name and "3 new · 4h". No
     /// post titles — the tile says which blog moved; opening it shows what.
     private func blogTile(_ row: DigestRow) -> some View {
         let fresh = row.newCount > 0
         let age = row.lastPostAt.map { feeds.shortAgo($0.int64Value) }
         return VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 10) {
-                // The short name, not the host: `feeds.arstechnica.com` would badge Ars "F".
-                MonogramBadge(host: row.feed.shortLabel)
-                Text(row.feed.shortLabel)
-                    .dusk(.titleSmall)
-                    .foregroundStyle(fresh ? dusk.onSurface : dusk.onSurface.opacity(0.78))
-                    .lineLimit(1)
-            }
+            // No initial badge: the name is the whole tile, and a square letter beside it
+            // only repeats the name's first character.
+            Text(row.feed.shortLabel)
+                .dusk(.titleSmall)
+                .foregroundStyle(fresh ? dusk.onSurface : dusk.onSurface.opacity(0.78))
+                .lineLimit(1)
             Spacer(minLength: 0)
             // Grey, not the accent: the accent stays for what is playing.
             HStack(spacing: 10) {
@@ -226,7 +224,6 @@ struct FollowingScreen: View {
 
     private func postRow(_ post: FeedPost, host: String) -> some View {
         ListRow(
-            host: host,
             title: post.title,
             meta: post.offline ? [RowMetaItem(text: "offline")] : [],
             last: false,
@@ -282,7 +279,6 @@ struct TopicsScreen: View {
 
                 ForEach(Array(posts.enumerated()), id: \.element.url) { index, post in
                     ListRow(
-                        host: feed.host,
                         title: post.title,
                         meta: post.offline ? [RowMetaItem(text: "offline")] : [],
                         last: index == posts.count - 1,

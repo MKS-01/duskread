@@ -35,7 +35,7 @@ import dev.mks.duskread.ui.summary.SummariseBackground
 import dev.mks.duskread.ui.theme.DuskReadIcons
 
 /**
- * One post from a followed blog, as a [ListRow]: sourcechip, title, when it went out, and
+ * One post from a followed blog, as a [ListRow]: title, when it went out, and
  * the bookmark that is the only way a feed post ever reaches the Saved tab.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -96,7 +96,6 @@ private fun TopicRowBody(
     onOpen: () -> Unit,
 ) {
     ListRow(
-        host = host,
         title = post.title,
         last = last,
         onClick = onOpen,

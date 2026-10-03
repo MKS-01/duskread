@@ -106,7 +106,6 @@ struct SavedScreen: View {
 
     private func row(_ link: SavedLink, last: Bool) -> some View {
         ListRow(
-            host: SavedLinkKt.hostOf(url: link.url),
             title: link.title,
             meta: meta(for: link),
             tone: link.read ? .faded : .normal,

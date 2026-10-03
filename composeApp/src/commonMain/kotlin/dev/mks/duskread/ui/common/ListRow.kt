@@ -30,12 +30,12 @@ import dev.mks.duskread.ui.theme.Mono
 enum class RowTone { Normal, Accent, Faded }
 
 /**
- * The list row every screen in this app is built from: sourcechip, title, a mono meta
- * line, an optional trailing glyph, and its own bottom hairline.
+ * The list row every screen in this app is built from: title, a mono meta line, an
+ * optional trailing glyph, and its own bottom hairline. No source chip: a letter in a
+ * box only repeated what the title and meta already say.
  */
 @Composable
 fun ListRow(
-    host: String,
     title: String,
     last: Boolean,
     onClick: () -> Unit,
@@ -48,7 +48,6 @@ fun ListRow(
 ) {
     Column(modifier.fillMaxWidth()) {
         ListRowBody(
-            host = host,
             title = title,
             onClick = onClick,
             tone = tone,
@@ -67,7 +66,6 @@ fun ListRow(
  */
 @Composable
 fun ListRowBody(
-    host: String,
     title: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -88,14 +86,6 @@ fun ListRowBody(
             .clickable(onClick = onClick),
     ) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
-            MonogramBadge(
-                host = host,
-                size = ChipSize,
-                borderColor = if (accented) scheme.primary else scheme.outlineVariant,
-                contentColor = if (accented) scheme.primary else scheme.onSurfaceVariant,
-            )
-            Spacer(Modifier.width(ChipGap))
-
             Column(Modifier.weight(1f)) {
                 Text(
                     text = title,
@@ -158,7 +148,3 @@ fun RowMeta(text: String, accent: Boolean = false, modifier: Modifier = Modifier
         color = if (accent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
     )
 }
-
-/** The host chip's footprint — shared with any row that places one outside [ListRow] itself. */
-val ChipSize = 22.dp
-private val ChipGap = 10.dp

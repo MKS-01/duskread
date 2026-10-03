@@ -423,7 +423,6 @@ private fun NextUpSection(
 @Composable
 private fun NextUpRow(scored: Scored, hero: Boolean, last: Boolean, onOpen: () -> Unit) {
     ListRow(
-        host = scored.candidate.host,
         title = scored.candidate.title,
         last = last,
         onClick = onOpen,

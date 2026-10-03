@@ -106,7 +106,6 @@ struct DashboardScreen: View {
                 ForEach(Array(suggestions.picks.enumerated()), id: \.offset) { index, pick in
                     let candidate = pick.candidate
                     ListRow(
-                        host: candidate.host,
                         title: candidate.title,
                         meta: meta(for: candidate),
                         last: index == suggestions.picks.count - 1,

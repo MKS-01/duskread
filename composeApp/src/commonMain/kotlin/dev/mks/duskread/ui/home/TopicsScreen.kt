@@ -33,7 +33,6 @@ import dev.mks.duskread.links.LinkLibrary
 import dev.mks.duskread.links.savedAgo
 import dev.mks.duskread.ui.PlatformBackHandler
 import dev.mks.duskread.ui.common.EyebrowHeader
-import dev.mks.duskread.ui.common.MonogramBadge
 import dev.mks.duskread.ui.common.ToastRequest
 import dev.mks.duskread.ui.rememberUrlOpener
 import dev.mks.duskread.ui.theme.DuskReadIcons

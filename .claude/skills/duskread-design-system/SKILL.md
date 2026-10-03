@@ -62,7 +62,7 @@ asks you to.
 |---|---|---|
 | `Radius.Card` | 14dp | Dashboard/list cards |
 | `Radius.Inline` | 10dp | Text fields, filled CTAs, rows |
-| `Radius.Chip` | 3dp | Pills, sourcechips, bordered icon buttons — a *softened* corner, not a rounded one |
+| `Radius.Chip` | 3dp | Pills, bordered icon buttons — a *softened* corner, not a rounded one |
 | `Stroke.Hairline` | 1dp | Every border in the app |
 | `Space.ChipGap` / `Space.CardGap` | 6dp / 9dp | Recurring gaps |
 | `Motion.Chip` / `Fade` / `PushIn` / `PopFade` | ms | State-change vs. navigation timing — navigation is instant, a tone change is slow enough to *see* |
@@ -96,8 +96,7 @@ looked flat."
 - **`ui/common/ListRow.kt`** — `ListRow` / `ListRowBody` + `ListRowDivider` for
   the one caller (Saved's swipe-to-remove) that can't use `ListRow` whole,
   `RowMeta` for one mono fact on a meta line, `HairlineDivider` for a bare 1dp
-  separator with no baked-in spacing, `ChipSize` (22dp) for a host chip placed
-  outside `ListRow` itself. This is the sourcechip/title/meta skeleton every
+  separator with no baked-in spacing. This is the title/meta skeleton every
   list in the app is built from — Saved, Readback and a followed blog's topics
   had each grown their own copy before this existed. Don't grow a fourth.
 - **`ui/common/AppTextField.kt`** — the one text-field shape: hairline border,
@@ -105,9 +104,24 @@ looked flat."
 - **`ui/common/EyebrowHeader.kt`** — label + inline trailing hairline rule, one
   row. Defaults to the accent tint; pass `tint = onSurfaceVariant` explicitly
   for a lower-priority section.
-- **`ui/common/MonogramBadge`**, **`ui/common/WaveformMeter`**,
-  **`ui/common/PrimaryButton`** — the sourcechip, the per-row/per-timer meter,
-  and the one filled call-to-action shape, respectively.
+- **`ui/common/WaveformMeter`**, **`ui/common/PrimaryButton`** — the
+  per-row/per-timer meter and the one filled call-to-action shape.
+
+## No source chip, anywhere
+
+The square initial badge (`MonogramBadge`, the "sourcechip") is **gone from the
+whole app**, rows and tiles alike, on both platforms. A letter in a box only
+repeated what the title or the host on the meta line already said. Don't
+bring it back on a row, a tile or a new card, and don't hand-roll a lookalike.
+A row leads with its title; a tile leads with its name.
+
+## Following: an even grid of names
+
+Following is a two-column grid of fixed-height tiles (`Radius.Card`, hairline):
+the blog's `Feed.shortLabel` and a mono "3 new · 4h", nothing else — no post
+titles. `shortLabel` lives in `commonMain` so both phones shorten a name the
+same way ("Android Developers Blog" → "Android"). This replaced the uneven
+bento tiles; the deployed page still shows rows with chips — flag it.
 
 ## The bordered square icon button
 

@@ -3,7 +3,6 @@ import SwiftUI
 
 /// What every list in the app is built from.
 struct ListRow<Trailing: View>: View {
-    let host: String
     let title: String
     var meta: [RowMetaItem] = []
     var tone: RowTone = .normal
@@ -20,7 +19,6 @@ struct ListRow<Trailing: View>: View {
                 // The row's own tap area stops short of the trailing slot.
                 Button(action: onTap) {
                     HStack(alignment: .top, spacing: 10) {
-                        MonogramBadge(host: host, accent: tone == .accent)
                         VStack(alignment: .leading, spacing: 6) {
                             Text(title)
                                 .dusk(.titleSmall)
@@ -57,9 +55,9 @@ struct ListRow<Trailing: View>: View {
 }
 
 extension ListRow where Trailing == EmptyView {
-    init(host: String, title: String, meta: [RowMetaItem] = [], tone: RowTone = .normal,
+    init(title: String, meta: [RowMetaItem] = [], tone: RowTone = .normal,
          last: Bool = false, titleLineLimit: Int = 2, onTap: @escaping () -> Void = {}) {
-        self.init(host: host, title: title, meta: meta, tone: tone, last: last,
+        self.init(title: title, meta: meta, tone: tone, last: last,
                   titleLineLimit: titleLineLimit, onTap: onTap) { EmptyView() }
     }
 }
@@ -100,30 +98,5 @@ struct HairlineDivider: View {
         Rectangle()
             .fill(dusk.outlineVariant)
             .frame(height: Stroke.hairline)
-    }
-}
-
-/// The source chip: one mono capital in a softened square.
-struct MonogramBadge: View {
-    let host: String
-    var size: CGFloat = 22
-    var accent: Bool = false
-
-    @Environment(\.dusk) private var dusk
-
-    var body: some View {
-        Text(monogram)
-            .font(.custom("Inconsolata-Medium", size: size * 0.45))
-            .foregroundStyle(accent ? dusk.primary : dusk.onSurfaceVariant)
-            .frame(width: size, height: size)
-            .overlay(
-                RoundedRectangle(cornerRadius: Radius.chip)
-                    .stroke(accent ? dusk.primary : dusk.outlineVariant, lineWidth: Stroke.hairline)
-            )
-    }
-
-    private var monogram: String {
-        let stripped = host.hasPrefix("www.") ? String(host.dropFirst(4)) : host
-        return String(stripped.prefix(1)).uppercased()
     }
 }

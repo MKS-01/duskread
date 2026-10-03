@@ -67,7 +67,6 @@ import dev.mks.duskread.ui.common.EyebrowHeader
 import dev.mks.duskread.ui.common.HeaderAction
 import dev.mks.duskread.ui.common.ListRowBody
 import dev.mks.duskread.ui.common.ListRowDivider
-import dev.mks.duskread.ui.common.MonogramBadge
 import dev.mks.duskread.ui.common.Pill
 import dev.mks.duskread.ui.common.RowMeta
 import dev.mks.duskread.ui.common.RowTone
@@ -428,7 +427,6 @@ private fun LinkRow(
             },
         ) {
             ListRowBody(
-                host = link.host,
                 title = link.title,
                 onClick = onOpen,
                 // The box slides the row over its own background, so the row needs one of
@@ -437,7 +435,7 @@ private fun LinkRow(
                 tone = if (link.read) RowTone.Faded else RowTone.Normal,
                 trailing = {
                     // Only a read row carries the tick — matching the unread row above it
-                    // exactly, sourcechip and two facts, nothing more.
+                    // exactly, title and two facts, nothing more.
                     if (link.read) {
                         Icon(
                             imageVector = DuskReadIcons.Check,

@@ -60,14 +60,12 @@ import dev.mks.duskread.links.pruneSummaries
 import dev.mks.duskread.links.shortAgo
 import dev.mks.duskread.summary.rememberSummaryCache
 import dev.mks.duskread.ui.common.AppTextField
-import dev.mks.duskread.ui.common.ChipSize
 import dev.mks.duskread.ui.common.CompactEmptyState
 import dev.mks.duskread.ui.common.EmptyState
 import dev.mks.duskread.ui.common.EyebrowHeader
 import dev.mks.duskread.ui.common.HairlineDivider
 import dev.mks.duskread.ui.common.HeaderAction
 import dev.mks.duskread.ui.common.ListRow
-import dev.mks.duskread.ui.common.MonogramBadge
 import dev.mks.duskread.ui.common.RowMeta
 import dev.mks.duskread.ui.theme.DuskReadIcons
 import dev.mks.duskread.ui.theme.Mono
@@ -269,7 +267,7 @@ private fun LazyListScope.group(
 }
 
 /**
- * One followed blog as a fixed-height tile: badge, short name, and "3 new · 4h". No post
+ * One followed blog as a fixed-height tile: short name and "3 new · 4h". No post
  * titles — the tile says which blog moved; opening it shows what.
  */
 @Composable
@@ -286,20 +284,17 @@ private fun BlogTile(row: DigestRow, now: Long, modifier: Modifier = Modifier, o
             .clickable(onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 13.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            // The short name, not the host: `feeds.arstechnica.com` would badge Ars "F".
-            MonogramBadge(host = row.feed.shortLabel, size = ChipSize)
-            Spacer(Modifier.width(10.dp))
-            Text(
-                text = row.feed.shortLabel,
-                style = MaterialTheme.typography.bodyLarge,
-                fontSize = 14.5.sp,
-                fontWeight = FontWeight.Medium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                color = if (fresh) scheme.onSurface else scheme.onSurface.copy(alpha = 0.78f),
-            )
-        }
+        // No initial badge: the name is the whole tile, and a square letter beside it
+        // only repeats the name's first character.
+        Text(
+            text = row.feed.shortLabel,
+            style = MaterialTheme.typography.bodyLarge,
+            fontSize = 14.5.sp,
+            fontWeight = FontWeight.Medium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            color = if (fresh) scheme.onSurface else scheme.onSurface.copy(alpha = 0.78f),
+        )
         Spacer(Modifier.weight(1f))
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             // Grey, not the accent: the accent stays for what is playing.

@@ -210,11 +210,10 @@ private fun ReadRow(
 
     Column(Modifier.fillMaxWidth()) {
         ListRowBody(
-            host = hostOf(item.sourceUrl),
             title = item.title,
             onClick = onTap,
-            // The playing row is the only coloured thing on screen — title, duration and
-            // the sourcechip's border all follow it.
+            // The playing row is the only coloured thing on screen — its title and
+            // duration both follow it.
             tone = if (playing) RowTone.Accent else RowTone.Normal,
             trailing = {
                 if (playing) {
