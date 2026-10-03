@@ -17,6 +17,7 @@ import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
@@ -34,6 +35,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -83,6 +85,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.webkit.WebSettingsCompat
 import androidx.webkit.WebViewFeature
@@ -104,9 +107,11 @@ import dev.mks.duskread.ui.common.ToastRequest
 import dev.mks.duskread.ui.summary.SummaryPanel
 import dev.mks.duskread.ui.theme.DuskReadIcons
 import dev.mks.duskread.ui.theme.Layout
+import dev.mks.duskread.ui.theme.Mono
 import dev.mks.duskread.ui.theme.Motion
 import dev.mks.duskread.ui.theme.Radius
 import dev.mks.duskread.ui.theme.SectionLabel
+import dev.mks.duskread.ui.theme.Stroke
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -455,6 +460,8 @@ fun InAppBrowserScreen(queue: ReadingQueue, mono: Boolean, onClose: () -> Unit, 
                     ArticleLoader(
                         visible = (extracting || !painted) && !loadFailed,
                         entry = entry,
+                        extracting = extracting,
+                        progress = { progress },
                         modifier = Modifier.fillMaxSize(),
                     )
                 }
@@ -677,7 +684,13 @@ private fun SummaryOverArticle(
  * scope.
  */
 @Composable
-private fun ArticleLoader(visible: Boolean, entry: ReadingQueueEntry, modifier: Modifier = Modifier) {
+private fun ArticleLoader(
+    visible: Boolean,
+    entry: ReadingQueueEntry,
+    extracting: Boolean,
+    progress: () -> Float,
+    modifier: Modifier = Modifier,
+) {
     AnimatedVisibility(
         visible = visible,
         // No entrance: on a turn it has to be there on the first frame, or the page being
@@ -686,135 +699,77 @@ private fun ArticleLoader(visible: Boolean, entry: ReadingQueueEntry, modifier: 
         exit = fadeOut(tween(Motion.Fade)),
         modifier = modifier,
     ) {
-        ArticleSkeleton(entry = entry, modifier = Modifier.fillMaxSize())
+        ArticleWaiting(entry = entry, extracting = extracting, progress = progress, modifier = Modifier.fillMaxSize())
     }
 }
 
 /**
- * What the article is, while it is still being fetched: its real title and source, set
- * where the document will set them, over placeholder copy.
+ * What the article is, while it is still being fetched: its real title and source where
+ * the document will set them, then one line saying what is happening over a hairline that
+ * fills as the page loads. Static on purpose — nothing redraws but the line.
  */
 @Composable
-private fun ArticleSkeleton(entry: ReadingQueueEntry, modifier: Modifier = Modifier) {
-    val transition = rememberInfiniteTransition(label = "extracting")
-
-    // Linear and restarting, not eased and reversing: the easing lives in the triangle
-    // wave below, and a reversing phase would run the highlight back up the page.
-    val phase by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(SkeletonPulseMs, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart,
-        ),
-        label = "extractingPhase",
-    )
+private fun ArticleWaiting(entry: ReadingQueueEntry, extracting: Boolean, progress: () -> Float, modifier: Modifier = Modifier) {
+    val scheme = MaterialTheme.colorScheme
+    // Extraction has no progress of its own; a sliver says "started" until the page does.
+    val target = if (extracting) WaitingStart else progress().coerceIn(WaitingStart, 1f)
+    val fill by animateFloatAsState(target, tween(Motion.Fade), label = "articleProgress")
 
     // A queue of one carries no title worth setting — the URL stands in for it until the
-    // page answers — so that case keeps the bars it always had.
+    // page answers.
     val title = entry.title.takeIf { it != entry.url }
 
     Column(
         modifier
             // Opaque: the WebView behind paints the real document a beat before it says
             // it has, and a see-through placeholder shows both at once.
-            .background(MaterialTheme.colorScheme.background)
+            .background(scheme.background)
             .padding(horizontal = Layout.ReadingGutter)
             .padding(top = 20.dp),
     ) {
         if (title != null) {
-            // `h1` and `.source` in `articleDocument`, in that order and at that weight,
-            // so the header does not move when the document paints over it.
+            // `h1` and `.source` in `articleDocument`, so the header does not move when
+            // the document paints over it.
             Text(
                 text = title,
                 style = MaterialTheme.typography.headlineSmall,
-                color = MaterialTheme.colorScheme.onBackground,
+                color = scheme.onBackground,
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis,
             )
             Spacer(Modifier.height(6.dp))
-            Text(
-                text = (entry.host ?: hostOf(entry.url)).uppercase(),
-                style = MaterialTheme.typography.labelSmall,
-                letterSpacing = 0.04.em,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        } else {
-            SkeletonBar(0.92f, 22.dp, phase, index = 0)
-            Spacer(Modifier.height(10.dp))
-            SkeletonBar(0.65f, 22.dp, phase, index = 1)
         }
+        Text(
+            text = (entry.host ?: hostOf(entry.url)).uppercase(),
+            style = MaterialTheme.typography.labelSmall,
+            letterSpacing = 0.04.em,
+            color = scheme.onSurfaceVariant,
+        )
 
-        // `.source`'s own margin-bottom, so the body starts where it will.
-        Spacer(Modifier.height(22.dp))
-
-        // As many lines as there is room for, rather than a fixed eight that ran out half
-        // way down and left the rest of the screen blank.
-        BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
-            val rows = (maxHeight / BodyLineSlot).toInt().coerceAtLeast(1)
-            Column {
-                repeat(rows) { line ->
-                    SkeletonBar(BodyLineWidths[line % BodyLineWidths.size], BodyLineHeight, phase, index = line)
-                    Spacer(Modifier.height(BodyLineGap))
+        Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
+            Column(Modifier.fillMaxWidth(WaitingWidth), horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = if (extracting) "Fetching the article…" else "Setting the page…",
+                    fontFamily = Mono,
+                    fontSize = 11.sp,
+                    letterSpacing = 0.4.sp,
+                    color = scheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(12.dp))
+                // Grey, not the accent: loading is not the one thing that is playing.
+                Box(Modifier.fillMaxWidth().height(Stroke.Hairline).background(scheme.outlineVariant)) {
+                    Box(Modifier.fillMaxWidth(fill).fillMaxHeight().background(scheme.onSurfaceVariant))
                 }
             }
         }
     }
 }
 
-/**
- * [Radius.Chip] by default, the app's softened corner — a text placeholder is standing in
- * for a line of prose, and a fully rounded pill would make it read as a control instead.
- */
-@Composable
-private fun SkeletonBar(
-    widthFraction: Float,
-    height: Dp,
-    phase: Float,
-    index: Int,
-    shape: Shape = RoundedCornerShape(Radius.Chip),
-) {
-    Box(
-        Modifier
-            .fillMaxWidth(widthFraction)
-            .height(height)
-            .alpha(pulseAlpha(phase, index))
-            .clip(shape)
-            .background(MaterialTheme.colorScheme.surfaceContainer),
-    )
-}
+/** How much of the line shows the moment loading starts. */
+private const val WaitingStart = 0.08f
 
-/**
- * Where one row sits in the travelling pulse.
- */
-private fun pulseAlpha(phase: Float, index: Int): Float {
-    val shifted = (phase - index * SkeletonStagger).mod(1f)
-    val triangle = if (shifted < 0.5f) shifted * 2f else (1f - shifted) * 2f
-    return SkeletonDim + (SkeletonBright - SkeletonDim) * triangle
-}
-
-/** Ragged like set prose, with a short line where a paragraph ends. */
-private val BodyLineWidths = listOf(0.97f, 0.9f, 0.98f, 0.4f, 0.95f, 0.88f, 0.93f, 0.6f)
-
-private val BodyLineHeight = 12.dp
-private val BodyLineGap = 14.dp
-
-/** One line and the space under it — what a row of body copy costs vertically. */
-private val BodyLineSlot = BodyLineHeight + BodyLineGap
-
-/**
- * Slow for UI — the sub-300ms rule in `Motion` is for a control answering a touch, and
- * this is ambient.
- */
-private const val SkeletonPulseMs = 1_100
-
-/** How far behind the row above each row runs. Small: the page fills, it does not chase. */
-private const val SkeletonStagger = 0.05f
-
-// A narrow range: the placeholder marks where copy will be, and does not compete with
-// the real title set above it.
-private const val SkeletonDim = 0.35f
-private const val SkeletonBright = 0.62f
+/** The line's share of the screen — a measure, not a full-bleed rule. */
+private const val WaitingWidth = 0.55f
 
 @Composable
 private fun BrowserToolbar(
