@@ -306,6 +306,7 @@ fun HomeScreen(
                     onOpenFocus = onOpenFocus,
                     onOpenSaved = { onTabChange(HomeTab.SAVED) },
                     onOpenFollowing = { onTabChange(HomeTab.FOLLOWING) },
+                    onOpenSettings = { showSettings = true },
                     contentPadding = listPadding,
                 )
 
@@ -345,7 +346,6 @@ fun HomeScreen(
                         onSelect = onTabChange,
                         mono = mono,
                         onToggleTheme = onToggleTheme,
-                        onOpenSettings = { showSettings = true },
                     )
                     tabs(Modifier.weight(1f).fillMaxHeight())
                 }
@@ -447,7 +447,6 @@ fun HomeScreen(
                 onNext = SpeechSession::skip,
                 mono = mono,
                 onToggleTheme = onToggleTheme,
-                onOpenSettings = { showSettings = true },
                 // The tabs are behind whatever is covering the bar.
                 tabsAvailable = !coveredByASurface,
                 collapse = collapse,

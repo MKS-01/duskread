@@ -123,9 +123,18 @@ titles. `shortLabel` lives in `commonMain` so both phones shorten a name the
 same way ("Android Developers Blog" → "Android"). This replaced the uneven
 bento tiles; the deployed page still shows rows with chips — flag it.
 
+## Settings: Home's header, not the bar
+
+Settings opens from a bordered square icon button top-right on Home, beside
+the greeting — on both platforms, and on the wide rail too there is no second
+way in. It is the one deliberate exception to "everything sits in the lower
+third": it is opened rarely, so it gives up the thumb's reach to the tabs. The
+floating bar carries only the tabs and the theme toggle; don't put Settings,
+or anything else rarely used, back on it.
+
 ## The bordered square icon button
 
-Established this session for Settings (`DashboardTab.kt`) and the folder
+Used for Settings on Home (`DashboardTab.kt`, `DashboardScreen.swift`) and the folder
 picker (`Reader.android.kt` / `Reader.desktop.kt`), replacing bare glyphs and
 a plain `CircleShape` clip that drew no visible border. Use this shape for any
 new icon-only affordance that needs the same weight as a sort chip nearby:

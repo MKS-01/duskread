@@ -7,6 +7,7 @@ struct DashboardScreen: View {
     let onOpenFocus: () -> Void
     let onOpenSaved: () -> Void
     let onOpenFollowing: () -> Void
+    let onOpenSettings: () -> Void
 
     @Environment(LinksStore.self) private var links
     @Environment(BrowserRouter.self) private var browser
@@ -23,10 +24,15 @@ struct DashboardScreen: View {
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 26) {
-                if let greeting {
-                    Text(greeting)
+                // Settings lives here, top-right, not on the bar: it is opened rarely, so it
+                // gives up the thumb's reach to the tabs. The row stays with no name to show.
+                HStack(alignment: .center) {
+                    Text(greeting ?? "")
                         .dusk(.headlineSmall)
                         .foregroundStyle(dusk.onBackground)
+                    Spacer(minLength: 8)
+                    IconButton(path: IconPaths.shared.Settings, onTap: onOpenSettings)
+                        .accessibilityLabel("Settings")
                 }
 
                 if links.links.isEmpty && feeds.feeds.isEmpty {

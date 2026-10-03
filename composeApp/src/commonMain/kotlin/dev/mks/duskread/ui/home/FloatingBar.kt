@@ -158,7 +158,6 @@ fun FloatingBar(
     onNext: () -> Unit,
     mono: Boolean,
     onToggleTheme: () -> Unit,
-    onOpenSettings: () -> Unit,
     collapse: BarCollapse,
     modifier: Modifier = Modifier,
     /**
@@ -250,7 +249,6 @@ fun FloatingBar(
                     },
                     mono = mono,
                     onToggleTheme = onToggleTheme,
-                    onOpenSettings = onOpenSettings,
                 )
 
                 BarFace.PLAYER -> shown.value?.let { current ->
@@ -312,8 +310,9 @@ fun FloatingBar(
 }
 
 /**
- * The theme toggle and Settings ride at the trailing end, behind [BarDivider] — neither
- * is a destination like the tabs before it, so neither gets to look like one.
+ * The theme toggle rides at the trailing end, behind [BarDivider] — it is not a
+ * destination like the tabs before it, so it does not get to look like one. Settings
+ * is on Home's header instead: rarely used, so it gives up the thumb's reach.
  */
 @Composable
 private fun TabsFace(
@@ -322,7 +321,6 @@ private fun TabsFace(
     onSelect: (HomeTab) -> Unit,
     mono: Boolean,
     onToggleTheme: () -> Unit,
-    onOpenSettings: () -> Unit,
 ) {
     Row(
         Modifier.padding(horizontal = 7.dp),
@@ -338,7 +336,6 @@ private fun TabsFace(
             label = if (mono) "Switch to the colour theme" else "Switch to the monochrome theme",
             onClick = onToggleTheme,
         )
-        BarButton(icon = DuskReadIcons.Settings, label = "Settings", onClick = onOpenSettings)
     }
 }
 

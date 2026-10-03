@@ -53,7 +53,6 @@ fun NavRail(
     onSelect: (HomeTab) -> Unit,
     mono: Boolean,
     onToggleTheme: () -> Unit,
-    onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val scheme = MaterialTheme.colorScheme
@@ -83,11 +82,6 @@ fun NavRail(
                 icon = DuskReadIcons.Contrast,
                 label = if (mono) "Switch to the colour theme" else "Switch to the monochrome theme",
                 onClick = onToggleTheme,
-            )
-            RailButton(
-                icon = DuskReadIcons.Settings,
-                label = "Settings",
-                onClick = onOpenSettings,
             )
         }
 

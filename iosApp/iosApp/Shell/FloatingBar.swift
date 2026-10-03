@@ -7,7 +7,6 @@ struct FloatingBar: View {
     let collapsed: Bool
     let mono: Bool
     let onToggleTheme: () -> Void
-    let onOpenSettings: () -> Void
 
     @Environment(SpeechStore.self) private var speech
     @Environment(\.dusk) private var dusk
@@ -65,7 +64,6 @@ struct FloatingBar: View {
                 .padding(.horizontal, 6)
 
             barButton(IconPaths.shared.Contrast, active: false, onTap: onToggleTheme)
-            barButton(IconPaths.shared.Settings, active: false, onTap: onOpenSettings)
 
             // Only while something is playing, so the pill can be put back without
             // waiting for the read to end.

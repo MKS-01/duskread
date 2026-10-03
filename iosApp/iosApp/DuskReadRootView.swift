@@ -57,8 +57,7 @@ struct DuskReadRootView: View {
                     tab: $tab,
                     collapsed: collapse.collapsed,
                     mono: host.prefs.mono,
-                    onToggleTheme: { host.prefs.toggleTheme() },
-                    onOpenSettings: { destination = .settings }
+                    onToggleTheme: { host.prefs.toggleTheme() }
                 )
                 .padding(.bottom, gap)
                 // The player face fills the width it is given, so the bar takes the
@@ -82,7 +81,8 @@ struct DuskReadRootView: View {
             DashboardScreen(
                 onOpenFocus: { destination = .focus },
                 onOpenSaved: { tab = .saved },
-                onOpenFollowing: { tab = .following }
+                onOpenFollowing: { tab = .following },
+                onOpenSettings: { destination = .settings }
             )
         case .following:
             FollowingScreen(onOpenTopics: { destination = .topics($0) })

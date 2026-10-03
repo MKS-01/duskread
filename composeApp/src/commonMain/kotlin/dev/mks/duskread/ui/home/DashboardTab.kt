@@ -87,6 +87,7 @@ fun DashboardTab(
     feeds: FeedLibrary,
     feedPosts: FeedPostCache,
     greeting: String?,
+    onOpenSettings: () -> Unit,
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
 ) {
@@ -130,15 +131,26 @@ fun DashboardTab(
             modifier = Modifier.fillMaxWidth(),
             contentPadding = contentPadding,
         ) {
-            // Settings used to live only here, behind a gear next to the greeting — the
-            // row stayed even with no name to show, purely to give it somewhere to be.
-            greeting?.let {
-                item("head") {
+            // Settings lives here, top-right, not on the bar: it is opened rarely, so it
+            // gives up the thumb's reach to the tabs. The row stays with no name to show.
+            item("head") {
+                Row(Modifier.fillMaxWidth().padding(bottom = 22.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = it,
+                        text = greeting.orEmpty(),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onBackground,
-                        modifier = Modifier.padding(bottom = 22.dp),
+                        modifier = Modifier.weight(1f),
+                    )
+                    Icon(
+                        imageVector = DuskReadIcons.Settings,
+                        contentDescription = "Settings",
+                        modifier = Modifier
+                            .size(34.dp)
+                            .clip(RoundedCornerShape(Radius.Chip))
+                            .border(Stroke.Hairline, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(Radius.Chip))
+                            .clickable(onClick = onOpenSettings)
+                            .padding(9.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
