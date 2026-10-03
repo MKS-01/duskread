@@ -73,7 +73,7 @@
   /* ---- the phone ---- */
 
   #phone {
-    position: absolute; left: 80px; top: 130px; width: 300px; height: 300px;
+    position: absolute; left: 80px; top: 112px; width: 300px;
     border: 2px solid var(--line-firm); border-radius: 34px;
     background: var(--surface); padding: 30px 18px 22px;
   }
@@ -86,6 +86,7 @@
     width: 70px; height: 3px; border-radius: 2px; background: var(--line-firm);
   }
 
+  .store + .store { margin-top: 8px; }
   .store {
     border: 1px solid var(--line-firm); border-radius: 12px;
     background: var(--surface-raised); padding: 14px 14px;
@@ -154,11 +155,25 @@
 </style>
 
 <div id="stage">
-  <h1>One phone, <span class="accent">two stores</span></h1>
-  <p class="sub">no database — just key-value, plaintext or encrypted, and six ways a key ages</p>
+  <h1>One phone, <span class="accent">three stores</span></h1>
+  <p class="sub">SQLite for the lists, key-value for the rest, the token encrypted — and six ways the data ages</p>
 
   <div id="phone">
     <div class="notch"></div>
+
+    <div class="store">
+      <div class="head">
+        <svg class="icon" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="4.5" y="5" width="19" height="18" rx="2.5"/>
+          <path d="M4.5 11 H23.5 M4.5 17 H23.5 M11 11 V23"/>
+        </svg>
+        <div>
+          <div class="name">duskread.db</div>
+          <div class="kind">SQLite — the lists</div>
+        </div>
+      </div>
+      <div class="grant yes">✓ <b>a row each</b> — a save writes one</div>
+    </div>
 
     <div class="store">
       <div class="head">
@@ -195,7 +210,7 @@
   </div>
 
   <div id="lifecycles">
-    <div class="heading">Six keys, six different lifecycles
+    <div class="heading">Six stores of data, six different lifecycles
       <span class="caption">grouped from the full key table below — not every key ages the same way</span>
     </div>
 
@@ -204,15 +219,15 @@
         <svg class="icon" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="14" cy="14" r="10"/><path d="M14 9 v10 M9 14 h10"/>
         </svg>
-        <div class="key">links.saved</div>
-        <div class="lifecycle">keeps growing with what you save</div>
+        <div class="key">savedLink · table</div>
+        <div class="lifecycle">grows a row at a time; a save writes one row</div>
       </div>
 
       <div class="cell">
         <svg class="icon" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <path d="M8 4 h12 M8 24 h12 M8 4 l6 10 l-6 10 M20 4 l-6 10 l6 10"/>
         </svg>
-        <div class="key">links.removed</div>
+        <div class="key">removedLink · table</div>
         <div class="lifecycle">bounded — the oldest tombstone is evicted</div>
       </div>
 
@@ -228,8 +243,8 @@
         <svg class="icon" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 7.5 A9 9 0 1 1 12.5 4"/><path d="M21 7.5 V2.5 M21 7.5 H16"/>
         </svg>
-        <div class="key">feeds.posts</div>
-        <div class="lifecycle">re-encoded and replaced whole, every sync</div>
+        <div class="key">feedPost · table</div>
+        <div class="lifecycle">a feed's rows replaced when it answers</div>
       </div>
 
       <div class="cell">
@@ -251,7 +266,7 @@
       </div>
     </div>
 
-    <div class="legendline">Every decoder is positional and tolerant — a record from an older build still loads, with no migrations.</div>
+    <div class="legendline">Tables in duskread.db change through .sqm migrations; key-value decoders are positional and tolerant, so an older record still loads.</div>
   </div>
 
   <footer id="footer">Full key-by-key table below. The token is the one thing that never goes here.</footer>

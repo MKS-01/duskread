@@ -28,8 +28,9 @@ if you need the schema, the diagram, or the reasoning behind a number.
 
 A Kotlin Multiplatform app — Android and iOS from one `commonMain` — that
 does four things: keeps saved links, follows blogs by RSS, plays articles
-back as audio, and runs a focus timer. Notion curates what to follow and
-what's worth reading; the device never depends on it being reachable.
+back as audio, and runs a focus timer. Notion, if connected, curates what to
+follow and what's worth reading; it is optional, and the device never depends
+on it being reachable.
 
 Android draws with Compose Multiplatform. iOS draws with SwiftUI over the
 same Kotlin — see [The two UIs](#the-two-uis).
@@ -47,15 +48,16 @@ What it shows, in words:
 - **Following a blog** pulls `Sources` into `FeedLibrary`, additively, and
   writes back the same way — nothing here ever unfollows on a row deleted
   upstream.
-- **Saving a link** is the only two-way path, and the only place the app
-  writes to Notion. A row resolves per-row, newest wins, on `changedAt`
+- **Saving a link** syncs both ways with `Reading List`. A row resolves
+  per-row, newest wins, on `changedAt`
   against Notion's `last_edited_time`; a delete on the phone tombstones the
   Notion row (`Dismissed`) rather than erasing it.
 - **A newsletter with no public feed** is filed by Claude straight into
   `Reading List` and reaches the phone the same way any other row does, once
   `Saved` is ticked.
-- **A link gets in** one of four ways — the share sheet, the home-screen
-  widget, the paste field, or a bookmark from Following — all landing in
+- **A link gets in** one of five ways — the share sheet, the home-screen
+  widget, the paste field, a bookmark on a feed post, or opening a feed post,
+  which files it as read (`OpenRecord.SaveAndMarkRead`) — all landing in
   `LinkLibrary`.
 - **`RECOMMENDED`** ranks everything unread by a weighted sum of bounded,
   explicable terms: freshness, source and topic affinity, staleness, fit
@@ -105,7 +107,7 @@ Same picture as `README.md` — one copy, `docs/media/kmp-architecture.png`
 `data/`; the ranking; the parsers; the sync. Also the design *values* —
 `ui/theme/DesignTokens.kt` carries the fifteen colour roles per scheme, the
 layout and radius and stroke numbers and the four motion durations as plain
-`Long`/`Double`/`Int`, and `ui/theme/IconPaths.kt` carries the twenty-two
+`Long`/`Double`/`Int`, and `ui/theme/IconPaths.kt` carries the twenty-three
 glyphs as SVG path data. `Theme.kt`, `Tokens.kt` and `DuskReadIcons.kt` build
 their Compose values from those rather than owning them; Swift builds its
 `Color`, `CGFloat` and `Path` values from the same.
@@ -272,8 +274,8 @@ on Home doing something.
 | **Device** | followed feeds, cached posts, saved links, signals | the app | the app |
 | **readback** | `library.db` + `audio/`, synced onto the device by a separate script | the readback project | the app, **read-only** |
 
-Feed *posts* are never uploaded anywhere. Only deliberately saved links reach
-Notion.
+Feed *posts* are never uploaded anywhere. Only saved links and followed blogs
+reach Notion.
 
 ---
 
@@ -344,14 +346,15 @@ Lists in SQLite, the rest key-value. `duskread.db` (SQLDelight,
 `feedPost`, `savedLink` and `removedLink`: a sync rewrites only the feeds that
 answered, and a save or a tick writes one row. Each legacy string is imported
 once, into an empty table only — on iOS a removal lost to an early kill can
-bring the old string back. Everything else is small and stays in `KeyValueStore`, a four-method interface over
-`SharedPreferences` / a `.properties` file / `NSUserDefaults` / `localStorage`.
-Every decoder is positional and tolerant — new fields are appended and read
-with `getOrNull`, so a record written by an older build still loads, with no
-migrations.
+bring the old string back. Everything else is small and stays in
+`KeyValueStore`, a four-method interface over `SharedPreferences` / a
+`.properties` file / `NSUserDefaults` / `localStorage`. Its decoders are
+positional and tolerant — new fields are appended and read with `getOrNull`,
+so a record written by an older build still loads without a migration; the
+tables change only through `.sqm` migrations.
 
 <p align="center">
-  <img src="media/ondevice-storage.png" alt="One phone, two stores: KeyValueStore is plaintext and read by the widget from another process, SecretStore is encrypted and never reaches it. Six key groups age six different ways — links.saved keeps growing, links.removed is bounded and evicts oldest, links.inbox drains on next open, feeds.posts is replaced whole every sync, summaries is bounded newest-first, notion.*/prefs are static until changed">
+  <img src="media/ondevice-storage.png" alt="One phone, three stores: the duskread.db SQLite database for the lists, KeyValueStore in plaintext and read by the widget from another process, and SecretStore, encrypted, which never reaches it. Six groups age six different ways — savedLink keeps growing a row at a time, removedLink is bounded and evicts the oldest, links.inbox drains on next open, feedPost replaces a feed's rows when it answers, summaries is bounded newest-first, notion.*/prefs are static until changed">
 </p>
 
 <details>
@@ -554,7 +557,8 @@ committed. `composeApp` splits into `commonMain` and two platform source
 sets meeting it through `expect`/`actual`; `commonMain` is organised by
 feature — `data/`, `links/`, `notion/`, `pomodoro/`, `reader/`, `speech/`,
 `summary/`, `ui/` — each named for the concern in
-[The shape of it](#the-shape-of-it).
+[The shape of it](#the-shape-of-it). Beside them, `commonMain/sqldelight/`
+holds the database schema and its migrations.
 
 `iosApp` is no longer a thin host around a Compose view controller: it is the
 iOS UI. `Design/` builds Swift values from the shared tokens, `Bridge/` wraps
@@ -579,5 +583,5 @@ would be ceremony, and their absence is deliberate rather than pending.
 ## Where to look next
 
 - `README.md` — what the app is and how to build it
-- https://duskread.mksbrew.dev — the visual language and every colour, type
-  style and value behind it
+- https://duskread.mksbrew.dev — the app's own page: what it's for, and the
+  screens in Paper Black
