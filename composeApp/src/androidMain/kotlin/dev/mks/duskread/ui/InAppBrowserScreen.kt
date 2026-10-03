@@ -704,9 +704,9 @@ private fun ArticleLoader(
 }
 
 /**
- * What the article is, while it is still being fetched: its real title and source where
- * the document will set them, then one line saying what is happening over a hairline that
- * fills as the page loads. Static on purpose — nothing redraws but the line.
+ * What the article is, while it is still being fetched: one group centred on the screen —
+ * source, title, what is happening, and a hairline that fills as the page loads. Static
+ * on purpose: nothing redraws but the line and its number.
  */
 @Composable
 private fun ArticleWaiting(entry: ReadingQueueEntry, extracting: Boolean, progress: () -> Float, modifier: Modifier = Modifier) {
@@ -719,57 +719,72 @@ private fun ArticleWaiting(entry: ReadingQueueEntry, extracting: Boolean, progre
     // page answers.
     val title = entry.title.takeIf { it != entry.url }
 
-    Column(
+    Box(
         modifier
             // Opaque: the WebView behind paints the real document a beat before it says
             // it has, and a see-through placeholder shows both at once.
             .background(scheme.background)
-            .padding(horizontal = Layout.ReadingGutter)
-            .padding(top = 20.dp),
+            .padding(horizontal = Layout.ReadingGutter),
+        contentAlignment = Alignment.Center,
     ) {
-        if (title != null) {
-            // `h1` and `.source` in `articleDocument`, so the header does not move when
-            // the document paints over it.
+        Column(
+            Modifier.fillMaxWidth().padding(bottom = WaitingLift),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
             Text(
-                text = title,
-                style = MaterialTheme.typography.headlineSmall,
-                color = scheme.onBackground,
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis,
+                text = (entry.host ?: hostOf(entry.url)).uppercase(),
+                style = MaterialTheme.typography.labelSmall,
+                letterSpacing = 0.04.em,
+                color = scheme.onSurfaceVariant,
             )
-            Spacer(Modifier.height(6.dp))
-        }
-        Text(
-            text = (entry.host ?: hostOf(entry.url)).uppercase(),
-            style = MaterialTheme.typography.labelSmall,
-            letterSpacing = 0.04.em,
-            color = scheme.onSurfaceVariant,
-        )
-
-        Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
-            Column(Modifier.fillMaxWidth(WaitingWidth), horizontalAlignment = Alignment.CenterHorizontally) {
+            if (title != null) {
+                Spacer(Modifier.height(10.dp))
                 Text(
-                    text = if (extracting) "Fetching the article…" else "Setting the page…",
-                    fontFamily = Mono,
-                    fontSize = 11.sp,
-                    letterSpacing = 0.4.sp,
-                    color = scheme.onSurfaceVariant,
+                    text = title,
+                    style = MaterialTheme.typography.titleLarge,
+                    color = scheme.onBackground,
+                    textAlign = TextAlign.Center,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
                 )
-                Spacer(Modifier.height(12.dp))
+            }
+            Spacer(Modifier.height(28.dp))
+            Column(Modifier.fillMaxWidth(WaitingWidth)) {
                 // Grey, not the accent: loading is not the one thing that is playing.
                 Box(Modifier.fillMaxWidth().height(Stroke.Hairline).background(scheme.outlineVariant)) {
-                    Box(Modifier.fillMaxWidth(fill).fillMaxHeight().background(scheme.onSurfaceVariant))
+                    Box(Modifier.fillMaxWidth(fill).fillMaxHeight().background(scheme.onSurface))
+                }
+                Spacer(Modifier.height(10.dp))
+                Row(Modifier.fillMaxWidth()) {
+                    Text(
+                        text = if (extracting) "Fetching the article" else "Setting the page",
+                        fontFamily = Mono,
+                        fontSize = 11.sp,
+                        letterSpacing = 0.4.sp,
+                        color = scheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Text(
+                        text = "${(fill * 100).toInt()}%",
+                        fontFamily = Mono,
+                        fontSize = 11.sp,
+                        letterSpacing = 0.4.sp,
+                        color = scheme.onSurfaceVariant,
+                    )
                 }
             }
         }
     }
 }
 
+/** Optical centre: a block dead-centre reads as sitting low, so it rises a little. */
+private val WaitingLift = 48.dp
+
 /** How much of the line shows the moment loading starts. */
 private const val WaitingStart = 0.08f
 
 /** The line's share of the screen — a measure, not a full-bleed rule. */
-private const val WaitingWidth = 0.55f
+private const val WaitingWidth = 0.7f
 
 @Composable
 private fun BrowserToolbar(
