@@ -3,6 +3,7 @@ package dev.mks.duskread.bridge
 import dev.mks.duskread.data.AppGraph
 import dev.mks.duskread.links.latestPosts
 import dev.mks.duskread.links.loadArticle
+import dev.mks.duskread.links.postFor
 import dev.mks.duskread.speech.SpeakerState
 import dev.mks.duskread.speech.SpeechNowPlaying
 import dev.mks.duskread.speech.SpeechSession
@@ -45,7 +46,9 @@ class SpeakerBridge internal constructor(private val graph: AppGraph) {
     ) {
         stop()
         reading = scope.launch {
-            val article = runCatching { loadArticle(graph.http, url, null, null) }.getOrNull()
+            // The feed's own copy first, as Android does: it is already on the phone.
+            val cached = graph.feedPosts.postsByFeed.postFor(url)
+            val article = runCatching { loadArticle(graph.http, url, cached?.title, cached?.content) }.getOrNull()
             if (article == null || article.text.isBlank()) {
                 onFinished("Could not read that page.")
                 return@launch

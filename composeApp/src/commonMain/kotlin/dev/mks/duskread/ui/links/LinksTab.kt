@@ -36,6 +36,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -92,10 +93,12 @@ fun LinksTab(
     val client = LocalAppGraph.current.http
 
     val pending = library.links.filterNot { it.fetched }
-    LaunchedEffect(pending.map { it.id }) {
-        pending.forEach { link ->
-            // One at a time on purpose: this is a handful of links, and a sequential walk
-            // keeps the list settling top-down rather than rearranging itself in bursts.
+    LaunchedEffect(library) {
+        // One at a time, top-down. Keyed on the library, not the pending ids: an effect
+        // keyed on the ids restarted after every answer and cancelled the next request
+        // mid-flight, which then went out again.
+        snapshotFlow { library.links.firstOrNull { !it.fetched } }.collect { link ->
+            link ?: return@collect
             val meta = runCatching { fetchLinkMetadata(client, link.url) }.getOrNull()
             if (meta == null) library.markFetchFailed(link.id) else library.describe(link.id, meta.title, meta.description)
         }
@@ -140,8 +143,9 @@ fun LinksTab(
     PullToRefreshBox(
         isRefreshing = refreshing,
         onRefresh = {
-            refreshing = true
-            library.refreshAll()
+            // Only shown when there is something to retry; otherwise nothing would ever
+            // clear it.
+            refreshing = library.refreshAll()
         },
         modifier = modifier.fillMaxSize(),
     ) {

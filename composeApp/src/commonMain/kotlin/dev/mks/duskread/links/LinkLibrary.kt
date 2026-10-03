@@ -127,10 +127,14 @@ class LinkLibrary(
     }
 
     /**
-     * Pull-to-refresh: re-fetches every link, not just the ones that never finished.
+     * Pull-to-refresh: retries only the links whose page never answered. A title that
+     * already loaded does not change by asking again, so re-fetching it is wasted requests.
+     * Returns whether anything was queued.
      */
-    fun refreshAll() {
-        links = links.map { it.copy(fetched = false, fetchFailed = false) }
+    fun refreshAll(): Boolean {
+        if (links.none { it.fetchFailed }) return false
+        links = links.map { if (it.fetchFailed) it.copy(fetched = false, fetchFailed = false) else it }
+        return true
     }
 
     /**

@@ -6,6 +6,8 @@ import io.ktor.client.request.header
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 /**
@@ -21,14 +23,37 @@ data class Article(
 )
 
 /**
- * The article for [url], preferring what the feed already gave us.
+ * The article for [url], preferring what the feed already gave us. Remembered for the
+ * session, so reading, then summarising, then listening to one article fetches it once.
  */
 suspend fun loadArticle(
     client: HttpClient,
     url: String,
     feedTitle: String? = null,
     feedContent: String? = null,
-): Article? = withContext(Dispatchers.Default) { articleFromFeed(url, feedTitle, feedContent) } ?: fetchArticle(client, url)
+): Article? {
+    ArticleMemo.get(url)?.let { return it }
+    val article = withContext(Dispatchers.Default) { articleFromFeed(url, feedTitle, feedContent) } ?: fetchArticle(client, url)
+    article?.let { ArticleMemo.put(url, it) }
+    return article
+}
+
+/** The last few articles loaded, by address. Small: a reading session, not an archive. */
+private object ArticleMemo {
+    private val lock = Mutex()
+    private val entries = LinkedHashMap<String, Article>()
+
+    suspend fun get(url: String): Article? = lock.withLock { entries[url] }
+
+    suspend fun put(url: String, article: Article) = lock.withLock {
+        entries.remove(url)
+        entries[url] = article
+        // Insertion order is recency here, since a hit is re-put; drop the oldest.
+        if (entries.size > MaxRemembered) entries.remove(entries.keys.first())
+    }
+
+    private const val MaxRemembered = 12
+}
 
 /** The feed's own copy of the post, if the feed carried the whole thing. */
 fun articleFromFeed(url: String, title: String?, contentHtml: String?): Article? {

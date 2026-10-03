@@ -31,10 +31,16 @@ suspend fun fetchLinkMetadata(client: HttpClient, url: String): LinkMetadata {
 
     // Off Main for the same reason as a feed parse: pull-to-refresh runs this per link.
     return withContext(Dispatchers.Default) {
-        LinkMetadata(
-            title = html.metaContent("og:title") ?: html.titleTag(),
-            description = html.metaContent("og:description") ?: html.metaContent("description"),
-        )
+        val title = html.metaContent("og:title") ?: html.titleTag()
+        // A bot check is not the page: saying nothing keeps the title already on the row.
+        if (title != null && ChallengeTitles.any { title.startsWith(it, ignoreCase = true) }) {
+            LinkMetadata(title = null, description = null)
+        } else {
+            LinkMetadata(
+                title = title,
+                description = html.metaContent("og:description") ?: html.metaContent("description"),
+            )
+        }
     }
 }
 
@@ -107,3 +113,13 @@ internal const val UserAgent = "Mozilla/5.0 (compatible; DuskRead/1.0; +https://
 
 /** The head is all we need, and some pages are megabytes. */
 private const val MaxBytesScanned = 200_000
+
+/** What Cloudflare, Akamai and friends title the page they serve a client they doubt. */
+private val ChallengeTitles = listOf(
+    "Human Verification",
+    "Just a moment",
+    "Attention Required",
+    "Access denied",
+    "Are you a robot",
+    "Verifying you are human",
+)
