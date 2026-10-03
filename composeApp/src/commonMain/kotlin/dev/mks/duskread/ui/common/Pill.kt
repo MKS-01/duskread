@@ -29,7 +29,13 @@ fun Pill(label: String, active: Boolean, modifier: Modifier = Modifier, onClick:
         color = tone,
         modifier = modifier
             .clip(RoundedCornerShape(Radius.Chip))
-            .border(Stroke.Hairline, tone, RoundedCornerShape(Radius.Chip))
+            // Only the active pill's border takes its tone; the rest are the same hairline
+            // as every other border, or three pills outweigh the list under them.
+            .border(
+                Stroke.Hairline,
+                if (active) tone else MaterialTheme.colorScheme.outlineVariant,
+                RoundedCornerShape(Radius.Chip),
+            )
             .clickable(onClick = onClick)
             .padding(horizontal = 11.dp, vertical = 6.dp),
     )
