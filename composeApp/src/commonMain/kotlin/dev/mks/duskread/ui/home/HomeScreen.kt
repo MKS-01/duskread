@@ -304,7 +304,6 @@ fun HomeScreen(
                     feeds = feeds,
                     feedPosts = feedPosts,
                     onOpenFocus = onOpenFocus,
-                    onOpenSaved = { onTabChange(HomeTab.SAVED) },
                     onOpenFollowing = { onTabChange(HomeTab.FOLLOWING) },
                     onOpenSettings = { showSettings = true },
                     contentPadding = listPadding,
