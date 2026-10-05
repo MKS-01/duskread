@@ -17,7 +17,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -76,13 +75,10 @@ fun ListRowBody(
     meta: @Composable RowScope.() -> Unit,
 ) {
     val scheme = MaterialTheme.colorScheme
-    val accented = tone == RowTone.Accent
 
     Column(
         modifier
             .fillMaxWidth()
-            // Recession, not a strikethrough: a done row is the same row with less of it.
-            .alpha(if (tone == RowTone.Faded) 0.5f else 1f)
             .clickable(onClick = onClick),
     ) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
@@ -94,7 +90,13 @@ fun ListRowBody(
                     lineHeight = 19.sp,
                     maxLines = titleMaxLines,
                     overflow = TextOverflow.Ellipsis,
-                    color = if (accented) scheme.primary else scheme.onSurface,
+                    // A shade, not a fade: a done row recedes but stays as legible as its
+                    // meta line, which see-through text was not.
+                    color = when (tone) {
+                        RowTone.Accent -> scheme.primary
+                        RowTone.Faded -> scheme.onSurfaceVariant
+                        RowTone.Normal -> scheme.onSurface
+                    },
                 )
                 Spacer(Modifier.height(5.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp), content = meta)
