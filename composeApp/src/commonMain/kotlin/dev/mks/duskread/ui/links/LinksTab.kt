@@ -2,7 +2,6 @@ package dev.mks.duskread.ui.links
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -30,7 +29,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -39,7 +37,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.input.ImeAction
@@ -62,13 +59,14 @@ import dev.mks.duskread.ui.OpenRecord
 import dev.mks.duskread.ui.ReadingQueue
 import dev.mks.duskread.ui.ReadingQueueEntry
 import dev.mks.duskread.ui.common.AppTextField
+import dev.mks.duskread.ui.common.ArticleCard
+import dev.mks.duskread.ui.common.CardSlider
 import dev.mks.duskread.ui.common.CompactEmptyState
 import dev.mks.duskread.ui.common.EmptyState
 import dev.mks.duskread.ui.common.EyebrowHeader
 import dev.mks.duskread.ui.common.HeaderAction
 import dev.mks.duskread.ui.common.ListRowBody
 import dev.mks.duskread.ui.common.ListRowDivider
-import dev.mks.duskread.ui.common.Pill
 import dev.mks.duskread.ui.common.RowMeta
 import dev.mks.duskread.ui.common.RowTone
 import dev.mks.duskread.ui.common.ToastRequest
@@ -111,19 +109,16 @@ fun LinksTab(
         if (pending.isEmpty()) refreshing = false
     }
 
-    // Three controls, all folded away until asked for: a filter, a search field and the
-    // paste box itself.
+    // Two controls, both folded away until asked for: a search field and the paste box.
     var adding by remember { mutableStateOf(library.links.isEmpty()) }
     var searching by remember { mutableStateOf(false) }
     var query by remember { mutableStateOf("") }
-    var filter by remember { mutableStateOf(LinkFilter.ALL) }
 
     val matching = library.links.filter { it.matches(query) }
     val (read, unread) = matching.partition { it.read }
-    // The filter picks which of the two sections exist at all rather than reordering
-    // anything: UNREAD and READ are already the shape of this screen.
-    val showUnread = filter != LinkFilter.READ && unread.isNotEmpty()
-    val showRead = filter != LinkFilter.UNREAD && read.isNotEmpty()
+    // No filter: the slider and the list below it already split unread from read.
+    val showUnread = unread.isNotEmpty()
+    val showRead = read.isNotEmpty()
 
     // Most recently read first, which is the order the section below draws them in.
     val sortedRead = read.sortedByDescending { it.readAt ?: it.savedAt }
@@ -166,17 +161,6 @@ fun LinksTab(
                     )
                     Spacer(Modifier.height(12.dp))
 
-                    if (library.links.isNotEmpty()) {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(7.dp),
-                            modifier = Modifier.padding(bottom = 12.dp),
-                        ) {
-                            LinkFilter.entries.forEach { choice ->
-                                Pill(choice.label, filter == choice) { filter = choice }
-                            }
-                        }
-                    }
-
                     AnimatedVisibility(searching) {
                         AppTextField(
                             value = query,
@@ -217,38 +201,25 @@ fun LinksTab(
                 // not about the library.
                 item("no-matches") {
                     CompactEmptyState(
-                        title = if (query.isNotBlank()) "Nothing matches “$query”" else "Nothing ${filter.label.lowercase()} here",
-                        message = if (query.isNotBlank()) {
-                            "Try a different title, host or topic."
-                        } else {
-                            "Switch the filter back to All to see everything saved."
-                        },
+                        title = "Nothing matches “$query”",
+                        message = "Try a different title, host or topic.",
                     )
                 }
             }
 
             if (showUnread) {
-                item("unread-head") {
-                    EyebrowHeader(text = "UNREAD · ${unread.size}", modifier = Modifier.padding(bottom = 12.dp))
-                }
-                unread.forEachIndexed { index, link ->
-                    item(link.id) {
-                        LinkRow(
-                            link = link,
-                            last = index == unread.lastIndex,
-                            // The read mark and the signal are the reader's job now —
-                            // it has to leave the same record for a page turned to.
-                            onOpen = { open(queue.at(queue.positionOf(link.url))) },
-                            onToggleRead = {
-                                library.toggleRead(link.id)
-                                signals.recordRead(link.url)
-                            },
-                            onRetry = { library.retryFetch(link.id) },
-                            onRemove = {
-                                library.remove(link.id)
-                                ToastRequest.show("Removed")
-                            },
-                        )
+                item("unread") {
+                    Column(Modifier.padding(bottom = 8.dp)) {
+                        EyebrowHeader(text = "UNREAD · ${unread.size}", modifier = Modifier.padding(bottom = 12.dp))
+                        CardSlider(unread, key = { it.id }) { _, link, cardModifier ->
+                            SavedCard(
+                                link = link,
+                                // The read mark and the signal are the reader's job now —
+                                // it has to leave the same record for a page turned to.
+                                onOpen = { open(queue.at(queue.positionOf(link.url))) },
+                                modifier = cardModifier,
+                            )
+                        }
                     }
                 }
             }
@@ -259,7 +230,7 @@ fun LinksTab(
                     EyebrowHeader(
                         text = "READ · ${read.size}",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = if (showUnread) 20.dp else 0.dp, bottom = 12.dp),
+                        modifier = Modifier.padding(top = if (showUnread) 22.dp else 0.dp, bottom = 12.dp),
                     )
                 }
 
@@ -281,15 +252,6 @@ fun LinksTab(
             }
         }
     }
-}
-
-/**
- * What the pills above the list choose between.
- */
-private enum class LinkFilter(val label: String) {
-    ALL("All"),
-    UNREAD("Unread"),
-    READ("Read"),
 }
 
 /**
@@ -382,7 +344,33 @@ private fun AddLinkField(onSave: (String) -> Boolean, modifier: Modifier = Modif
 }
 
 /**
- * One saved link: a monogram, title, host and a relative timestamp — nothing more.
+ * One unread link as a slider card, the same card Home and Following use. Opening it is
+ * the one action: that marks it read, and the read list below keeps the swipes.
+ */
+@Composable
+private fun SavedCard(link: SavedLink, onOpen: () -> Unit, modifier: Modifier = Modifier) {
+    ArticleCard(
+        host = link.host,
+        title = link.title,
+        body = when {
+            !link.fetched -> "Reading the page…"
+            link.fetchFailed -> "Couldn’t load this page."
+            // Said, not left blank: an empty card reads as one that failed to draw.
+            else -> link.description?.takeIf { it.isNotBlank() } ?: "No preview for this page — open it to read."
+        },
+        timeAgo = savedAgo(link.savedAt),
+        onClick = onOpen,
+        expandable = false,
+        modifier = modifier,
+    ) {
+        // The subject, when something knew it — Notion filed it, or the feed it came from.
+        link.topic?.let { RowMeta(it) }
+    }
+}
+
+/**
+ * One read link: title, host and when it was read. Swipe right to remove, left to
+ * summarise.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

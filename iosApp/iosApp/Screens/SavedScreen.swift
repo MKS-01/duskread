@@ -1,7 +1,7 @@
 import ComposeApp
 import SwiftUI
 
-/// The reading queue: unread leads, read stays under its own heading.
+/// The reading queue: unread as a slider of cards, read as a list under it.
 struct SavedScreen: View {
     @Environment(LinksStore.self) private var links
     @Environment(BrowserRouter.self) private var browser
@@ -9,7 +9,6 @@ struct SavedScreen: View {
     @Environment(BarCollapse.self) private var collapse
     @Environment(\.dusk) private var dusk
 
-    @State private var filter: LinkFilter = .all
     @State private var searching = false
     @State private var adding = false
     @State private var query = ""
@@ -31,11 +30,13 @@ struct SavedScreen: View {
                     )
                     .padding(.top, 60)
                 } else {
-                    if filter != .read, !unread.isEmpty {
-                        section("Unread · \(unread.count)", rows: unread)
+                    // No filter: the slider and the list already split unread from read.
+                    if !unread.isEmpty {
+                        unreadSlider
                     }
-                    if filter != .unread, !read.isEmpty {
+                    if !read.isEmpty {
                         section("Read · \(read.count)", rows: read)
+                            .padding(.top, unread.isEmpty ? 0 : 22)
                     }
                 }
             }
@@ -68,14 +69,6 @@ struct SavedScreen: View {
                 }
             }
 
-            HStack(spacing: Space.chipGap) {
-                ForEach(LinkFilter.allCases, id: \.self) { option in
-                    Pill(label: option.label, active: filter == option) {
-                        withAnimation(Motion.ease(Motion.chip)) { filter = option }
-                    }
-                }
-            }
-
             if searching {
                 AppTextField(placeholder: "Search titles", text: $query)
             }
@@ -91,6 +84,47 @@ struct SavedScreen: View {
                 }
             }
         }
+    }
+
+    /// The same card Home and Following use. Opening it is the one action: that marks it
+    /// read, and the read list below keeps its menu.
+    private var unreadSlider: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            EyebrowHeader(label: "Unread · \(unread.count)")
+                .padding(.bottom, 14)
+            CardSlider(items: unread, id: \.id) { link in
+                ArticleCard(
+                    host: link.host,
+                    title: link.title,
+                    text: cardText(for: link),
+                    timeAgo: links.savedAgo(link),
+                    meta: link.topic.flatMap { $0.isEmpty ? nil : [RowMetaItem(text: $0)] } ?? [],
+                    expandable: false,
+                    onTap: { open(link) }
+                )
+            }
+        }
+        .padding(.bottom, 8)
+    }
+
+    private func cardText(for link: SavedLink) -> String {
+        if !link.fetched { return "Reading the page…" }
+        if link.fetchFailed { return "Couldn't load this page." }
+        // Said, not left blank: an empty card reads as one that failed to draw.
+        if let text = link.description_, !text.isEmpty { return text }
+        return "No preview for this page — open it to read."
+    }
+
+    @ViewBuilder
+    private func menu(for link: SavedLink) -> some View {
+        if speech.available {
+            Button("Read aloud") { speech.speak(title: link.title, url: link.url) }
+        }
+        Button(link.read ? "Mark unread" : "Mark read") { links.toggleRead(link) }
+        if link.fetchFailed {
+            Button("Try again") { links.retry(link) }
+        }
+        Button("Remove", role: .destructive) { links.remove(link) }
     }
 
     private func section(_ label: String, rows: [SavedLink]) -> some View {
@@ -120,16 +154,7 @@ struct SavedScreen: View {
             ) { links.toggleRead(link) }
         }
         // A context menu, not a swipe, until the Compose gesture is ported.
-        .contextMenu {
-            if speech.available {
-                Button("Read aloud") { speech.speak(title: link.title, url: link.url) }
-            }
-            Button(link.read ? "Mark unread" : "Mark read") { links.toggleRead(link) }
-            if link.fetchFailed {
-                Button("Try again") { links.retry(link) }
-            }
-            Button("Remove", role: .destructive) { links.remove(link) }
-        }
+        .contextMenu { menu(for: link) }
     }
 
     private func meta(for link: SavedLink) -> [RowMetaItem] {
@@ -149,14 +174,8 @@ struct SavedScreen: View {
     // MARK: - Behaviour
 
     private var visible: [SavedLink] {
-        let pool: [SavedLink]
-        switch filter {
-        case .all: pool = links.links
-        case .unread: pool = links.unread
-        case .read: pool = links.read
-        }
-        guard !query.isEmpty else { return pool }
-        return pool.filter { $0.title.localizedCaseInsensitiveContains(query) }
+        guard !query.isEmpty else { return links.links }
+        return links.links.filter { $0.title.localizedCaseInsensitiveContains(query) }
     }
 
     private var unread: [SavedLink] { visible.filter { !$0.read } }
@@ -173,18 +192,6 @@ struct SavedScreen: View {
 
     private func open(_ link: SavedLink) {
         browser.open(link.url)
-    }
-}
-
-enum LinkFilter: CaseIterable {
-    case all, unread, read
-
-    var label: String {
-        switch self {
-        case .all: return "All"
-        case .unread: return "Unread"
-        case .read: return "Read"
-        }
     }
 }
 

@@ -65,6 +65,8 @@ fun ArticleCard(
     playing: Boolean = false,
     /** A set height the body grows to fill, cut where it runs out; no "more" then. */
     height: Dp? = null,
+    /** Whether "more" opens the text in place; off in a slider, where cards must match. */
+    expandable: Boolean = true,
     meta: @Composable RowScope.() -> Unit,
 ) {
     val scheme = MaterialTheme.colorScheme
@@ -141,12 +143,15 @@ fun ArticleCard(
         }
 
         Spacer(Modifier.height(14.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(10.dp), content = meta)
+        // A set height, so a card with "more" and one without, or with nothing on its meta
+        // line at all, still stop at the same place.
+        Row(Modifier.height(MetaLineHeight), verticalAlignment = Alignment.CenterVertically) {
+            // On one baseline with "more": centring two text styles leaves them a hair apart.
+            Row(Modifier.weight(1f).alignByBaseline(), horizontalArrangement = Arrangement.spacedBy(10.dp), content = meta)
 
             // Only offered when there is something behind it. A "more" that opens two
             // more words is a broken promise.
-            if (truncated && height == null) {
+            if (truncated && height == null && expandable) {
                 Text(
                     text = if (expanded) "LESS" else "MORE",
                     fontFamily = Mono,
@@ -155,6 +160,7 @@ fun ArticleCard(
                     // Its own clickable, so opening the card's text is not opening the
                     // article — the inner one takes the tap.
                     modifier = Modifier
+                        .alignByBaseline()
                         .clip(RoundedCornerShape(Radius.Chip))
                         .clickable { expanded = !expanded }
                         .padding(horizontal = 8.dp, vertical = 4.dp),
@@ -163,6 +169,9 @@ fun ArticleCard(
         }
     }
 }
+
+/** Tall enough for "more" with its tap padding, which is the tallest thing that sits there. */
+private val MetaLineHeight = 28.dp
 
 /** Generous next to a list row's, because the card's whole point is the room. */
 private val CardPadding = 16.dp

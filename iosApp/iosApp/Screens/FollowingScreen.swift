@@ -162,31 +162,23 @@ struct FollowingScreen: View {
     }
 
     private func pickSlider(_ items: [PostPick]) -> some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            LazyHStack(spacing: Space.cardGap) {
-                ForEach(items, id: \.post.url) { pick in
-                    ArticleCard(
-                        host: pick.feed.shortLabel,
-                        title: pick.post.title,
-                        text: pick.excerpt ?? "",
-                        timeAgo: pick.post.publishedAt.map { links.savedAgo($0.int64Value) },
-                        meta: [RowMetaItem(text: "\(pick.minutes) min")]
-                            + (pick.feed.topic.map { [RowMetaItem(text: $0.lowercased())] } ?? []),
-                        fixedHeight: pickCardHeight,
-                        onTap: { open(pick.post) }
-                    )
-                    // Its own height is the floor, so it is read only while unset.
-                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
-                        if pickCardHeight == nil { naturalCard = max(naturalCard, height) }
-                    }
-                    // Short of the full width, so the next card shows at the edge.
-                    .containerRelativeFrame(.horizontal) { width, _ in width * 0.86 }
-                }
+        CardSlider(items: items, id: \.post.url) { pick in
+            ArticleCard(
+                host: pick.feed.shortLabel,
+                title: pick.post.title,
+                text: pick.excerpt ?? "",
+                timeAgo: pick.post.publishedAt.map { links.savedAgo($0.int64Value) },
+                meta: [RowMetaItem(text: "\(pick.minutes) min")]
+                    + (pick.feed.topic.map { [RowMetaItem(text: $0.lowercased())] } ?? []),
+                fixedHeight: pickCardHeight,
+                expandable: false,
+                onTap: { open(pick.post) }
+            )
+            // Its own height is the floor, so it is read only while unset.
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
+                if pickCardHeight == nil { naturalCard = max(naturalCard, height) }
             }
-            .scrollTargetLayout()
         }
-        // One card at a time, with the next peeking in so the row reads as swipeable.
-        .scrollTargetBehavior(.viewAligned)
     }
 
     private static let stackSpace = "following-stack"

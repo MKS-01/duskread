@@ -23,6 +23,8 @@ struct ArticleCard: View {
     var playing: Bool = false
     /// A set height the body grows to fill, cut where it runs out; no "more" then.
     var fixedHeight: CGFloat?
+    /// Whether "more" opens the text in place; off in a slider, where cards must match.
+    var expandable: Bool = true
     var onTap: () -> Void = {}
 
     @Environment(\.dusk) private var dusk
@@ -82,7 +84,7 @@ struct ArticleCard: View {
 
             Color.clear.frame(height: 14)
 
-            HStack(spacing: 10) {
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
                 ForEach(meta) { item in
                     Text(item.text)
                         .dusk(.code)
@@ -93,7 +95,7 @@ struct ArticleCard: View {
 
                 // Only offered when there is something behind it. A "more" that opens two
                 // more words is a broken promise.
-                if truncated && fixedHeight == nil {
+                if truncated && fixedHeight == nil && expandable {
                     Button {
                         withAnimation(Motion.ease(Motion.chip)) { expanded.toggle() }
                     } label: {
@@ -107,6 +109,9 @@ struct ArticleCard: View {
                     .buttonStyle(.plain)
                 }
             }
+            // A set height, so a card with "more" and one without, or with nothing on its
+            // meta line at all, still stop at the same place.
+            .frame(height: 28)
         }
         .padding(Self.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)

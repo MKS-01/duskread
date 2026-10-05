@@ -2,31 +2,20 @@ package dev.mks.duskread.ui.home
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.snapping.SnapPosition
-import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -78,12 +67,12 @@ import dev.mks.duskread.ui.ReadingQueue
 import dev.mks.duskread.ui.ReadingQueueEntry
 import dev.mks.duskread.ui.common.AppTextField
 import dev.mks.duskread.ui.common.ArticleCard
+import dev.mks.duskread.ui.common.CardSlider
 import dev.mks.duskread.ui.common.CompactEmptyState
 import dev.mks.duskread.ui.common.EmptyState
 import dev.mks.duskread.ui.common.EyebrowHeader
 import dev.mks.duskread.ui.common.HairlineDivider
 import dev.mks.duskread.ui.common.HeaderAction
-import dev.mks.duskread.ui.common.ListRow
 import dev.mks.duskread.ui.common.RowMeta
 import dev.mks.duskread.ui.rememberArticleOpener
 import dev.mks.duskread.ui.theme.DesignTokens
@@ -91,8 +80,6 @@ import dev.mks.duskread.ui.theme.DuskReadIcons
 import dev.mks.duskread.ui.theme.Mono
 import dev.mks.duskread.ui.theme.Radius
 import dev.mks.duskread.ui.theme.SectionLabel
-import dev.mks.duskread.ui.theme.Space
-import dev.mks.duskread.ui.theme.Stroke
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.launch
 
@@ -274,7 +261,6 @@ private fun PickSlider(picks: List<PostPick>, now: Long, room: Int?, modifier: M
     val cardHeight = room?.let { it - headPx }?.takeIf { headPx > 0 && naturalPx > 0 && it > naturalPx }
         ?.let { with(density) { it.toDp() } }
     val open = rememberArticleOpener()
-    val listState = rememberLazyListState()
     // Turns through these cards, not one blog: they are what the reader is looking at.
     val queue = remember(picks) {
         ReadingQueue(
@@ -289,37 +275,27 @@ private fun PickSlider(picks: List<PostPick>, now: Long, room: Int?, modifier: M
             EyebrowHeader(text = "FROM YOUR BLOGS", tint = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(12.dp))
         }
-        LazyRow(
-            state = listState,
-            // One card at a time, with the next peeking in so the row reads as swipeable.
-            flingBehavior = rememberSnapFlingBehavior(listState, SnapPosition.Start),
-            horizontalArrangement = Arrangement.spacedBy(Space.CardGap),
-        ) {
-            itemsIndexed(picks, key = { _, it -> it.post.url }) { index, pick ->
-                ArticleCard(
-                    host = pick.feed.shortLabel,
-                    title = pick.post.title,
-                    body = pick.excerpt ?: "",
-                    timeAgo = pick.post.publishedAt?.let { savedAgo(it, now) },
-                    onClick = { open(queue.at(index)) },
-                    height = cardHeight,
-                    modifier = Modifier
-                        .fillParentMaxWidth(PickWidth)
-                        // Its own height is the floor, so it is read only while unset.
-                        .onSizeChanged { if (cardHeight == null) naturalPx = maxOf(naturalPx, it.height) },
-                ) {
-                    // Always something here, so the meta line holds its height before
-                    // "more" knows whether it is needed.
-                    RowMeta("${pick.minutes} min")
-                    pick.feed.topic?.let { RowMeta(it.lowercase()) }
-                }
+        CardSlider(picks, key = { it.post.url }) { index, pick, cardModifier ->
+            ArticleCard(
+                host = pick.feed.shortLabel,
+                title = pick.post.title,
+                body = pick.excerpt ?: "",
+                timeAgo = pick.post.publishedAt?.let { savedAgo(it, now) },
+                onClick = { open(queue.at(index)) },
+                height = cardHeight,
+                expandable = false,
+                modifier = cardModifier
+                    // Its own height is the floor, so it is read only while unset.
+                    .onSizeChanged { if (cardHeight == null) naturalPx = maxOf(naturalPx, it.height) },
+            ) {
+                // Always something here, so the meta line holds its height before
+                // "more" knows whether it is needed.
+                RowMeta("${pick.minutes} min")
+                pick.feed.topic?.let { RowMeta(it.lowercase()) }
             }
         }
     }
 }
-
-// Short of the full width, so the next card shows at the edge.
-private const val PickWidth = 0.86f
 
 /** The slider's item key, which the tab measures the room above. */
 internal const val PicksKey = "following-picks"
