@@ -17,12 +17,18 @@ struct ArticleCard: View {
     let text: String
     var timeAgo: String?
     var meta: [RowMetaItem] = []
+    /// Body lines held open closed; fewer for text that is known to run short.
+    var bodyLines: Int = 4
+    /// Off drops the bottom line, and "more" with it, for a card with nothing to say there.
+    var showsMeta: Bool = true
     /// A check by the date, not a fade: a read card is finished, not switched off.
     var read: Bool = false
     /// Being read aloud right now — the one thing on Home allowed the accent.
     var playing: Bool = false
     /// A set height the body grows to fill, cut where it runs out; no "more" then.
     var fixedHeight: CGFloat?
+    /// Whether "more" opens the text in place; off in a slider, where cards must match.
+    var expandable: Bool = true
     var onTap: () -> Void = {}
 
     @Environment(\.dusk) private var dusk
@@ -80,32 +86,37 @@ struct ArticleCard: View {
                     .background(alignment: .topLeading) { probe }
             }
 
-            Color.clear.frame(height: 14)
+            if showsMeta {
+                Color.clear.frame(height: 14)
 
-            HStack(spacing: 10) {
-                ForEach(meta) { item in
-                    Text(item.text)
-                        .dusk(.code)
-                        .foregroundStyle(item.accent ? dusk.primary : dusk.onSurfaceVariant)
-                        .lineLimit(1)
-                }
-                Spacer(minLength: 8)
-
-                // Only offered when there is something behind it. A "more" that opens two
-                // more words is a broken promise.
-                if truncated && fixedHeight == nil {
-                    Button {
-                        withAnimation(Motion.ease(Motion.chip)) { expanded.toggle() }
-                    } label: {
-                        Text(expanded ? "LESS" : "MORE")
+                HStack(alignment: .firstTextBaseline, spacing: 10) {
+                    ForEach(meta) { item in
+                        Text(item.text)
                             .dusk(.code)
-                            .foregroundStyle(dusk.onSurfaceVariant)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .contentShape(Rectangle())
+                            .foregroundStyle(item.accent ? dusk.primary : dusk.onSurfaceVariant)
+                            .lineLimit(1)
                     }
-                    .buttonStyle(.plain)
+                    Spacer(minLength: 8)
+    
+                    // Only offered when there is something behind it. A "more" that opens two
+                    // more words is a broken promise.
+                    if truncated && fixedHeight == nil && expandable {
+                        Button {
+                            withAnimation(Motion.ease(Motion.chip)) { expanded.toggle() }
+                        } label: {
+                            Text(expanded ? "LESS" : "MORE")
+                                .dusk(.code)
+                                .foregroundStyle(dusk.onSurfaceVariant)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
+                // A set height, so a card with "more" and one without, or with nothing on its
+                // meta line at all, still stop at the same place.
+                .frame(height: 28)
             }
         }
         .padding(Self.cardPadding)
@@ -134,7 +145,7 @@ struct ArticleCard: View {
         if expanded {
             styled.lineLimit(nil)
         } else {
-            styled.lineLimit(Self.bodyLines, reservesSpace: true)
+            styled.lineLimit(bodyLines, reservesSpace: true)
         }
     }
 
@@ -156,8 +167,6 @@ struct ArticleCard: View {
 
     /// Held open whether the title needs both or not; see the note on uniform height.
     private static let titleLines = 2
-
-    private static let bodyLines = 4
 }
 
 private extension View {

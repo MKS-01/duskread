@@ -65,7 +65,12 @@ fun ArticleCard(
     playing: Boolean = false,
     /** A set height the body grows to fill, cut where it runs out; no "more" then. */
     height: Dp? = null,
-    meta: @Composable RowScope.() -> Unit,
+    /** Whether "more" opens the text in place; off in a slider, where cards must match. */
+    expandable: Boolean = true,
+    /** Body lines held open closed; fewer for text that is known to run short. */
+    bodyLines: Int = BodyLines,
+    /** The bottom line; none drops it, and "more" with it, for a card with nothing to say there. */
+    meta: (@Composable RowScope.() -> Unit)? = null,
 ) {
     val scheme = MaterialTheme.colorScheme
     val edge by animateColorAsState(if (playing) scheme.primary else scheme.outlineVariant, tween(Motion.Chip))
@@ -132,21 +137,25 @@ fun ArticleCard(
                 style = MaterialTheme.typography.bodyMedium,
                 fontSize = 13.5.sp,
                 lineHeight = 20.sp,
-                minLines = if (height != null) 1 else BodyLines,
-                maxLines = if (expanded || height != null) Int.MAX_VALUE else BodyLines,
+                minLines = if (height != null) 1 else bodyLines,
+                maxLines = if (expanded || height != null) Int.MAX_VALUE else bodyLines,
                 overflow = TextOverflow.Ellipsis,
                 color = scheme.onSurfaceVariant,
                 onTextLayout = { if (!expanded) truncated = it.hasVisualOverflow },
             )
         }
 
+        if (meta == null) return@Column
         Spacer(Modifier.height(14.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(10.dp), content = meta)
+        // A set height, so a card with "more" and one without, or with nothing on its meta
+        // line at all, still stop at the same place.
+        Row(Modifier.height(MetaLineHeight), verticalAlignment = Alignment.CenterVertically) {
+            // On one baseline with "more": centring two text styles leaves them a hair apart.
+            Row(Modifier.weight(1f).alignByBaseline(), horizontalArrangement = Arrangement.spacedBy(10.dp), content = meta)
 
             // Only offered when there is something behind it. A "more" that opens two
             // more words is a broken promise.
-            if (truncated && height == null) {
+            if (truncated && height == null && expandable) {
                 Text(
                     text = if (expanded) "LESS" else "MORE",
                     fontFamily = Mono,
@@ -155,6 +164,7 @@ fun ArticleCard(
                     // Its own clickable, so opening the card's text is not opening the
                     // article — the inner one takes the tap.
                     modifier = Modifier
+                        .alignByBaseline()
                         .clip(RoundedCornerShape(Radius.Chip))
                         .clickable { expanded = !expanded }
                         .padding(horizontal = 8.dp, vertical = 4.dp),
@@ -163,6 +173,9 @@ fun ArticleCard(
         }
     }
 }
+
+/** Tall enough for "more" with its tap padding, which is the tallest thing that sits there. */
+private val MetaLineHeight = 28.dp
 
 /** Generous next to a list row's, because the card's whole point is the room. */
 private val CardPadding = 16.dp

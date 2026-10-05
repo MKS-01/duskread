@@ -50,16 +50,17 @@ on **Paper Black** or **Ink**, the same page with the colour drained out.
   widget, or the paste field on Saved behind **Add**.
 - **Home is the week.** New posts from the blogs you follow, each as a card
   carrying a line on what it says — the piece's own opening, or an on-device
-  summary once there is one. Underneath, everything else ranked by what you
-  actually read.
+  summary once there is one.
 - **Reads offline.** Every screen renders from local storage; a feed with
   full-content RSS is cached whole at sync time, so most articles were
   already on the phone before you tapped them.
-- **Following is the blogs at a glance.** An even grid of short names —
-  "Android", not "Android Developers Blog" — with how many posts are new;
-  tap one for its posts, or search across every blog and post.
-- **Saved is a queue and a record.** Unread leads; what you've read stays
-  under its own heading. Filter to either, or search a title, host or topic.
+- **Following is the blogs at a glance.** A cloud of short names —
+  "Android", not "Android Developers Blog" — set larger the more posts are
+  new, over a slider of a few recent posts from different blogs that changes
+  daily. Tap a name for its posts, or search across every blog and post.
+- **Saved is a queue and a record.** Unread leads as a slider of cards, each
+  with the page's own description; what you've read stays a list underneath.
+  Search a title, host or topic.
 - **On-device summaries and reading aloud.** Long articles get a one-tap
   summary via Gemini Nano, and Home fills a few of its cards in by itself
   where the model is already on the phone; it can also read an article aloud

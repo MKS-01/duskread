@@ -3,10 +3,10 @@
 # commonMain as `AppVersion`, so what Settings shows and what the APK reports
 # come from the same line. iosApp's post-build script stamps both lines into
 # the built Info.plist, so the iOS bundle reports the same numbers.
-app = "1.2.0"
+app = "1.3.0"
 # versionCode on Android, CFBundleVersion on iOS: must rise with every release
 # for a sideloaded upgrade to install over the last one.
-appBuild = "3"
+appBuild = "4"
 agp = "9.0.1"
 android-compileSdk = "36"
 # 31 (Android 12). It was 26, which ML Kit GenAI's manifest forced; 31 is

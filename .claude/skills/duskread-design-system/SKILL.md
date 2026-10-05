@@ -131,6 +131,15 @@ feed, because the blogs are the point of the tab. Both are shared in
 tiles: both looked empty with only a name and a count to fill them. The deployed page
 still shows rows with chips, so flag that.
 
+## Saved: unread in a slider, read as a list
+
+Saved has no filter pills. Unread links sit in the same `ui/common/CardSlider` as
+Following's posts, as `ArticleCard`s that show the page description. Read links stay
+`LinkRow`s below, with swipe to remove or summarise. Unread cards carry no actions: opening
+one marks it read. Buttons on the card face, a long-press menu and a ⋯ sheet were all
+tried and dropped. Cards in a slider pass `expandable = false` and keep a fixed-height
+meta line, so every card in a row is the same height.
+
 ## Settings: Home's header, not the bar
 
 Settings opens from a bordered square icon button top-right on Home, beside
