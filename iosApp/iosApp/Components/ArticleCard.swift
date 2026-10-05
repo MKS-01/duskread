@@ -21,6 +21,8 @@ struct ArticleCard: View {
     var read: Bool = false
     /// Being read aloud right now — the one thing on Home allowed the accent.
     var playing: Bool = false
+    /// A set height the body grows to fill, cut where it runs out; no "more" then.
+    var fixedHeight: CGFloat?
     var onTap: () -> Void = {}
 
     @Environment(\.dusk) private var dusk
@@ -62,13 +64,21 @@ struct ArticleCard: View {
 
             Color.clear.frame(height: 9)
 
-            bodyText
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .measured { shownHeight = $0 }
-                // SwiftUI has no `hasVisualOverflow`, so "does this fit" is answered by
-                // laying the same text out a second time with nothing holding it back.
-                .background(alignment: .topLeading) { probe }
+            if fixedHeight != nil {
+                Text(text)
+                    .dusk(.bodyMedium)
+                    .foregroundStyle(dusk.onSurfaceVariant)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            } else {
+                bodyText
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .measured { shownHeight = $0 }
+                    // SwiftUI has no `hasVisualOverflow`, so "does this fit" is answered by
+                    // laying the same text out a second time with nothing holding it back.
+                    .background(alignment: .topLeading) { probe }
+            }
 
             Color.clear.frame(height: 14)
 
@@ -83,7 +93,7 @@ struct ArticleCard: View {
 
                 // Only offered when there is something behind it. A "more" that opens two
                 // more words is a broken promise.
-                if truncated {
+                if truncated && fixedHeight == nil {
                     Button {
                         withAnimation(Motion.ease(Motion.chip)) { expanded.toggle() }
                     } label: {
@@ -100,6 +110,7 @@ struct ArticleCard: View {
         }
         .padding(Self.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(height: fixedHeight)
         .overlay(
             RoundedRectangle(cornerRadius: Radius.card)
                 .stroke(playing ? dusk.primary : dusk.outlineVariant, lineWidth: Stroke.hairline)

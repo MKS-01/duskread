@@ -72,6 +72,11 @@ object DesignTokens {
     const val ChipGap = 6.0
     const val CardGap = 9.0
 
+    // ---- Type, in sp -------------------------------------------------------
+
+    /** A followed blog's name by [dev.mks.duskread.links.cloudTier]: busier is larger. */
+    val CloudNameSizes = listOf(14.5, 16.5, 19.5, 23.0)
+
     // ---- Motion, in milliseconds ------------------------------------------ Four
     // durations and no curves.
 
