@@ -67,7 +67,10 @@ fun ArticleCard(
     height: Dp? = null,
     /** Whether "more" opens the text in place; off in a slider, where cards must match. */
     expandable: Boolean = true,
-    meta: @Composable RowScope.() -> Unit,
+    /** Body lines held open closed; fewer for text that is known to run short. */
+    bodyLines: Int = BodyLines,
+    /** The bottom line; none drops it, and "more" with it, for a card with nothing to say there. */
+    meta: (@Composable RowScope.() -> Unit)? = null,
 ) {
     val scheme = MaterialTheme.colorScheme
     val edge by animateColorAsState(if (playing) scheme.primary else scheme.outlineVariant, tween(Motion.Chip))
@@ -134,14 +137,15 @@ fun ArticleCard(
                 style = MaterialTheme.typography.bodyMedium,
                 fontSize = 13.5.sp,
                 lineHeight = 20.sp,
-                minLines = if (height != null) 1 else BodyLines,
-                maxLines = if (expanded || height != null) Int.MAX_VALUE else BodyLines,
+                minLines = if (height != null) 1 else bodyLines,
+                maxLines = if (expanded || height != null) Int.MAX_VALUE else bodyLines,
                 overflow = TextOverflow.Ellipsis,
                 color = scheme.onSurfaceVariant,
                 onTextLayout = { if (!expanded) truncated = it.hasVisualOverflow },
             )
         }
 
+        if (meta == null) return@Column
         Spacer(Modifier.height(14.dp))
         // A set height, so a card with "more" and one without, or with nothing on its meta
         // line at all, still stop at the same place.

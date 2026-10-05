@@ -350,7 +350,8 @@ private fun AddLinkField(onSave: (String) -> Boolean, modifier: Modifier = Modif
 @Composable
 private fun SavedCard(link: SavedLink, onOpen: () -> Unit, modifier: Modifier = Modifier) {
     ArticleCard(
-        host = link.host,
+        // The topic rides on the host line, so the card needs no bottom line.
+        host = listOfNotNull(link.host, link.topic?.takeIf { it.isNotBlank() }).joinToString(" · "),
         title = link.title,
         body = when {
             !link.fetched -> "Reading the page…"
@@ -361,11 +362,10 @@ private fun SavedCard(link: SavedLink, onOpen: () -> Unit, modifier: Modifier = 
         timeAgo = savedAgo(link.savedAt),
         onClick = onOpen,
         expandable = false,
+        // A page description runs a line or two; four held open was mostly air.
+        bodyLines = 2,
         modifier = modifier,
-    ) {
-        // The subject, when something knew it — Notion filed it, or the feed it came from.
-        link.topic?.let { RowMeta(it) }
-    }
+    )
 }
 
 /**

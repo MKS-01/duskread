@@ -94,11 +94,14 @@ struct SavedScreen: View {
                 .padding(.bottom, 14)
             CardSlider(items: unread, id: \.id) { link in
                 ArticleCard(
-                    host: link.host,
+                    // The topic rides on the host line, so the card needs no bottom line.
+                    host: [link.host, link.topic].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · "),
                     title: link.title,
                     text: cardText(for: link),
                     timeAgo: links.savedAgo(link),
-                    meta: link.topic.flatMap { $0.isEmpty ? nil : [RowMetaItem(text: $0)] } ?? [],
+                    // A page description runs a line or two; four held open was mostly air.
+                    bodyLines: 2,
+                    showsMeta: false,
                     expandable: false,
                     onTap: { open(link) }
                 )
