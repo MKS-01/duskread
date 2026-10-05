@@ -45,12 +45,6 @@ struct DashboardScreen: View {
 
                 // The body of the screen — the week itself rather than a count of it.
                 latestSection
-
-                // Last, and still a choice rather than a list: what to read when the
-                // week has already been looked at.
-                if !(links.links.isEmpty && feeds.feeds.isEmpty) {
-                    recommended
-                }
             }
             .padding(.horizontal, Layout.listGutter)
             .padding(.top, 10)
@@ -61,7 +55,7 @@ struct DashboardScreen: View {
         // Not awaited: the pull hands off to Latest's header, which fills as feeds answer,
         // rather than holding the spinner over the list for the whole sync.
         .refreshable { Task { await feeds.startSync() } }
-        .onAppear { latest.refresh(); suggestions.refresh(excluding: shownAsCards) }
+        .onAppear { latest.refresh() }
         // Unlike pull-to-refresh, silent and only when stale: Home keeps itself current
         // without Notion's sync being the only thing that ever fetches.
         .task { await feeds.syncIfStale() }
@@ -71,9 +65,6 @@ struct DashboardScreen: View {
             Task { await feeds.syncIfStale() }
         }
         .animation(Motion.ease(Motion.chip), value: latest.items.map(\.url))
-        // The week can change under the screen — a sync lands, or a card is opened and
-        // marked read — and the picks below it have to drop whatever it now shows.
-        .onChange(of: latest.items.map(\.url)) { _, _ in suggestions.refresh(excluding: shownAsCards) }
     }
 
     private var greeting: String? {
@@ -98,47 +89,11 @@ struct DashboardScreen: View {
         }
     }
 
-    private var recommended: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            EyebrowHeader(label: "Recommended") {
-                RowToggle(path: IconPaths.shared.Shuffle, tint: dusk.onSurfaceVariant) {
-                    suggestions.shuffle()
-                }
-            }
-
-            if suggestions.picks.isEmpty {
-                CompactEmptyState(title: "Nothing ranked yet", message: "Sync a feed or save a link.")
-            } else {
-                ForEach(Array(suggestions.picks.enumerated()), id: \.offset) { index, pick in
-                    let candidate = pick.candidate
-                    ListRow(
-                        title: candidate.title,
-                        meta: meta(for: candidate),
-                        last: index == suggestions.picks.count - 1,
-                        onTap: { open(candidate) }
-                    )
-                }
-            }
-        }
-    }
-
-    private func meta(for candidate: Candidate) -> [RowMetaItem] {
-        var items = [RowMetaItem(text: candidate.host)]
-        if let tag = candidate.tag, !tag.isEmpty { items.append(RowMetaItem(text: tag)) }
-        if let words = candidate.words?.intValue, words > 0 {
-            items.append(RowMetaItem(text: "\(max(1, words / 220)) min"))
-        }
-        return items
-    }
-
     /// The card a listen-through is on, as opposed to a single read started elsewhere.
     private var listeningUrl: String? {
         guard speech.inQueue, let key = speech.key else { return nil }
         return latest.items.contains(where: { $0.url == key }) ? key : nil
     }
-
-    /// Nothing on this screen twice: the cards above already offered these.
-    private var shownAsCards: Set<String> { Set(latest.items.map(\.url)) }
 
     private var latestSection: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -260,12 +215,6 @@ struct DashboardScreen: View {
     private var focusClockTint: Color {
         if pomodoro.state.idle { return dusk.onSurfaceVariant }
         return pomodoro.state.running ? dusk.primary : dusk.onSurface
-    }
-
-    private func open(_ candidate: Candidate) {
-        suggestions.recordOpen(candidate.url)
-        _ = links.save(candidate.url)
-        browser.open(candidate.url)
     }
 }
 

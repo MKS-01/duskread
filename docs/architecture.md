@@ -63,9 +63,8 @@ What it shows, in words:
   explicable terms: freshness, source and topic affinity, staleness, fit
   against the focus timer, a shuffle, and two skip penalties. Weights live in
   one block at the top of `links/Recommender.kt`; **Settings ▸ Discovery**
-  shows the pool and the top five with each term broken out. It sits under
-  the week rather than leading the screen — see
-  [What Home offers](#what-home-offers).
+  shows the pool and the top five with each term broken out. It feeds the
+  reading-suggestion widget; Home no longer carries it as a section.
 
 <details>
 <summary>The two rules the design follows from</summary>
@@ -173,11 +172,8 @@ spring idiom would be a change to the motion design rather than a port of it.
 
 ## What Home offers
 
-Two sections over the same posts, answering different questions. **`LATEST`**
-is what the followed blogs published in the last seven days, newest first, as
-cards. **`RECOMMENDED`** is the ranked shortlist over everything unread, and
-it drops whatever `LATEST` is already showing. The focus timer sits above
-both.
+**`LATEST`** is what the followed blogs published in the last seven days,
+newest first, as cards, with the focus timer above it.
 
 <details>
 <summary>How the week is cut, and what a card is allowed to say</summary>
@@ -224,11 +220,7 @@ state, and the meta line says which of the two it is holding — a summary is
 the model's words and an excerpt is the author's. On iOS none of this runs:
 there is no summariser on the platform, so the text is always the author's.
 
-`RECOMMENDED` takes its exclusion against the pool **before** ranking rather
-than against the picks after it. Filtered afterwards, the section comes up
-short of the three it means to offer.
-
-Neither section reaches the network. Both read what the last sync left in
+`LATEST` never reaches the network. It reads what the last sync left in
 the `feedPost` table; the next one runs when Home comes into view with a stale
 cache, or when the reader pulls down — see [When a sync happens](#when-a-sync-happens).
 </details>

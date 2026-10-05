@@ -23,7 +23,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -40,11 +39,7 @@ import dev.mks.duskread.links.FeedPostCache
 import dev.mks.duskread.links.LatestTickMs
 import dev.mks.duskread.links.LinkLibrary
 import dev.mks.duskread.links.ReadingSignals
-import dev.mks.duskread.links.Scored
 import dev.mks.duskread.links.latestPosts
-import dev.mks.duskread.links.pool
-import dev.mks.duskread.links.rank
-import dev.mks.duskread.links.topPicks
 import dev.mks.duskread.pomodoro.PickableMinutes
 import dev.mks.duskread.pomodoro.clockLabel
 import dev.mks.duskread.pomodoro.elapsedFraction
@@ -52,13 +47,7 @@ import dev.mks.duskread.pomodoro.rememberPomodoroController
 import dev.mks.duskread.speech.SpeechSession
 import dev.mks.duskread.speech.speechSupported
 import dev.mks.duskread.speech.weekListenQueue
-import dev.mks.duskread.ui.OpenRecord
-import dev.mks.duskread.ui.ReadingQueue
-import dev.mks.duskread.ui.ReadingQueueEntry
-import dev.mks.duskread.ui.common.CompactEmptyState
 import dev.mks.duskread.ui.common.EyebrowHeader
-import dev.mks.duskread.ui.common.ListRow
-import dev.mks.duskread.ui.common.RowMeta
 import dev.mks.duskread.ui.common.WaveformMeter
 import dev.mks.duskread.ui.common.rememberOffMain
 import dev.mks.duskread.ui.rememberArticleOpener
@@ -69,8 +58,6 @@ import dev.mks.duskread.ui.theme.Radius
 import dev.mks.duskread.ui.theme.Space
 import dev.mks.duskread.ui.theme.Stroke
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlin.time.Clock
 
@@ -80,7 +67,6 @@ import kotlin.time.Clock
 @Composable
 fun DashboardTab(
     onOpenFocus: () -> Unit,
-    onOpenSaved: () -> Unit,
     onOpenFollowing: () -> Unit,
     links: LinkLibrary,
     signals: ReadingSignals,
@@ -183,20 +169,6 @@ fun DashboardTab(
                 onOpen = open,
                 onFollow = onOpenFollowing,
             )
-
-            // Last, and still a choice rather than a list: what to read when the week has
-            // already been looked at.
-            item("recommended") {
-                NextUpSection(
-                    links = links,
-                    signals = signals,
-                    feeds = feeds,
-                    feedPosts = feedPosts,
-                    // Nothing on this screen twice: the cards above already offered these.
-                    exclude = remember(latest) { latest.mapTo(mutableSetOf()) { it.url } },
-                    onOpenSaved = onOpenSaved,
-                )
-            }
         }
     }
 }
@@ -304,144 +276,5 @@ private fun WelcomeSection(modifier: Modifier = Modifier) {
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-    }
-}
-
-/**
- * The one section on Home that makes a *choice* rather than reporting local state — and
- * now it chooses over both halves of the app.
- */
-
-@Composable
-private fun NextUpSection(
-    links: LinkLibrary,
-    signals: ReadingSignals,
-    feeds: FeedLibrary,
-    feedPosts: FeedPostCache,
-    /** Already on the screen above, as a card. */
-    exclude: Set<String>,
-    onOpenSaved: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val open = rememberArticleOpener()
-
-    // Only the *length*, not the countdown: mapped and de-duplicated so a running timer
-    // does not recompose this section once a second for a number it does not draw.
-    val controller = rememberPomodoroController()
-    val focusMinutes by remember(controller) {
-        controller.state.map { it.totalSeconds.takeIf { seconds -> seconds > 0 }?.div(60) }.distinctUntilChanged()
-    }.collectAsState(initial = null)
-
-    // The seed *is* the shuffle. Re-seeding re-ranks without abandoning the ranking, so a
-    // shuffle offers something else good rather than anything at all.
-    var shuffles by remember { mutableStateOf(0) }
-    val day = remember { (Clock.System.now().toEpochMilliseconds() / 86_400_000L).toInt() }
-
-    val ranked = rememberOffMain(
-        links.links,
-        feedPosts.postsByFeed,
-        feeds.feeds,
-        signals.byHost,
-        signals.topicReads,
-        signals.skippedPosts,
-        shuffles,
-        focusMinutes,
-        exclude,
-    ) {
-        rank(
-            // Filtered before ranking rather than after: dropping a pick afterwards
-            // would leave the section short of the three it means to offer.
-            candidates = pool(links, feedPosts, feeds.feeds).filterNot { it.url in exclude },
-            signals = signals,
-            now = Clock.System.now().toEpochMilliseconds(),
-            seed = day + shuffles,
-            focusMinutes = focusMinutes,
-        )
-    }
-
-    // At most one row per source.
-    val picks = remember(ranked) { topPicks(ranked, count = 3) }
-
-    // Opening a pick is the moment it becomes the reader's own — the save is not a
-    // convenience — and that has to hold for the second and third as much as the first.
-    val queue = remember(picks) {
-        ReadingQueue(
-            entries = picks.map { ReadingQueueEntry(it.candidate.url, it.candidate.title, it.candidate.host, it.candidate.tag) },
-            source = "Recommended",
-            record = OpenRecord.SaveAndMarkRead,
-        )
-    }
-    val hero = picks.firstOrNull()
-    val runnersUp = picks.drop(1)
-
-    Column(modifier.fillMaxWidth().padding(bottom = SectionGap)) {
-        EyebrowHeader(
-            text = "RECOMMENDED",
-            trailing = if (ranked.size > 1) {
-                {
-                    Icon(
-                        imageVector = DuskReadIcons.Shuffle,
-                        contentDescription = "Show a different pick",
-                        modifier = Modifier
-                            .size(26.dp)
-                            .clickable {
-                                // Recorded before the re-seed: the skip is about the
-                                // thing that was on screen.
-                                hero?.let { signals.recordSkip(it.candidate.url) }
-                                shuffles++
-                            }
-                            .padding(6.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            } else {
-                null
-            },
-        )
-        Spacer(Modifier.height(12.dp))
-
-        if (hero == null) {
-            CompactEmptyState(
-                title = if (links.links.isEmpty()) "Nothing saved yet" else "All caught up",
-                message = if (links.links.isEmpty()) {
-                    "Share an article to DuskRead, or paste its address in the Saved tab."
-                } else {
-                    "Every saved link has been read, and no followed blog has anything new."
-                },
-                onClick = if (links.links.isEmpty()) null else onOpenSaved,
-            )
-        } else {
-            NextUpRow(
-                scored = hero,
-                hero = true,
-                last = runnersUp.isEmpty(),
-                onOpen = { open(queue.at(0)) },
-            )
-            runnersUp.forEachIndexed { index, scored ->
-                NextUpRow(
-                    scored = scored,
-                    hero = false,
-                    last = index == runnersUp.lastIndex,
-                    onOpen = { open(queue.at(index + 1)) },
-                )
-            }
-        }
-    }
-}
-
-/**
- * One row of the section.
- */
-@Composable
-private fun NextUpRow(scored: Scored, hero: Boolean, last: Boolean, onOpen: () -> Unit) {
-    ListRow(
-        title = scored.candidate.title,
-        last = last,
-        onClick = onOpen,
-        titleMaxLines = if (hero) 2 else 1,
-    ) {
-        RowMeta(scored.candidate.host)
-        scored.candidate.tag?.let { RowMeta(it.lowercase()) }
-        RowMeta("${scored.minutes} min")
     }
 }

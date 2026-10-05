@@ -29,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.mks.duskread.ui.theme.DuskReadIcons
@@ -62,6 +63,8 @@ fun ArticleCard(
     read: Boolean = false,
     /** Being read aloud right now — the one thing on Home allowed the accent. */
     playing: Boolean = false,
+    /** A set height the body grows to fill, cut where it runs out; no "more" then. */
+    height: Dp? = null,
     meta: @Composable RowScope.() -> Unit,
 ) {
     val scheme = MaterialTheme.colorScheme
@@ -79,6 +82,7 @@ fun ArticleCard(
     Column(
         modifier
             .fillMaxWidth()
+            .then(if (height != null) Modifier.height(height) else Modifier)
             .clip(RoundedCornerShape(Radius.Card))
             .border(Stroke.Hairline, edge, RoundedCornerShape(Radius.Card))
             .clickable(onClick = onClick)
@@ -117,14 +121,19 @@ fun ArticleCard(
         Spacer(Modifier.height(9.dp))
         // Keyed on the text itself: an excerpt replaced by a summary changed without the
         // reader asking, and a cut explains that better than a swap.
-        Crossfade(targetState = body, animationSpec = tween(Motion.Fade), label = "card-body") { text ->
+        Crossfade(
+            targetState = body,
+            animationSpec = tween(Motion.Fade),
+            label = "card-body",
+            modifier = if (height != null) Modifier.weight(1f) else Modifier,
+        ) { text ->
             Text(
                 text = text,
                 style = MaterialTheme.typography.bodyMedium,
                 fontSize = 13.5.sp,
                 lineHeight = 20.sp,
-                minLines = BodyLines,
-                maxLines = if (expanded) Int.MAX_VALUE else BodyLines,
+                minLines = if (height != null) 1 else BodyLines,
+                maxLines = if (expanded || height != null) Int.MAX_VALUE else BodyLines,
                 overflow = TextOverflow.Ellipsis,
                 color = scheme.onSurfaceVariant,
                 onTextLayout = { if (!expanded) truncated = it.hasVisualOverflow },
@@ -137,7 +146,7 @@ fun ArticleCard(
 
             // Only offered when there is something behind it. A "more" that opens two
             // more words is a broken promise.
-            if (truncated) {
+            if (truncated && height == null) {
                 Text(
                     text = if (expanded) "LESS" else "MORE",
                     fontFamily = Mono,

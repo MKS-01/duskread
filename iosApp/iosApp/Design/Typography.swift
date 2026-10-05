@@ -46,7 +46,7 @@ enum DuskType {
     }
 
     /// Only the four static weights are bundled.
-    private static func jost(weight: Int) -> String {
+    static func jost(weight: Int) -> String {
         switch weight {
         case ..<500: return "Jost-Regular"
         case ..<600: return "Jost-Medium"
@@ -55,7 +55,7 @@ enum DuskType {
         }
     }
 
-    private static func inconsolata(weight: Int) -> String {
+    static func inconsolata(weight: Int) -> String {
         switch weight {
         case ..<500: return "Inconsolata-Regular"
         case ..<600: return "Inconsolata-Medium"

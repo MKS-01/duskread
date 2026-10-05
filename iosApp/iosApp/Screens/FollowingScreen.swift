@@ -1,9 +1,9 @@
 import ComposeApp
 import SwiftUI
 
-/// Every blog followed, as tiles under NEW (a featured lead, then uneven threes), CAUGHT
-/// UP and NO POSTS YET (a plain two-column grid) — the split the shared side cuts, so both phones
-/// order a long list alike. A search turns it into a list of the posts that match.
+/// Every blog followed, as one cloud of names in the order the shared side cuts — new,
+/// caught up, not yet synced — so both phones order a long list alike. A search turns it
+/// into a list of the posts that match.
 struct FollowingScreen: View {
     let onOpenTopics: (Feed) -> Void
 
@@ -17,6 +17,12 @@ struct FollowingScreen: View {
     @State private var searching = false
     @State private var query = ""
     @State private var draft = ""
+    // What the slider's cards need to reach the bar: measured in the stack's own space, so
+    // scrolling never resizes them.
+    @State private var viewportHeight: CGFloat = 0
+    @State private var picksTop: CGFloat = 0
+    @State private var picksHead: CGFloat = 0
+    @State private var naturalCard: CGFloat = 0
 
     var body: some View {
         // Read through the bridge, which Observation cannot see into; touching the stores'
@@ -37,13 +43,18 @@ struct FollowingScreen: View {
                     )
                     .padding(.top, 40)
                 } else if !managing {
-                    group("New", groups.fresh)
-                    group("Caught up", groups.caughtUp)
-                    group("No posts yet", groups.unsynced)
+                    following(groups.fresh + groups.caughtUp + groups.unsynced)
+                    picks(groups.picks)
                 }
             }
+            .coordinateSpace(.named(Self.stackSpace))
             .padding(.horizontal, Layout.listGutter)
             .padding(.bottom, Layout.barClearance)
+        }
+        .onScrollGeometryChange(for: CGFloat.self) { geo in
+            geo.containerSize.height - geo.contentInsets.top - geo.contentInsets.bottom
+        } action: { _, height in
+            viewportHeight = height
         }
         .tracksBarCollapse(collapse)
         .background(dusk.background)
@@ -112,62 +123,96 @@ struct FollowingScreen: View {
         }
     }
 
+    /// One cloud of names, busiest first and largest, or a list of matching posts while
+    /// searching. No group headers: size and brightness carry the split.
     @ViewBuilder
-    private func group(_ label: String, _ rows: [DigestRow]) -> some View {
-        if !rows.isEmpty {
-            // Muted: these sit under Following, which keeps the section's own tint.
-            EyebrowHeader(label: "\(label) · \(rows.count)", tint: dusk.onSurfaceVariant)
-                .padding(.top, 18)
-                .padding(.bottom, 4)
-            // Browsing is an even grid of blogs; a search lists the matching posts under each.
-            if query.isEmpty {
-                let pairs = stride(from: 0, to: rows.count, by: 2).map { Array(rows[$0..<min($0 + 2, rows.count)]) }
-                ForEach(pairs, id: \.first!.feed.id) { pair in
-                    HStack(spacing: Space.cardGap) {
-                        ForEach(pair, id: \.feed.id) { row in blogTile(row) }
-                        // An odd one out keeps half the width, not the whole row.
-                        if pair.count == 1 { Color.clear.frame(maxWidth: .infinity) }
-                    }
-                    .padding(.bottom, Space.cardGap)
-                }
-            } else {
-                ForEach(Array(rows.enumerated()), id: \.element.feed.id) { index, row in
-                    feedRow(row, last: index == rows.count - 1)
-                }
+    private func following(_ rows: [DigestRow]) -> some View {
+        if query.isEmpty {
+            CloudLayout {
+                ForEach(rows, id: \.feed.id) { row in cloudName(row) }
+            }
+            .padding(.top, 6)
+        } else {
+            ForEach(Array(rows.enumerated()), id: \.element.feed.id) { index, row in
+                feedRow(row, last: index == rows.count - 1)
             }
         }
     }
 
-    /// One followed blog as a fixed-height tile: short name and "3 new · 4h". No
-    /// post titles — the tile says which blog moved; opening it shows what.
-    private func blogTile(_ row: DigestRow) -> some View {
-        let fresh = row.newCount > 0
-        let age = row.lastPostAt.map { feeds.shortAgo($0.int64Value) }
-        return VStack(alignment: .leading, spacing: 0) {
-            // No initial badge: the name is the whole tile, and a square letter beside it
-            // only repeats the name's first character.
-            Text(row.feed.shortLabel)
-                .dusk(.titleSmall)
-                .foregroundStyle(fresh ? dusk.onSurface : dusk.onSurface.opacity(0.78))
-                .lineLimit(1)
-            Spacer(minLength: 0)
-            // Grey, not the accent: the accent stays for what is playing.
-            HStack(spacing: 10) {
-                if fresh { Text("\(row.newCount) new").dusk(.code) }
-                Text(age ?? "no posts yet").dusk(.code)
+    /// A few recent posts from different blogs, side by side, so the screen under a short
+    /// cloud has something to read without turning the tab into a second feed.
+    @ViewBuilder
+    private func picks(_ items: [PostPick]) -> some View {
+        if query.isEmpty && !items.isEmpty {
+            VStack(alignment: .leading, spacing: 0) {
+                EyebrowHeader(label: "From your blogs", tint: dusk.onSurfaceVariant)
+                    .padding(.top, 22)
+                    .padding(.bottom, 12)
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { picksHead = $0 }
+                pickSlider(items)
             }
-            .foregroundStyle(dusk.onSurfaceVariant)
+            .onGeometryChange(for: CGFloat.self) { $0.frame(in: .named(Self.stackSpace)).minY } action: { picksTop = $0 }
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 13)
-        // Fixed, so every tile is the same size whatever its blog is called.
-        .frame(maxWidth: .infinity, minHeight: 84, maxHeight: 84, alignment: .topLeading)
-        .overlay(
-            RoundedRectangle(cornerRadius: Radius.card)
-                .stroke(dusk.outlineVariant, lineWidth: Stroke.hairline)
-        )
-        .contentShape(RoundedRectangle(cornerRadius: Radius.card))
-        .onTapGesture { onOpenTopics(row.feed) }
+    }
+
+    /// Down to the bar when there is room for more than the card's own height; never less.
+    private var pickCardHeight: CGFloat? {
+        let room = viewportHeight - Layout.barClearance - picksTop - picksHead
+        return naturalCard > 0 && room > naturalCard ? room : nil
+    }
+
+    private func pickSlider(_ items: [PostPick]) -> some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            LazyHStack(spacing: Space.cardGap) {
+                ForEach(items, id: \.post.url) { pick in
+                    ArticleCard(
+                        host: pick.feed.shortLabel,
+                        title: pick.post.title,
+                        text: pick.excerpt ?? "",
+                        timeAgo: pick.post.publishedAt.map { links.savedAgo($0.int64Value) },
+                        meta: [RowMetaItem(text: "\(pick.minutes) min")]
+                            + (pick.feed.topic.map { [RowMetaItem(text: $0.lowercased())] } ?? []),
+                        fixedHeight: pickCardHeight,
+                        onTap: { open(pick.post) }
+                    )
+                    // Its own height is the floor, so it is read only while unset.
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
+                        if pickCardHeight == nil { naturalCard = max(naturalCard, height) }
+                    }
+                    // Short of the full width, so the next card shows at the edge.
+                    .containerRelativeFrame(.horizontal) { width, _ in width * 0.86 }
+                }
+            }
+            .scrollTargetLayout()
+        }
+        // One card at a time, with the next peeking in so the row reads as swipeable.
+        .scrollTargetBehavior(.viewAligned)
+    }
+
+    private static let stackSpace = "following-stack"
+
+    /// One blog in the cloud: its short name sized by `cloudTier`, with "14" or "3w" set
+    /// small beside it. Grey, not the accent: the accent stays for what is playing.
+    private func cloudName(_ row: DigestRow) -> some View {
+        let fresh = row.newCount > 0
+        let tag = fresh ? "\(row.newCount)" : row.lastPostAt.map { feeds.shortAgo($0.int64Value) } ?? "—"
+        let size = CGFloat(truncating: DesignTokens.shared.CloudNameSizes[Int(FollowingGroupsKt.cloudTier(row: row))])
+        let name = Text(row.feed.shortLabel)
+            .font(.custom(DuskType.jost(weight: fresh ? 500 : 400), size: size))
+            .foregroundStyle(fresh ? dusk.onSurface : dusk.onSurface.opacity(0.55))
+        let mark = Text("\u{200A}\(tag)")
+            .font(.custom(DuskType.inconsolata(weight: 400), size: 10.5))
+            .baselineOffset(size * 0.4)
+            .foregroundStyle(dusk.onSurfaceVariant)
+        return Text("\(name)\(mark)")
+            .lineLimit(1)
+            .fixedSize()
+            // Padding inside the tap target: a name is a small thing to hit one-handed.
+            .padding(.leading, 2)
+            .padding(.trailing, 14)
+            .padding(.vertical, 6)
+            .contentShape(RoundedRectangle(cornerRadius: Radius.chip))
+            .onTapGesture { onOpenTopics(row.feed) }
     }
 
     /// One blog as a search result: its name, then "3 new" or how long since it last
@@ -308,5 +353,49 @@ struct TopicsScreen: View {
 
     private func open(_ post: FeedPost) {
         browser.open(post.url)
+    }
+}
+
+/// Wraps names like a magazine index, each line on one baseline so mixed sizes read as a
+/// line of type rather than a ragged row.
+private struct CloudLayout: SwiftUI.Layout {
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let lines = lines(width: proposal.width ?? .infinity, subviews: subviews)
+        return CGSize(width: proposal.width ?? lines.map(\.width).max() ?? 0, height: lines.reduce(0) { $0 + $1.height })
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        var y = bounds.minY
+        for line in lines(width: bounds.width, subviews: subviews) {
+            var x = bounds.minX
+            for index in line.indices {
+                let d = subviews[index].dimensions(in: .unspecified)
+                subviews[index].place(at: CGPoint(x: x, y: y + line.ascent - d[.firstTextBaseline]), proposal: .unspecified)
+                x += d.width
+            }
+            y += line.height
+        }
+    }
+
+    private struct Line { var indices: [Int] = []; var width: CGFloat = 0; var ascent: CGFloat = 0; var descent: CGFloat = 0
+        var height: CGFloat { ascent + descent }
+    }
+
+    private func lines(width: CGFloat, subviews: Subviews) -> [Line] {
+        var lines: [Line] = []
+        var line = Line()
+        for (index, view) in subviews.enumerated() {
+            let d = view.dimensions(in: .unspecified)
+            if !line.indices.isEmpty && line.width + d.width > width {
+                lines.append(line)
+                line = Line()
+            }
+            line.indices.append(index)
+            line.width += d.width
+            line.ascent = max(line.ascent, d[.firstTextBaseline])
+            line.descent = max(line.descent, d.height - d[.firstTextBaseline])
+        }
+        if !line.indices.isEmpty { lines.append(line) }
+        return lines
     }
 }

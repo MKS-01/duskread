@@ -13,6 +13,15 @@ struct ListRow<Trailing: View>: View {
 
     @Environment(\.dusk) private var dusk
 
+    /// A shade, not a fade: a done row recedes but stays as legible as its meta line.
+    private var titleTint: Color {
+        switch tone {
+        case .accent: dusk.primary
+        case .faded: dusk.onSurfaceVariant
+        case .normal: dusk.onSurface
+        }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .top, spacing: 10) {
@@ -22,7 +31,7 @@ struct ListRow<Trailing: View>: View {
                         VStack(alignment: .leading, spacing: 6) {
                             Text(title)
                                 .dusk(.titleSmall)
-                                .foregroundStyle(tone == .accent ? dusk.primary : dusk.onSurface)
+                                .foregroundStyle(titleTint)
                                 .lineLimit(titleLineLimit)
                                 .multilineTextAlignment(.leading)
                                 .fixedSize(horizontal: false, vertical: true)
@@ -47,7 +56,6 @@ struct ListRow<Trailing: View>: View {
                 trailing()
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .opacity(tone == .faded ? 0.5 : 1)
 
             ListRowDivider(last: last)
         }

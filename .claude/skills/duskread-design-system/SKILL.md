@@ -115,13 +115,21 @@ repeated what the title or the host on the meta line already said. Don't
 bring it back on a row, a tile or a new card, and don't hand-roll a lookalike.
 A row leads with its title; a tile leads with its name.
 
-## Following: an even grid of names
+## Following: a cloud of names, then a slider
 
-Following is a two-column grid of fixed-height tiles (`Radius.Card`, hairline):
-the blog's `Feed.shortLabel` and a mono "3 new · 4h", nothing else — no post
-titles. `shortLabel` lives in `commonMain` so both phones shorten a name the
-same way ("Android Developers Blog" → "Android"). This replaced the uneven
-bento tiles; the deployed page still shows rows with chips — flag it.
+Following has no boxes and no NEW / CAUGHT UP headers. It is one wrapping cloud of
+`Feed.shortLabel`s on a shared baseline, busiest first. The size comes from `cloudTier`
+indexing `DesignTokens.CloudNameSizes`. Fresh names are Medium at full ink; quiet ones are
+Regular at 55%. Each name carries a small mono superscript: the new count, or the age.
+Below the cloud, FROM YOUR BLOGS is a horizontal slider of `ArticleCard`s at 86% width,
+so the next card peeks in, snapping one at a time. When the content above leaves room, the
+cards stretch down to the bar and show more of the excerpt; they never shrink below their
+own height, and they don't resize while scrolling. It holds up to six recent unsaved posts,
+one per blog, chosen at random with a seed that changes daily. It stays a taste, not a second
+feed, because the blogs are the point of the tab. Both are shared in
+`links/FollowingGroups.kt`. This replaced an even tile grid and, before that, uneven bento
+tiles: both looked empty with only a name and a count to fill them. The deployed page
+still shows rows with chips, so flag that.
 
 ## Settings: Home's header, not the bar
 

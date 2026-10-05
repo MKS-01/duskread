@@ -4,10 +4,13 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.snapping.SnapPosition
+import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -20,8 +23,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -39,9 +44,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.BaselineShift
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.mks.duskread.data.LocalAppGraph
@@ -52,14 +63,21 @@ import dev.mks.duskread.links.FeedPost
 import dev.mks.duskread.links.FeedPostCache
 import dev.mks.duskread.links.FollowingGroups
 import dev.mks.duskread.links.LinkLibrary
+import dev.mks.duskread.links.PostPick
 import dev.mks.duskread.links.SearchAlwaysShownAt
+import dev.mks.duskread.links.cloudTier
 import dev.mks.duskread.links.discoverFeedUrl
 import dev.mks.duskread.links.looksLikeUrl
 import dev.mks.duskread.links.normaliseUrl
 import dev.mks.duskread.links.pruneSummaries
+import dev.mks.duskread.links.savedAgo
 import dev.mks.duskread.links.shortAgo
 import dev.mks.duskread.summary.rememberSummaryCache
+import dev.mks.duskread.ui.OpenRecord
+import dev.mks.duskread.ui.ReadingQueue
+import dev.mks.duskread.ui.ReadingQueueEntry
 import dev.mks.duskread.ui.common.AppTextField
+import dev.mks.duskread.ui.common.ArticleCard
 import dev.mks.duskread.ui.common.CompactEmptyState
 import dev.mks.duskread.ui.common.EmptyState
 import dev.mks.duskread.ui.common.EyebrowHeader
@@ -67,6 +85,8 @@ import dev.mks.duskread.ui.common.HairlineDivider
 import dev.mks.duskread.ui.common.HeaderAction
 import dev.mks.duskread.ui.common.ListRow
 import dev.mks.duskread.ui.common.RowMeta
+import dev.mks.duskread.ui.rememberArticleOpener
+import dev.mks.duskread.ui.theme.DesignTokens
 import dev.mks.duskread.ui.theme.DuskReadIcons
 import dev.mks.duskread.ui.theme.Mono
 import dev.mks.duskread.ui.theme.Radius
@@ -200,53 +220,27 @@ fun FollowingHead(
 }
 
 /**
- * The followed blogs as lazy items — tiles under NEW, CAUGHT UP and NO POSTS YET, or a
- * list of matching posts while searching — so a long list builds only what is
- * on screen.
+ * The followed blogs as one cloud of names, busiest first and largest, or a list of
+ * matching posts while searching. No group headers: size and brightness carry the split.
  */
 fun LazyListScope.followingRows(
     state: FollowingState,
     groups: FollowingGroups,
     linkLibrary: LinkLibrary,
     now: Long,
+    /** Pixels left for the slider under everything above it, or null when there are none. */
+    pickRoom: Int?,
     onOpenTopics: (Feed) -> Unit,
 ) {
     if (state.managing) return
-    group("new", "NEW", groups.fresh, state, linkLibrary, now, onOpenTopics)
-    group("caught-up", "CAUGHT UP", groups.caughtUp, state, linkLibrary, now, onOpenTopics)
-    group("unsynced", "NO POSTS YET", groups.unsynced, state, linkLibrary, now, onOpenTopics)
-}
-
-private fun LazyListScope.group(
-    key: String,
-    label: String,
-    rows: List<DigestRow>,
-    state: FollowingState,
-    linkLibrary: LinkLibrary,
-    now: Long,
-    onOpenTopics: (Feed) -> Unit,
-) {
+    val rows = groups.fresh + groups.caughtUp + groups.unsynced
     if (rows.isEmpty()) return
-    item("following-$key") {
-        // Muted: these sit under FOLLOWING, which keeps the section's own tint.
-        EyebrowHeader(
-            text = "$label · ${rows.size}",
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.animateItem().padding(top = 18.dp, bottom = 4.dp),
-        )
-    }
-    // Browsing is an even grid of blogs; a search lists the matching posts under each.
     if (state.query.isBlank()) {
-        items(rows.chunked(2), key = { pair -> pair.joinToString("+") { it.feed.id } }) { pair ->
-            Row(
-                Modifier.animateItem().fillMaxWidth().padding(bottom = Space.CardGap),
-                horizontalArrangement = Arrangement.spacedBy(Space.CardGap),
-            ) {
-                pair.forEach { row -> BlogTile(row, now, Modifier.weight(1f)) { onOpenTopics(row.feed) } }
-                // An odd one out keeps half the width, not the whole row.
-                if (pair.size == 1) Spacer(Modifier.weight(1f))
-            }
+        // One item: the cloud reflows as a whole, and a few dozen short names are cheap.
+        item("following-cloud") {
+            BlogCloud(rows, now, onOpenTopics, Modifier.animateItem().padding(top = 6.dp))
         }
+        item(PicksKey) { PickSlider(groups.picks, now, pickRoom, Modifier.animateItem()) }
         return
     }
     itemsIndexed(rows, key = { _, row -> row.feed.id }) { index, row ->
@@ -267,45 +261,108 @@ private fun LazyListScope.group(
 }
 
 /**
- * One followed blog as a fixed-height tile: short name and "3 new · 4h". No post
- * titles — the tile says which blog moved; opening it shows what.
+ * A few recent posts from different blogs, side by side, so the screen under a short
+ * cloud has something to read without turning the tab into a second feed.
  */
 @Composable
-private fun BlogTile(row: DigestRow, now: Long, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    val scheme = MaterialTheme.colorScheme
-    val shape = RoundedCornerShape(Radius.Card)
-    val fresh = row.newCount > 0
-    val age = row.lastPostAt?.let { shortAgo(it, now) }
-    Column(
-        modifier
-            .height(TileHeight)
-            .clip(shape)
-            .border(Stroke.Hairline, scheme.outlineVariant, shape)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 13.dp),
-    ) {
-        // No initial badge: the name is the whole tile, and a square letter beside it
-        // only repeats the name's first character.
-        Text(
-            text = row.feed.shortLabel,
-            style = MaterialTheme.typography.bodyLarge,
-            fontSize = 14.5.sp,
-            fontWeight = FontWeight.Medium,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            color = if (fresh) scheme.onSurface else scheme.onSurface.copy(alpha = 0.78f),
+private fun PickSlider(picks: List<PostPick>, now: Long, room: Int?, modifier: Modifier = Modifier) {
+    if (picks.isEmpty()) return
+    val density = LocalDensity.current
+    var headPx by remember { mutableStateOf(0) }
+    var naturalPx by remember { mutableStateOf(0) }
+    // Down to the bar when there is room for more than the card's own height; never less.
+    val cardHeight = room?.let { it - headPx }?.takeIf { headPx > 0 && naturalPx > 0 && it > naturalPx }
+        ?.let { with(density) { it.toDp() } }
+    val open = rememberArticleOpener()
+    val listState = rememberLazyListState()
+    // Turns through these cards, not one blog: they are what the reader is looking at.
+    val queue = remember(picks) {
+        ReadingQueue(
+            entries = picks.map { ReadingQueueEntry(it.post.url, it.post.title, it.feed.host, it.feed.topic) },
+            source = "From your blogs",
+            record = OpenRecord.None,
         )
-        Spacer(Modifier.weight(1f))
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            // Grey, not the accent: the accent stays for what is playing.
-            if (fresh) RowMeta("${row.newCount} new")
-            RowMeta(age ?: "no posts yet")
+    }
+    Column(modifier.fillMaxWidth()) {
+        Column(Modifier.onSizeChanged { headPx = it.height }) {
+            Spacer(Modifier.height(22.dp))
+            EyebrowHeader(text = "FROM YOUR BLOGS", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.height(12.dp))
+        }
+        LazyRow(
+            state = listState,
+            // One card at a time, with the next peeking in so the row reads as swipeable.
+            flingBehavior = rememberSnapFlingBehavior(listState, SnapPosition.Start),
+            horizontalArrangement = Arrangement.spacedBy(Space.CardGap),
+        ) {
+            itemsIndexed(picks, key = { _, it -> it.post.url }) { index, pick ->
+                ArticleCard(
+                    host = pick.feed.shortLabel,
+                    title = pick.post.title,
+                    body = pick.excerpt ?: "",
+                    timeAgo = pick.post.publishedAt?.let { savedAgo(it, now) },
+                    onClick = { open(queue.at(index)) },
+                    height = cardHeight,
+                    modifier = Modifier
+                        .fillParentMaxWidth(PickWidth)
+                        // Its own height is the floor, so it is read only while unset.
+                        .onSizeChanged { if (cardHeight == null) naturalPx = maxOf(naturalPx, it.height) },
+                ) {
+                    // Always something here, so the meta line holds its height before
+                    // "more" knows whether it is needed.
+                    RowMeta("${pick.minutes} min")
+                    pick.feed.topic?.let { RowMeta(it.lowercase()) }
+                }
+            }
         }
     }
 }
 
-// Fixed, so every tile in the grid is the same size whatever its blog is called.
-private val TileHeight = 84.dp
+// Short of the full width, so the next card shows at the edge.
+private const val PickWidth = 0.86f
+
+/** The slider's item key, which the tab measures the room above. */
+internal const val PicksKey = "following-picks"
+
+/** Blog names wrapping like a magazine index, so the list has no empty boxes to fill. */
+@Composable
+private fun BlogCloud(rows: List<DigestRow>, now: Long, onOpenTopics: (Feed) -> Unit, modifier: Modifier = Modifier) {
+    FlowRow(modifier.fillMaxWidth()) {
+        // On one baseline, so mixed sizes read as a line of type rather than a ragged row.
+        rows.forEach { row -> CloudName(row, now, Modifier.alignByBaseline()) { onOpenTopics(row.feed) } }
+    }
+}
+
+/**
+ * One blog in the cloud: its short name sized by [cloudTier], with "14" or "3w" set small
+ * beside it. Grey, not the accent: the accent stays for what is playing.
+ */
+@Composable
+private fun CloudName(row: DigestRow, now: Long, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    val scheme = MaterialTheme.colorScheme
+    val fresh = row.newCount > 0
+    val tag = if (fresh) "${row.newCount}" else row.lastPostAt?.let { shortAgo(it, now) } ?: "—"
+    val text = buildAnnotatedString {
+        append(row.feed.shortLabel)
+        withStyle(SpanStyle(fontFamily = Mono, fontSize = 10.5.sp, fontWeight = FontWeight.Normal, color = scheme.onSurfaceVariant, letterSpacing = 0.sp, baselineShift = BaselineShift.Superscript)) {
+            append("\u200A$tag")
+        }
+    }
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodyLarge,
+        fontSize = DesignTokens.CloudNameSizes[cloudTier(row)].sp,
+        fontWeight = if (fresh) FontWeight.Medium else FontWeight.Normal,
+        color = if (fresh) scheme.onSurface else scheme.onSurface.copy(alpha = 0.55f),
+        maxLines = 1,
+        softWrap = false,
+        // Padding inside the click target: a name is a small thing to hit one-handed.
+        modifier = modifier
+            .clip(RoundedCornerShape(Radius.Chip))
+            .clickable(onClick = onClick)
+            .padding(start = 2.dp, end = 14.dp, top = 6.dp, bottom = 6.dp),
+    )
+}
 
 /**
  * One blog as a search result: its name, then "3 new" or how long since it last posted.
